@@ -1,50 +1,52 @@
-# Welcome to your Expo app 👋
+# HealthCircle Monorepo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Монорепозиторій для мобільного додатку **HealthCircle**, що включає:
 
-## Get started
+- **Client**: мобільний додаток на Expo + React Native + TypeScript
+- **Core API**: бекенд на NestJS + TypeORM + PostgreSQL
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## Встановлення залежностей
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Встановіть залежності для всіх додатків окремо у кожній папці:
 
 ```bash
-npm run reset-project
+cd apps/client
+npm install
+
+cd ../core-api
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## Client (Expo)
 
-To learn more about developing your project with Expo, look at the following resources:
+Папка: `apps/client`
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Запуск
 
-## Join the community
+```bash
+npx expo start
+```
 
-Join our community of developers creating universal apps.
+Відкриється Expo Dev Tools, де можна:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Запуск на iOS simulator (macOS)
+- Запуск на Android emulator
+- Відкриття у Expo Go на фізичному пристрої
+
+---
+
+## Core API (NestJS)
+
+Папка: `apps/core-api`
+
+### Запуск сервера
+
+```bash
+npm run start:dev
+```
+
+Сервер буде доступний на `http://localhost:3000`.
