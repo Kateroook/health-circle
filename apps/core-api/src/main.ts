@@ -27,9 +27,7 @@ async function bootstrap() {
   if (configService.getOrThrow<string>('API_DOCS_ENABLED') === 'true') {
     const config = new DocumentBuilder()
       .setTitle('Administrative management API documentation')
-      .setDescription(
-        'Development API documentation for administrative management',
-      )
+      .setDescription('Development API documentation for administrative management')
       .addCookieAuth(AuthStrategies.userJwtAccess)
       .addCookieAuth(AuthStrategies.userJwtRefresh)
       .setVersion('1.0')
@@ -40,10 +38,8 @@ async function bootstrap() {
 
   await app.listen(configService.getOrThrow<number>('PORT'));
   // Transform Postgres numeric type to JS number instead string
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  types.setTypeParser(types.builtins.NUMERIC, (value: string): number =>
-    parseFloat(value),
-  );
+
+  types.setTypeParser(types.builtins.NUMERIC, (value: string): number => parseFloat(value));
   // Write warning stack into console
   process.on('warning', (e) => console.warn('WARNING: ', e.stack));
 }

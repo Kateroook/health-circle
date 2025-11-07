@@ -1,12 +1,4 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 import { UserEntity } from './user.entity';
 
@@ -18,12 +10,12 @@ export class GroupEntity {
   @Column({ type: 'varchar', unique: true })
   name: string;
 
-  @ManyToOne(() => UserEntity, (user) => user.owned_groups)
+  @ManyToOne(() => UserEntity, (user) => user.ownedGroups)
   @JoinColumn({ name: 'owner_id' })
   owner: UserEntity;
 
   @Column({ type: 'varchar', unique: true })
-  join_code: string;
+  joinCode: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;

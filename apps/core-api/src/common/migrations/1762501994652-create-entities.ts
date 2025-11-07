@@ -22,12 +22,8 @@ export class CreateEntities1762501994652 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE "user_sessions" DROP CONSTRAINT "FK_e9658e959c490b0a634dfc54783"`,
-    );
-    await queryRunner.query(
-      `ALTER TABLE "group" DROP CONSTRAINT "FK_26d387f3e8de5b59428adbbc828"`,
-    );
+    await queryRunner.query(`ALTER TABLE "user_sessions" DROP CONSTRAINT "FK_e9658e959c490b0a634dfc54783"`);
+    await queryRunner.query(`ALTER TABLE "group" DROP CONSTRAINT "FK_26d387f3e8de5b59428adbbc828"`);
     await queryRunner.query(`DROP TABLE "user_sessions"`);
     await queryRunner.query(`DROP TABLE "users"`);
     await queryRunner.query(`DROP TABLE "group"`);

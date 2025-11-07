@@ -23,10 +23,7 @@ export class PostgresModule {
             username: configService.getOrThrow<string>('POSTGRES_USER'),
             password: configService.getOrThrow<string>('POSTGRES_PASS'),
             database: configService.getOrThrow<string>('POSTGRES_DB_NAME'),
-            logging:
-              configService.getOrThrow<string>(
-                'POSTGRES_IS_LOGGING_ENABLED',
-              ) === 'true',
+            logging: configService.getOrThrow<string>('POSTGRES_IS_LOGGING_ENABLED') === 'true',
             migrationsTableName: '_migrations',
             logger: 'advanced-console',
             migrations,

@@ -1,11 +1,4 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 import { GroupEntity } from './group.entity';
 import { UserSessionEntity } from './user_sessions.entity';
@@ -16,10 +9,10 @@ export class UserEntity {
   id: string;
 
   @Column({ type: 'varchar', length: 100 })
-  first_name: string;
+  firstName: string;
 
   @Column({ type: 'varchar', length: 100 })
-  last_name: string;
+  lastName: string;
 
   @Column({ type: 'varchar', unique: true })
   email: string;
@@ -28,26 +21,23 @@ export class UserEntity {
   phone: string;
 
   @Column({ type: 'timestamptz', nullable: true })
-  last_login_date: Date;
+  lastLoginDate: Date;
 
   @Column({ type: 'int', default: 0 })
-  failed_login_attempts: number;
+  failedLoginAttempts: number;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ type: 'timestamptz' })
-  updated_at: Date;
+  updatedAt: Date;
 
   @Column({ type: 'timestamptz', nullable: true })
-  locked_at: Date;
-
-  @Column({ type: 'varchar' })
-  password_hash: string;
+  lockedAt: Date;
 
   @OneToMany(() => UserSessionEntity, (session) => session.user)
   sessions: UserSessionEntity[];
 
   @OneToMany(() => GroupEntity, (group) => group.owner)
-  owned_groups: GroupEntity[];
+  ownedGroups: GroupEntity[];
 }
