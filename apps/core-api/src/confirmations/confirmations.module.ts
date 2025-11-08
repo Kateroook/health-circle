@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { SecurityService } from 'security/security.service';
 import { EmailModule } from 'src/email/email.module';
+import { SecurityService } from 'src/security/security.service';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from 'src/common/entities/user.entity';

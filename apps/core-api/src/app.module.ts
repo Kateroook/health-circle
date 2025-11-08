@@ -4,7 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import Joi from 'joi';
 
 import { CacheModule } from '@nestjs/cache-manager';
-import { SecurityModule } from 'security/security.module';
+import { SecurityModule } from 'src/security/security.module';
 import { AuthModule } from './auth/auth.module';
 import { entities } from './common/entities';
 import { migrations } from './common/migrations';

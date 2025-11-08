@@ -8,7 +8,7 @@ import { EmailService } from 'src/email/email.service';
 import { IsNull, Repository } from 'typeorm';
 
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { SecurityService } from '../../security/security.service';
+import { SecurityService } from '../security/security.service';
 import { SetupPasswordConfirmationDto } from './dto/setup-password-confirmation.dto';
 import { ConfirmationTypes } from './enums/confirmation-type';
 import { SetupPasswordReasons } from './enums/setup-password-reasons';
