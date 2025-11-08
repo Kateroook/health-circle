@@ -6,9 +6,7 @@ import { DataSource, QueryRunner } from 'typeorm';
 export class PostgresService {
   constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
-  public async executeTransaction<T>(
-    cb: (queryRunner: QueryRunner) => Promise<T>,
-  ): Promise<T> {
+  public async executeTransaction<T>(cb: (queryRunner: QueryRunner) => Promise<T>): Promise<T> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();

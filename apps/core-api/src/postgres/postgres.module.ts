@@ -11,7 +11,7 @@ import { PostgresService } from './postgres.service';
   exports: [PostgresService],
 })
 export class PostgresModule {
-  static register(entities: Function[], migrations: Function[]): DynamicModule {
+  static register(entities: Function[], migrations: Function[], subscribers: Function[]): DynamicModule {
     return {
       module: PostgresModule,
       imports: [
@@ -23,14 +23,12 @@ export class PostgresModule {
             username: configService.getOrThrow<string>('POSTGRES_USER'),
             password: configService.getOrThrow<string>('POSTGRES_PASS'),
             database: configService.getOrThrow<string>('POSTGRES_DB_NAME'),
-            logging:
-              configService.getOrThrow<string>(
-                'POSTGRES_IS_LOGGING_ENABLED',
-              ) === 'true',
+            logging: configService.getOrThrow<string>('POSTGRES_IS_LOGGING_ENABLED') === 'true',
             migrationsTableName: '_migrations',
             logger: 'advanced-console',
             migrations,
             entities,
+            subscribers,
             migrationsRun: true,
             synchronize: false,
             namingStrategy: new SnakeNamingStrategy(),

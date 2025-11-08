@@ -1,9 +1,14 @@
+import type { DetectResult } from 'node-device-detector';
 import {
   Column,
+  CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  RelationId,
+  UpdateDateColumn,
 } from 'typeorm';
 
 import { UserEntity } from './user.entity';
@@ -13,25 +18,43 @@ export class UserSessionEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => UserEntity, (user) => user.sessions)
+  @RelationId((session: UserSessionEntity) => session.user)
+  userId: string;
+
+  @ManyToOne(() => UserEntity, { nullable: false, cascade: ['update'] })
+  @Index()
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', length: 512, nullable: false })
+  userAgent: string;
+
+  @Column({ type: 'varchar', length: 16 })
+  ipAddress: string;
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt: Date;
+
+  @Column({ type: 'timestamptz' })
+  expiresAt: Date;
+
+  @Index({ unique: true })
+  @Column({ type: 'varchar', length: 255 })
   jti: string;
 
-  @Column({ type: 'varchar' })
-  token_hash: string;
+  @Index()
+  @Column({ type: 'varchar', length: 255 })
+  tokenHash: string;
 
   @Column({ type: 'timestamptz', nullable: true })
-  last_used_at: Date;
+  revokedAt: Date | null;
 
-  @Column({ type: 'varchar', nullable: true })
-  device_info: string;
+  @Column({ type: 'timestamptz', nullable: true })
+  lastUsedAt: Date | null;
 
-  @Column({ type: 'varchar', nullable: true })
-  ip_address: string;
-
-  @Column({ type: 'varchar', nullable: true })
-  user_agent: string;
+  @Column({ type: 'jsonb' })
+  deviceInfo: DetectResult;
 }
