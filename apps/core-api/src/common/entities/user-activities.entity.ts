@@ -20,14 +20,6 @@ export class UserActivityEntity {
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
-  @RelationId((activity: UserActivityEntity) => activity.subUser)
-  subUserId: string;
-
-  @ManyToOne(() => UserEntity, { nullable: true })
-  @Index()
-  @JoinColumn({ name: 'sub_user_id' })
-  subUser?: UserEntity | null;
-
   @Column({ name: 'device_info', type: 'json', nullable: false })
   deviceInfo: DetectResult;
 

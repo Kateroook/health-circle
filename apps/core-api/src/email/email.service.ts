@@ -9,7 +9,7 @@ import { createTransport, Transporter } from 'nodemailer';
 import { resolve } from 'path';
 import { LoggingTypes } from 'src/common/enums/logging-types';
 
-import { FeedbackContext, RegistrationContext, SetupPasswordContext } from './email.types';
+import { RegistrationContext, SetupPasswordContext } from './email.types';
 
 @Injectable()
 export class EmailService {
@@ -31,7 +31,7 @@ export class EmailService {
         pass: this.configService.getOrThrow<string>('EMAIL_PASS'),
       },
     });
-    // this.registrationTemplate = this.loadTemplate('registration.hbs');
+    this.registrationTemplate = this.loadTemplate('registration.hbs');
     // this.changePasswordTemplate = this.loadTemplate('change-password.hbs');
     // this.contactFormTemplate = this.loadTemplate('contact-form.hbs');
   }
@@ -50,7 +50,6 @@ export class EmailService {
 
   public async registration(to: string, context: RegistrationContext) {
     const html = this.registrationTemplate(context);
-    const logoPath = resolve(__dirname, '..', 'common', 'assets', 'images', 'logo.png');
 
     try {
       await this.transporter.sendMail({
@@ -58,13 +57,6 @@ export class EmailService {
         from: this.configService.getOrThrow<string>('EMAIL_USER'),
         subject: 'Ваш обліковий запис успішно створено',
         html,
-        attachments: [
-          {
-            path: logoPath,
-            filename: 'logo.png',
-            cid: 'logo',
-          },
-        ],
       });
     } catch (error: unknown) {
       this.logger.error({ to, error, type: LoggingTypes.sendMail }, 'Failed to send registration confirmation email');
@@ -73,7 +65,6 @@ export class EmailService {
 
   public async changePassword(to: string, context: SetupPasswordContext) {
     const html = this.changePasswordTemplate(context);
-    const logoPath = resolve(__dirname, '..', 'common', 'assets', 'images', 'logo.png');
 
     try {
       await this.transporter.sendMail({
@@ -81,30 +72,9 @@ export class EmailService {
         from: this.configService.getOrThrow<string>('EMAIL_USER'),
         subject: 'Зміна пароля до вашого облікового запису',
         html,
-        attachments: [
-          {
-            path: logoPath,
-            filename: 'logo.png',
-            cid: 'logo',
-          },
-        ],
       });
     } catch (error: unknown) {
       this.logger.error({ to, error, type: LoggingTypes.sendMail }, 'Failed to send setup password email');
-    }
-  }
-
-  public async contactForm(context: FeedbackContext) {
-    const html = this.contactFormTemplate(context);
-    try {
-      await this.transporter.sendMail({
-        from: this.configService.getOrThrow<string>('EMAIL_USER'),
-        to: this.configService.getOrThrow<string>('EMAIL_CONTACT_FORM'),
-        subject: 'Нове повідомлення з контактної форми',
-        html,
-      });
-    } catch (error: unknown) {
-      this.logger.error({ error, type: LoggingTypes.sendMail }, 'Failed to send setup password email');
     }
   }
 }

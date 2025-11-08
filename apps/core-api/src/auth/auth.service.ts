@@ -8,10 +8,12 @@ import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { UserSessionEntity } from 'src/common/entities/user_sessions.entity';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
-import { IsNull, MoreThan, Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
+import { UserActivityTypes } from 'src/common/enums/user-activity-types';
+import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { RequestMetadata } from '../common/types/request-metadata';
 import { ConfirmationTypes } from '../confirmations/enums/confirmation-type';
 import { UserSetupPasswordDto } from './dto/user-setup-password.dto';
@@ -27,18 +29,15 @@ export class AuthService {
     @InjectRepository(UserPasswordEntity) private readonly userPasswordRepository: Repository<UserPasswordEntity>,
     @InjectRepository(UserSessionEntity) private readonly userSessionRepository: Repository<UserSessionEntity>,
     private readonly securityService: SecurityService,
+    private readonly userActivitiesService: UserActivitiesService,
     private readonly confirmationService: ConfirmationsService,
   ) {}
-
-  private getPasswordExpirationDate = () =>
-    new Date(Date.now() + this.configService.getOrThrow<number>('PASSWORD_EXPIRATION_DAYS') * 24 * 60 * 60 * 1000);
 
   private async getAccessToken(userId: string): Promise<UserTokenDto> {
     const jti = randomUUID();
     const issuedAt = new Date();
     const expiresIn = this.configService.getOrThrow<number>('ACCESS_TOKEN_TTL') * 1000;
     const expiresAt = new Date(issuedAt.getTime() + expiresIn);
-    const scope = '/adm';
 
     const tokenPayload: UserTokenPayload = {
       sub: userId,
@@ -46,7 +45,6 @@ export class AuthService {
     };
 
     const token = await this.jwtService.signAsync(tokenPayload, {
-      audience: scope,
       secret: this.configService.getOrThrow<string>('ACCESS_TOKEN_SECRET'),
       expiresIn,
     });
@@ -58,7 +56,6 @@ export class AuthService {
       expiresIn,
       issuedAt,
       expiresAt,
-      scope,
     };
   }
 
@@ -66,7 +63,7 @@ export class AuthService {
     const issuedAt = new Date();
     const expiresIn = this.configService.getOrThrow<number>('REFRESH_TOKEN_TTL') * 1000;
     const expiresAt = new Date(issuedAt.getTime() + expiresIn);
-    const scope = '/adm/auth/refresh';
+    const scope = '/auth/refresh';
 
     const tokenPayload: UserTokenPayload = {
       sub: userId,
@@ -86,11 +83,10 @@ export class AuthService {
       expiresIn,
       issuedAt,
       expiresAt,
-      scope,
     };
   }
 
-  async validateUser(email: string, password: string): Promise<UserProfileDto> {
+  async validateUser(email: string, password: string, metadata: RequestMetadata): Promise<UserProfileDto> {
     // Find user by email
     const user = await this.userRepository.findOne({ where: { email } });
     // Check if user exists and is active
@@ -101,8 +97,10 @@ export class AuthService {
       where: { user: { id: user.id }, revokedAt: IsNull() },
       order: { createdAt: 'DESC' },
     });
-    if (!userPassword || !(await this.securityService.validate(password, userPassword.passwordHash)))
+    if (!userPassword || !(await this.securityService.validate(password, userPassword.passwordHash))) {
+      await this.userActivitiesService.logActivity(UserActivityTypes.userFailedLogin, metadata, { userId: user.id });
       throw new UnauthorizedException('Невірні облікові дані');
+    }
     return new UserProfileDto({ ...user });
   }
 
@@ -161,12 +159,13 @@ export class AuthService {
     });
     sessions.push(session);
     await this.userSessionRepository.save(sessions);
+    await this.userActivitiesService.logActivity(UserActivityTypes.userLogin, metadata, { userId: user.id });
     // Set refresh token in HttpOnly cookie
     response.cookie('RefreshToken', refreshToken.token, {
       httpOnly: true,
       sameSite: 'none',
       secure: this.configService.getOrThrow<string>('NODE_ENV') === 'production',
-      path: '/api/adm/auth/refresh',
+      path: '/api/auth/refresh',
       maxAge: refreshToken.expiresIn,
     });
     // Set access token in HttpOnly cookie
@@ -174,7 +173,7 @@ export class AuthService {
       httpOnly: true,
       sameSite: 'none',
       secure: this.configService.getOrThrow<string>('NODE_ENV') === 'production',
-      path: '/api/adm',
+      path: '/api',
       maxAge: accessToken.expiresIn,
     });
   }
@@ -198,7 +197,7 @@ export class AuthService {
       httpOnly: true,
       sameSite: 'none',
       secure: this.configService.getOrThrow<string>('NODE_ENV') === 'production',
-      path: '/api/adm/auth/refresh',
+      path: '/api/auth/refresh',
       maxAge: refreshToken.expiresIn,
     });
     // Set access token in HttpOnly cookie
@@ -206,27 +205,28 @@ export class AuthService {
       httpOnly: true,
       sameSite: 'none',
       secure: this.configService.getOrThrow<string>('NODE_ENV') === 'production',
-      path: '/api/adm',
+      path: '/api',
       maxAge: accessToken.expiresIn,
     });
   }
 
-  async logout(user: UserProfileDto, response: Response) {
+  async logout(user: UserProfileDto, response: Response, metadata: RequestMetadata) {
     // Revoke current user session by sessionId
     await this.userSessionRepository.save({ id: user.sessionId, revokedAt: new Date() });
+    await this.userActivitiesService.logActivity(UserActivityTypes.userLogout, metadata, { userId: user.id });
     // Clear cookies
     response.clearCookie('RefreshToken', {
       httpOnly: true,
       sameSite: 'none',
       secure: this.configService.getOrThrow<string>('NODE_ENV') === 'production',
-      path: '/api/adm/auth/refresh',
+      path: '/api/auth/refresh',
     });
     // Clear access token cookie
     response.clearCookie('AccessToken', {
       httpOnly: true,
       sameSite: 'none',
       secure: this.configService.getOrThrow<string>('NODE_ENV') === 'production',
-      path: '/api/adm',
+      path: '/api',
     });
   }
 
@@ -236,7 +236,7 @@ export class AuthService {
     if (newPassword !== confirmNewPassword) throw new ForbiddenException('Новий пароль та підтвердження не співпадають');
     // Validate whether user already has an active password
     const userPassword = await this.userPasswordRepository.findOne({
-      where: { user: { id: user.id }, revokedAt: IsNull(), expiresAt: MoreThan(new Date()) },
+      where: { user: { id: user.id }, revokedAt: IsNull() },
       order: { createdAt: 'DESC' },
     });
     // Check if user already has an active password
@@ -247,7 +247,6 @@ export class AuthService {
     await this.userPasswordRepository.save({
       user: { id: user.id },
       passwordHash,
-      expiresAt: this.getPasswordExpirationDate(),
     });
     // Consume the setup token
     await this.confirmationService.consumeToken(ConfirmationTypes.setupPassword, user.id);

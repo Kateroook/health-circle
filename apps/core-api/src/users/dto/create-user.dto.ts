@@ -1,9 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDefined, IsEmail, IsPhoneNumber, IsString } from 'class-validator';
+import { IsDefined, IsEmail, IsPhoneNumber, IsString, Validate } from 'class-validator';
+import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constraint';
 
 export class CreateUserDto {
   @IsDefined({ message: 'Поле електронної пошти є обовʼязковим' })
   @IsEmail({}, { message: 'Некоректний формат електронної пошти' })
+  @Validate(UserUniqueConstraint, ['email'], { message: 'Електронна пошта вже використовується іншим користувачем' })
   email: string;
 
   @IsDefined({ message: 'Поле імені є обовʼязковим' })
@@ -22,5 +24,6 @@ export class CreateUserDto {
   @IsDefined({ message: 'Поле номера телефону є обовʼязковим' })
   @IsString()
   @IsPhoneNumber('UA', { message: 'Некоректний формат номера телефону' })
+  @Validate(UserUniqueConstraint, ['phone'], { message: 'Номер телефону вже використовується іншим користувачем' })
   phone: string;
 }

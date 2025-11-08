@@ -25,19 +25,17 @@ export class ConfirmationsService {
   ) {}
 
   async setupPasswordCode(email: string, userId: string, reason: SetupPasswordReasons): Promise<string> {
-    const token = await this.generateCode(userId, ConfirmationTypes.setupPassword, reason);
-
-    const link = `${this.configService.get<string>('SETUP_PASSWORD_URL')}?email=${email}&token=${token}&reason=${reason}`;
+    const code = await this.generateCode(userId, ConfirmationTypes.setupPassword, reason);
 
     switch (reason) {
       case SetupPasswordReasons.setup:
-        await this.emailService.registration(email, { link, year: new Date().getFullYear() });
+        await this.emailService.registration(email, { code, year: new Date().getFullYear() });
         break;
       case SetupPasswordReasons.reset:
-        await this.emailService.changePassword(email, { link, year: new Date().getFullYear() });
+        await this.emailService.changePassword(email, { code, year: new Date().getFullYear() });
     }
 
-    return link;
+    return code;
   }
 
   private getSetupPasswordTtl(reason: SetupPasswordReasons): number {
@@ -59,7 +57,7 @@ export class ConfirmationsService {
     return code;
   }
 
-  async verifyToken(type: ConfirmationTypes, email: string, token: string) {
+  async verifyCode(type: ConfirmationTypes, email: string, code: string) {
     const user = await this.usersRepository.findOne({
       where: { email, lockedAt: IsNull() },
     });
@@ -67,7 +65,7 @@ export class ConfirmationsService {
 
     const key = `${type}:${user.id}`;
     const data = await this.cacheManager.get<SetupPasswordConfirmationDto>(key);
-    if (data?.token !== token) throw new UnauthorizedException('Недійсний або прострочений токен');
+    if (data?.code !== code) throw new UnauthorizedException('Недійсний або прострочений токен');
 
     return new UserProfileDto(user);
   }

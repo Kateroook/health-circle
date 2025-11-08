@@ -6,11 +6,13 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { types } from 'pg';
 
+import { useContainer } from 'class-validator';
 import { AppModule } from './app.module';
 import { AuthStrategies } from './common/enums/auth-strategies';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  useContainer(app.select(AppModule), { fallbackOnErrors: true });
   app.setGlobalPrefix('api');
 
   const configService = app.get(ConfigService);

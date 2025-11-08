@@ -16,13 +16,13 @@ export class ConfirmationGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthRequest>();
-    const { token, email } = request.query;
+    const { code, email } = request.query;
     const type = this.reflector.get<ConfirmationTypes>('CONFIRMATION_TYPE', context.getHandler());
 
     if (!type) throw new BadRequestException('Відсутній тип підтвердження');
-    if (!token) throw new BadRequestException('Відсутній токен');
+    if (!code) throw new BadRequestException('Відсутній токен');
 
-    request.user = await this.confirmationService.verifyToken(type, email as string, token as string);
+    request.user = await this.confirmationService.verifyCode(type, email as string, code as string);
 
     return true;
   }

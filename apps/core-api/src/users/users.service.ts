@@ -8,6 +8,7 @@ import { UserActivitiesService } from 'src/user-activities/user-activities.servi
 import { Repository } from 'typeorm';
 
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
+import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { RequestMetadata } from 'src/common/types/request-metadata';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ModifyUserDto } from './dto/modify-user.dto';
@@ -25,7 +26,7 @@ export class UsersService {
   ) {}
 
   private getOneQueryBuilder() {
-    return this.repository.createQueryBuilder('users').leftJoinAndSelect('users.roles', 'roles');
+    return this.repository.createQueryBuilder('users');
   }
 
   public async getOne(id: string) {
@@ -34,15 +35,18 @@ export class UsersService {
     return user;
   }
 
-  public async save(item: CreateUserDto | ModifyUserDto, isNew = false): Promise<UserEntity> {
+  public async save(item: CreateUserDto | ModifyUserDto, metadata: RequestMetadata, isNew = false): Promise<UserEntity> {
+    // todo: add auth check
     if (!isNew && 'id' in item) {
       const user = await this.repository.findOneBy({ id: item.id });
       if (!user) throw new NotFoundException(`Користувача з id = ${item.id} не знайдено`);
     }
     const user = await this.repository.save(item);
-    if (isNew && user) {
+    const userActivityType = isNew ? UserActivityTypes.createUser : UserActivityTypes.modifyUser;
+    if (isNew) {
       await this.confirmationsService.setupPasswordCode(user.email, user.id, SetupPasswordReasons.setup);
     }
+    await this.userActivitiesService.logActivity(userActivityType, metadata, { userId: user.id });
     return user;
   }
 

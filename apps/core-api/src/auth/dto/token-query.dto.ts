@@ -1,7 +1,7 @@
 import { Transform } from 'class-transformer';
 import { IsDefined, IsEmail, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
-export class TokenQueryDto {
+export class SetupPasswordDto {
   @IsEmail({}, { message: 'Некоректний формат електронної пошти' })
   @IsNotEmpty({ message: 'Електронна пошта не може бути порожньою' })
   @IsDefined({ message: 'Поле електронної пошти є обовʼязковим' })
@@ -14,5 +14,5 @@ export class TokenQueryDto {
   @IsString({ message: 'Токен має бути рядком' })
   @IsNotEmpty({ message: 'Токен не може бути порожнім' })
   @IsDefined({ message: 'Поле токену є обовʼязковим' })
-  token: string;
+  code: string;
 }

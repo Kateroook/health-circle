@@ -8,7 +8,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { UserSessionEntity } from 'src/common/entities/user_sessions.entity';
-import { AdmAuthController as AuthController } from './auth.controller';
+import { UserActivitiesModule } from 'src/user-activities/user-activities.module';
+import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UserJwtAccessStrategy } from './strategies/user-jwt-access.strategy';
 import { UserJwtRefreshStrategy } from './strategies/user-jwt-refresh.strategy';
@@ -18,6 +19,7 @@ import { UserLocalStrategy } from './strategies/user-local.strategy';
   imports: [
     JwtModule.register({}),
     TypeOrmModule.forFeature([UserEntity, UserPasswordEntity, UserSessionEntity]),
+    UserActivitiesModule,
     SecurityModule,
     ConfirmationsModule,
   ],

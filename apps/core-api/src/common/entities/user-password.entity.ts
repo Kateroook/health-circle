@@ -22,9 +22,6 @@ export class UserPasswordEntity {
   @Index()
   createdAt: Date;
 
-  @Column({ type: 'timestamptz', nullable: false })
-  expiresAt: Date;
-
   @Column({ type: 'timestamptz', nullable: true })
   revokedAt: Date | null;
 }

@@ -12,6 +12,9 @@ export class UserEntity {
   firstName: string;
 
   @Column({ type: 'varchar', length: 100 })
+  middleName: string;
+
+  @Column({ type: 'varchar', length: 100 })
   lastName: string;
 
   @Column({ type: 'varchar', unique: true })

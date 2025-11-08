@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Bunyan } from 'nestjs-bunyan';
@@ -18,19 +16,32 @@ export class UserActivitiesService {
     private readonly logger: Bunyan,
   ) {}
 
-  async logActivity(actionCode: UserActivityTypes, metadata: RequestMetadata, options: Omit<UserActivity, 'actionCode'>) {
+  async logActivity(
+    actionCode: UserActivityTypes,
+    { deviceInfo, ipAddress, userAgent }: RequestMetadata,
+    { userId, subUserId }: Omit<UserActivity, 'actionCode'>,
+  ) {
     try {
-      const { userId, subUserId, deviceInfo, ipAddress, userAgent } = { ...metadata, ...options };
       await this.repository.save({
         action: { code: actionCode },
         user: { id: userId },
-        subUser: { id: subUserId },
+        subUser: subUserId ? { id: subUserId } : null,
         deviceInfo,
         ipAddress,
         userAgent,
       });
     } catch (error: unknown) {
-      this.logger.error({ type: LoggingTypes.other, error, actionCode, metadata, options }, 'Failed to log user activity');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      this.logger.error(
+        {
+          type: LoggingTypes.other,
+          error,
+          actionCode,
+          metadata: { deviceInfo, ipAddress, userAgent },
+          user: { userId, subUserId },
+        },
+        'Failed to log user activity',
+      );
     }
   }
 }

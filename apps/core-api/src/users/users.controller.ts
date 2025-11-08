@@ -30,15 +30,15 @@ export class UsersController {
     type: UserEntity,
     description: 'User created successfully',
   })
-  async create(@Body() body: CreateUserDto) {
-    return this.service.save(body, true);
+  async create(@Body() body: CreateUserDto, @Req() req: AuthRequest) {
+    return this.service.save(body, req.metadata, true);
   }
 
   @Put()
   @ApiOperation({ summary: 'Modify user with relations' })
   @ApiOkResponse({ type: UserEntity, description: 'User updated successfully' })
-  async modify(@Body() body: ModifyUserDto) {
-    return this.service.save(body, false);
+  async modify(@Body() body: ModifyUserDto, @Req() req: AuthRequest) {
+    return this.service.save(body, req.metadata, false);
   }
 
   @Patch(':id/reset-password')

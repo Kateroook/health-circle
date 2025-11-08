@@ -5,7 +5,7 @@ export class AlterEntities1762550449323 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `CREATE TABLE "user_passwords" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "password_hash" character varying(255) NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "expires_at" TIMESTAMP WITH TIME ZONE NOT NULL, "revoked_at" TIMESTAMP WITH TIME ZONE, "user_id" uuid NOT NULL, CONSTRAINT "PK_4244bafe3ae2988e7bb7af61268" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "user_passwords" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "password_hash" character varying(255) NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "revoked_at" TIMESTAMP WITH TIME ZONE, "user_id" uuid NOT NULL, CONSTRAINT "PK_4244bafe3ae2988e7bb7af61268" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(`CREATE INDEX "IDX_69bf155ad044d776976470eb03" ON "user_passwords" ("user_id") `);
     await queryRunner.query(`CREATE INDEX "IDX_f84ad812dd65e014fe757a9a39" ON "user_passwords" ("created_at") `);

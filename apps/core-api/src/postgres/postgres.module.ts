@@ -11,7 +11,7 @@ import { PostgresService } from './postgres.service';
   exports: [PostgresService],
 })
 export class PostgresModule {
-  static register(entities: Function[], migrations: Function[]): DynamicModule {
+  static register(entities: Function[], migrations: Function[], subscribers: Function[]): DynamicModule {
     return {
       module: PostgresModule,
       imports: [
@@ -28,6 +28,7 @@ export class PostgresModule {
             logger: 'advanced-console',
             migrations,
             entities,
+            subscribers,
             migrationsRun: true,
             synchronize: false,
             namingStrategy: new SnakeNamingStrategy(),

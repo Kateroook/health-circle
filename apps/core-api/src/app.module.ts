@@ -1,5 +1,5 @@
 import KeyvRedis from '@keyv/redis';
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import Joi from 'joi';
 
@@ -8,8 +8,10 @@ import { SecurityModule } from 'security/security.module';
 import { AuthModule } from './auth/auth.module';
 import { entities } from './common/entities';
 import { migrations } from './common/migrations';
+import { subscribers } from './common/subscribers';
 import { EmailModule } from './email/email.module';
 import { LoggingModule } from './logging/logging.module';
+import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
 import { PostgresModule } from './postgres/postgres.module';
 import { UserActivitiesModule } from './user-activities/user-activities.module';
 import { UsersModule } from './users/users.module';
@@ -51,7 +53,7 @@ import { UsersModule } from './users/users.module';
         EMAIL_PASS: Joi.string().required(),
       }),
     }),
-    PostgresModule.register(entities, migrations),
+    PostgresModule.register(entities, migrations, subscribers),
     AuthModule,
     UsersModule,
     LoggingModule,
@@ -75,4 +77,8 @@ import { UsersModule } from './users/users.module';
     }),
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(DeviceInfoMiddleware).forRoutes('*path');
+  }
+}

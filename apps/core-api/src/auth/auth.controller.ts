@@ -15,13 +15,13 @@ import type { AuthRequest } from '../common/types/auth-request';
 import { ConfirmationTypes } from '../confirmations/enums/confirmation-type';
 import { AuthService } from './auth.service';
 import { LoginResponseDto } from './dto/login-response.dto';
-import { TokenQueryDto } from './dto/token-query.dto';
+import { SetupPasswordDto } from './dto/token-query.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 import { UserSetupPasswordDto } from './dto/user-setup-password.dto';
 
 @ApiTags('Auth API')
 @Controller('auth')
-export class AdmAuthController {
+export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
@@ -38,7 +38,6 @@ export class AdmAuthController {
   })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   async login(@Req() req: AuthRequest, @Res({ passthrough: true }) res: Response) {
-    const { user } = req;
     return this.authService.login(req.user, req.metadata, res);
   }
 
@@ -49,7 +48,7 @@ export class AdmAuthController {
   @ApiOkResponse({ description: 'Logs out the user and clears auth cookie' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   logout(@Req() req: AuthRequest, @Res({ passthrough: true }) res: Response) {
-    return this.authService.logout(req.user, res);
+    return this.authService.logout(req.user, res, req.metadata);
   }
 
   @Post('refresh')
@@ -66,7 +65,7 @@ export class AdmAuthController {
   @UseGuards(ConfirmationGuard)
   @ConfirmationType(ConfirmationTypes.setupPassword)
   @ApiOperation({ summary: 'Setup new password' })
-  async setupPassword(@Query() query: TokenQueryDto, @Body() body: UserSetupPasswordDto, @Req() req: AuthRequest) {
+  async setupPassword(@Query() query: SetupPasswordDto, @Body() body: UserSetupPasswordDto, @Req() req: AuthRequest) {
     return this.authService.setupPassword(req.user, body);
   }
 
