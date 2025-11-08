@@ -4,8 +4,8 @@ import { GroupEntity } from './group.entity';
 import { UserActivityEntity } from './user-activities.entity';
 import { UserActivityTypeEntity } from './user-activity-type.entity';
 import { UserPasswordEntity } from './user-password.entity';
+import { UserSessionEntity } from './user-sessions.entity';
 import { UserEntity } from './user.entity';
-import { UserSessionEntity } from './user_sessions.entity';
 
 export const entities = [
   UserEntity,

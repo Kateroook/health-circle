@@ -1,7 +1,7 @@
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 import { GroupEntity } from './group.entity';
-import { UserSessionEntity } from './user_sessions.entity';
+import { UserSessionEntity } from './user-sessions.entity';
 
 @Entity({ name: 'users' })
 export class UserEntity {

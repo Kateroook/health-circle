@@ -5,8 +5,8 @@ import { randomUUID } from 'crypto';
 import type { Response } from 'express';
 import { SecurityService } from 'security/security.service';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
+import { UserSessionEntity } from 'src/common/entities/user-sessions.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
-import { UserSessionEntity } from 'src/common/entities/user_sessions.entity';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { IsNull, Repository } from 'typeorm';
 
