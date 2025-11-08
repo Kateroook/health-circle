@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { SecurityService } from 'security/security.service';
 import { ConfirmationsModule } from 'src/confirmations/confirmations.module';
 import { PostgresService } from 'src/postgres/postgres.service';
+import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesModule } from 'src/user-activities/user-activities.module';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
