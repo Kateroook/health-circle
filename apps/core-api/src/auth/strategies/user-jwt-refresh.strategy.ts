@@ -1,11 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import type { Request } from 'express';
 import { ExtractJwt, Strategy, StrategyOptionsWithRequest } from 'passport-jwt';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { AuthStrategies } from 'src/common/enums/auth-strategies';
-
 import { AuthService } from '../auth.service';
 import { UserTokenPayload } from '../types/user-token-payload';
 
@@ -17,7 +16,7 @@ export class UserJwtRefreshStrategy extends PassportStrategy(Strategy, AuthStrat
   ) {
     super({
       passReqToCallback: true,
-      jwtFromRequest: ExtractJwt.fromExtractors([UserJwtRefreshStrategy.ExtractJwtFromCookies]),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.getOrThrow<string>('REFRESH_TOKEN_SECRET'),
       algorithms: ['HS256'],
@@ -25,11 +24,8 @@ export class UserJwtRefreshStrategy extends PassportStrategy(Strategy, AuthStrat
   }
 
   async validate(req: Request, payload: UserTokenPayload): Promise<UserProfileDto> {
-    return this.authService.verifySession(UserJwtRefreshStrategy.ExtractJwtFromCookies(req), payload);
-  }
-
-  private static ExtractJwtFromCookies(this: void, req: Request): string {
-    const cookies = req.cookies as Record<string, string>;
-    return cookies.RefreshToken;
+    const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+    if (!token) throw new UnauthorizedException('Missing Authorization header');
+    return this.authService.verifySession(token, payload);
   }
 }

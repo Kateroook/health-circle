@@ -52,7 +52,7 @@ export default function Register() {
           title={loading ? "Loading..." : "Register"}
           onPress={handleRegister}
         />
-        <Button title="Skip for now" onPress={() => router.replace("/home")} />
+        <Button title="Skip for now" onPress={() => router.replace("/Home")} />
       </View>
     </SafeScreen>
   );

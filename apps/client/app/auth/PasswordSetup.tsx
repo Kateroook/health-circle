@@ -18,7 +18,7 @@ export default function PasswordSetup() {
         method: "POST",
         body: JSON.stringify({ newPassword, confirmNewPassword: confirm }),
       });
-      router.replace("/auth/login");
+      router.replace("/auth/Login");
     } catch (e: any) {
       setError(e.message);
     }
