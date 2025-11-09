@@ -2,13 +2,11 @@ import { EntitySubscriberInterface, EventSubscriber, InsertEvent, UpdateEvent } 
 
 import { DataLogChangesEntity } from '../entities/data-logs-changes.entity';
 import { DataLogEntity } from '../entities/data-logs.entity';
-import { UserEntity } from '../entities/user.entity';
 
 // Define interfaces for entities with logging fields
 interface LoggableEntity {
   id?: string | number;
   code?: string;
-  updatedBy?: UserEntity;
   updatedAt?: Date;
   deletedAt?: Date | null;
   [key: string]: unknown;
@@ -21,7 +19,7 @@ interface RelationItem {
 
 // TODO: add to config if necessary
 const loggingEntities = ['UserEntity'];
-const excludedFields = ['updatedBy', 'createdBy', 'createdAt', 'updatedAt', 'id', 'lastLoginDate'];
+const excludedFields = ['createdAt', 'updatedAt', 'id', 'lastLoginDate'];
 enum LogTypes {
   update = 'UPDATE',
   insert = 'INSERT',
@@ -123,7 +121,6 @@ export class LoggerSubscriber implements EntitySubscriberInterface {
       recordUuid,
       recordCode: entity?.code ?? '',
       logType,
-      user: entity?.updatedBy as UserEntity,
       date: entity?.updatedAt || new Date(),
       changes,
     } as Omit<DataLogEntity, 'id'>;
@@ -158,7 +155,7 @@ export class LoggerSubscriber implements EntitySubscriberInterface {
   async afterUpdate(event: UpdateEvent<LoggableEntity>) {
     try {
       const entity = event.entity as LoggableEntity;
-      if (loggingEntities.includes(event.metadata.name) && entity?.updatedBy) {
+      if (loggingEntities.includes(event.metadata.name)) {
         const updatedFields = event.updatedColumns.map((item) => item.propertyName);
         event.updatedRelations.forEach((item) => {
           updatedFields.push(item.propertyName);

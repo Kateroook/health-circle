@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { SecurityModule } from 'security/security.module';
 import { ConfirmationsModule } from 'src/confirmations/confirmations.module';
 import { PostgresService } from 'src/postgres/postgres.service';
+import { SecurityModule } from 'src/security/security.module';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
