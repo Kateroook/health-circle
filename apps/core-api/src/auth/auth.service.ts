@@ -4,8 +4,8 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import type { Response } from 'express';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
+import { UserSessionEntity } from 'src/common/entities/user-sessions.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
-import { UserSessionEntity } from 'src/common/entities/user_sessions.entity';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { SecurityService } from 'src/security/security.service';
 import { IsNull, Repository } from 'typeorm';
@@ -161,21 +161,14 @@ export class AuthService {
     await this.userSessionRepository.save(sessions);
     await this.userActivitiesService.logActivity(UserActivityTypes.userLogin, metadata, { userId: user.id });
     // Set refresh token in HttpOnly cookie
-    response.cookie('RefreshToken', refreshToken.token, {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: this.configService.getOrThrow<string>('NODE_ENV') === 'production',
-      path: '/api/auth/refresh',
-      maxAge: refreshToken.expiresIn,
-    });
-    // Set access token in HttpOnly cookie
-    response.cookie('AccessToken', accessToken.token, {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: this.configService.getOrThrow<string>('NODE_ENV') === 'production',
-      path: '/api',
-      maxAge: accessToken.expiresIn,
-    });
+    return {
+      accessToken: accessToken.token,
+      refreshToken: refreshToken.token,
+      tokenType: 'Bearer',
+      expiresIn: accessToken.expiresIn,
+      issuedAt: accessToken.issuedAt,
+      expiresAt: accessToken.expiresAt,
+    };
   }
 
   async refresh(user: UserProfileDto, metadata: RequestMetadata, response: Response) {
@@ -193,41 +186,24 @@ export class AuthService {
       lastUsedAt: new Date(),
     });
     // Set refresh token in HttpOnly cookie
-    response.cookie('RefreshToken', refreshToken.token, {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: this.configService.getOrThrow<string>('NODE_ENV') === 'production',
-      path: '/api/auth/refresh',
-      maxAge: refreshToken.expiresIn,
-    });
-    // Set access token in HttpOnly cookie
-    response.cookie('AccessToken', accessToken.token, {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: this.configService.getOrThrow<string>('NODE_ENV') === 'production',
-      path: '/api',
-      maxAge: accessToken.expiresIn,
-    });
+    return {
+      accessToken: accessToken.token,
+      refreshToken: refreshToken.token,
+      tokenType: 'Bearer',
+      expiresIn: accessToken.expiresIn,
+      issuedAt: accessToken.issuedAt,
+      expiresAt: accessToken.expiresAt,
+    };
   }
 
-  async logout(user: UserProfileDto, response: Response, metadata: RequestMetadata) {
-    // Revoke current user session by sessionId
-    await this.userSessionRepository.save({ id: user.sessionId, revokedAt: new Date() });
+  async logout(user: UserProfileDto, metadata: RequestMetadata) {
+    await this.userSessionRepository.save({
+      id: user.sessionId,
+      revokedAt: new Date(),
+    });
     await this.userActivitiesService.logActivity(UserActivityTypes.userLogout, metadata, { userId: user.id });
-    // Clear cookies
-    response.clearCookie('RefreshToken', {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: this.configService.getOrThrow<string>('NODE_ENV') === 'production',
-      path: '/api/auth/refresh',
-    });
-    // Clear access token cookie
-    response.clearCookie('AccessToken', {
-      httpOnly: true,
-      sameSite: 'none',
-      secure: this.configService.getOrThrow<string>('NODE_ENV') === 'production',
-      path: '/api',
-    });
+
+    return { success: true, message: 'Logged out successfully' };
   }
 
   async setupPassword(user: UserProfileDto, data: UserSetupPasswordDto): Promise<void> {

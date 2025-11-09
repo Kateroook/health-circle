@@ -11,7 +11,7 @@ import { UsersService } from './users.service';
 // TODO: add access checks
 @ApiTags('Users CRUD API')
 @Controller('users')
-// @ApiCookieAuth(AuthStrategies.userJwtAccess)
+// @ApiBearerAuth(AuthStrategies.userJwtAccess)
 // @UseGuards(UserJwtAccessGuard)
 export class UsersController {
   constructor(private readonly service: UsersService) {}

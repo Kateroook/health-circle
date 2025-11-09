@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ApiBody, ApiCookieAuth, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { instanceToPlain } from 'class-transformer';
 import type { Response } from 'express';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
@@ -43,17 +43,17 @@ export class AuthController {
 
   @Post('logout')
   @UseGuards(UserJwtAccessGuard)
-  @ApiCookieAuth(AuthStrategies.userJwtAccess)
+  @ApiBearerAuth(AuthStrategies.userJwtAccess)
   @ApiOperation({ summary: 'User logout and revoked user session' })
   @ApiOkResponse({ description: 'Logs out the user and clears auth cookie' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  logout(@Req() req: AuthRequest, @Res({ passthrough: true }) res: Response) {
-    return this.authService.logout(req.user, res, req.metadata);
+  logout(@Req() req: AuthRequest) {
+    return this.authService.logout(req.user, req.metadata);
   }
 
   @Post('refresh')
   @UseGuards(UserJwtRefreshGuard)
-  @ApiCookieAuth(AuthStrategies.userJwtRefresh)
+  @ApiBearerAuth(AuthStrategies.userJwtRefresh)
   @ApiOperation({ summary: 'Refresh user access token' })
   @ApiOkResponse({ description: 'Returns new access and refresh tokens' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
@@ -71,7 +71,7 @@ export class AuthController {
 
   @Get('profile')
   @UseGuards(UserJwtAccessGuard)
-  @ApiCookieAuth(AuthStrategies.userJwtAccess)
+  @ApiBearerAuth(AuthStrategies.userJwtAccess)
   @ApiOperation({ summary: 'Get user profile' })
   @ApiOkResponse({ description: 'Returns user profile', type: UserProfileDto })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })

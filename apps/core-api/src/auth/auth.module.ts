@@ -6,8 +6,8 @@ import { SecurityModule } from 'src/security/security.module';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
+import { UserSessionEntity } from 'src/common/entities/user-sessions.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
-import { UserSessionEntity } from 'src/common/entities/user_sessions.entity';
 import { UserActivitiesModule } from 'src/user-activities/user-activities.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';

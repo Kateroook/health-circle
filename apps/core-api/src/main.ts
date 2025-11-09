@@ -30,9 +30,15 @@ async function bootstrap() {
     const config = new DocumentBuilder()
       .setTitle('Administrative management API documentation')
       .setDescription('Development API documentation for administrative management')
-      .addCookieAuth(AuthStrategies.userJwtAccess)
-      .addCookieAuth(AuthStrategies.userJwtRefresh)
       .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http', // must be 'http'
+          scheme: 'bearer', // must be 'bearer'
+          bearerFormat: 'JWT', // optional, just for display
+        },
+        AuthStrategies.userJwtAccess, // your internal name, used in @ApiBearerAuth()
+      )
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api-docs', app, document);

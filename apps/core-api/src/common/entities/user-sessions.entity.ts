@@ -29,7 +29,7 @@ export class UserSessionEntity {
   @Column({ type: 'varchar', length: 512, nullable: false })
   userAgent: string;
 
-  @Column({ type: 'varchar', length: 16 })
+  @Column({ type: 'varchar', length: 64 })
   ipAddress: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
