@@ -4,6 +4,7 @@ import { CreateSystemLogsEntity1762593436251 } from './1762593436251-create-syst
 import { CreateDataLogsEntity1762594452409 } from './1762594452409-create-data-logs-entity';
 import { AlterUserEntity1762595585393 } from './1762595585393-alter-user-entity';
 import { AlterUserSessionEntity1762598640398 } from './1762598640398-alter-user-session-entity';
+import { AlterSystemLogEntity1762792680021 } from './1762792680021-alter-system-log-entity';
 
 export const migrations = [
   CreateEntities1762501994652,
@@ -12,4 +13,5 @@ export const migrations = [
   CreateDataLogsEntity1762594452409,
   AlterUserEntity1762595585393,
   AlterUserSessionEntity1762598640398,
+  AlterSystemLogEntity1762792680021,
 ];
