@@ -54,7 +54,7 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           BRANCH_NAME="preview-${{ github.sha }}"
-          eas update --branch $BRANCH_NAME --message "Preview from ${{ github.ref_name }}" --json --non-interactive > update_output.json
+          eas update --branch $BRANCH_NAME --message "Preview from ${{ github.ref_name }}" --json --non-interactive --environment preview > update_output.json
 
           UPDATE_GROUP_ID=$(jq -r '.[] | select(.platform) | .group' update_output.json | head -1)
           if [ -z "$UPDATE_GROUP_ID" ] || [ "$UPDATE_GROUP_ID" = "null" ]; then
