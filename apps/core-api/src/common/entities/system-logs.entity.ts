@@ -8,13 +8,13 @@ export class SystemLogEntity {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'smallint' })
   levelCode: number;
 
   @Column({ type: 'varchar', length: 255 })
   hostname: string;
 
-  @Column({ type: 'varchar', length: 1024 })
+  @Column({ type: 'text' })
   msg: string;
 
   @Column({ type: 'int' })
@@ -28,10 +28,10 @@ export class SystemLogEntity {
   @Column({ type: 'uuid', nullable: true })
   userId: string | null;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ type: 'smallint', nullable: true })
   statusCode: number | null;
 
-  @Column({ type: 'varchar', length: 1024, nullable: true })
+  @Column({ type: 'text', nullable: true })
   path: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
