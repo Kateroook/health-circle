@@ -1,8 +1,7 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Text, TextInput, View, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { Text, TextInput, View, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView } from "react-native";
 import { apiFetch } from "../../lib/api";
-import SafeScreen from "../components/SafeScreen";
 
 export default function Register() {
     const [form, setForm] = useState({
@@ -28,7 +27,27 @@ export default function Register() {
                 params: { email: form.email },
             });
         } catch (e: any) {
-            setError(e.message);
+            // Парсимо помилку для читабельного виводу
+            let errorMessage = "Сталася помилка";
+
+            if (e.message) {
+                try {
+                    // Якщо помилка у форматі JSON
+                    const parsed = JSON.parse(e.message);
+                    if (parsed.message) {
+                        if (Array.isArray(parsed.message)) {
+                            errorMessage = parsed.message.join(", ");
+                        } else {
+                            errorMessage = parsed.message;
+                        }
+                    }
+                } catch {
+                    // Якщо не JSON, використовуємо як є
+                    errorMessage = e.message;
+                }
+            }
+
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -43,87 +62,101 @@ export default function Register() {
     ];
 
     return (
-        <SafeScreen scrollable>
+        <SafeAreaView style={styles.safeArea}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={styles.container}
+                style={styles.keyboardView}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
             >
-                {/* Header */}
-                <View style={styles.header}>
-                    <View style={styles.iconContainer}>
-                        <Text style={styles.icon}>👤</Text>
-                    </View>
-                    <Text style={styles.title}>Створення акаунту</Text>
-                    <Text style={styles.subtitle}>
-                        Заповніть дані, щоб приєднатися до кола турботи
-                    </Text>
-                </View>
-
-                {/* Form */}
-                <View style={styles.formContainer}>
-                    {fields.map(({ key, label, placeholder, keyboardType }) => (
-                        <View key={key} style={styles.inputGroup}>
-                            <Text style={styles.label}>{label}</Text>
-                            <TextInput
-                                placeholder={placeholder}
-                                value={(form as any)[key]}
-                                onChangeText={(v) => handleChange(key, v)}
-                                keyboardType={keyboardType as any}
-                                style={styles.input}
-                                placeholderTextColor="#999"
-                            />
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <View style={styles.iconContainer}>
+                            <Text style={styles.icon}>👤</Text>
                         </View>
-                    ))}
-
-                    {error && (
-                        <View style={styles.errorContainer}>
-                            <Text style={styles.errorIcon}>⚠️</Text>
-                            <Text style={styles.errorText}>{error}</Text>
-                        </View>
-                    )}
-
-                    {/* Buttons */}
-                    <View style={styles.buttonsContainer}>
-                        <TouchableOpacity
-                            style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                            onPress={handleRegister}
-                            disabled={loading}
-                        >
-                            <Text style={styles.primaryButtonText}>
-                                {loading ? "Зачекайте..." : "Зареєструватися"}
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.skipButton}
-                            onPress={() => router.replace("/Home")}
-                        >
-                            <Text style={styles.skipButtonText}>Пропустити</Text>
-                        </TouchableOpacity>
+                        <Text style={styles.title}>Створення акаунту</Text>
+                        <Text style={styles.subtitle}>
+                            Заповніть дані, щоб приєднатися до кола турботи
+                        </Text>
                     </View>
-                </View>
 
-                {/* Footer */}
-                <Text style={styles.footer}>
-                    Вже є акаунт?{" "}
-                    <Text
-                        style={styles.footerLink}
-                        onPress={() => router.push("/auth/Login")}
-                    >
-                        Увійти
+                    {/* Form */}
+                    <View style={styles.formContainer}>
+                        {fields.map(({ key, label, placeholder, keyboardType }) => (
+                            <View key={key} style={styles.inputGroup}>
+                                <Text style={styles.label}>{label}</Text>
+                                <TextInput
+                                    placeholder={placeholder}
+                                    value={(form as any)[key]}
+                                    onChangeText={(v) => handleChange(key, v)}
+                                    keyboardType={keyboardType as any}
+                                    style={styles.input}
+                                    placeholderTextColor="#999"
+                                />
+                            </View>
+                        ))}
+
+                        {error && (
+                            <View style={styles.errorContainer}>
+                                <Text style={styles.errorIcon}>⚠️</Text>
+                                <Text style={styles.errorText}>{error}</Text>
+                            </View>
+                        )}
+
+                        {/* Buttons */}
+                        <View style={styles.buttonsContainer}>
+                            <TouchableOpacity
+                                style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                                onPress={handleRegister}
+                                disabled={loading}
+                            >
+                                <Text style={styles.primaryButtonText}>
+                                    {loading ? "Зачекайте..." : "Зареєструватися"}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.skipButton}
+                                onPress={() => router.replace("/Home")}
+                            >
+                                <Text style={styles.skipButtonText}>Пропустити</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Footer */}
+                    <Text style={styles.footer}>
+                        Вже є акаунт?{" "}
+                        <Text
+                            style={styles.footerLink}
+                            onPress={() => router.push("/auth/Login")}
+                        >
+                            Увійти
+                        </Text>
                     </Text>
-                </Text>
+                </ScrollView>
             </KeyboardAvoidingView>
-        </SafeScreen>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
-        paddingHorizontal: 24,
-        paddingVertical: 32,
         backgroundColor: "#FAFAFA",
+    },
+    keyboardView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        paddingHorizontal: 24,
+        paddingTop: 20,
+        paddingBottom: 40,
     },
     header: {
         alignItems: "center",
@@ -155,7 +188,6 @@ const styles = StyleSheet.create({
         lineHeight: 22,
     },
     formContainer: {
-        flex: 1,
         marginBottom: 24,
     },
     inputGroup: {
@@ -232,6 +264,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "#666",
         marginTop: 16,
+        marginBottom: 20,
     },
     footerLink: {
         color: "#FF6B6B",
