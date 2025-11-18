@@ -10,6 +10,7 @@ import { entities } from './common/entities';
 import { migrations } from './common/migrations';
 import { subscribers } from './common/subscribers';
 import { EmailModule } from './email/email.module';
+import { GroupsModule } from './groups/groups.module';
 import { LoggingModule } from './logging/logging.module';
 import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
 import { PostgresModule } from './postgres/postgres.module';
@@ -60,6 +61,7 @@ import { UsersModule } from './users/users.module';
     EmailModule,
     UserActivitiesModule,
     SecurityModule,
+    GroupsModule,
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
@@ -68,7 +70,7 @@ import { UsersModule } from './users/users.module';
         const host = configService.get<string>('REDIS_HOST');
         const port = configService.get<number>('REDIS_PORT');
         const password = configService.get<string>('REDIS_PASSWORD');
-        const redis = new KeyvRedis({ socket: { host, port }, password, database: 2 });
+        const redis = new KeyvRedis({ socket: { host, port }, password, database: 3 });
         redis.on('error', (err) => {
           console.error('Redis Connection Error:', err);
         });

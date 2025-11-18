@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 import { GroupEntity } from './group.entity';
 import { UserSessionEntity } from './user-sessions.entity';
@@ -43,4 +43,7 @@ export class UserEntity {
 
   @OneToMany(() => GroupEntity, (group) => group.owner)
   ownedGroups: GroupEntity[];
+
+  @ManyToMany(() => GroupEntity, (group) => group.members)
+  groups: GroupEntity[];
 }
