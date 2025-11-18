@@ -10,13 +10,8 @@ type Props = {
 export default function SafeScreen({ children, scrollable = false }: Props) {
   if (scrollable) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          {children}
-        </ScrollView>
+      <SafeAreaView style={styles.safeArea} edges={["bottom", "top"]}>
+        <ScrollView keyboardShouldPersistTaps="handled">{children}</ScrollView>
       </SafeAreaView>
     );
   }
@@ -27,9 +22,5 @@ export default function SafeScreen({ children, scrollable = false }: Props) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    padding: 20,
-  },
-  scrollContent: {
-    flexGrow: 1,
   },
 });
