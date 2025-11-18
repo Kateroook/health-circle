@@ -1,8 +1,8 @@
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
   (process.env.NODE_ENV === "development"
-    ? "http://localhost:3001"
-    : "https://your-production-api.com");
+    ? "http://localhost:3001/api"
+    : "http://34.116.132.120:3001/api");
 
 export async function apiFetch(
   path: string,
