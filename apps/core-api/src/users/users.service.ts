@@ -60,4 +60,14 @@ export class UsersService {
     // todo: change to reset by email
     throw new NotImplementedException('Reset is not implemented');
   }
+
+  public async remove(id: string, user: UserProfileDto, metadata: RequestMetadata): Promise<{ success: boolean }> {
+    ensureSameUser(id, user.id);
+    const userToDelete = await this.repository.findOne({ where: { id } });
+    if (!userToDelete) throw new NotFoundException(`Користувача не знайдено`);
+    await this.repository.remove(userToDelete);
+    await this.userActivitiesService.logActivity(UserActivityTypes.deleteAccount, metadata, { userId: user.id });
+
+    return { success: true };
+  }
 }

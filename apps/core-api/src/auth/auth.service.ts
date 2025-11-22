@@ -202,8 +202,7 @@ export class AuthService {
       revokedAt: new Date(),
     });
     await this.userActivitiesService.logActivity(UserActivityTypes.userLogout, metadata, { userId: user.id });
-
-    return { success: true, message: 'Logged out successfully' };
+    return { success: true };
   }
 
   async setupPassword(user: UserProfileDto, data: UserSetupPasswordDto): Promise<void> {

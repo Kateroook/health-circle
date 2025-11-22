@@ -3,6 +3,7 @@ export enum UserActivityTypes {
   userLogout = 'user_logout',
   createUser = 'create_user',
   modifyUser = 'modify_user',
+  deleteAccount = 'delete_account',
   userFailedLogin = 'user_failed_login',
   userResetPass = 'user_reset_pass',
 }

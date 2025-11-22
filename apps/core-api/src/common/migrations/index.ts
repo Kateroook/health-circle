@@ -1,3 +1,4 @@
+import { AddDeleteAccountUserActivity1763845792981 } from 'src/database/migrations/1763845792981-add-delete-account-user-activity';
 import { CreateEntities1762501994652 } from './1762501994652-create-entities';
 import { AlterEntities1762550449323 } from './1762550449323-alter-entities';
 import { CreateSystemLogsEntity1762593436251 } from './1762593436251-create-system-logs-entity';
@@ -16,4 +17,5 @@ export const migrations = [
   AlterUserSessionEntity1762598640398,
   AlterSystemLogEntity1762792680021,
   AlterGroupEntity1763486277896,
+  AddDeleteAccountUserActivity1763845792981,
 ];

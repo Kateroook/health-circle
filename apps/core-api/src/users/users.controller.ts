@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UUIdParamDto } from 'src/common/dto/uuid-param.dto';
 import { UserEntity } from 'src/common/entities/user.entity';
@@ -51,5 +51,14 @@ export class UsersController {
   @ApiOkResponse({ description: 'Password reset successfully' })
   async resetPassword(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
     return this.service.resetPassword(params.id, req.metadata);
+  }
+
+  @Delete()
+  @ApiBearerAuth(AuthStrategies.userJwtAccess)
+  @UseGuards(UserJwtAccessGuard)
+  @ApiOperation({ summary: 'Delete the authenticated user' })
+  @ApiOkResponse({ description: 'User deleted successfully' })
+  async remove(@Req() req: AuthRequest) {
+    return this.service.remove(req.user.id, req.user, req.metadata);
   }
 }

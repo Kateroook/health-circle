@@ -1,3 +1,5 @@
+import { useAuthStore } from "../store/authStore";
+
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
   (process.env.NODE_ENV === "development"
@@ -13,7 +15,9 @@ export async function apiFetch(
 ) {
   const url = `${API_URL}${path}`;
 
-  // Prepare headers
+  // Get token from store if not provided manually
+  const token = options.token || useAuthStore.getState().accessToken;
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...Object.fromEntries(
@@ -21,9 +25,8 @@ export async function apiFetch(
     ),
   };
 
-  // Add bearer token if provided
-  if (options.token) {
-    headers["Authorization"] = `Bearer ${options.token}`;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   if (__DEV__) {
@@ -61,7 +64,6 @@ export async function apiFetch(
   }
 }
 
-// Helper to safely parse JSON request body
 function tryParse(str: unknown) {
   try {
     return typeof str === "string" ? JSON.parse(str) : str;

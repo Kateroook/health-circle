@@ -12,6 +12,7 @@ const secureStorage: StateStorage = {
 };
 
 interface User {
+  id: string;
   email: string;
   firstName: string;
   middleName: string;
