@@ -3,7 +3,6 @@ import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
 import { apiFetch } from "../../api/api";
 
@@ -32,14 +32,12 @@ export default function PasswordSetup() {
         method: "POST",
         body: JSON.stringify({ newPassword, confirmNewPassword: confirm }),
       });
-      router.replace("/auth/Login");
+      router.replace("/Login");
     } catch (e: any) {
-      // Парсимо помилку для читабельного виводу
       let errorMessage = "Сталася помилка";
 
       if (e.message) {
         try {
-          // Якщо помилка у форматі JSON
           const parsed = JSON.parse(e.message);
           if (parsed.message) {
             if (Array.isArray(parsed.message)) {
@@ -49,7 +47,6 @@ export default function PasswordSetup() {
             }
           }
         } catch {
-          // Якщо не JSON, використовуємо як є
           errorMessage = e.message;
         }
       }

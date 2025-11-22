@@ -1,15 +1,15 @@
 import { router } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import SafeScreen from "../components/SafeScreen";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Index() {
   return (
-    <SafeScreen>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Header Section */}
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <Text style={styles.icon}>❤️</Text>
+            <Text style={styles.icon}>&#x2764;&#xfe0f;</Text>
           </View>
           <Text style={styles.title}>HealthCircle</Text>
           <Text style={styles.subtitle}>Турбота без мікроменеджменту</Text>
@@ -26,19 +26,19 @@ export default function Index() {
           {/* Features */}
           <View style={styles.featuresContainer}>
             <View style={styles.feature}>
-              <Text style={styles.featureIcon}>🚨</Text>
+              <Text style={styles.featureIcon}>&#x1F6A8;</Text>
               <Text style={styles.featureText}>
                 SOS &quot;Я в безпеці&quot;
               </Text>
             </View>
             <View style={styles.feature}>
-              <Text style={styles.featureIcon}>💊</Text>
+              <Text style={styles.featureIcon}>&#x1F48A;</Text>
               <Text style={styles.featureText}>
                 Нагадування про здоров&#39;я
               </Text>
             </View>
             <View style={styles.feature}>
-              <Text style={styles.featureIcon}>📅</Text>
+              <Text style={styles.featureIcon}>&#x1F4C5;</Text>
               <Text style={styles.featureText}>Спільні графіки</Text>
             </View>
           </View>
@@ -48,21 +48,21 @@ export default function Index() {
         <View style={styles.buttonsContainer}>
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={() => router.push({ pathname: "/auth/Register" })}
+            onPress={() => router.push("/Register")}
           >
             <Text style={styles.primaryButtonText}>Створити акаунт</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.secondaryButton}
-            onPress={() => router.push({ pathname: "/auth/Login" })}
+            onPress={() => router.push("/Login")}
           >
             <Text style={styles.secondaryButtonText}>Увійти</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.skipButton}
-            onPress={() => router.replace({ pathname: "/Home" })}
+            onPress={() => router.replace("/Home")}
           >
             <Text style={styles.skipButtonText}>Пропустити</Text>
           </TouchableOpacity>
@@ -70,14 +70,18 @@ export default function Index() {
 
         {/* Footer */}
         <Text style={styles.footer}>
-          Для сімей на відстані. Завжди поруч 🇺🇦
+          Для сімей на відстані. Завжди поруч &#x1F1FA;&#x1F1E6;
         </Text>
       </View>
-    </SafeScreen>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#FAFAFA",
+  },
   container: {
     flex: 1,
     paddingHorizontal: 24,

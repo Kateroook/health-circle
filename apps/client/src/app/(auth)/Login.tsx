@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/src/store/authStore";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -11,38 +12,27 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { apiFetch } from "../../api/api";
+import Icon from "react-native-vector-icons/Feather";
 
-export default function Register() {
-  const [form, setForm] = useState({
-    phone: "",
-    email: "",
-    firstName: "",
-    middleName: "",
-    lastName: "",
-  });
-  const [loading, setLoading] = useState(false);
+export default function Login() {
+  const { login } = useAuthStore();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (key: string, value: string) =>
-    setForm({ ...form, [key]: value });
-
-  async function handleRegister() {
+  async function handleLogin() {
     setError("");
     setLoading(true);
     try {
-      await apiFetch("/users", { method: "POST", body: JSON.stringify(form) });
-      router.push({
-        pathname: "/auth/PasswordSetup",
-        params: { email: form.email },
-      });
+      await login(email, password);
+      router.navigate("/Home");
     } catch (e: any) {
-      // Парсимо помилку для читабельного виводу
       let errorMessage = "Сталася помилка";
 
       if (e.message) {
         try {
-          // Якщо помилка у форматі JSON
           const parsed = JSON.parse(e.message);
           if (parsed.message) {
             if (Array.isArray(parsed.message)) {
@@ -52,7 +42,6 @@ export default function Register() {
             }
           }
         } catch {
-          // Якщо не JSON, використовуємо як є
           errorMessage = e.message;
         }
       }
@@ -62,28 +51,6 @@ export default function Register() {
       setLoading(false);
     }
   }
-
-  const fields = [
-    { key: "firstName", label: "Ім'я", placeholder: "Введіть ім'я" },
-    {
-      key: "middleName",
-      label: "По батькові",
-      placeholder: "Введіть по батькові",
-    },
-    { key: "lastName", label: "Прізвище", placeholder: "Введіть прізвище" },
-    {
-      key: "phone",
-      label: "Телефон",
-      placeholder: "+380 XX XXX XX XX",
-      keyboardType: "phone-pad",
-    },
-    {
-      key: "email",
-      label: "Email",
-      placeholder: "example@mail.com",
-      keyboardType: "email-address",
-    },
-  ];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -100,33 +67,61 @@ export default function Register() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>👤</Text>
+              <Icon name="lock" size={36} color="#FF6B6B" />
             </View>
-            <Text style={styles.title}>Створення акаунту</Text>
+            <Text style={styles.title}>Вітаємо знову!</Text>
             <Text style={styles.subtitle}>
-              Заповніть дані, щоб приєднатися до кола турботи
+              Увійдіть, щоб продовжити турбуватися про близьких
             </Text>
           </View>
 
           {/* Form */}
           <View style={styles.formContainer}>
-            {fields.map(({ key, label, placeholder, keyboardType }) => (
-              <View key={key} style={styles.inputGroup}>
-                <Text style={styles.label}>{label}</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                placeholder="example@mail.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.input}
+                placeholderTextColor="#999"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Пароль</Text>
+              <View style={styles.passwordContainer}>
                 <TextInput
-                  placeholder={placeholder}
-                  value={(form as any)[key]}
-                  onChangeText={(v) => handleChange(key, v)}
-                  keyboardType={keyboardType as any}
-                  style={styles.input}
+                  placeholder="Введіть пароль"
+                  value={password}
+                  secureTextEntry={!showPassword}
+                  onChangeText={setPassword}
+                  style={styles.passwordInput}
                   placeholderTextColor="#999"
                 />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeButton}
+                >
+                  <Icon
+                    name={showPassword ? "eye-off" : "eye"}
+                    size={20}
+                    color="#999"
+                  />
+                </TouchableOpacity>
               </View>
-            ))}
+            </View>
 
             {error && (
               <View style={styles.errorContainer}>
-                <Text style={styles.errorIcon}>⚠️</Text>
+                <Icon
+                  name="alert-circle"
+                  size={18}
+                  color="#D32F2F"
+                  style={{ marginRight: 8 }}
+                />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             )}
@@ -135,33 +130,35 @@ export default function Register() {
             <View style={styles.buttonsContainer}>
               <TouchableOpacity
                 style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleRegister}
+                onPress={handleLogin}
                 disabled={loading}
               >
                 <Text style={styles.primaryButtonText}>
-                  {loading ? "Зачекайте..." : "Зареєструватися"}
+                  {loading ? "Вхід..." : "Увійти"}
                 </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.skipButton}
-                onPress={() => router.replace("/Home")}
-              >
-                <Text style={styles.skipButtonText}>Пропустити</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Footer */}
-          <Text style={styles.footer}>
-            Вже є акаунт?{" "}
-            <Text
-              style={styles.footerLink}
-              onPress={() => router.push("/auth/Login")}
-            >
-              Увійти
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Ще немає акаунту?{" "}
+              <Text
+                style={styles.footerLink}
+                onPress={() => router.push("/Register")}
+              >
+                Зареєструватися
+              </Text>
             </Text>
-          </Text>
+
+            <TouchableOpacity
+              style={styles.skipButton}
+              onPress={() => router.replace("/Home")}
+            >
+              <Text style={styles.skipButtonText}>Пропустити</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -179,24 +176,22 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 40,
     paddingBottom: 40,
+    justifyContent: "space-between",
   },
   header: {
     alignItems: "center",
-    marginBottom: 32,
+    marginTop: 20,
   },
   iconContainer: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: "#E8F5FF",
+    backgroundColor: "#FFF4E5",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16,
-  },
-  icon: {
-    fontSize: 36,
   },
   title: {
     fontSize: 28,
@@ -212,7 +207,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   formContainer: {
-    marginBottom: 24,
+    marginTop: 40,
   },
   inputGroup: {
     marginBottom: 20,
@@ -233,6 +228,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E5E5",
   },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: "#1A1A1A",
+  },
+  eyeButton: {
+    paddingHorizontal: 16,
+  },
   errorContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -240,10 +253,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
-  },
-  errorIcon: {
-    fontSize: 18,
-    marginRight: 8,
   },
   errorText: {
     color: "#D32F2F",
@@ -274,24 +283,25 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "700",
   },
-  skipButton: {
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  skipButtonText: {
-    color: "#999",
-    fontSize: 15,
-    fontWeight: "500",
-  },
   footer: {
-    textAlign: "center",
+    alignItems: "center",
+    gap: 16,
+    marginTop: 24,
+  },
+  footerText: {
     fontSize: 14,
     color: "#666",
-    marginTop: 16,
-    marginBottom: 20,
   },
   footerLink: {
     color: "#FF6B6B",
     fontWeight: "600",
+  },
+  skipButton: {
+    paddingVertical: 8,
+  },
+  skipButtonText: {
+    color: "#999",
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
