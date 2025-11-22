@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "@/src/api/api";
 import { createContext, useContext, useEffect, useState } from "react";
 
 interface User {
