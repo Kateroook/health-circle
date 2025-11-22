@@ -1,20 +1,23 @@
 import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function NotificationsScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Сповіщення</Text>
+    <SafeAreaView style={styles.container}>
+      <View>
+        <Text style={styles.header}>Сповіщення</Text>
 
-      {[1, 2, 3].map((i) => (
-        <View key={i} style={styles.notification}>
-          <View style={styles.avatar} />
-          <View>
-            <Text style={{ fontSize: 16 }}>Хтось зробив дію #{i}</Text>
-            <Text style={{ color: "#888", fontSize: 13 }}>1 годину тому</Text>
+        {[1, 2, 3].map((i) => (
+          <View key={i} style={styles.notification}>
+            <View style={styles.avatar} />
+            <View>
+              <Text style={{ fontSize: 16 }}>Хтось зробив дію #{i}</Text>
+              <Text style={{ color: "#888", fontSize: 13 }}>1 годину тому</Text>
+            </View>
           </View>
-        </View>
-      ))}
-    </View>
+        ))}
+      </View>
+    </SafeAreaView>
   );
 }
 

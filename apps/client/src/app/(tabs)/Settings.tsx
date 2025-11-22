@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
 import { useAuthStore } from "../../store/authStore";
 import { cleanObj } from "../../utils/clean.util";
@@ -61,73 +62,75 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Налаштування</Text>
+    <SafeAreaView style={styles.container}>
+      <View>
+        <Text style={styles.header}>Налаштування</Text>
 
-      {/* First Name */}
-      <View style={styles.block}>
-        <Text style={styles.label}>Імʼя</Text>
-        <TextInput
-          style={styles.input}
-          value={firstName}
-          onChangeText={setFirstName}
-          placeholder="Введіть імʼя"
-          placeholderTextColor="#999"
-        />
+        {/* First Name */}
+        <View style={styles.block}>
+          <Text style={styles.label}>Імʼя</Text>
+          <TextInput
+            style={styles.input}
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="Введіть імʼя"
+            placeholderTextColor="#999"
+          />
+        </View>
+
+        {/* Middle Name */}
+        <View style={styles.block}>
+          <Text style={styles.label}>По-батькові</Text>
+          <TextInput
+            style={styles.input}
+            value={middleName}
+            onChangeText={setMiddleName}
+            placeholder="Введіть по-батькові"
+            placeholderTextColor="#999"
+          />
+        </View>
+
+        {/* Last Name */}
+        <View style={styles.block}>
+          <Text style={styles.label}>Прізвище</Text>
+          <TextInput
+            style={styles.input}
+            value={lastName}
+            onChangeText={setLastName}
+            placeholder="Введіть прізвище"
+            placeholderTextColor="#999"
+          />
+        </View>
+
+        {/* Phone */}
+        <View style={styles.block}>
+          <Text style={styles.label}>Номер телефону</Text>
+          <TextInput
+            style={styles.input}
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="+380..."
+            keyboardType="phone-pad"
+            placeholderTextColor="#999"
+          />
+        </View>
+
+        {/* Save Button */}
+        <TouchableOpacity style={styles.save} onPress={handleSave}>
+          <Text style={styles.saveText}>Зберегти</Text>
+        </TouchableOpacity>
+
+        {/* Logout */}
+        <TouchableOpacity style={styles.logout} onPress={logout}>
+          <Text style={styles.logoutText}>Вийти</Text>
+        </TouchableOpacity>
+
+        {/* Delete Account */}
+        <TouchableOpacity style={styles.delete} onPress={handleDeleteAccount}>
+          <Text style={styles.deleteText}>Видалити акаунт</Text>
+        </TouchableOpacity>
       </View>
-
-      {/* Middle Name */}
-      <View style={styles.block}>
-        <Text style={styles.label}>По-батькові</Text>
-        <TextInput
-          style={styles.input}
-          value={middleName}
-          onChangeText={setMiddleName}
-          placeholder="Введіть по-батькові"
-          placeholderTextColor="#999"
-        />
-      </View>
-
-      {/* Last Name */}
-      <View style={styles.block}>
-        <Text style={styles.label}>Прізвище</Text>
-        <TextInput
-          style={styles.input}
-          value={lastName}
-          onChangeText={setLastName}
-          placeholder="Введіть прізвище"
-          placeholderTextColor="#999"
-        />
-      </View>
-
-      {/* Phone */}
-      <View style={styles.block}>
-        <Text style={styles.label}>Номер телефону</Text>
-        <TextInput
-          style={styles.input}
-          value={phone}
-          onChangeText={setPhone}
-          placeholder="+380..."
-          keyboardType="phone-pad"
-          placeholderTextColor="#999"
-        />
-      </View>
-
-      {/* Save Button */}
-      <TouchableOpacity style={styles.save} onPress={handleSave}>
-        <Text style={styles.saveText}>Зберегти</Text>
-      </TouchableOpacity>
-
-      {/* Logout */}
-      <TouchableOpacity style={styles.logout} onPress={logout}>
-        <Text style={styles.logoutText}>Вийти</Text>
-      </TouchableOpacity>
-
-      {/* Delete Account */}
-      <TouchableOpacity style={styles.delete} onPress={handleDeleteAccount}>
-        <Text style={styles.deleteText}>Видалити акаунт</Text>
-      </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -135,7 +138,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#fff" },
   header: { fontSize: 28, fontWeight: "600", marginBottom: 25 },
 
-  block: { marginBottom: 25 },
+  block: { marginBottom: 20 },
 
   label: { fontSize: 18, marginBottom: 12 },
 

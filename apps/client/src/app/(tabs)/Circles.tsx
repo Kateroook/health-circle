@@ -1,32 +1,37 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CirclesScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Ваші Кола</Text>
+    <SafeAreaView style={styles.container}>
+      <View>
+        <Text style={styles.header}>Ваші Кола</Text>
 
-      <View style={styles.circleCard}>
-        <Text style={styles.circleTitle}>Близькі</Text>
-        <View style={styles.row}>
-          {[1, 2, 3, 4].map((i) => (
-            <View key={i} style={styles.avatar} />
-          ))}
+        <View style={styles.circleCard}>
+          <Text style={styles.circleTitle}>Близькі</Text>
+          <View style={styles.row}>
+            {[1, 2, 3, 4].map((i) => (
+              <View key={i} style={styles.avatar} />
+            ))}
+          </View>
         </View>
-      </View>
 
-      <View style={styles.circleCard}>
-        <Text style={styles.circleTitle}>Друзі</Text>
-        <View style={styles.row}>
-          {[1, 2, 3].map((i) => (
-            <View key={i} style={styles.avatar} />
-          ))}
+        <View style={styles.circleCard}>
+          <Text style={styles.circleTitle}>Друзі</Text>
+          <View style={styles.row}>
+            {[1, 2, 3].map((i) => (
+              <View key={i} style={styles.avatar} />
+            ))}
+          </View>
         </View>
-      </View>
 
-      <TouchableOpacity style={styles.button}>
-        <Text style={{ color: "#fff", fontSize: 16 }}>Створити нове коло</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity style={styles.button}>
+          <Text style={{ color: "#fff", fontSize: 16 }}>
+            Створити нове коло
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
 
