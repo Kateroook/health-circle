@@ -1,14 +1,16 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { types } from 'pg';
 
 import { useContainer } from 'class-validator';
+import { Bunyan } from 'nestjs-bunyan';
 import { AppModule } from './app.module';
 import { AuthStrategies } from './common/enums/auth-strategies';
+import { GlobalExceptionFilter } from './common/exception-filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -18,6 +20,9 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   app.use(cookieParser());
+
+  const logger = await app.get(Bunyan);
+  app.useGlobalFilters(new GlobalExceptionFilter(app.get(HttpAdapterHost), logger));
 
   app.useGlobalPipes(
     new ValidationPipe({
