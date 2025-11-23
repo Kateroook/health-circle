@@ -1,6 +1,8 @@
 import { useAuthStore } from "@/src/store/authStore";
 import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
+import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
 import {
   ScrollView,
@@ -22,22 +24,26 @@ interface Member {
 
 interface Props {
   currentName: string;
+  inviteCode: string;
   visible: boolean;
   members: Member[];
   onClose: () => void;
   onRename: (newName: string) => void;
   onSaveMembers: (updated: { id: string }[]) => void;
   onDelete: () => void;
+  onRegenerateInvite: () => Promise<void>;
 }
 
 export default function CircleActionsModal({
   visible,
   currentName,
+  inviteCode,
   members,
   onClose,
   onRename,
   onSaveMembers,
   onDelete,
+  onRegenerateInvite,
 }: Props) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [isEditingMembers, setIsEditingMembers] = useState(false);
@@ -86,6 +92,10 @@ export default function CircleActionsModal({
       localMembers.filter((m) => m.active === true).map((m) => ({ id: m.id }))
     );
     setIsEditingMembers(false);
+  };
+
+  const handleCopy = async () => {
+    await Clipboard.setStringAsync(inviteCode);
   };
 
   return (
@@ -197,6 +207,22 @@ export default function CircleActionsModal({
         {/* ===== DEFAULT MENU ===== */}
         {!isRenaming && !isEditingMembers && (
           <>
+            <View style={styles.inviteContainer}>
+              <Text style={styles.inviteText}>Код: {inviteCode}</Text>
+              <TouchableOpacity
+                onPress={onRegenerateInvite}
+                style={styles.inviteButton}
+              >
+                <Feather name="refresh-cw" size={16} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCopy}
+                style={[styles.inviteButton, { marginLeft: 8 }]}
+              >
+                <Feather name="copy" size={16} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity style={styles.item} onPress={handleRenamePress}>
               <Text style={styles.text}>Перейменувати</Text>
             </TouchableOpacity>
@@ -208,11 +234,8 @@ export default function CircleActionsModal({
               <Text style={styles.text}>Редагувати склад</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.item, styles.delete]}
-              onPress={onDelete}
-            >
-              <Text style={[styles.text, styles.deleteText]}>Видалити</Text>
+            <TouchableOpacity style={[styles.delete]} onPress={onDelete}>
+              <Text style={styles.deleteText}>Видалити</Text>
             </TouchableOpacity>
           </>
         )}
@@ -222,76 +245,134 @@ export default function CircleActionsModal({
 }
 
 const styles = StyleSheet.create({
-  sheetWrapper: { justifyContent: "flex-end", margin: 0 },
+  sheetWrapper: {
+    justifyContent: "flex-end",
+    margin: 0,
+  },
+
   sheet: {
     backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 20,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 40,
   },
+
   handle: {
     alignSelf: "center",
-    width: 40,
-    height: 4,
+    width: 48,
+    height: 5,
     backgroundColor: "#D1D1D6",
-    borderRadius: 2,
-    marginVertical: 10,
+    borderRadius: 3,
+    marginVertical: 12,
   },
-  item: { paddingVertical: 18, paddingHorizontal: 20 },
-  text: { fontSize: 16, color: COLORS.TEXT_DARK, fontWeight: "600" },
 
-  memberItem: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.BACKGROUND_CARD,
+  /* ==== DEFAULT MENU BUTTONS ==== */
+  item: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: COLORS.BACKGROUND_CARD,
+    borderRadius: 16,
+    marginBottom: 14,
+  },
+
+  text: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: COLORS.TEXT_DARK,
+    textAlign: "center",
+  },
+
+  inviteContainer: {
+    alignSelf: "center",
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#EEF2F6",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginBottom: 32,
+  },
+
+  inviteText: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginRight: 8,
+  },
+
+  inviteButton: {
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: "#5D6470",
+    justifyContent: "center",
     alignItems: "center",
   },
 
-  memberName: {
+  /* ==== DELETE ==== */
+  delete: {
+    backgroundColor: "transparent",
+    marginTop: 8,
+  },
+  deleteText: {
+    color: COLORS.STATE_DANGER,
     fontSize: 16,
-    color: COLORS.TEXT_DARK,
     fontWeight: "600",
+    textAlign: "center",
   },
 
-  delete: { marginTop: 10 },
-  deleteText: { color: COLORS.STATE_DANGER },
-
+  /* ==== RENAME INPUT ==== */
   input: {
-    backgroundColor: COLORS.INPUT_BG,
-    borderWidth: 1,
-    borderColor: COLORS.BACKGROUND_CARD,
-    borderRadius: 20,
+    backgroundColor: COLORS.BACKGROUND_CARD,
+    borderRadius: 18,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "700",
     color: COLORS.TEXT_DARK,
     textAlign: "center",
-    marginBottom: 30,
+    marginTop: 10,
+    marginBottom: 26,
   },
+
   backButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
-    alignSelf: "flex-start",
+    marginBottom: 18,
   },
   backButtonText: {
     fontSize: 16,
+    fontWeight: "600",
     color: COLORS.PRIMARY_BLUE,
-    fontWeight: "500",
+    marginLeft: 8,
   },
+
+  /* ==== DONE BUTTON ==== */
   doneButton: {
     backgroundColor: COLORS.BLACK_BTN,
-    borderRadius: 30,
-    paddingVertical: 16,
+    borderRadius: 28,
+    paddingVertical: 15,
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 24,
   },
   doneButtonText: {
     color: COLORS.BACKGROUND_LIGHT,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
+  },
+
+  /* ==== MEMBERS ==== */
+  memberItem: {
+    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BACKGROUND_CARD,
+  },
+  memberName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.TEXT_DARK,
   },
 });
