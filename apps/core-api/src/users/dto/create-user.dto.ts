@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDefined, IsEmail, IsPhoneNumber, IsString, Validate } from 'class-validator';
+import { IsDefined, IsEmail, IsOptional, IsPhoneNumber, IsString, Validate } from 'class-validator';
 import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constraint';
 
 export class CreateUserDto {
@@ -12,7 +12,7 @@ export class CreateUserDto {
   @IsString({ message: 'Імʼя має бути рядком' })
   firstName: string;
 
-  @IsDefined({ message: 'Поле по-батькові є обовʼязковим' })
+  @IsOptional()
   @IsString({ message: 'По-батькові має бути рядком' })
   middleName: string;
 

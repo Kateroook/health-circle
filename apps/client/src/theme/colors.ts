@@ -1,0 +1,17 @@
+export const COLORS = {
+  BACKGROUND_LIGHT: "#FFFFFF",
+  BACKGROUND_CARD: "#F2F2F7",
+  TEXT_DARK: "#2C2C2E",
+  TEXT_GRAY: "#8E8E93",
+  PRIMARY_BLUE: "#007AFF",
+
+  STATE_SAFE: "#34C759",
+  STATE_DANGER: "#FF3B30",
+  STATE_UNKNOWN: "#FFCC00",
+
+  ICON_INACTIVE: "#E5E5EA",
+  INPUT_BG: "#F2F2F7",
+  BLACK_BTN: "#000000",
+} as const;
+
+export type ColorKey = keyof typeof COLORS;
