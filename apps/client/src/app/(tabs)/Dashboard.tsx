@@ -56,7 +56,7 @@ const ContactStatusRow: React.FC<ContactStatusProps> = ({
   switch (status) {
     case "В безпеці":
       statusText = "В безпеці";
-      StatusIcon = <AntDesign name="checkcircle" size={24} color="#34C759" />;
+      StatusIcon = <AntDesign name="check-circle" size={24} color="#34C759" />;
       break;
     case "Потрібна допомога":
       statusText = "Потрібна допомога";
@@ -67,7 +67,7 @@ const ContactStatusRow: React.FC<ContactStatusProps> = ({
     default:
       statusText = "Невідомо";
       StatusIcon = (
-        <AntDesign name="questioncircle" size={24} color="#FFCC00" />
+        <AntDesign name="question-circle" size={24} color="#FFCC00" />
       );
       break;
   }
