@@ -6,7 +6,6 @@ import { COLORS } from "../theme/colors";
 interface Props {
   visible: boolean;
   onClose: () => void;
-
   onRename: () => void;
   onEditMembers: () => void;
   onDelete: () => void;
@@ -55,10 +54,7 @@ export default function CircleActionsModal({
 }
 
 const styles = StyleSheet.create({
-  sheetWrapper: {
-    justifyContent: "flex-end",
-    margin: 0,
-  },
+  sheetWrapper: { justifyContent: "flex-end", margin: 0 },
   sheet: {
     backgroundColor: "white",
     borderTopLeftRadius: 20,
@@ -73,19 +69,8 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginVertical: 10,
   },
-  item: {
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-  },
-  text: {
-    fontSize: 16,
-    color: COLORS.TEXT_DARK,
-    fontWeight: "600",
-  },
-  delete: {
-    marginTop: 10,
-  },
-  deleteText: {
-    color: COLORS.STATE_DANGER,
-  },
+  item: { paddingVertical: 18, paddingHorizontal: 20 },
+  text: { fontSize: 16, color: COLORS.TEXT_DARK, fontWeight: "600" },
+  delete: { marginTop: 10 },
+  deleteText: { color: COLORS.STATE_DANGER },
 });

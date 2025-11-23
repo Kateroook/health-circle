@@ -19,23 +19,29 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function CirclesScreen() {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
-  const [activeCircle, setActiveCircle] = useState<string | null>(null);
-  const [circles, setCircles] = useState<
-    { name: string; members: any[]; extraCount?: number }[]
-  >([]);
+  const [activeCircle, setActiveCircle] = useState<null | {
+    id: string;
+    name: string;
+    members: any[];
+    extraCount?: number;
+  }>(null);
+  const [circles, setCircles] = useState<(typeof activeCircle)[]>([]);
+
+  // Fetch all circles
+  const fetchCircles = async () => {
+    try {
+      const data = await apiFetch("/groups", { method: "GET" });
+      setCircles(data);
+    } catch (error) {
+      console.error("Error loading circles:", error);
+    }
+  };
 
   useEffect(() => {
-    async function fetchCircles() {
-      try {
-        const data = await apiFetch("/groups", { method: "GET" });
-        setCircles(data);
-      } catch (error) {
-        console.error("Error loading circles:", error);
-      }
-    }
     fetchCircles();
   }, []);
 
+  // Handle Android back button
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       if (isAddModalVisible) {
@@ -51,8 +57,8 @@ export default function CirclesScreen() {
     return () => sub.remove();
   }, [isAddModalVisible, isActionsVisible]);
 
-  function openActionsModal(circleName: string) {
-    setActiveCircle(circleName);
+  function openActionsModal(circle: typeof activeCircle) {
+    setActiveCircle(circle);
     setIsActionsVisible(true);
   }
 
@@ -80,13 +86,13 @@ export default function CirclesScreen() {
             Кола не знайдені
           </Text>
         ) : (
-          circles.map((circle, i) => (
+          circles.map((circle) => (
             <CircleItem
-              key={i}
+              key={circle.id}
               title={circle.name}
               members={circle.members}
               extraCount={circle.extraCount}
-              onMenuPress={() => openActionsModal(circle.name)}
+              onMenuPress={() => openActionsModal(circle)}
             />
           ))
         )}
@@ -109,7 +115,10 @@ export default function CirclesScreen() {
       >
         <View style={styles.modalWrapper}>
           <SafeAreaView edges={["bottom"]}>
-            <AddCircleModal onClose={() => setIsAddModalVisible(false)} />
+            <AddCircleModal
+              onClose={() => setIsAddModalVisible(false)}
+              onUpdated={fetchCircles} // refresh after adding
+            />
           </SafeAreaView>
         </View>
       </Modal>
@@ -118,17 +127,26 @@ export default function CirclesScreen() {
       <CircleActionsModal
         visible={isActionsVisible}
         onClose={() => setIsActionsVisible(false)}
-        onRename={() => {
+        onRename={async () => {
+          if (!activeCircle) return;
+          const newName = "User input name"; // replace with prompt or modal input
+          await apiFetch("/groups", {
+            method: "PUT",
+            body: JSON.stringify({ id: activeCircle.id, name: newName }),
+          });
           setIsActionsVisible(false);
-          // open rename modal logic here
+          fetchCircles();
         }}
-        onEditMembers={() => {
+        onEditMembers={async () => {
+          if (!activeCircle) return;
+          // TODO: open edit members modal or call API with new members
           setIsActionsVisible(false);
-          // open edit members modal logic here
         }}
-        onDelete={() => {
+        onDelete={async () => {
+          if (!activeCircle) return;
+          await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
           setIsActionsVisible(false);
-          // open delete confirmation modal logic here
+          fetchCircles();
         }}
       />
     </SafeAreaView>
@@ -153,10 +171,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  bottomModal: {
-    justifyContent: "flex-end",
-    margin: 0,
-  },
+  bottomModal: { justifyContent: "flex-end", margin: 0 },
 
   modalWrapper: {
     backgroundColor: "white",
