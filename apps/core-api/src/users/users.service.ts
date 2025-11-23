@@ -90,8 +90,8 @@ export class UsersService {
     }
     const saved = await this.repository.save(item);
     const userActivityType = isNew ? UserActivityTypes.createUser : UserActivityTypes.modifyUser;
-    if (isNew) await this.confirmationsService.setupPasswordCode(saved.email, user.id, SetupPasswordReasons.setup);
-    await this.userActivitiesService.logActivity(userActivityType, metadata, { userId: user.id });
+    if (isNew) await this.confirmationsService.setupPasswordCode(saved.email, saved.id, SetupPasswordReasons.setup);
+    await this.userActivitiesService.logActivity(userActivityType, metadata, { userId: saved.id });
     return saved;
   }
 
