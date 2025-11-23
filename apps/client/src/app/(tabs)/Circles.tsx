@@ -1,13 +1,13 @@
-import AddCircleModal from "@/src/components/AddCircleModal";
-import CircleActionsModal from "@/src/components/CircleActionsModal";
-import CircleItem from "@/src/components/CircleItem";
+import { apiFetch } from "@/src/api/api";
+import AddCircleModal from "@/src/components/circle/AddCircleModal";
+import CircleItem from "@/src/components/circle/CircleItem";
+import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
-import React, { useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  Animated,
   BackHandler,
-  PanResponder,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,47 +17,41 @@ import {
 import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+interface Member {
+  id: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  active: boolean;
+}
+
 export default function CirclesScreen() {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
-  const [activeCircle, setActiveCircle] = useState<string | null>(null);
+  const [activeCircle, setActiveCircle] = useState<null | {
+    id: string;
+    name: string;
+    members: Member[];
+  }>(null);
+  const [circles, setCircles] = useState<(typeof activeCircle)[]>([]);
 
-  const pan = useRef(new Animated.Value(0)).current;
+  // Fetch all circles
+  const fetchCircles = async () => {
+    try {
+      const data = await apiFetch("/groups", { method: "GET" });
+      setCircles(data);
+    } catch (error) {
+      console.error("Error loading circles:", error);
+    }
+  };
 
-  const mockMembers = [
-    { status: "danger" as const },
-    { status: "safe" as const },
-    { status: "unknown" as const },
-    { status: "unknown" as const },
-    { status: "unknown" as const },
-  ];
+  useFocusEffect(
+    useCallback(() => {
+      fetchCircles();
+    }, [])
+  );
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) => {
-        return gesture.dy > 5;
-      },
-
-      onPanResponderMove: (_, gesture) => {
-        if (gesture.dy > 0) {
-          pan.setValue(gesture.dy);
-        }
-      },
-
-      onPanResponderRelease: (_, gesture) => {
-        if (gesture.dy > 120) {
-          setIsAddModalVisible(false);
-          pan.setValue(0);
-        } else {
-          Animated.spring(pan, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
-        }
-      },
-    })
-  ).current;
-
+  // Handle Android back button
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       if (isAddModalVisible) {
@@ -70,12 +64,11 @@ export default function CirclesScreen() {
       }
       return false;
     });
-
     return () => sub.remove();
   }, [isAddModalVisible, isActionsVisible]);
 
-  function openActionsModal(circleName: string) {
-    setActiveCircle(circleName);
+  function openActionsModal(circle: typeof activeCircle) {
+    setActiveCircle(circle);
     setIsActionsVisible(true);
   }
 
@@ -84,7 +77,6 @@ export default function CirclesScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Кола</Text>
-
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => setIsAddModalVisible(true)}
@@ -93,22 +85,26 @@ export default function CirclesScreen() {
           </TouchableOpacity>
         </View>
 
-        <CircleItem
-          title="Близькі"
-          members={mockMembers.slice(0, 4)}
-          onMenuPress={() => openActionsModal("Близькі")}
-        />
-        <CircleItem
-          title="Родина"
-          members={mockMembers}
-          extraCount={2}
-          onMenuPress={() => openActionsModal("Родина")}
-        />
-        <CircleItem
-          title="Друзі"
-          members={mockMembers.slice(0, 4)}
-          onMenuPress={() => openActionsModal("Друзі")}
-        />
+        {circles.length === 0 ? (
+          <Text
+            style={{
+              textAlign: "center",
+              marginTop: 20,
+              color: COLORS.TEXT_GRAY,
+            }}
+          >
+            Кола не знайдені
+          </Text>
+        ) : (
+          circles.map((circle) => (
+            <CircleItem
+              key={circle.id}
+              title={circle.name}
+              members={circle.members}
+              onMenuPress={() => openActionsModal(circle)}
+            />
+          ))
+        )}
       </ScrollView>
 
       {/* Add Circle Modal */}
@@ -128,7 +124,10 @@ export default function CirclesScreen() {
       >
         <View style={styles.modalWrapper}>
           <SafeAreaView edges={["bottom"]}>
-            <AddCircleModal onClose={() => setIsAddModalVisible(false)} />
+            <AddCircleModal
+              onClose={() => setIsAddModalVisible(false)}
+              onUpdated={fetchCircles} // refresh after adding
+            />
           </SafeAreaView>
         </View>
       </Modal>
@@ -137,17 +136,34 @@ export default function CirclesScreen() {
       <CircleActionsModal
         visible={isActionsVisible}
         onClose={() => setIsActionsVisible(false)}
-        onRename={() => {
+        currentName={activeCircle?.name || ""}
+        members={activeCircle?.members || []}
+        onSaveMembers={async (updatedMembers) => {
+          if (!activeCircle) return;
+          await apiFetch("/groups", {
+            method: "PUT",
+            body: JSON.stringify({
+              id: activeCircle.id,
+              members: updatedMembers,
+            }),
+          });
           setIsActionsVisible(false);
-          // open rename modal logic here
+          fetchCircles();
         }}
-        onEditMembers={() => {
+        onRename={async (newName) => {
+          if (!activeCircle) return;
+          await apiFetch("/groups", {
+            method: "PUT",
+            body: JSON.stringify({ id: activeCircle.id, name: newName }),
+          });
           setIsActionsVisible(false);
-          // open edit members modal logic here
+          fetchCircles();
         }}
-        onDelete={() => {
+        onDelete={async () => {
+          if (!activeCircle) return;
+          await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
           setIsActionsVisible(false);
-          // open delete confirmation modal logic here
+          fetchCircles();
         }}
       />
     </SafeAreaView>
@@ -172,10 +188,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  bottomModal: {
-    justifyContent: "flex-end",
-    margin: 0,
-  },
+  bottomModal: { justifyContent: "flex-end", margin: 0 },
 
   modalWrapper: {
     backgroundColor: "white",

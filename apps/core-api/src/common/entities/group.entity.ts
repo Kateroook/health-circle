@@ -17,7 +17,7 @@ export class GroupEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', unique: true })
+  @Column({ type: 'varchar' })
   name: string;
 
   @ManyToOne(() => UserEntity, (user) => user.ownedGroups)
@@ -34,9 +34,12 @@ export class GroupEntity {
   })
   members: UserEntity[];
 
+  @Column({ type: 'varchar', length: 32, nullable: true, unique: true })
+  inviteCode: string;
+
   @CreateDateColumn({ type: 'timestamptz' })
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ type: 'timestamptz' })
-  updated_at: Date;
+  updatedAt: Date;
 }

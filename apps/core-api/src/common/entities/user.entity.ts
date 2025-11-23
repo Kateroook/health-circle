@@ -1,5 +1,16 @@
-import { Column, CreateDateColumn, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToMany,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
+import { ExternalFilesEntity } from './external-files.entity';
 import { GroupEntity } from './group.entity';
 import { UserSessionEntity } from './user-sessions.entity';
 
@@ -38,12 +49,16 @@ export class UserEntity {
   @Column({ type: 'timestamptz', nullable: true })
   lockedAt: Date;
 
+  @OneToOne(() => ExternalFilesEntity, { nullable: true, cascade: true })
+  @JoinColumn()
+  file?: ExternalFilesEntity; // avatar
+
   @OneToMany(() => UserSessionEntity, (session) => session.user)
   sessions: UserSessionEntity[];
 
-  @OneToMany(() => GroupEntity, (group) => group.owner)
+  @OneToMany(() => GroupEntity, (group) => group.owner, { cascade: ['remove'], orphanedRowAction: 'delete' })
   ownedGroups: GroupEntity[];
 
-  @ManyToMany(() => GroupEntity, (group) => group.members)
+  @ManyToMany(() => GroupEntity, (group) => group.members, { onDelete: 'CASCADE' })
   groups: GroupEntity[];
 }

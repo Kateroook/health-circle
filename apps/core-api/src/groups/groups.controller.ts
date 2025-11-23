@@ -10,7 +10,7 @@ import { JoinGroupDto } from './dto/join-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { GroupService } from './groups.service';
 
-@ApiTags('API груп')
+@ApiTags('Groups API')
 @ApiBearerAuth(AuthStrategies.userJwtAccess)
 @UseGuards(UserJwtAccessGuard)
 @Controller('groups')
@@ -18,55 +18,55 @@ export class GroupController {
   constructor(private readonly service: GroupService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Отримати всі групи користувача' })
-  @ApiOkResponse({ type: [GroupEntity], description: 'Список груп' })
+  @ApiOperation({ summary: 'Get all groups of the current user' })
+  @ApiOkResponse({ type: [GroupEntity], description: 'List of groups' })
   async getAll(@Req() req: AuthRequest) {
     return this.service.findAllForUser(req.user.id);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Отримати групу за id' })
-  @ApiOkResponse({ type: GroupEntity, description: 'Групу знайдено' })
-  @ApiNotFoundResponse({ description: 'Групу не знайдено' })
+  @ApiOperation({ summary: 'Get a group by ID' })
+  @ApiOkResponse({ type: GroupEntity, description: 'Group found' })
+  @ApiNotFoundResponse({ description: 'Group not found' })
   async getOne(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
     return this.service.findOne(params.id, req.user.id);
   }
 
   @Post()
-  @ApiOperation({ summary: 'Створити нову групу' })
-  @ApiCreatedResponse({ type: GroupEntity, description: 'Групу створено' })
+  @ApiOperation({ summary: 'Create a new group' })
+  @ApiCreatedResponse({ description: 'Group created with invite code' })
   async create(@Body() body: CreateGroupDto, @Req() req: AuthRequest) {
     return this.service.createGroup(req.user.id, body);
   }
 
   @Put()
-  @ApiOperation({ summary: 'Оновити групу' })
-  @ApiOkResponse({ type: GroupEntity, description: 'Групу оновлено' })
-  @ApiNotFoundResponse({ description: 'Групу не знайдено' })
+  @ApiOperation({ summary: 'Update a group' })
+  @ApiOkResponse({ type: GroupEntity, description: 'Group updated' })
+  @ApiNotFoundResponse({ description: 'Group not found' })
   async update(@Body() body: UpdateGroupDto, @Req() req: AuthRequest) {
     return this.service.updateGroup(req.user.id, body);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Видалити групу' })
-  @ApiOkResponse({ description: 'Групу видалено' })
-  @ApiNotFoundResponse({ description: 'Групу не знайдено' })
+  @ApiOperation({ summary: 'Delete a group' })
+  @ApiOkResponse({ description: 'Group deleted successfully' })
+  @ApiNotFoundResponse({ description: 'Group not found' })
   async delete(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
     return this.service.deleteGroup(req.user.id, params.id);
   }
 
   @Post(':id/invite')
-  @ApiOperation({ summary: 'Створити запрошення в групу (magic link)' })
-  @ApiCreatedResponse({ description: 'Запрошення створено' })
-  async createInvite(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
-    return this.service.generateInviteLink(req.user.id, params.id);
+  @ApiOperation({ summary: 'Generate a new invite code for the group' })
+  @ApiCreatedResponse({ description: 'New invite code generated' })
+  async regenerateInvite(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
+    return this.service.regenerateInviteCode(req.user.id, params.id);
   }
 
   @Post('join')
-  @ApiOperation({ summary: 'Приєднатись до групи по magic link' })
-  @ApiOkResponse({ description: 'Ви приєдналися до групи' })
-  @ApiNotFoundResponse({ description: 'Посилання недійсне або прострочене' })
+  @ApiOperation({ summary: 'Join a group using an invite code' })
+  @ApiOkResponse({ description: 'Successfully joined the group' })
+  @ApiNotFoundResponse({ description: 'Invalid or expired invite code' })
   async joinGroup(@Body() body: JoinGroupDto, @Req() req: AuthRequest) {
-    return this.service.joinByInvite(req.user.id, body.token);
+    return this.service.joinByInviteCode(req.user.id, body.code);
   }
 }

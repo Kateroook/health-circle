@@ -1,6 +1,6 @@
+import { COLORS } from "@/src/theme/colors";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { COLORS } from "../theme/colors";
 
 type MemberStatus = "safe" | "danger" | "unknown";
 

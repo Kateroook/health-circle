@@ -16,17 +16,35 @@ const OtpInput: React.FC<OtpInputProps> = ({
 
   const handleChange = (text: string, index: number) => {
     const newCode = [...value];
-    newCode[index] = text.charAt(text.length - 1);
-    onChange(newCode);
 
-    if (text && index < value.length - 1) {
-      refs.current[index + 1]?.focus();
+    if (text.length > 1) {
+      const chars = text.split("");
+      chars.forEach((char, i) => {
+        const targetIndex = index + i;
+        if (targetIndex < value.length) {
+          newCode[targetIndex] = char.toUpperCase();
+        }
+      });
+      onChange(newCode);
+      const nextIndex = Math.min(index + chars.length, value.length - 1);
+      refs.current[nextIndex]?.focus();
+    } else {
+      newCode[index] = text.toUpperCase();
+      onChange(newCode);
+      if (text && index < value.length - 1) {
+        refs.current[index + 1]?.focus();
+      }
     }
   };
 
   const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === "Backspace" && !value[index] && index > 0) {
-      refs.current[index - 1]?.focus();
+    if (e.nativeEvent.key === "Backspace") {
+      if (!value[index] && index > 0) {
+        refs.current[index - 1]?.focus();
+        const newCode = [...value];
+        newCode[index - 1] = "";
+        onChange(newCode);
+      }
     }
   };
 
@@ -39,12 +57,14 @@ const OtpInput: React.FC<OtpInputProps> = ({
               ref={(r) => (refs.current[i] = r)}
               style={styles.input}
               value={char}
-              maxLength={1}
+              maxLength={value.length}
               onChangeText={(t) => handleChange(t, i)}
               onKeyPress={(e) => handleKeyPress(e, i)}
               editable={editable}
+              selectTextOnFocus={true}
               textAlign="center"
               autoCapitalize="characters"
+              keyboardType="default"
             />
           ) : (
             <Text style={styles.charText}>{char}</Text>
@@ -68,6 +88,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
   input: {
     fontSize: 24,
@@ -75,6 +96,8 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     color: "#1C1C1E",
+    textAlign: "center",
+    padding: 0,
   },
   charText: {
     fontSize: 24,

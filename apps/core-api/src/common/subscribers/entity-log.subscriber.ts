@@ -2,6 +2,7 @@ import { EntitySubscriberInterface, EventSubscriber, InsertEvent, UpdateEvent } 
 
 import { DataLogChangesEntity } from '../entities/data-logs-changes.entity';
 import { DataLogEntity } from '../entities/data-logs.entity';
+import { getErrorStack } from '../helpers/get-error-stack.util';
 
 // Define interfaces for entities with logging fields
 interface LoggableEntity {
@@ -24,14 +25,6 @@ enum LogTypes {
   update = 'UPDATE',
   insert = 'INSERT',
   softRemove = 'SOFT REMOVE',
-}
-
-// Helper function to get error stack
-function getErrorStack(error: unknown): string {
-  if (error instanceof Error) {
-    return error.stack || error.message;
-  }
-  return String(error);
 }
 
 @EventSubscriber()

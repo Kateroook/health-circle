@@ -1,5 +1,6 @@
 import { DataLogChangesEntity } from './data-logs-changes.entity';
 import { DataLogEntity } from './data-logs.entity';
+import { ExternalFilesEntity } from './external-files.entity';
 import { GroupEntity } from './group.entity';
 import { UserActivityEntity } from './user-activities.entity';
 import { UserActivityTypeEntity } from './user-activity-type.entity';
@@ -17,4 +18,5 @@ export const entities = [
   UserActivityTypeEntity,
   DataLogEntity,
   DataLogChangesEntity,
+  ExternalFilesEntity,
 ];
