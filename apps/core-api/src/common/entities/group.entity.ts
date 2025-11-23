@@ -17,7 +17,7 @@ export class GroupEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', unique: true })
+  @Column({ type: 'varchar' })
   name: string;
 
   @ManyToOne(() => UserEntity, (user) => user.ownedGroups)
@@ -33,6 +33,9 @@ export class GroupEntity {
     inverseJoinColumn: { name: 'user_id', referencedColumnName: 'id' },
   })
   members: UserEntity[];
+
+  @Column({ type: 'varchar', length: 32, nullable: true, unique: true })
+  inviteCode: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;

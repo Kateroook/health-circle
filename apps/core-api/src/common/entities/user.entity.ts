@@ -41,9 +41,9 @@ export class UserEntity {
   @OneToMany(() => UserSessionEntity, (session) => session.user)
   sessions: UserSessionEntity[];
 
-  @OneToMany(() => GroupEntity, (group) => group.owner)
+  @OneToMany(() => GroupEntity, (group) => group.owner, { cascade: ['remove'], orphanedRowAction: 'delete' })
   ownedGroups: GroupEntity[];
 
-  @ManyToMany(() => GroupEntity, (group) => group.members)
+  @ManyToMany(() => GroupEntity, (group) => group.members, { onDelete: 'CASCADE' })
   groups: GroupEntity[];
 }
