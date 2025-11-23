@@ -4,12 +4,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import Joi from 'joi';
 
 import { CacheModule } from '@nestjs/cache-manager';
+import { ScheduleModule } from '@nestjs/schedule';
 import { SecurityModule } from 'src/security/security.module';
 import { AuthModule } from './auth/auth.module';
 import { entities } from './common/entities';
 import { migrations } from './common/migrations';
 import { subscribers } from './common/subscribers';
 import { EmailModule } from './email/email.module';
+import { ExternalFilesModule } from './external-files/external-files.module';
 import { GroupsModule } from './groups/groups.module';
 import { LoggingModule } from './logging/logging.module';
 import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
@@ -52,6 +54,22 @@ import { UsersModule } from './users/users.module';
         EMAIL_PORT: Joi.number().required(),
         EMAIL_USER: Joi.string().required(),
         EMAIL_PASS: Joi.string().required(),
+
+        // FILES
+        EXTERNAL_FILES_PATH: Joi.string().required(),
+        // Cron job variables
+        CRON_MISSED_FILES_ENABLED: Joi.boolean().required(),
+        CRON_MISSED_FILES_RULE: Joi.string().when('CRON_MISSED_FILES_ENABLED', {
+          is: true,
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
+        CRON_UNLINKED_FILES_ENABLED: Joi.boolean().required(),
+        CRON_UNLINKED_FILES_RULE: Joi.string().when('CRON_UNLINKED_FILES_ENABLED', {
+          is: true,
+          then: Joi.required(),
+          otherwise: Joi.optional(),
+        }),
       }),
     }),
     PostgresModule.register(entities, migrations, subscribers),
@@ -62,6 +80,7 @@ import { UsersModule } from './users/users.module';
     UserActivitiesModule,
     SecurityModule,
     GroupsModule,
+    ExternalFilesModule,
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
@@ -77,6 +96,7 @@ import { UsersModule } from './users/users.module';
         return { stores: [redis] };
       },
     }),
+    ScheduleModule.forRoot(),
   ],
 })
 export class AppModule implements NestModule {

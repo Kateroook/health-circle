@@ -1,8 +1,38 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Req,
+  StreamableFile,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiCookieAuth,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiProduces,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UUIdParamDto } from 'src/common/dto/uuid-param.dto';
 import { UserEntity } from 'src/common/entities/user.entity';
 
+import { FileInterceptor } from '@nestjs/platform-express';
+import { IdParamDto } from 'src/common/dto/id-param.dto';
+import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { AuthStrategies } from 'src/common/enums/auth-strategies';
 import { UserJwtAccessGuard } from 'src/common/guards/user-jwt-access.guard';
 import type { AuthRequest } from 'src/common/types/auth-request';
@@ -23,6 +53,15 @@ export class UsersController {
   @ApiNotFoundResponse({ description: 'User not found' })
   async getOne(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
     return this.service.getOne(params.id, req.user);
+  }
+
+  @Get(':id/avatar')
+  @ApiCookieAuth()
+  @ApiOperation({ summary: 'Get a user avatar image' })
+  @ApiProduces('image/*')
+  @ApiOkResponse({ description: 'User avatar image stream' })
+  async getAvatar(@Param() params: UUIdParamDto): Promise<StreamableFile> {
+    return this.service.getFile(params.id);
   }
 
   @Post()
@@ -53,6 +92,28 @@ export class UsersController {
     return this.service.resetPassword(params.id, req.metadata);
   }
 
+  @Put(':id/avatar')
+  @ApiCookieAuth()
+  @ApiOperation({ summary: 'Upload or replace a user avatar' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiOkResponse({ type: UserProfileDto, description: 'User avatar uploaded successfully' })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAvatar(@Param() params: UUIdParamDto, @UploadedFile() file: Express.Multer.File) {
+    return this.service.upsertFile(params.id, file);
+  }
+
   @Delete()
   @ApiBearerAuth(AuthStrategies.userJwtAccess)
   @UseGuards(UserJwtAccessGuard)
@@ -60,5 +121,15 @@ export class UsersController {
   @ApiOkResponse({ description: 'User deleted successfully' })
   async remove(@Req() req: AuthRequest) {
     return this.service.remove(req.user.id, req.user, req.metadata);
+  }
+
+  @Delete(':id/avatar')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Remove user avatar by ID' })
+  @ApiCookieAuth()
+  @ApiNoContentResponse({ description: 'User avatar removed' })
+  @ApiNotFoundResponse({ description: 'File not found' })
+  async removeLogo(@Param() params: IdParamDto) {
+    await this.service.removeFile(params.id);
   }
 }

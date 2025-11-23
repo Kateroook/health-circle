@@ -8,11 +8,17 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constraint';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
+import { ExternalFilesModule } from 'src/external-files/external-files.module';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity, UserPasswordEntity]), UserActivitiesModule, ConfirmationsModule],
+  imports: [
+    TypeOrmModule.forFeature([UserEntity, UserPasswordEntity]),
+    UserActivitiesModule,
+    ConfirmationsModule,
+    ExternalFilesModule,
+  ],
   providers: [UsersService, PostgresService, SecurityService, UserUniqueConstraint],
   controllers: [UsersController],
   exports: [UsersService],

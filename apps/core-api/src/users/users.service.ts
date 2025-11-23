@@ -1,17 +1,18 @@
-import { Injectable, NotFoundException, NotImplementedException } from '@nestjs/common';
+import { Injectable, NotFoundException, NotImplementedException, StreamableFile } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { SetupPasswordReasons } from 'src/confirmations/enums/setup-password-reasons';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
-import { Repository } from 'typeorm';
+import { EntityManager, QueryRunner, Repository } from 'typeorm';
 
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { ensureSameUser } from 'src/common/helpers/ensure-same-user.util';
 import { RequestMetadata } from 'src/common/types/request-metadata';
+import { ExternalFilesService } from 'src/external-files/external-files.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ModifyUserDto } from './dto/modify-user.dto';
 
@@ -25,7 +26,45 @@ export class UsersService {
     protected readonly confirmationsService: ConfirmationsService,
     protected readonly userActivitiesService: UserActivitiesService,
     protected readonly configService: ConfigService,
+    protected readonly externalFilesService: ExternalFilesService,
   ) {}
+
+  async upsertFile(userId: string, file: Express.Multer.File, queryRunner?: QueryRunner): Promise<UserEntity> {
+    const manager = queryRunner?.manager || this.repository.manager;
+    return manager.transaction(async (trx) => {
+      const user = await trx.findOne(UserEntity, { where: { id: userId }, relations: ['file'] });
+      if (!user) throw new NotFoundException('Користувача не знайдено');
+      user.file = await this.externalFilesService.replaceFile(
+        user.file?.id || null,
+        {
+          originalname: file.originalname,
+          buffer: file.buffer,
+          mimetype: file.mimetype,
+        },
+        trx.queryRunner,
+      );
+      return trx.save(user);
+    });
+  }
+
+  async getFile(userId: string): Promise<StreamableFile> {
+    const user = await this.repository.findOne({ where: { id: userId }, relations: ['file'] });
+    if (!user || !user.file) throw new NotFoundException('Користувача або файл не знайдено');
+    return this.externalFilesService.getStreamableFile(user.file);
+  }
+
+  async removeFile(userId: number, manager?: EntityManager): Promise<void> {
+    const entityManager = manager || this.repository.manager;
+    const user = await entityManager.findOne(UserEntity, {
+      where: { id: userId as any },
+      relations: ['file'],
+    });
+    if (!user) throw new NotFoundException(`Користувача не знайдено`);
+    if (!user.file?.id) throw new NotFoundException(`Нема файлу для видалення`);
+    await this.externalFilesService.delete(user.file.id, entityManager.queryRunner);
+    user.file = undefined;
+    await entityManager.save(UserEntity, user);
+  }
 
   private getOneQueryBuilder() {
     return this.repository.createQueryBuilder('users');
