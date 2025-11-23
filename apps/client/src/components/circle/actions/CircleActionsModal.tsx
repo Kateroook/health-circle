@@ -1,6 +1,9 @@
+import { useAuthStore } from "@/src/store/authStore";
+import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -8,44 +11,81 @@ import {
   View,
 } from "react-native";
 import Modal from "react-native-modal";
-import { COLORS } from "../theme/colors";
+
+interface Member {
+  id: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  active: boolean;
+}
 
 interface Props {
   currentName: string;
   visible: boolean;
+  members: Member[];
   onClose: () => void;
   onRename: (newName: string) => void;
-  onEditMembers: () => void;
+  onSaveMembers: (updated: { id: string }[]) => void;
   onDelete: () => void;
 }
 
 export default function CircleActionsModal({
   visible,
   currentName,
+  members,
   onClose,
   onRename,
-  onEditMembers,
+  onSaveMembers,
   onDelete,
 }: Props) {
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isEditingMembers, setIsEditingMembers] = useState(false);
+
   const [newName, setNewName] = useState("");
+  const [localMembers, setLocalMembers] = useState<Member[]>([]);
+  const user = useAuthStore().user;
+
+  React.useEffect(() => {
+    if (visible) {
+      setLocalMembers(
+        members
+          .filter((m) => m.id !== user?.id)
+          .map((m) => ({
+            id: m.id,
+            firstName: m.firstName,
+            middleName: m.middleName,
+            lastName: m.lastName,
+            active: true,
+          }))
+      );
+    }
+  }, [members, visible]);
 
   const handleRenamePress = () => {
     setNewName(currentName);
     setIsRenaming(true);
   };
 
-  const handleDonePress = () => {
+  const handleDoneRename = () => {
     if (newName.trim() !== "") {
       onRename(newName.trim());
-      setNewName("");
       setIsRenaming(false);
+      setNewName("");
     }
   };
 
-  const handleCancelRename = () => {
-    setNewName("");
-    setIsRenaming(false);
+  const toggleMember = (id: string) => {
+    setLocalMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, active: !m.active } : m))
+    );
+  };
+
+  const handleSaveMembers = () => {
+    onSaveMembers(
+      localMembers.filter((m) => m.active === true).map((m) => ({ id: m.id }))
+    );
+    setIsEditingMembers(false);
   };
 
   return (
@@ -64,12 +104,11 @@ export default function CircleActionsModal({
       <View style={styles.sheet}>
         <View style={styles.handle} />
 
-        {isRenaming ? (
+        {/* ===== RENAME MODE ===== */}
+        {isRenaming && !isEditingMembers && (
           <View style={{ padding: 20 }}>
-            {/* Back button */}
-
             <TouchableOpacity
-              onPress={handleCancelRename}
+              onPress={() => setIsRenaming(false)}
               style={styles.backButton}
             >
               <AntDesign
@@ -93,19 +132,79 @@ export default function CircleActionsModal({
 
             <TouchableOpacity
               style={styles.doneButton}
-              onPress={handleDonePress}
+              onPress={handleDoneRename}
               disabled={newName.trim() === ""}
             >
               <Text style={styles.doneButtonText}>Готово</Text>
             </TouchableOpacity>
           </View>
-        ) : (
+        )}
+
+        {/* ===== EDIT MEMBERS MODE ===== */}
+        {!isRenaming && isEditingMembers && (
+          <View style={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+            <TouchableOpacity
+              onPress={() => setIsEditingMembers(false)}
+              style={styles.backButton}
+            >
+              <AntDesign
+                name="arrow-left"
+                size={16}
+                color={COLORS.PRIMARY_BLUE}
+              />
+              <Text style={[styles.backButtonText, { marginLeft: 8 }]}>
+                Назад
+              </Text>
+            </TouchableOpacity>
+
+            <ScrollView style={{ maxHeight: 350 }}>
+              {localMembers.map((m) => (
+                <TouchableOpacity
+                  key={m.id}
+                  style={styles.memberItem}
+                  onPress={() => toggleMember(m.id)}
+                >
+                  <Text
+                    style={styles.memberName}
+                  >{`${m.lastName} ${m.firstName} ${m.middleName}`}</Text>
+
+                  {m.active ? (
+                    <AntDesign
+                      name="check-circle"
+                      size={22}
+                      color={COLORS.PRIMARY_BLUE}
+                    />
+                  ) : (
+                    <AntDesign
+                      name="close-circle"
+                      size={22}
+                      color={COLORS.TEXT_GRAY}
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.doneButton}
+              onPress={handleSaveMembers}
+            >
+              <Text style={styles.doneButtonText}>Готово</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ===== DEFAULT MENU ===== */}
+        {!isRenaming && !isEditingMembers && (
           <>
             <TouchableOpacity style={styles.item} onPress={handleRenamePress}>
               <Text style={styles.text}>Перейменувати</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.item} onPress={onEditMembers}>
+            <TouchableOpacity
+              style={styles.item}
+              onPress={() => setIsEditingMembers(true)}
+            >
               <Text style={styles.text}>Редагувати склад</Text>
             </TouchableOpacity>
 
@@ -140,8 +239,25 @@ const styles = StyleSheet.create({
   },
   item: { paddingVertical: 18, paddingHorizontal: 20 },
   text: { fontSize: 16, color: COLORS.TEXT_DARK, fontWeight: "600" },
+
+  memberItem: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BACKGROUND_CARD,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  memberName: {
+    fontSize: 16,
+    color: COLORS.TEXT_DARK,
+    fontWeight: "600",
+  },
+
   delete: { marginTop: 10 },
   deleteText: { color: COLORS.STATE_DANGER },
+
   input: {
     backgroundColor: COLORS.INPUT_BG,
     borderWidth: 1,
@@ -171,6 +287,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     paddingVertical: 16,
     alignItems: "center",
+    marginTop: 20,
   },
   doneButtonText: {
     color: COLORS.BACKGROUND_LIGHT,

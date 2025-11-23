@@ -1,3 +1,5 @@
+import { apiFetch } from "@/src/api/api";
+import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
@@ -10,10 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-import { apiFetch } from "../api/api";
-import { COLORS } from "../theme/colors";
-import OtpInput from "./OtpInput";
+import OtpInput from "../OtpInput";
 
 interface AddCircleModalProps {
   onClose: () => void;

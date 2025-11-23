@@ -1,10 +1,11 @@
 import { apiFetch } from "@/src/api/api";
-import AddCircleModal from "@/src/components/AddCircleModal";
-import CircleActionsModal from "@/src/components/CircleActionsModal";
-import CircleItem from "@/src/components/CircleItem";
+import AddCircleModal from "@/src/components/circle/AddCircleModal";
+import CircleItem from "@/src/components/circle/CircleItem";
+import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   BackHandler,
   ScrollView,
@@ -16,14 +17,21 @@ import {
 import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+interface Member {
+  id: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  active: boolean;
+}
+
 export default function CirclesScreen() {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
   const [activeCircle, setActiveCircle] = useState<null | {
     id: string;
     name: string;
-    members: any[];
-    extraCount?: number;
+    members: Member[];
   }>(null);
   const [circles, setCircles] = useState<(typeof activeCircle)[]>([]);
 
@@ -37,9 +45,11 @@ export default function CirclesScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchCircles();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchCircles();
+    }, [])
+  );
 
   // Handle Android back button
   useEffect(() => {
@@ -91,7 +101,6 @@ export default function CirclesScreen() {
               key={circle.id}
               title={circle.name}
               members={circle.members}
-              extraCount={circle.extraCount}
               onMenuPress={() => openActionsModal(circle)}
             />
           ))
@@ -128,6 +137,19 @@ export default function CirclesScreen() {
         visible={isActionsVisible}
         onClose={() => setIsActionsVisible(false)}
         currentName={activeCircle?.name || ""}
+        members={activeCircle?.members || []}
+        onSaveMembers={async (updatedMembers) => {
+          if (!activeCircle) return;
+          await apiFetch("/groups", {
+            method: "PUT",
+            body: JSON.stringify({
+              id: activeCircle.id,
+              members: updatedMembers,
+            }),
+          });
+          setIsActionsVisible(false);
+          fetchCircles();
+        }}
         onRename={async (newName) => {
           if (!activeCircle) return;
           await apiFetch("/groups", {
@@ -136,10 +158,6 @@ export default function CirclesScreen() {
           });
           setIsActionsVisible(false);
           fetchCircles();
-        }}
-        onEditMembers={async () => {
-          if (!activeCircle) return;
-          setIsActionsVisible(false);
         }}
         onDelete={async () => {
           if (!activeCircle) return;
