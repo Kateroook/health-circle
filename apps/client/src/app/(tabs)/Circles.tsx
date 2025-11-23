@@ -1,13 +1,12 @@
+import { apiFetch } from "@/src/api/api";
 import AddCircleModal from "@/src/components/AddCircleModal";
 import CircleActionsModal from "@/src/components/CircleActionsModal";
 import CircleItem from "@/src/components/CircleItem";
 import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Animated,
   BackHandler,
-  PanResponder,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,42 +20,21 @@ export default function CirclesScreen() {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
   const [activeCircle, setActiveCircle] = useState<string | null>(null);
+  const [circles, setCircles] = useState<
+    { name: string; members: any[]; extraCount?: number }[]
+  >([]);
 
-  const pan = useRef(new Animated.Value(0)).current;
-
-  const mockMembers = [
-    { status: "danger" as const },
-    { status: "safe" as const },
-    { status: "unknown" as const },
-    { status: "unknown" as const },
-    { status: "unknown" as const },
-  ];
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) => {
-        return gesture.dy > 5;
-      },
-
-      onPanResponderMove: (_, gesture) => {
-        if (gesture.dy > 0) {
-          pan.setValue(gesture.dy);
-        }
-      },
-
-      onPanResponderRelease: (_, gesture) => {
-        if (gesture.dy > 120) {
-          setIsAddModalVisible(false);
-          pan.setValue(0);
-        } else {
-          Animated.spring(pan, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
-        }
-      },
-    })
-  ).current;
+  useEffect(() => {
+    async function fetchCircles() {
+      try {
+        const data = await apiFetch("/groups", { method: "GET" });
+        setCircles(data);
+      } catch (error) {
+        console.error("Error loading circles:", error);
+      }
+    }
+    fetchCircles();
+  }, []);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -70,7 +48,6 @@ export default function CirclesScreen() {
       }
       return false;
     });
-
     return () => sub.remove();
   }, [isAddModalVisible, isActionsVisible]);
 
@@ -84,7 +61,6 @@ export default function CirclesScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Кола</Text>
-
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => setIsAddModalVisible(true)}
@@ -93,22 +69,27 @@ export default function CirclesScreen() {
           </TouchableOpacity>
         </View>
 
-        <CircleItem
-          title="Близькі"
-          members={mockMembers.slice(0, 4)}
-          onMenuPress={() => openActionsModal("Близькі")}
-        />
-        <CircleItem
-          title="Родина"
-          members={mockMembers}
-          extraCount={2}
-          onMenuPress={() => openActionsModal("Родина")}
-        />
-        <CircleItem
-          title="Друзі"
-          members={mockMembers.slice(0, 4)}
-          onMenuPress={() => openActionsModal("Друзі")}
-        />
+        {circles.length === 0 ? (
+          <Text
+            style={{
+              textAlign: "center",
+              marginTop: 20,
+              color: COLORS.TEXT_GRAY,
+            }}
+          >
+            Кола не знайдені
+          </Text>
+        ) : (
+          circles.map((circle, i) => (
+            <CircleItem
+              key={i}
+              title={circle.name}
+              members={circle.members}
+              extraCount={circle.extraCount}
+              onMenuPress={() => openActionsModal(circle.name)}
+            />
+          ))
+        )}
       </ScrollView>
 
       {/* Add Circle Modal */}
