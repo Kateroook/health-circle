@@ -1,4 +1,5 @@
 import AddCircleModal from "@/src/components/AddCircleModal";
+import CircleActionsModal from "@/src/components/CircleActionsModal";
 import CircleItem from "@/src/components/CircleItem";
 import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
@@ -17,7 +18,10 @@ import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CirclesScreen() {
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [isActionsVisible, setIsActionsVisible] = useState(false);
+  const [activeCircle, setActiveCircle] = useState<string | null>(null);
+
   const pan = useRef(new Animated.Value(0)).current;
 
   const mockMembers = [
@@ -42,7 +46,7 @@ export default function CirclesScreen() {
 
       onPanResponderRelease: (_, gesture) => {
         if (gesture.dy > 120) {
-          setIsModalVisible(false);
+          setIsAddModalVisible(false);
           pan.setValue(0);
         } else {
           Animated.spring(pan, {
@@ -56,15 +60,24 @@ export default function CirclesScreen() {
 
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (isModalVisible) {
-        setIsModalVisible(false);
+      if (isAddModalVisible) {
+        setIsAddModalVisible(false);
+        return true;
+      }
+      if (isActionsVisible) {
+        setIsActionsVisible(false);
         return true;
       }
       return false;
     });
 
     return () => sub.remove();
-  }, [isModalVisible]);
+  }, [isAddModalVisible, isActionsVisible]);
+
+  function openActionsModal(circleName: string) {
+    setActiveCircle(circleName);
+    setIsActionsVisible(true);
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -74,23 +87,36 @@ export default function CirclesScreen() {
 
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => setIsModalVisible(true)}
+            onPress={() => setIsAddModalVisible(true)}
           >
             <AntDesign name="plus" size={24} color="#FFF" />
           </TouchableOpacity>
         </View>
 
-        <CircleItem title="Близькі" members={mockMembers.slice(0, 4)} />
-        <CircleItem title="Родина" members={mockMembers} extraCount={2} />
-        <CircleItem title="Друзі" members={mockMembers.slice(0, 4)} />
+        <CircleItem
+          title="Близькі"
+          members={mockMembers.slice(0, 4)}
+          onMenuPress={() => openActionsModal("Близькі")}
+        />
+        <CircleItem
+          title="Родина"
+          members={mockMembers}
+          extraCount={2}
+          onMenuPress={() => openActionsModal("Родина")}
+        />
+        <CircleItem
+          title="Друзі"
+          members={mockMembers.slice(0, 4)}
+          onMenuPress={() => openActionsModal("Друзі")}
+        />
       </ScrollView>
 
-      {/* MODAL */}
+      {/* Add Circle Modal */}
       <Modal
-        isVisible={isModalVisible}
-        onSwipeComplete={() => setIsModalVisible(false)}
-        onBackdropPress={() => setIsModalVisible(false)}
-        onBackButtonPress={() => setIsModalVisible(false)}
+        isVisible={isAddModalVisible}
+        onSwipeComplete={() => setIsAddModalVisible(false)}
+        onBackdropPress={() => setIsAddModalVisible(false)}
+        onBackButtonPress={() => setIsAddModalVisible(false)}
         swipeDirection="down"
         style={styles.bottomModal}
         backdropOpacity={0.25}
@@ -102,10 +128,28 @@ export default function CirclesScreen() {
       >
         <View style={styles.modalWrapper}>
           <SafeAreaView edges={["bottom"]}>
-            <AddCircleModal onClose={() => setIsModalVisible(false)} />
+            <AddCircleModal onClose={() => setIsAddModalVisible(false)} />
           </SafeAreaView>
         </View>
       </Modal>
+
+      {/* Circle Actions Modal */}
+      <CircleActionsModal
+        visible={isActionsVisible}
+        onClose={() => setIsActionsVisible(false)}
+        onRename={() => {
+          setIsActionsVisible(false);
+          // open rename modal logic here
+        }}
+        onEditMembers={() => {
+          setIsActionsVisible(false);
+          // open edit members modal logic here
+        }}
+        onDelete={() => {
+          setIsActionsVisible(false);
+          // open delete confirmation modal logic here
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -133,11 +177,6 @@ const styles = StyleSheet.create({
     margin: 0,
   },
 
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.45)",
-  },
   modalWrapper: {
     backgroundColor: "white",
     borderTopLeftRadius: 20,

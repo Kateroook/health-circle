@@ -12,12 +12,14 @@ interface CircleItemProps {
   title: string;
   members: Member[];
   extraCount?: number;
+  onMenuPress?: () => void;
 }
 
 const CircleItem: React.FC<CircleItemProps> = ({
   title,
   members,
   extraCount,
+  onMenuPress,
 }) => {
   const placeholder = { uri: "https://via.placeholder.com/40" };
 
@@ -38,7 +40,7 @@ const CircleItem: React.FC<CircleItemProps> = ({
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={onMenuPress}>
           <Text style={styles.menu}>...</Text>
         </TouchableOpacity>
       </View>
