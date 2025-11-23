@@ -127,9 +127,9 @@ export default function CirclesScreen() {
       <CircleActionsModal
         visible={isActionsVisible}
         onClose={() => setIsActionsVisible(false)}
-        onRename={async () => {
+        currentName={activeCircle?.name || ""}
+        onRename={async (newName) => {
           if (!activeCircle) return;
-          const newName = "User input name"; // replace with prompt or modal input
           await apiFetch("/groups", {
             method: "PUT",
             body: JSON.stringify({ id: activeCircle.id, name: newName }),
@@ -139,7 +139,6 @@ export default function CirclesScreen() {
         }}
         onEditMembers={async () => {
           if (!activeCircle) return;
-          // TODO: open edit members modal or call API with new members
           setIsActionsVisible(false);
         }}
         onDelete={async () => {
