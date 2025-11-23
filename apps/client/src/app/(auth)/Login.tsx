@@ -27,7 +27,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      router.navigate("/Home");
+      router.navigate("/Dashboard");
     } catch (e: any) {
       let errorMessage = "Сталася помилка";
 
@@ -154,7 +154,7 @@ export default function Login() {
 
             <TouchableOpacity
               style={styles.skipButton}
-              onPress={() => router.replace("/Home")}
+              onPress={() => router.replace("/Dashboard")}
             >
               <Text style={styles.skipButtonText}>Пропустити</Text>
             </TouchableOpacity>

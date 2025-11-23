@@ -20,9 +20,9 @@ export default function TabLayout() {
         tabBarShowLabel: false,
       }}
     >
-      {/* Home */}
+      {/* Dashboard */}
       <Tabs.Screen
-        name="Home"
+        name="Dashboard"
         options={{
           title: "Головна",
           headerShown: false,

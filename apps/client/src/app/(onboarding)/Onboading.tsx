@@ -62,7 +62,7 @@ export default function Index() {
 
           <TouchableOpacity
             style={styles.skipButton}
-            onPress={() => router.replace("/Home")}
+            onPress={() => router.replace("/Dashboard")}
           >
             <Text style={styles.skipButtonText}>Пропустити</Text>
           </TouchableOpacity>
