@@ -71,3 +71,35 @@ function tryParse(str: unknown) {
     return str;
   }
 }
+
+export async function apiUploadFile(
+  path: string,
+  file: { uri: string; name: string; type: string }
+) {
+  const formData = new FormData();
+  formData.append("file", file as any);
+
+  if (__DEV__) {
+    console.log(`[apiUploadFile] → ${API_URL}${path}`, { file });
+  }
+
+  const res = await apiFetch(path, {
+    method: "PUT",
+    body: formData,
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  if (__DEV__) {
+    console.log(`[apiUploadFile] ← Success`, { path });
+  }
+
+  return res;
+}
+
+export function getAvatarUrl(userId: string) {
+  const url = `${API_URL}/users/${userId}/avatar`;
+  if (__DEV__) console.log(`[getAvatarUrl] → ${url}`);
+  return url;
+}
