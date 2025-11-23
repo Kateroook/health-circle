@@ -6,16 +6,14 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   BackHandler,
-  KeyboardAvoidingView,
-  Modal,
   PanResponder,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CirclesScreen() {
@@ -89,21 +87,24 @@ export default function CirclesScreen() {
 
       {/* MODAL */}
       <Modal
-        animationType="slide"
-        transparent
-        visible={isModalVisible}
-        onRequestClose={() => setIsModalVisible(false)}
+        isVisible={isModalVisible}
+        onSwipeComplete={() => setIsModalVisible(false)}
+        onBackdropPress={() => setIsModalVisible(false)}
+        onBackButtonPress={() => setIsModalVisible(false)}
+        swipeDirection="down"
+        style={styles.bottomModal}
+        backdropOpacity={0.25}
+        useNativeDriver
+        useNativeDriverForBackdrop
+        animationIn="slideInUp"
+        animationOut="slideOutDown"
+        propagateSwipe
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalWrapper}>
-            <SafeAreaView edges={["bottom"]}>
-              <AddCircleModal onClose={() => setIsModalVisible(false)} />
-            </SafeAreaView>
-          </View>
-        </KeyboardAvoidingView>
+        <View style={styles.modalWrapper}>
+          <SafeAreaView edges={["bottom"]}>
+            <AddCircleModal onClose={() => setIsModalVisible(false)} />
+          </SafeAreaView>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -125,6 +126,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.PRIMARY_BLUE,
     justifyContent: "center",
     alignItems: "center",
+  },
+
+  bottomModal: {
+    justifyContent: "flex-end",
+    margin: 0,
   },
 
   modalOverlay: {
