@@ -80,7 +80,6 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
         method: "POST",
         body: JSON.stringify({ code }),
       });
-      if (!response.ok) throw new Error("Join failed");
       Alert.alert("Успіх", "Ви приєдналися до кола");
 
       if (onUpdated) onUpdated();
