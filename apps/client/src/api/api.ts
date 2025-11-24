@@ -117,3 +117,17 @@ export function getAvatarUrl(userId: string) {
   if (__DEV__) console.log(`[getAvatarUrl] → ${url}`);
   return url;
 }
+
+export async function updateMyStatus(status: "SAFE" | "DANGER" | "UNKNOWN") {
+  return apiFetch("/users/status", {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function saveFcmTokenToBackend(token: string) {
+  return apiFetch("/users/fcm-token", {
+    method: "PUT",
+    body: JSON.stringify({ token }),
+  });
+}

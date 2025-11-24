@@ -1,115 +1,222 @@
-import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
-import React from "react";
+import { apiFetch, updateMyStatus } from "@/src/api/api";
+import MemberAvatar from "@/src/components/MemberAvatar";
+import { useAuthStore } from "@/src/store/authStore";
+import { AntDesign } from "@expo/vector-icons";
+import { useFocusEffect } from "expo-router";
+import React, { useCallback, useMemo, useState } from "react";
 import {
+  Alert,
   Image,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  Vibration,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context"; // Using react-native-safe-area-context
+import { SafeAreaView } from "react-native-safe-area-context";
+
+type UserStatus = "SAFE" | "DANGER" | "UNKNOWN";
+
+interface Member {
+  id: string;
+  firstName: string;
+  lastName: string;
+  status: UserStatus;
+  active: boolean;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  members: Member[];
+}
 
 // --- Constants ---
-const PRIMARY_COLOR = "#007AFF"; // Main blue color for the glow effect
-const TEXT_COLOR = "#1C1C1E"; // Dark text color
-const LIGHT_GRAY = "#F2FF7"; // Background color for cards/filters
+const PRIMARY_COLOR = "#007AFF"; // Blue
+const DANGER_COLOR = "#FF3B30"; // Red
+const TEXT_COLOR = "#1C1C1E";
+const LIGHT_GRAY = "#F2F2F7";
 const BORDER_RADIUS = 12;
 
 // --- Helper Components ---
 
 /**
- * Renders the status indicator circle (I am safe / Я в безпеці)
+ * Кнопка статусу з логікою:
+ * - Короткий тап: "Я в безпеці"
+ * - Довгий тап (0.8с): "Потрібна допомога"
  */
-const MainStatusIndicator = () => (
-  <View style={styles.mainStatusContainer}>
-    {/* The blurred/glowing background effect is simulated with a View */}
-    <View style={styles.mainStatusGlowBackground}>
-      <Text style={styles.mainStatusText}>Я в безпеці</Text>
-    </View>
-    <Text style={styles.mainStatusHelperText}>
-      Утримайте, якщо потрібна допомога
-    </Text>
-  </View>
-);
-
-/**
- * Renders a single contact status row
- */
-interface ContactStatusProps {
-  name: string;
-  status: "В безпеці" | "Потрібна допомога" | "Невідомо";
-  time: string;
-  profileImage: any; // Using 'any' for local image require placeholder
-}
-
-const ContactStatusRow: React.FC<ContactStatusProps> = ({
-  name,
-  status,
-  time,
-  profileImage,
+const MainStatusIndicator = ({
+  onUpdateStatus,
+}: {
+  onUpdateStatus: (s: UserStatus) => void;
 }) => {
-  let statusText: string;
-  let StatusIcon: React.ReactNode;
-  let statusStyle: any = styles.contactStatusText;
+  const [isPressed, setIsPressed] = useState(false);
 
-  switch (status) {
-    case "В безпеці":
-      statusText = "В безпеці";
-      StatusIcon = <AntDesign name="check-circle" size={24} color="#34C759" />;
-      break;
-    case "Потрібна допомога":
-      statusText = "Потрібна допомога";
-      StatusIcon = <AntDesign name="warning" size={24} color="#FF3B30" />;
-      statusStyle = styles.contactStatusTextAlert;
-      break;
-    case "Невідомо":
-    default:
-      statusText = "Невідомо";
-      StatusIcon = (
-        <AntDesign name="question-circle" size={24} color="#FFCC00" />
-      );
-      break;
-  }
+  const handleShortPress = () => {
+    Vibration.vibrate(50); // Легка тактильна віддача
+    Alert.alert("Оновити статус?", "Ви повідомите іншим, що ви в безпеці.", [
+      { text: "Скасувати", style: "cancel" },
+      {
+        text: "Так, я в безпеці",
+        onPress: () => onUpdateStatus("SAFE"),
+      },
+    ]);
+  };
+
+  const handleLongPress = () => {
+    Vibration.vibrate([0, 100, 50, 100]); // Тривожна вібрація
+    Alert.alert(
+      "🆘 ПОТРІБНА ДОПОМОГА",
+      "Ви збираєтесь відправити сигнал тривоги всім учасникам ваших кіл. Продовжити?",
+      [
+        { text: "Скасувати", style: "cancel" },
+        {
+          text: "ТАК, ПОТРІБНА ДОПОМОГА",
+          style: "destructive",
+          onPress: () => onUpdateStatus("DANGER"),
+        },
+      ]
+    );
+  };
 
   return (
-    <View style={styles.contactRow}>
-      {/* Placeholder Image */}
-      <Image source={profileImage} style={styles.profileImage} />
-      <View style={styles.contactInfo}>
-        <Text style={styles.contactName}>{name}</Text>
-        <Text style={statusStyle}>{statusText}</Text>
-        <Text style={styles.contactTime}>{time}</Text>
-      </View>
-      <View style={styles.contactStatusIcon}>{StatusIcon}</View>
+    <View style={styles.mainStatusContainer}>
+      <Pressable
+        onPressIn={() => setIsPressed(true)}
+        onPressOut={() => setIsPressed(false)}
+        onPress={handleShortPress}
+        onLongPress={handleLongPress}
+        delayLongPress={1000}
+        style={({ pressed }) => [
+          styles.mainStatusGlowBackground,
+          pressed && {
+            backgroundColor: DANGER_COLOR,
+            shadowColor: DANGER_COLOR,
+            transform: [{ scale: 0.96 }],
+          },
+        ]}
+      >
+        <Text style={styles.mainStatusText}>
+          {isPressed ? "Тримайте для SOS" : "Я в безпеці"}
+        </Text>
+      </Pressable>
+      <Text style={styles.mainStatusHelperText}>
+        Натисніть — якщо в безпеці{"\n"}
+        Затисніть — якщо потрібна допомога
+      </Text>
     </View>
   );
 };
 
-/**
- * Renders the Mood/State section
- */
+const ContactStatusRow = ({ member }: { member: Member }) => {
+  let statusText: string;
+  let statusColor: string;
+  let Icon: React.ReactNode;
+
+  switch (member.status) {
+    case "SAFE":
+      statusText = "В безпеці";
+      statusColor = "#34C759"; // Green
+      Icon = <AntDesign name="check-circle" size={24} color="#34C759" />;
+      break;
+    case "DANGER":
+      statusText = "Потрібна допомога!";
+      statusColor = DANGER_COLOR;
+      Icon = <AntDesign name="warning" size={24} color={DANGER_COLOR} />;
+      break;
+    default:
+      statusText = "Невідомо";
+      statusColor = "#8E8E93"; // Gray
+      Icon = <AntDesign name="question-circle" size={24} color="#8E8E93" />;
+  }
+
+  return (
+    <View style={styles.contactRow}>
+      <View style={styles.avatarContainer}>
+        <MemberAvatar member={member} />
+      </View>
+
+      <View style={styles.contactInfo}>
+        <Text style={styles.contactName}>
+          {member.firstName} {member.lastName}
+        </Text>
+        <Text style={[styles.contactStatusText, { color: statusColor }]}>
+          {statusText}
+        </Text>
+      </View>
+      <View style={styles.contactStatusIcon}>{Icon}</View>
+    </View>
+  );
+};
+
 const MoodSection = () => (
   <View style={styles.moodCard}>
     <View>
       <Text style={styles.sectionHeader}>НАСТРІЙ</Text>
-      <Text style={styles.moodTitle}>Поганий</Text>
-      <Text style={styles.moodDescription}>
-        Почуваюсь втомленим, бо погано спав
-      </Text>
+      <Text style={styles.moodTitle}>Нормальний</Text>
+      <Text style={styles.moodDescription}>Все добре, працюю</Text>
     </View>
-    {/* Placeholder for the Angry Emoji image */}
     <Image
-      source={{ uri: "https://via.placeholder.com/60" }} // Placeholder for the 3D emoji
+      source={{ uri: "https://via.placeholder.com/60" }}
       style={styles.moodEmoji}
     />
   </View>
 );
 
 // --- Main Screen Component ---
-const DashboardScreen: React.FC = () => {
-  // Mock data for profiles (using placeholder URIs for simplicity)
-  const profileImagePlaceholder = { uri: "https://via.placeholder.com/50" };
+export default function DashboardScreen() {
+  const user = useAuthStore((s) => s.user);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
+
+  const fetchGroups = async () => {
+    try {
+      const data = await apiFetch("/groups", { method: "GET" });
+      setGroups(data);
+    } catch (error) {
+      console.error("Error loading groups:", error);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchGroups();
+      // Тут в ідеалі додати інтервал (polling) або WebSocket для живого оновлення
+      // const interval = setInterval(fetchGroups, 10000);
+      // return () => clearInterval(interval);
+    }, [])
+  );
+
+  const handleStatusUpdate = async (newStatus: UserStatus) => {
+    try {
+      await updateMyStatus(newStatus);
+    } catch (e) {
+      Alert.alert("Помилка", "Не вдалося оновити статус. Перевірте інтернет.");
+    }
+  };
+
+  const displayedMembers = useMemo(() => {
+    if (selectedGroupId === "ALL") {
+      const allMembers: Member[] = [];
+      const seenIds = new Set<string>();
+
+      groups.forEach((g) => {
+        g.members.forEach((m) => {
+          if (m.id !== user?.id && !seenIds.has(m.id)) {
+            seenIds.add(m.id);
+            allMembers.push(m);
+          }
+        });
+      });
+      return allMembers;
+    } else {
+      const group = groups.find((g) => g.id === selectedGroupId);
+      if (!group) return [];
+      return group.members.filter((m) => m.id !== user?.id);
+    }
+  }, [groups, selectedGroupId, user?.id]);
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
@@ -118,77 +225,81 @@ const DashboardScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <Text style={styles.greeting}>Привіт, Тарасе!</Text>
+        <Text style={styles.greeting}>
+          Привіт, {user?.firstName || "Користувач"}!
+        </Text>
 
-        {/* Air Raid Alert Card */}
-        <View style={styles.alertCard}>
-          <View>
-            <Text style={styles.alertHeader}>ПОВІТРЯНА ТРИВОГА!</Text>
-            <Text style={styles.alertBody}>
-              Перейдіть в укриття та оновіть статус
-            </Text>
-          </View>
-          {/* Icon with a circular background */}
-          <View style={styles.alertIconWrapper}>
-            <MaterialCommunityIcons
-              name="volume-high"
-              size={24}
-              color={TEXT_COLOR}
-            />
-          </View>
-        </View>
-
-        {/* Main Status Indicator */}
-        <MainStatusIndicator />
+        {/* Status Button */}
+        <MainStatusIndicator onUpdateStatus={handleStatusUpdate} />
 
         {/* Status Circle Section */}
         <View style={styles.statusCircleSection}>
           <Text style={styles.sectionHeader}>СТАТУС КОЛА</Text>
+
+          {/* Filters */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.statusFilters}
+            contentContainerStyle={{ paddingRight: 20 }}
           >
-            <TouchableOpacity style={styles.statusFilterActive}>
-              <Text style={styles.statusFilterTextActive}>Усі</Text>
+            <TouchableOpacity
+              style={
+                selectedGroupId === "ALL"
+                  ? styles.statusFilterActive
+                  : styles.statusFilter
+              }
+              onPress={() => setSelectedGroupId("ALL")}
+            >
+              <Text
+                style={
+                  selectedGroupId === "ALL"
+                    ? styles.statusFilterTextActive
+                    : styles.statusFilterText
+                }
+              >
+                Усі
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.statusFilter}>
-              <Text style={styles.statusFilterText}>Родина</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.statusFilter}>
-              <Text style={styles.statusFilterText}>Друзі</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.statusFilter}>
-              <Text style={styles.statusFilterText}>Близ</Text>
-            </TouchableOpacity>
+
+            {groups.map((group) => (
+              <TouchableOpacity
+                key={group.id}
+                style={
+                  selectedGroupId === group.id
+                    ? styles.statusFilterActive
+                    : styles.statusFilter
+                }
+                onPress={() => setSelectedGroupId(group.id)}
+              >
+                <Text
+                  style={
+                    selectedGroupId === group.id
+                      ? styles.statusFilterTextActive
+                      : styles.statusFilterText
+                  }
+                >
+                  {group.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </ScrollView>
 
-          {/* Contact Statuses List */}
+          {/* Contact List */}
           <View style={styles.contactList}>
-            <ContactStatusRow
-              name="Брат"
-              status="Потрібна допомога"
-              time="19:02"
-              profileImage={profileImagePlaceholder}
-            />
-            <ContactStatusRow
-              name="Тато"
-              status="В безпеці"
-              time="19:02"
-              profileImage={profileImagePlaceholder}
-            />
-            <ContactStatusRow
-              name="Тато"
-              status="В безпеці"
-              time="19:02"
-              profileImage={profileImagePlaceholder}
-            />
-            <ContactStatusRow
-              name="Брат"
-              status="Невідомо"
-              time="19:02"
-              profileImage={profileImagePlaceholder}
-            />
+            {displayedMembers.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>
+                  {groups.length === 0
+                    ? "У вас ще немає груп"
+                    : "Немає контактів у цій групі"}
+                </Text>
+              </View>
+            ) : (
+              displayedMembers.map((member) => (
+                <ContactStatusRow key={member.id} member={member} />
+              ))
+            )}
           </View>
         </View>
 
@@ -197,59 +308,30 @@ const DashboardScreen: React.FC = () => {
       </ScrollView>
     </SafeAreaView>
   );
-};
+}
 
 // --- Stylesheet ---
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#FFFFFF", // Assuming a white background as per the design
+    backgroundColor: "#FFFFFF",
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 0, // Padding handled by SafeAreaView
-    paddingBottom: 20,
+    paddingTop: 10,
+    paddingBottom: 40,
   },
   greeting: {
     fontSize: 28,
     fontWeight: "bold",
     color: TEXT_COLOR,
-    marginBottom: 20,
-  },
-  alertCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: LIGHT_GRAY,
-    borderRadius: BORDER_RADIUS,
-    padding: 16,
-    marginBottom: 30,
-  },
-  alertHeader: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#FF3B30", // Red color for alert
-    marginBottom: 4,
-  },
-  alertBody: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: TEXT_COLOR,
-    maxWidth: "85%", // Prevent text from overlapping the icon
-  },
-  alertIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#E5E5EA", // A slightly darker gray for the icon background
-    justifyContent: "center",
-    alignItems: "center",
+    marginBottom: 40,
   },
 
   // Main Status Indicator
   mainStatusContainer: {
     alignItems: "center",
-    marginBottom: 30,
+    marginBottom: 40,
   },
   mainStatusGlowBackground: {
     width: 200,
@@ -258,26 +340,25 @@ const styles = StyleSheet.create({
     backgroundColor: PRIMARY_COLOR,
     justifyContent: "center",
     alignItems: "center",
-    // Simulation of the blurred/glowing effect
+    // Shadows for glow effect
     shadowColor: PRIMARY_COLOR,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 50,
-    elevation: 5, // Android shadow fallback
-    opacity: 0.7, // Overall opacity to simulate the lighter glow
+    elevation: 10,
   },
   mainStatusText: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "bold",
     color: "#FFFFFF",
-    textShadowColor: "rgba(0, 0, 0, 0.2)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textAlign: "center",
   },
   mainStatusHelperText: {
-    marginTop: 15,
-    fontSize: 12,
-    color: "#8E8E93", // Gray text
+    marginTop: 20,
+    fontSize: 14,
+    color: "#8E8E93",
+    textAlign: "center",
+    lineHeight: 20,
   },
 
   // Status Circle Section
@@ -285,59 +366,55 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   sectionHeader: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
     color: "#8E8E93",
-    marginBottom: 10,
+    marginBottom: 12,
+    letterSpacing: 0.5,
   },
   statusFilters: {
     flexDirection: "row",
-    marginBottom: 10,
+    marginBottom: 16,
   },
   statusFilter: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     backgroundColor: LIGHT_GRAY,
     borderRadius: 20,
-    marginRight: 8,
+    marginRight: 10,
   },
   statusFilterActive: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     backgroundColor: TEXT_COLOR,
     borderRadius: 20,
-    marginRight: 8,
+    marginRight: 10,
   },
   statusFilterText: {
     fontSize: 14,
     color: TEXT_COLOR,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   statusFilterTextActive: {
     fontSize: 14,
     color: "#FFFFFF",
-    fontWeight: "500",
+    fontWeight: "600",
   },
 
-  // Contact Status List & Row
+  // Contact List & Row
   contactList: {
-    backgroundColor: "#FFFFFF", // Explicit white background for the list area
-    borderRadius: BORDER_RADIUS,
-    // Add margin/padding if the list itself was meant to be on a card, but based on design, it's just a section
+    backgroundColor: "#FFFFFF",
+    minHeight: 50,
   },
   contactRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E5E5EA", // Light separator line
+    borderBottomColor: "#E5E5EA",
   },
-  profileImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  avatarContainer: {
     marginRight: 12,
-    backgroundColor: LIGHT_GRAY, // Placeholder background
   },
   contactInfo: {
     flex: 1,
@@ -347,26 +424,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: TEXT_COLOR,
+    marginBottom: 2,
   },
   contactStatusText: {
     fontSize: 14,
-    color: TEXT_COLOR,
-  },
-  contactStatusTextAlert: {
-    fontSize: 14,
-    color: "#FF3B30", // Red color for 'Потрібна допомога'
     fontWeight: "500",
-  },
-  contactTime: {
-    fontSize: 12,
-    color: "#8E8E93",
   },
   contactStatusIcon: {
     marginLeft: 10,
-    width: 24, // Fixed size for the icon container
-    height: 24,
+    width: 24,
     justifyContent: "center",
     alignItems: "center",
+  },
+  emptyState: {
+    padding: 20,
+    alignItems: "center",
+  },
+  emptyStateText: {
+    color: "#8E8E93",
+    fontStyle: "italic",
   },
 
   // Mood Section
@@ -377,7 +453,7 @@ const styles = StyleSheet.create({
     backgroundColor: LIGHT_GRAY,
     borderRadius: BORDER_RADIUS,
     padding: 16,
-    marginTop: 10, // Small separation from the contact list
+    marginTop: 10,
   },
   moodTitle: {
     fontSize: 18,
@@ -388,14 +464,12 @@ const styles = StyleSheet.create({
   moodDescription: {
     fontSize: 14,
     color: TEXT_COLOR,
-    maxWidth: "80%", // Constraint text width to leave space for emoji
+    maxWidth: "80%",
   },
   moodEmoji: {
-    width: 60,
-    height: 60,
-    borderRadius: 30, // Assuming circular placeholder
-    backgroundColor: "#FF9500", // Placeholder background color
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#FF9500",
   },
 });
-
-export default DashboardScreen;

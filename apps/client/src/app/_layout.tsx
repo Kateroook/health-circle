@@ -3,6 +3,7 @@ import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useFcmToken } from "../hooks/useFcmToken";
 import { useAuthStore } from "../store/authStore";
 
 SplashScreen.preventAutoHideAsync();
@@ -19,6 +20,8 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
   const { loading } = useAuthStore();
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+
+  useFcmToken();
 
   useEffect(() => {
     if (fontError) throw fontError;

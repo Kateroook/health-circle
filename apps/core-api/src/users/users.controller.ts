@@ -37,6 +37,7 @@ import { UserJwtAccessGuard } from 'src/common/guards/user-jwt-access.guard';
 import type { AuthRequest } from 'src/common/types/auth-request';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ModifyUserDto } from './dto/modify-user.dto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { UsersService } from './users.service';
 
 @ApiTags('Users CRUD API')
@@ -80,6 +81,25 @@ export class UsersController {
   @ApiOkResponse({ type: UserEntity, description: 'User updated successfully' })
   async modify(@Body() body: ModifyUserDto, @Req() req: AuthRequest) {
     return this.service.save(body, req.metadata, false, req.user);
+  }
+
+  @Put('/status')
+  @ApiBearerAuth(AuthStrategies.userJwtAccess)
+  @UseGuards(UserJwtAccessGuard)
+  @ApiOperation({ summary: 'Modify user status' })
+  @ApiOkResponse({ type: UserEntity, description: 'User status updated successfully' })
+  async updateStatus(@Body() body: UpdateUserStatusDto, @Req() req: AuthRequest) {
+    return this.service.updateStatus(req.user.id, body.status);
+  }
+
+  @Put('/fcm-token')
+  @ApiBearerAuth(AuthStrategies.userJwtAccess)
+  @UseGuards(UserJwtAccessGuard)
+  @ApiOperation({ summary: 'Save user FCM token' })
+  @ApiOkResponse({ type: UserEntity, description: 'User FCM token updated successfully' })
+  @ApiOperation({ summary: 'Save FCM Token for push notifications' })
+  async saveToken(@Body() body: { token: string }, @Req() req: AuthRequest) {
+    return this.service.saveFcmToken(req.user.id, body.token);
   }
 
   @Patch(':id/reset-password')

@@ -9,6 +9,7 @@ import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constra
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { ExternalFilesModule } from 'src/external-files/external-files.module';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
@@ -18,6 +19,7 @@ import { UsersService } from './users.service';
     UserActivitiesModule,
     ConfirmationsModule,
     ExternalFilesModule,
+    NotificationsModule,
   ],
   providers: [UsersService, PostgresService, SecurityService, UserUniqueConstraint],
   controllers: [UsersController],
