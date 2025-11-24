@@ -22,7 +22,7 @@ export class GroupService {
       .createQueryBuilder('group')
       .leftJoinAndSelect('group.owner', 'owner')
       .leftJoinAndSelect('group.members', 'member')
-      .where('owner.id = :userId OR member.id = :userId', { userId })
+      .where('member.id <> :userId', { userId })
       .getMany();
   }
 

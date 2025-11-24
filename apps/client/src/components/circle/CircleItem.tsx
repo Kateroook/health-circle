@@ -1,11 +1,13 @@
 import { COLORS } from "@/src/theme/colors";
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import MemberAvatar from "../MemberAvatar";
 
-type MemberStatus = "safe" | "danger" | "unknown";
-
-interface Member {
-  status: MemberStatus;
+export interface Member {
+  id: string;
+  firstName: string;
+  lastName: string;
+  active: boolean;
 }
 
 interface CircleItemProps {
@@ -21,42 +23,30 @@ const CircleItem: React.FC<CircleItemProps> = ({
   extraCount,
   onMenuPress,
 }) => {
-  const placeholder = { uri: "https://via.placeholder.com/40" };
-
-  const renderBorder = (status: MemberStatus) => {
-    switch (status) {
-      case "safe":
-        return { borderColor: COLORS.STATE_SAFE };
-      case "danger":
-        return { borderColor: COLORS.STATE_DANGER };
-      case "unknown":
-        return { borderColor: COLORS.STATE_UNKNOWN };
-      default:
-        return { borderColor: "transparent" };
-    }
-  };
-
   return (
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
-        <TouchableOpacity onPress={onMenuPress}>
+        <TouchableOpacity
+          onPress={onMenuPress}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
           <Text style={styles.menu}>...</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.members}>
-        {members.slice(0, 5).map((m, i) => (
-          <View key={i} style={[styles.avatarWrapper, renderBorder(m.status)]}>
-            <Image source={placeholder} style={styles.avatar} />
-          </View>
+        {members.slice(0, 5).map((member) => (
+          <MemberAvatar key={member.id} member={member} />
         ))}
 
-        {extraCount ? (
+        {(members.length > 5 || extraCount) && (
           <View style={[styles.avatarWrapper, styles.extra]}>
-            <Text style={styles.extraText}>+{extraCount}</Text>
+            <Text style={styles.extraText}>
+              +{extraCount || members.length - 5}
+            </Text>
           </View>
-        ) : null}
+        )}
       </View>
     </View>
   );
@@ -72,6 +62,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginBottom: 14,
   },
   title: {
     fontSize: 20,
@@ -81,11 +72,10 @@ const styles = StyleSheet.create({
   menu: {
     fontSize: 26,
     color: COLORS.TEXT_GRAY,
-    marginTop: -4,
+    marginTop: -8,
   },
   members: {
     flexDirection: "row",
-    marginTop: 14,
   },
   avatarWrapper: {
     width: 44,
@@ -96,15 +86,28 @@ const styles = StyleSheet.create({
     marginRight: -10,
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 1,
   },
   avatar: {
     width: 38,
     height: 38,
     borderRadius: 19,
+    backgroundColor: "#EEE",
+  },
+  initialsContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#D1D5DB",
+  },
+  initialsText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#4B5563",
   },
   extra: {
     backgroundColor: "#E5E5EA",
-    borderWidth: 0,
+    borderColor: "white",
+    zIndex: 0,
   },
   extraText: {
     fontSize: 14,

@@ -48,7 +48,7 @@ export async function apiFetch(
     console.log(`[apiFetch] ← ${res.status} ${res.statusText}`, {
       ok: res.ok,
       url,
-      preview: text.slice(0, 250),
+      preview: previewJson(text),
     });
   }
 
@@ -61,6 +61,20 @@ export async function apiFetch(
   } catch (err) {
     if (__DEV__) console.log("[apiFetch] JSON parse error:", err);
     return null;
+  }
+}
+
+function previewJson(text: string, limit = 5000) {
+  try {
+    const obj = JSON.parse(text);
+    const pretty = JSON.stringify(obj, null, 2);
+    return pretty.length > limit
+      ? pretty.slice(0, limit) + " ...[truncated]"
+      : pretty;
+  } catch {
+    return text.length > limit
+      ? text.slice(0, limit) + " ...[truncated]"
+      : text;
   }
 }
 
