@@ -23,14 +23,16 @@ interface Member {
 }
 
 interface Props {
+  visible: boolean;
   currentName: string;
   inviteCode: string;
-  visible: boolean;
   members: Member[];
+  ownerId: string;
   onClose: () => void;
   onRename: (newName: string) => void;
   onSaveMembers: (updated: { id: string }[]) => void;
   onDelete: () => void;
+  onLeave: () => void;
   onRegenerateInvite: () => Promise<void>;
 }
 
@@ -39,34 +41,32 @@ export default function CircleActionsModal({
   currentName,
   inviteCode,
   members,
+  ownerId,
   onClose,
   onRename,
   onSaveMembers,
   onDelete,
+  onLeave,
   onRegenerateInvite,
 }: Props) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [isEditingMembers, setIsEditingMembers] = useState(false);
-
   const [newName, setNewName] = useState("");
   const [localMembers, setLocalMembers] = useState<Member[]>([]);
+
   const user = useAuthStore().user;
+  const isOwner = user?.id === ownerId;
+  console.log(user?.id);
 
   React.useEffect(() => {
     if (visible) {
       setLocalMembers(
         members
           .filter((m) => m.id !== user?.id)
-          .map((m) => ({
-            id: m.id,
-            firstName: m.firstName,
-            middleName: m.middleName,
-            lastName: m.lastName,
-            active: true,
-          }))
+          .map((m) => ({ ...m, active: true }))
       );
     }
-  }, [members, visible]);
+  }, [members, visible, user?.id]);
 
   const handleRenamePress = () => {
     setNewName(currentName);
@@ -89,7 +89,7 @@ export default function CircleActionsModal({
 
   const handleSaveMembers = () => {
     onSaveMembers(
-      localMembers.filter((m) => m.active === true).map((m) => ({ id: m.id }))
+      localMembers.filter((m) => m.active).map((m) => ({ id: m.id }))
     );
     setIsEditingMembers(false);
   };
@@ -114,8 +114,8 @@ export default function CircleActionsModal({
       <View style={styles.sheet}>
         <View style={styles.handle} />
 
-        {/* ===== RENAME MODE ===== */}
-        {isRenaming && !isEditingMembers && (
+        {/* ===== RENAME MODE (Owner Only) ===== */}
+        {isRenaming && isOwner && (
           <View style={{ padding: 20 }}>
             <TouchableOpacity
               onPress={() => setIsRenaming(false)}
@@ -126,9 +126,7 @@ export default function CircleActionsModal({
                 size={16}
                 color={COLORS.PRIMARY_BLUE}
               />
-              <Text style={[styles.backButtonText, { marginLeft: 8 }]}>
-                Назад
-              </Text>
+              <Text style={styles.backButtonText}>Назад</Text>
             </TouchableOpacity>
 
             <TextInput
@@ -150,8 +148,8 @@ export default function CircleActionsModal({
           </View>
         )}
 
-        {/* ===== EDIT MEMBERS MODE ===== */}
-        {!isRenaming && isEditingMembers && (
+        {/* ===== EDIT MEMBERS MODE (Owner Only) ===== */}
+        {!isRenaming && isEditingMembers && isOwner && (
           <View style={{ paddingHorizontal: 20, paddingBottom: 20 }}>
             <TouchableOpacity
               onPress={() => setIsEditingMembers(false)}
@@ -162,9 +160,7 @@ export default function CircleActionsModal({
                 size={16}
                 color={COLORS.PRIMARY_BLUE}
               />
-              <Text style={[styles.backButtonText, { marginLeft: 8 }]}>
-                Назад
-              </Text>
+              <Text style={styles.backButtonText}>Назад</Text>
             </TouchableOpacity>
 
             <ScrollView style={{ maxHeight: 350 }}>
@@ -174,10 +170,9 @@ export default function CircleActionsModal({
                   style={styles.memberItem}
                   onPress={() => toggleMember(m.id)}
                 >
-                  <Text
-                    style={styles.memberName}
-                  >{`${m.lastName} ${m.firstName} ${m.middleName}`}</Text>
-
+                  <Text style={styles.memberName}>
+                    {`${m.lastName} ${m.firstName}`}
+                  </Text>
                   {m.active ? (
                     <AntDesign
                       name="check-circle"
@@ -204,39 +199,57 @@ export default function CircleActionsModal({
           </View>
         )}
 
-        {/* ===== DEFAULT MENU ===== */}
+        {/* ===== MAIN MENU ===== */}
         {!isRenaming && !isEditingMembers && (
           <>
-            <View style={styles.inviteContainer}>
-              <Text style={styles.inviteText}>Код: {inviteCode}</Text>
-              <TouchableOpacity
-                onPress={onRegenerateInvite}
-                style={styles.inviteButton}
-              >
-                <Feather name="refresh-cw" size={16} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleCopy}
-                style={[styles.inviteButton, { marginLeft: 8 }]}
-              >
-                <Feather name="copy" size={16} color="#fff" />
-              </TouchableOpacity>
-            </View>
+            {/* Show Invite Code only to Owner */}
+            {isOwner && (
+              <View style={styles.inviteContainer}>
+                <Text style={styles.inviteText}>Код: {inviteCode}</Text>
+                <TouchableOpacity
+                  onPress={onRegenerateInvite}
+                  style={styles.inviteButton}
+                >
+                  <Feather name="refresh-cw" size={16} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleCopy}
+                  style={[styles.inviteButton, { marginLeft: 8 }]}
+                >
+                  <Feather name="copy" size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
 
-            <TouchableOpacity style={styles.item} onPress={handleRenamePress}>
-              <Text style={styles.text}>Перейменувати</Text>
-            </TouchableOpacity>
+            {/* Owner Actions */}
+            {isOwner ? (
+              <>
+                <TouchableOpacity
+                  style={styles.item}
+                  onPress={handleRenamePress}
+                >
+                  <Text style={styles.text}>Перейменувати</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.item}
-              onPress={() => setIsEditingMembers(true)}
-            >
-              <Text style={styles.text}>Редагувати склад</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.item}
+                  onPress={() => setIsEditingMembers(true)}
+                >
+                  <Text style={styles.text}>Редагувати склад</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.delete]} onPress={onDelete}>
-              <Text style={styles.deleteText}>Видалити</Text>
-            </TouchableOpacity>
+                <TouchableOpacity style={styles.delete} onPress={onDelete}>
+                  <Text style={styles.deleteText}>Видалити групу</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              /* User Actions */
+              <>
+                <TouchableOpacity style={styles.delete} onPress={onLeave}>
+                  <Text style={styles.deleteText}>Покинути групу</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </>
         )}
       </View>
@@ -245,11 +258,7 @@ export default function CircleActionsModal({
 }
 
 const styles = StyleSheet.create({
-  sheetWrapper: {
-    justifyContent: "flex-end",
-    margin: 0,
-  },
-
+  sheetWrapper: { justifyContent: "flex-end", margin: 0 },
   sheet: {
     backgroundColor: COLORS.BACKGROUND_LIGHT,
     borderTopLeftRadius: 28,
@@ -258,7 +267,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 40,
   },
-
   handle: {
     alignSelf: "center",
     width: 48,
@@ -267,8 +275,6 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     marginVertical: 12,
   },
-
-  /* ==== DEFAULT MENU BUTTONS ==== */
   item: {
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -276,14 +282,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 14,
   },
-
   text: {
     fontSize: 17,
     fontWeight: "600",
     color: COLORS.TEXT_DARK,
     textAlign: "center",
   },
-
   inviteContainer: {
     alignSelf: "center",
     flexDirection: "row",
@@ -294,13 +298,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 32,
   },
-
-  inviteText: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginRight: 8,
-  },
-
+  inviteText: { fontSize: 16, fontWeight: "600", marginRight: 8 },
   inviteButton: {
     padding: 6,
     borderRadius: 6,
@@ -308,20 +306,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  /* ==== DELETE ==== */
-  delete: {
-    backgroundColor: "transparent",
-    marginTop: 8,
-  },
+  delete: { backgroundColor: "transparent", marginTop: 8 },
   deleteText: {
     color: COLORS.STATE_DANGER,
     fontSize: 16,
     fontWeight: "600",
     textAlign: "center",
   },
-
-  /* ==== RENAME INPUT ==== */
   input: {
     backgroundColor: COLORS.BACKGROUND_CARD,
     borderRadius: 18,
@@ -334,20 +325,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 26,
   },
-
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 18,
-  },
+  backButton: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
   backButtonText: {
     fontSize: 16,
     fontWeight: "600",
     color: COLORS.PRIMARY_BLUE,
     marginLeft: 8,
   },
-
-  /* ==== DONE BUTTON ==== */
   doneButton: {
     backgroundColor: COLORS.BLACK_BTN,
     borderRadius: 28,
@@ -360,8 +344,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "700",
   },
-
-  /* ==== MEMBERS ==== */
   memberItem: {
     paddingVertical: 16,
     flexDirection: "row",
@@ -370,9 +352,5 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.BACKGROUND_CARD,
   },
-  memberName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.TEXT_DARK,
-  },
+  memberName: { fontSize: 16, fontWeight: "600", color: COLORS.TEXT_DARK },
 });

@@ -32,6 +32,7 @@ export default function CirclesScreen() {
     id: string;
     inviteCode: string;
     name: string;
+    owner: { id: string };
     members: Member[];
   }>(null);
   const [circles, setCircles] = useState<(typeof activeCircle)[]>([]);
@@ -137,6 +138,7 @@ export default function CirclesScreen() {
       <CircleActionsModal
         visible={isActionsVisible}
         onClose={() => setIsActionsVisible(false)}
+        ownerId={activeCircle?.owner.id || ""}
         currentName={activeCircle?.name || ""}
         inviteCode={activeCircle?.inviteCode || ""}
         members={activeCircle?.members || []}
@@ -164,6 +166,15 @@ export default function CirclesScreen() {
         onDelete={async () => {
           if (!activeCircle) return;
           await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
+          setIsActionsVisible(false);
+          fetchCircles();
+        }}
+        onLeave={async () => {
+          if (!activeCircle) return;
+          await apiFetch(`/groups/${activeCircle.id}/leave`, {
+            method: "POST",
+          });
+          console.log(1);
           setIsActionsVisible(false);
           fetchCircles();
         }}
