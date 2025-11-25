@@ -4,11 +4,21 @@ import React, { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { Member } from "./circle/CircleItem";
 
+const getBorderColor = (status: Member["status"]) => {
+  const colorMap: Record<Member["status"], string> = {
+    SAFE: COLORS.STATE_SAFE,
+    DANGER: COLORS.STATE_DANGER,
+    UNKNOWN: COLORS.STATE_UNKNOWN,
+  };
+
+  return colorMap[status] ?? COLORS.STATE_UNKNOWN;
+};
+
 const MemberAvatar = ({ member }: { member: Member }) => {
   const [imageError, setImageError] = useState(false);
   const avatarUrl = getAvatarUrl(member.id);
 
-  const borderColor = member.active ? COLORS.STATE_SAFE : COLORS.STATE_DANGER; // todo: change this
+  const borderColor = getBorderColor(member.status);
 
   const initials =
     `${member.firstName?.[0] || ""}${member.lastName?.[0] || ""}`.toUpperCase() ||

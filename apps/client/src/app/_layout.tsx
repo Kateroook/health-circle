@@ -16,6 +16,10 @@ const useAppFonts = () => {
   });
 };
 
+export const unstable_settings = {
+  initialRouteName: "(onboarding)/Onboarding",
+};
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
   const { loading } = useAuthStore();
@@ -50,6 +54,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
         </Stack.Protected>
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(onboarding)" />
       </Stack>
     </React.Fragment>
   );

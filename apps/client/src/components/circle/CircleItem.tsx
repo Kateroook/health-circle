@@ -7,7 +7,7 @@ export interface Member {
   id: string;
   firstName: string;
   lastName: string;
-  active: boolean;
+  status: "SAFE" | "DANGER" | "UNKNOWN";
 }
 
 interface CircleItemProps {

@@ -48,14 +48,27 @@ const BORDER_RADIUS = 12;
  * - Довгий тап (0.8с): "Потрібна допомога"
  */
 const MainStatusIndicator = ({
+  currentStatus,
   onUpdateStatus,
 }: {
+  currentStatus: UserStatus;
   onUpdateStatus: (s: UserStatus) => void;
 }) => {
   const [isPressed, setIsPressed] = useState(false);
 
+  const getBackgroundColor = () => {
+    switch (currentStatus) {
+      case "SAFE":
+        return "#34C759";
+      case "DANGER":
+        return "#FF3B30";
+      default:
+        return PRIMARY_COLOR;
+    }
+  };
+
   const handleShortPress = () => {
-    Vibration.vibrate(50); // Легка тактильна віддача
+    Vibration.vibrate(50);
     Alert.alert("Оновити статус?", "Ви повідомите іншим, що ви в безпеці.", [
       { text: "Скасувати", style: "cancel" },
       {
@@ -66,7 +79,7 @@ const MainStatusIndicator = ({
   };
 
   const handleLongPress = () => {
-    Vibration.vibrate([0, 100, 50, 100]); // Тривожна вібрація
+    Vibration.vibrate([0, 100, 50, 100]);
     Alert.alert(
       "🆘 ПОТРІБНА ДОПОМОГА",
       "Ви збираєтесь відправити сигнал тривоги всім учасникам ваших кіл. Продовжити?",
@@ -88,18 +101,19 @@ const MainStatusIndicator = ({
         onPressOut={() => setIsPressed(false)}
         onPress={handleShortPress}
         onLongPress={handleLongPress}
-        delayLongPress={1000}
+        delayLongPress={800}
         style={({ pressed }) => [
           styles.mainStatusGlowBackground,
-          pressed && {
-            backgroundColor: DANGER_COLOR,
-            shadowColor: DANGER_COLOR,
-            transform: [{ scale: 0.96 }],
-          },
+          { backgroundColor: getBackgroundColor() },
+          pressed && { transform: [{ scale: 0.96 }] },
         ]}
       >
         <Text style={styles.mainStatusText}>
-          {isPressed ? "Тримайте для SOS" : "Я в безпеці"}
+          {currentStatus === "SAFE"
+            ? "В безпеці"
+            : currentStatus === "DANGER"
+              ? "Потрібна допомога!"
+              : "Невідомо"}
         </Text>
       </Pressable>
       <Text style={styles.mainStatusHelperText}>
@@ -183,15 +197,23 @@ export default function DashboardScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchGroups();
-      // Тут в ідеалі додати інтервал (polling) або WebSocket для живого оновлення
-      // const interval = setInterval(fetchGroups, 10000);
-      // return () => clearInterval(interval);
+      const interval = setInterval(fetchGroups, 5000);
+      return () => clearInterval(interval);
     }, [])
   );
 
   const handleStatusUpdate = async (newStatus: UserStatus) => {
     try {
       await updateMyStatus(newStatus);
+      useAuthStore.setState((state) => {
+        if (!state.user) return state;
+        return {
+          user: {
+            ...state.user,
+            status: newStatus,
+          },
+        };
+      });
     } catch (e) {
       Alert.alert("Помилка", "Не вдалося оновити статус. Перевірте інтернет.");
     }
@@ -230,7 +252,10 @@ export default function DashboardScreen() {
         </Text>
 
         {/* Status Button */}
-        <MainStatusIndicator onUpdateStatus={handleStatusUpdate} />
+        <MainStatusIndicator
+          currentStatus={user?.status || "UNKNOWN"}
+          onUpdateStatus={handleStatusUpdate}
+        />
 
         {/* Status Circle Section */}
         <View style={styles.statusCircleSection}>
@@ -304,7 +329,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* Mood Section */}
-        <MoodSection />
+        {/* <MoodSection /> */}
       </ScrollView>
     </SafeAreaView>
   );

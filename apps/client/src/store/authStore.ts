@@ -18,6 +18,7 @@ interface User {
   middleName: string;
   lastName: string;
   phone: string;
+  status: "SAFE" | "DANGER" | "UNKNOWN";
 }
 
 interface AuthStoreState {
