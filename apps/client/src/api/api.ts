@@ -1,5 +1,3 @@
-import { useAuthStore } from "../store/authStore";
-
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
   (process.env.NODE_ENV === "development"
@@ -15,6 +13,7 @@ export async function apiFetch(
 ) {
   const url = `${API_URL}${path}`;
 
+  const { useAuthStore } = require("../store/authStore");
   // Get token from store if not provided manually
   const token = options.token || useAuthStore.getState().accessToken;
 

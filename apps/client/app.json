@@ -10,7 +10,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vlad-risenhin.healthcircle"
     },
     "android": {
       "package": "com.vlad_risenhin.healthcircle",
@@ -26,6 +27,7 @@
     },
     "plugins": [
       "@react-native-firebase/app",
+      "@react-native-firebase/messaging",
       "expo-router",
       [
         "expo-splash-screen",
