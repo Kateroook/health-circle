@@ -30,7 +30,9 @@ export default function CirclesScreen() {
   const [isActionsVisible, setIsActionsVisible] = useState(false);
   const [activeCircle, setActiveCircle] = useState<null | {
     id: string;
+    inviteCode: string;
     name: string;
+    owner: { id: string };
     members: Member[];
   }>(null);
   const [circles, setCircles] = useState<(typeof activeCircle)[]>([]);
@@ -136,7 +138,9 @@ export default function CirclesScreen() {
       <CircleActionsModal
         visible={isActionsVisible}
         onClose={() => setIsActionsVisible(false)}
+        ownerId={activeCircle?.owner.id || ""}
         currentName={activeCircle?.name || ""}
+        inviteCode={activeCircle?.inviteCode || ""}
         members={activeCircle?.members || []}
         onSaveMembers={async (updatedMembers) => {
           if (!activeCircle) return;
@@ -164,6 +168,24 @@ export default function CirclesScreen() {
           await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
           setIsActionsVisible(false);
           fetchCircles();
+        }}
+        onLeave={async () => {
+          if (!activeCircle) return;
+          await apiFetch(`/groups/${activeCircle.id}/leave`, {
+            method: "POST",
+          });
+          console.log(1);
+          setIsActionsVisible(false);
+          fetchCircles();
+        }}
+        onRegenerateInvite={async () => {
+          if (!activeCircle) return;
+          const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
+            method: "POST",
+          });
+          setActiveCircle((prev) =>
+            prev ? { ...prev, inviteCode: code } : prev
+          );
         }}
       />
     </SafeAreaView>

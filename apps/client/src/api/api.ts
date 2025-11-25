@@ -48,7 +48,7 @@ export async function apiFetch(
     console.log(`[apiFetch] ← ${res.status} ${res.statusText}`, {
       ok: res.ok,
       url,
-      preview: text.slice(0, 250),
+      preview: previewJson(text),
     });
   }
 
@@ -64,10 +64,56 @@ export async function apiFetch(
   }
 }
 
+function previewJson(text: string, limit = 5000) {
+  try {
+    const obj = JSON.parse(text);
+    const pretty = JSON.stringify(obj, null, 2);
+    return pretty.length > limit
+      ? pretty.slice(0, limit) + " ...[truncated]"
+      : pretty;
+  } catch {
+    return text.length > limit
+      ? text.slice(0, limit) + " ...[truncated]"
+      : text;
+  }
+}
+
 function tryParse(str: unknown) {
   try {
     return typeof str === "string" ? JSON.parse(str) : str;
   } catch {
     return str;
   }
+}
+
+export async function apiUploadFile(
+  path: string,
+  file: { uri: string; name: string; type: string }
+) {
+  const formData = new FormData();
+  formData.append("file", file as any);
+
+  if (__DEV__) {
+    console.log(`[apiUploadFile] → ${API_URL}${path}`, { file });
+  }
+
+  const res = await apiFetch(path, {
+    method: "PUT",
+    body: formData,
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  if (__DEV__) {
+    console.log(`[apiUploadFile] ← Success`, { path });
+  }
+
+  return res;
+}
+
+export function getAvatarUrl(userId: string) {
+  const url = `${API_URL}/users/${userId}/avatar`;
+  if (__DEV__) console.log(`[getAvatarUrl] → ${url}`);
+  return url;
 }

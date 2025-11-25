@@ -1,6 +1,8 @@
 import { useAuthStore } from "@/src/store/authStore";
 import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
+import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
 import {
   ScrollView,
@@ -21,46 +23,50 @@ interface Member {
 }
 
 interface Props {
-  currentName: string;
   visible: boolean;
+  currentName: string;
+  inviteCode: string;
   members: Member[];
+  ownerId: string;
   onClose: () => void;
   onRename: (newName: string) => void;
   onSaveMembers: (updated: { id: string }[]) => void;
   onDelete: () => void;
+  onLeave: () => void;
+  onRegenerateInvite: () => Promise<void>;
 }
 
 export default function CircleActionsModal({
   visible,
   currentName,
+  inviteCode,
   members,
+  ownerId,
   onClose,
   onRename,
   onSaveMembers,
   onDelete,
+  onLeave,
+  onRegenerateInvite,
 }: Props) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [isEditingMembers, setIsEditingMembers] = useState(false);
-
   const [newName, setNewName] = useState("");
   const [localMembers, setLocalMembers] = useState<Member[]>([]);
+
   const user = useAuthStore().user;
+  const isOwner = user?.id === ownerId;
+  console.log(user?.id);
 
   React.useEffect(() => {
     if (visible) {
       setLocalMembers(
         members
           .filter((m) => m.id !== user?.id)
-          .map((m) => ({
-            id: m.id,
-            firstName: m.firstName,
-            middleName: m.middleName,
-            lastName: m.lastName,
-            active: true,
-          }))
+          .map((m) => ({ ...m, active: true }))
       );
     }
-  }, [members, visible]);
+  }, [members, visible, user?.id]);
 
   const handleRenamePress = () => {
     setNewName(currentName);
@@ -83,9 +89,13 @@ export default function CircleActionsModal({
 
   const handleSaveMembers = () => {
     onSaveMembers(
-      localMembers.filter((m) => m.active === true).map((m) => ({ id: m.id }))
+      localMembers.filter((m) => m.active).map((m) => ({ id: m.id }))
     );
     setIsEditingMembers(false);
+  };
+
+  const handleCopy = async () => {
+    await Clipboard.setStringAsync(inviteCode);
   };
 
   return (
@@ -104,8 +114,8 @@ export default function CircleActionsModal({
       <View style={styles.sheet}>
         <View style={styles.handle} />
 
-        {/* ===== RENAME MODE ===== */}
-        {isRenaming && !isEditingMembers && (
+        {/* ===== RENAME MODE (Owner Only) ===== */}
+        {isRenaming && isOwner && (
           <View style={{ padding: 20 }}>
             <TouchableOpacity
               onPress={() => setIsRenaming(false)}
@@ -116,9 +126,7 @@ export default function CircleActionsModal({
                 size={16}
                 color={COLORS.PRIMARY_BLUE}
               />
-              <Text style={[styles.backButtonText, { marginLeft: 8 }]}>
-                Назад
-              </Text>
+              <Text style={styles.backButtonText}>Назад</Text>
             </TouchableOpacity>
 
             <TextInput
@@ -140,8 +148,8 @@ export default function CircleActionsModal({
           </View>
         )}
 
-        {/* ===== EDIT MEMBERS MODE ===== */}
-        {!isRenaming && isEditingMembers && (
+        {/* ===== EDIT MEMBERS MODE (Owner Only) ===== */}
+        {!isRenaming && isEditingMembers && isOwner && (
           <View style={{ paddingHorizontal: 20, paddingBottom: 20 }}>
             <TouchableOpacity
               onPress={() => setIsEditingMembers(false)}
@@ -152,9 +160,7 @@ export default function CircleActionsModal({
                 size={16}
                 color={COLORS.PRIMARY_BLUE}
               />
-              <Text style={[styles.backButtonText, { marginLeft: 8 }]}>
-                Назад
-              </Text>
+              <Text style={styles.backButtonText}>Назад</Text>
             </TouchableOpacity>
 
             <ScrollView style={{ maxHeight: 350 }}>
@@ -164,10 +170,9 @@ export default function CircleActionsModal({
                   style={styles.memberItem}
                   onPress={() => toggleMember(m.id)}
                 >
-                  <Text
-                    style={styles.memberName}
-                  >{`${m.lastName} ${m.firstName} ${m.middleName}`}</Text>
-
+                  <Text style={styles.memberName}>
+                    {`${m.lastName} ${m.firstName}`}
+                  </Text>
                   {m.active ? (
                     <AntDesign
                       name="check-circle"
@@ -194,26 +199,57 @@ export default function CircleActionsModal({
           </View>
         )}
 
-        {/* ===== DEFAULT MENU ===== */}
+        {/* ===== MAIN MENU ===== */}
         {!isRenaming && !isEditingMembers && (
           <>
-            <TouchableOpacity style={styles.item} onPress={handleRenamePress}>
-              <Text style={styles.text}>Перейменувати</Text>
-            </TouchableOpacity>
+            {/* Show Invite Code only to Owner */}
+            {isOwner && (
+              <View style={styles.inviteContainer}>
+                <Text style={styles.inviteText}>Код: {inviteCode}</Text>
+                <TouchableOpacity
+                  onPress={onRegenerateInvite}
+                  style={styles.inviteButton}
+                >
+                  <Feather name="refresh-cw" size={16} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleCopy}
+                  style={[styles.inviteButton, { marginLeft: 8 }]}
+                >
+                  <Feather name="copy" size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
 
-            <TouchableOpacity
-              style={styles.item}
-              onPress={() => setIsEditingMembers(true)}
-            >
-              <Text style={styles.text}>Редагувати склад</Text>
-            </TouchableOpacity>
+            {/* Owner Actions */}
+            {isOwner ? (
+              <>
+                <TouchableOpacity
+                  style={styles.item}
+                  onPress={handleRenamePress}
+                >
+                  <Text style={styles.text}>Перейменувати</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.item, styles.delete]}
-              onPress={onDelete}
-            >
-              <Text style={[styles.text, styles.deleteText]}>Видалити</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.item}
+                  onPress={() => setIsEditingMembers(true)}
+                >
+                  <Text style={styles.text}>Редагувати склад</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.delete} onPress={onDelete}>
+                  <Text style={styles.deleteText}>Видалити групу</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              /* User Actions */
+              <>
+                <TouchableOpacity style={styles.delete} onPress={onLeave}>
+                  <Text style={styles.deleteText}>Покинути групу</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </>
         )}
       </View>
@@ -225,73 +261,96 @@ const styles = StyleSheet.create({
   sheetWrapper: { justifyContent: "flex-end", margin: 0 },
   sheet: {
     backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 20,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 40,
   },
   handle: {
     alignSelf: "center",
-    width: 40,
-    height: 4,
+    width: 48,
+    height: 5,
     backgroundColor: "#D1D1D6",
-    borderRadius: 2,
-    marginVertical: 10,
+    borderRadius: 3,
+    marginVertical: 12,
   },
-  item: { paddingVertical: 18, paddingHorizontal: 20 },
-  text: { fontSize: 16, color: COLORS.TEXT_DARK, fontWeight: "600" },
-
-  memberItem: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.BACKGROUND_CARD,
+  item: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: COLORS.BACKGROUND_CARD,
+    borderRadius: 16,
+    marginBottom: 14,
+  },
+  text: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: COLORS.TEXT_DARK,
+    textAlign: "center",
+  },
+  inviteContainer: {
+    alignSelf: "center",
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#EEF2F6",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginBottom: 32,
+  },
+  inviteText: { fontSize: 16, fontWeight: "600", marginRight: 8 },
+  inviteButton: {
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: "#5D6470",
+    justifyContent: "center",
     alignItems: "center",
   },
-
-  memberName: {
+  delete: { backgroundColor: "transparent", marginTop: 8 },
+  deleteText: {
+    color: COLORS.STATE_DANGER,
     fontSize: 16,
-    color: COLORS.TEXT_DARK,
     fontWeight: "600",
+    textAlign: "center",
   },
-
-  delete: { marginTop: 10 },
-  deleteText: { color: COLORS.STATE_DANGER },
-
   input: {
-    backgroundColor: COLORS.INPUT_BG,
-    borderWidth: 1,
-    borderColor: COLORS.BACKGROUND_CARD,
-    borderRadius: 20,
+    backgroundColor: COLORS.BACKGROUND_CARD,
+    borderRadius: 18,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "700",
     color: COLORS.TEXT_DARK,
     textAlign: "center",
-    marginBottom: 30,
+    marginTop: 10,
+    marginBottom: 26,
   },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-    alignSelf: "flex-start",
-  },
+  backButton: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
   backButtonText: {
     fontSize: 16,
+    fontWeight: "600",
     color: COLORS.PRIMARY_BLUE,
-    fontWeight: "500",
+    marginLeft: 8,
   },
   doneButton: {
     backgroundColor: COLORS.BLACK_BTN,
-    borderRadius: 30,
-    paddingVertical: 16,
+    borderRadius: 28,
+    paddingVertical: 15,
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 24,
   },
   doneButtonText: {
     color: COLORS.BACKGROUND_LIGHT,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
   },
+  memberItem: {
+    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BACKGROUND_CARD,
+  },
+  memberName: { fontSize: 16, fontWeight: "600", color: COLORS.TEXT_DARK },
 });

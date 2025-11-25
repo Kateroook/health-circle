@@ -39,6 +39,13 @@ export class GroupController {
     return this.service.createGroup(req.user.id, body);
   }
 
+  @Post(':id/leave')
+  @ApiOperation({ summary: 'Leave a group' })
+  @ApiOkResponse({ description: 'Successfully left the group' })
+  async leave(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
+    return this.service.leaveGroup(req.user.id, params.id);
+  }
+
   @Put()
   @ApiOperation({ summary: 'Update a group' })
   @ApiOkResponse({ type: GroupEntity, description: 'Group updated' })

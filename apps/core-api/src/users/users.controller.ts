@@ -31,7 +31,6 @@ import { UUIdParamDto } from 'src/common/dto/uuid-param.dto';
 import { UserEntity } from 'src/common/entities/user.entity';
 
 import { FileInterceptor } from '@nestjs/platform-express';
-import { IdParamDto } from 'src/common/dto/id-param.dto';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { AuthStrategies } from 'src/common/enums/auth-strategies';
 import { UserJwtAccessGuard } from 'src/common/guards/user-jwt-access.guard';
@@ -129,7 +128,7 @@ export class UsersController {
   @ApiCookieAuth()
   @ApiNoContentResponse({ description: 'User avatar removed' })
   @ApiNotFoundResponse({ description: 'File not found' })
-  async removeLogo(@Param() params: IdParamDto) {
+  async removeLogo(@Param() params: UUIdParamDto) {
     await this.service.removeFile(params.id);
   }
 }

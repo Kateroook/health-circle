@@ -18,12 +18,26 @@ export class GroupService {
   ) {}
 
   async findAllForUser(userId: string) {
-    return this.repository
+    const groups = await this.repository
       .createQueryBuilder('group')
       .leftJoinAndSelect('group.owner', 'owner')
       .leftJoinAndSelect('group.members', 'member')
-      .where('owner.id = :userId OR member.id = :userId', { userId })
+      .where((qb) => {
+        const subQuery = qb
+          .subQuery()
+          .select('g.id')
+          .from(GroupEntity, 'g')
+          .leftJoin('g.members', 'm')
+          .where('m.id = :userId')
+          .getQuery();
+        return 'group.id IN ' + subQuery;
+      })
+      .setParameter('userId', userId)
       .getMany();
+    return groups.map((g) => {
+      g.members = g.members.filter((m) => m.id !== userId);
+      return g;
+    });
   }
 
   async findOne(id: string, userId: string) {
@@ -90,6 +104,20 @@ export class GroupService {
       group.members = [group.owner, ...members.filter((m) => m.id !== group.owner.id)];
     }
     return this.repository.save(group);
+  }
+
+  async leaveGroup(userId: string, groupId: string) {
+    const group = await this.repository.findOne({
+      where: { id: groupId },
+      relations: ['owner', 'members'],
+    });
+    if (!group) throw new NotFoundException('Групу не знайдено');
+    if (group.owner.id === userId) {
+      throw new ForbiddenException('Власник не може покинути групу. Видаліть групу натомість');
+    }
+    group.members = group.members.filter((m) => m.id !== userId);
+    await this.repository.save(group);
+    return { message: 'Ви покинули групу' };
   }
 
   async deleteGroup(userId: string, groupId: string) {

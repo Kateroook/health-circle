@@ -53,7 +53,7 @@ export class UsersService {
     return this.externalFilesService.getStreamableFile(user.file);
   }
 
-  async removeFile(userId: number, manager?: EntityManager): Promise<void> {
+  async removeFile(userId: string, manager?: EntityManager): Promise<void> {
     const entityManager = manager || this.repository.manager;
     const user = await entityManager.findOne(UserEntity, {
       where: { id: userId as any },
