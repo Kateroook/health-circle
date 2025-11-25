@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Index() {
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <View style={styles.container}>
         {/* Header Section */}
         <View style={styles.header}>
@@ -67,11 +67,6 @@ export default function Index() {
             <Text style={styles.skipButtonText}>Пропустити</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Footer */}
-        <Text style={styles.footer}>
-          Для сімей на відстані. Завжди поруч &#x1F1FA;&#x1F1E6;
-        </Text>
       </View>
     </SafeAreaView>
   );
@@ -85,7 +80,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingVertical: 48,
+    paddingVertical: 0,
     backgroundColor: "#FAFAFA",
     justifyContent: "space-between",
   },
@@ -103,7 +98,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   icon: {
-    fontSize: 40,
+    fontSize: 32,
   },
   title: {
     fontSize: 32,
@@ -187,7 +182,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   skipButton: {
-    paddingVertical: 12,
+    paddingVertical: 8,
     alignItems: "center",
   },
   skipButtonText: {
@@ -199,6 +194,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 13,
     color: "#999",
-    marginTop: 8,
+    marginTop: 10,
   },
 });

@@ -10,9 +10,11 @@ import { EntityManager, QueryRunner, Repository } from 'typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
+import { UserStatus } from 'src/common/enums/user-status';
 import { ensureSameUser } from 'src/common/helpers/ensure-same-user.util';
 import { RequestMetadata } from 'src/common/types/request-metadata';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ModifyUserDto } from './dto/modify-user.dto';
 
@@ -27,7 +29,53 @@ export class UsersService {
     protected readonly userActivitiesService: UserActivitiesService,
     protected readonly configService: ConfigService,
     protected readonly externalFilesService: ExternalFilesService,
+    private notificationsService: NotificationsService,
   ) {}
+
+  async updateStatus(userId: string, status: UserStatus) {
+    const user = await this.repository.findOne({
+      where: { id: userId },
+      relations: ['groups', 'groups.members'],
+    });
+    if (!user) return;
+
+    user.status = status;
+    user.lastStatusUpdate = new Date();
+    await this.repository.save(user);
+    const tokens = new Set<string>();
+    user.groups.forEach((group) => {
+      group.members.forEach((member) => {
+        if (member.id !== userId && member.fcmToken) {
+          tokens.add(member.fcmToken);
+        }
+      });
+    });
+
+    let title = 'Оновлення статусу';
+    let body = `${user.firstName} оновив статус`;
+
+    if (status === UserStatus.DANGER) {
+      title = '🆘 ПОТРІБНА ДОПОМОГА!';
+      body = `${user.firstName} ${user.lastName} потребує допомоги!`;
+    } else if (status === UserStatus.SAFE) {
+      title = '✅ У безпеці';
+      body = `${user.firstName} ${user.lastName} зараз у безпеці.`;
+    }
+
+    if (tokens.size > 0) {
+      await this.notificationsService.sendMulticast(Array.from(tokens), title, body, {
+        userId: user.id,
+        status: status,
+      });
+    }
+
+    return { status: user.status, message: 'Status updated' };
+  }
+
+  async saveFcmToken(userId: string, token: string) {
+    await this.repository.update({ id: userId }, { fcmToken: token });
+    return { message: 'Token updated' };
+  }
 
   async upsertFile(userId: string, file: Express.Multer.File, queryRunner?: QueryRunner): Promise<UserEntity> {
     const manager = queryRunner?.manager || this.repository.manager;

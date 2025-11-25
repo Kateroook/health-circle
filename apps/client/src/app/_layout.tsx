@@ -3,6 +3,7 @@ import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useFcmToken } from "../hooks/useFcmToken";
 import { useAuthStore } from "../store/authStore";
 
 SplashScreen.preventAutoHideAsync();
@@ -15,10 +16,16 @@ const useAppFonts = () => {
   });
 };
 
+export const unstable_settings = {
+  initialRouteName: "(onboarding)/Onboarding",
+};
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
   const { loading } = useAuthStore();
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+
+  useFcmToken();
 
   useEffect(() => {
     if (fontError) throw fontError;
@@ -47,6 +54,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
         </Stack.Protected>
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(onboarding)" />
       </Stack>
     </React.Fragment>
   );

@@ -10,6 +10,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+import { UserStatus } from '../enums/user-status';
 import { ExternalFilesEntity } from './external-files.entity';
 import { GroupEntity } from './group.entity';
 import { UserSessionEntity } from './user-sessions.entity';
@@ -36,6 +37,15 @@ export class UserEntity {
 
   @Column({ type: 'timestamptz', nullable: true })
   lastLoginDate: Date;
+
+  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.UNKNOWN })
+  status: UserStatus;
+
+  @Column({ nullable: true })
+  fcmToken: string;
+
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMPTZ' })
+  lastStatusUpdate: Date;
 
   @Column({ type: 'int', default: 0 })
   failedLoginAttempts: number;

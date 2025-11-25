@@ -18,6 +18,7 @@ import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
 import { PostgresModule } from './postgres/postgres.module';
 import { UserActivitiesModule } from './user-activities/user-activities.module';
 import { UsersModule } from './users/users.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -97,6 +98,7 @@ import { UsersModule } from './users/users.module';
       },
     }),
     ScheduleModule.forRoot(),
+    NotificationsModule,
   ],
 })
 export class AppModule implements NestModule {

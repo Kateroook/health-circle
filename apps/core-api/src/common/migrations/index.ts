@@ -9,6 +9,7 @@ import { AlterGroupEntity1763486277896 } from './1763486277896-alter-group-entit
 import { AddDeleteAccountUserActivity1763845792981 } from './1763845792981-add-delete-account-user-activity';
 import { AlterGroupEntity1763903271836 } from './1763903271836-alter-group-entity';
 import { CreateExternalFilesEntity1763916392841 } from './1763916392841-create-external-files-entity';
+import { AddUserStatus1764020197638 } from './1764020197638-add-user-status';
 
 export const migrations = [
   CreateEntities1762501994652,
@@ -22,4 +23,5 @@ export const migrations = [
   AddDeleteAccountUserActivity1763845792981,
   AlterGroupEntity1763903271836,
   CreateExternalFilesEntity1763916392841,
+  AddUserStatus1764020197638,
 ];

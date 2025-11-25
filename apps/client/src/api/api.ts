@@ -1,5 +1,3 @@
-import { useAuthStore } from "../store/authStore";
-
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
   (process.env.NODE_ENV === "development"
@@ -15,6 +13,7 @@ export async function apiFetch(
 ) {
   const url = `${API_URL}${path}`;
 
+  const { useAuthStore } = require("../store/authStore");
   // Get token from store if not provided manually
   const token = options.token || useAuthStore.getState().accessToken;
 
@@ -116,4 +115,18 @@ export function getAvatarUrl(userId: string) {
   const url = `${API_URL}/users/${userId}/avatar`;
   if (__DEV__) console.log(`[getAvatarUrl] → ${url}`);
   return url;
+}
+
+export async function updateMyStatus(status: "SAFE" | "DANGER" | "UNKNOWN") {
+  return apiFetch("/users/status", {
+    method: "PUT",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function saveFcmTokenToBackend(token: string) {
+  return apiFetch("/users/fcm-token", {
+    method: "PUT",
+    body: JSON.stringify({ token }),
+  });
 }
