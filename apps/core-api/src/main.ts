@@ -4,6 +4,7 @@ import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import * as admin from 'firebase-admin';
 import { types } from 'pg';
 
 import { useContainer } from 'class-validator';
@@ -16,6 +17,14 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
   app.setGlobalPrefix('api');
+
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
 
   const configService = app.get(ConfigService);
 
