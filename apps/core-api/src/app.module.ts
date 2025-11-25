@@ -15,10 +15,10 @@ import { ExternalFilesModule } from './external-files/external-files.module';
 import { GroupsModule } from './groups/groups.module';
 import { LoggingModule } from './logging/logging.module';
 import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PostgresModule } from './postgres/postgres.module';
 import { UserActivitiesModule } from './user-activities/user-activities.module';
 import { UsersModule } from './users/users.module';
-import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -71,6 +71,9 @@ import { NotificationsModule } from './notifications/notifications.module';
           then: Joi.required(),
           otherwise: Joi.optional(),
         }),
+        FIREBASE_PROJECT_ID: Joi.string().required(),
+        FIREBASE_CLIENT_EMAIL: Joi.string().required(),
+        FIREBASE_PRIVATE_KEY: Joi.string().required(),
       }),
     }),
     PostgresModule.register(entities, migrations, subscribers),

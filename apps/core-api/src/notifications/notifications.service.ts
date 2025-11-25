@@ -12,7 +12,6 @@ export class NotificationsService {
         notification: { title, body },
         data,
       });
-      console.log(`Notification sent to ${tokens.length} devices`);
     } catch (error) {
       console.error('Error sending notification:', error);
     }
