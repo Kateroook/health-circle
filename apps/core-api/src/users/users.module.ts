@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfirmationsModule } from 'src/confirmations/confirmations.module';
-import { PostgresService } from 'src/postgres/postgres.service';
 import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesModule } from 'src/user-activities/user-activities.module';
 
@@ -21,7 +20,7 @@ import { UsersService } from './users.service';
     ExternalFilesModule,
     NotificationsModule,
   ],
-  providers: [UsersService, PostgresService, SecurityService, UserUniqueConstraint],
+  providers: [UsersService, SecurityService, UserUniqueConstraint],
   controllers: [UsersController],
   exports: [UsersService],
 })

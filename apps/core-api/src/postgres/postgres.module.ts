@@ -4,12 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
-import { PostgresService } from './postgres.service';
-
-@Module({
-  providers: [PostgresService],
-  exports: [PostgresService],
-})
+@Module({})
 export class PostgresModule {
   static register(entities: Function[], migrations: Function[], subscribers: Function[]): DynamicModule {
     return {
