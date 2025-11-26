@@ -1,0 +1,41 @@
+import { expect, test } from '@playwright/test';
+import { config } from '../../config';
+
+test.describe('Confirmations API Tests', () => {
+  
+  test('Валідація коду з невалідним email', async ({ request }) => {
+    const response = await request.get(
+      `${config.baseURL}/api/confirmations/validate/password-setup`,
+      {
+        params: {
+          email: 'nonexistent@example.com',
+          code: 'some-code-123'
+        }
+      }
+    );
+    
+    expect(response.status()).toBe(401);
+  });
+
+  test('Валідація коду з невалідним форматом email', async ({ request }) => {
+    const response = await request.get(
+      `${config.baseURL}/api/confirmations/validate/password-setup`,
+      {
+        params: {
+          email: 'invalid-email-format',
+          code: 'some-code-123'
+        }
+      }
+    );
+    
+    expect(response.status()).toBe(401);
+  });
+
+  test('Валідація коду без параметрів', async ({ request }) => {
+    const response = await request.get(
+      `${config.baseURL}/api/confirmations/validate/password-setup`
+    );
+    
+    expect([400, 422]).toContain(response.status());
+  });
+});

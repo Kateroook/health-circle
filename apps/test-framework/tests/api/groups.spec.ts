@@ -1,0 +1,163 @@
+import { expect, test } from '@playwright/test';
+import { config } from '../../config';
+import { login } from '../../helpers/api-helper';
+import { LoginResponse } from '../../types/api-types';
+
+test.describe('Groups API Tests', () => {
+  let accessToken: string;
+  let groupId: string;
+  let inviteCode: string;
+
+  test.beforeEach(async ({ request }) => {
+    // Логінимось для отримання токена
+    const response = await login({ request: request });
+    
+    const loginBody : LoginResponse = await response.json();
+    if (loginBody && loginBody.accessToken) {
+      accessToken = loginBody.accessToken;
+    }
+  });
+
+  test.afterAll(async ({ request }) => {
+    // Cleanup: видаляємо створену групу
+    if (groupId && accessToken) {
+      await request.delete(`${config.baseURL}/api/groups/${groupId}`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+    }
+  });
+
+  test('Створення нової групи', async ({ request }) => {
+    const response = await request.post(`${config.baseURL}/api/groups`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      },
+      data: {
+        name: `Тестова група ${Date.now()}`
+      }
+    });
+    
+    expect(response.status()).toBe(201);
+    const group = await response.json();
+    groupId = group.id;
+    inviteCode = group.inviteCode;
+    
+    expect(group).toHaveProperty('id');
+    expect(group).toHaveProperty('name');
+    expect(group).toHaveProperty('inviteCode');
+  });
+
+  test('Отримання всіх груп користувача', async ({ request }) => {
+    const response = await request.get(`${config.baseURL}/api/groups`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+    
+    expect(response.status()).toBe(200);
+    const groups = await response.json();
+    
+    expect(Array.isArray(groups)).toBeTruthy();
+  });
+
+  test('Отримання групи за ID', async ({ request }) => {
+    test.skip(!groupId, 'Група не створена');
+    
+    const response = await request.get(`${config.baseURL}/api/groups/${groupId}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+    
+    expect(response.status()).toBe(200);
+    const group = await response.json();
+    
+    expect(group.id).toBe(groupId);
+    expect(group).toHaveProperty('name');
+    expect(group).toHaveProperty('owner');
+    expect(group).toHaveProperty('members');
+  });
+
+  test('Оновлення назви групи', async ({ request }) => {
+    test.skip(!groupId, 'Група не створена');
+    
+    const newName = `Оновлена група ${Date.now()}`;
+    const response = await request.put(`${config.baseURL}/api/groups`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      },
+      data: {
+        id: groupId,
+        name: newName,
+        members: []
+      }
+    });
+    
+    expect(response.status()).toBe(200);
+    const group = await response.json();
+    
+    expect(group.id).toBe(groupId);
+    expect(group.name).toBe(newName);
+  });
+
+  test('Регенерація invite коду', async ({ request }) => {
+    test.skip(!groupId, 'Група не створена');
+    
+    const response = await request.post(`${config.baseURL}/api/groups/${groupId}/invite`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+    
+    expect(response.status()).toBe(201);
+    const result = await response.json();
+    
+    expect(result).toHaveProperty('inviteCode');
+    expect(result.inviteCode).not.toBe(inviteCode);
+  });
+
+  test('Приєднання до групи з невалідним кодом', async ({ request }) => {
+    const response = await request.post(`${config.baseURL}/api/groups/join`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      },
+      data: {
+        code: 'invalid-code-xyz-123'
+      }
+    });
+    
+    expect(response.status()).toBe(404);
+  });
+
+  test('Отримання групи без авторизації', async ({ request }) => {
+    test.skip(!groupId, 'Група не створена');
+    
+    const response = await request.get(`${config.baseURL}/api/groups/${groupId}`);
+    
+    expect(response.status()).toBe(401);
+  });
+
+  test('Створення групи без авторизації', async ({ request }) => {
+    const response = await request.post(`${config.baseURL}/api/groups`, {
+      data: {
+        name: 'Неавторизована група'
+      }
+    });
+    
+    expect(response.status()).toBe(401);
+  });
+
+  test('Видалення групи за неіснуючим ID', async ({ request }) => {
+    const fakeUUID = '00000000-0000-0000-0000-000000000000';
+    
+    const response = await request.delete(`${config.baseURL}/api/groups/${fakeUUID}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+    
+    expect(response.status()).toBe(400);
+  });
+});
