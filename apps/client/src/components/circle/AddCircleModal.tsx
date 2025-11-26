@@ -5,13 +5,14 @@ import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
 import {
   Alert,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+// 1. Import the library
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import OtpInput from "../OtpInput";
 
 interface AddCircleModalProps {
@@ -92,57 +93,66 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
     }
   };
 
-  // --- RENDER TABS ---
+  // --- RENDER ---
   return (
-    <View style={styles.modal}>
-      <View style={styles.handle} />
-      <Text style={styles.title}>Додайте нове коло</Text>
-      <Text style={styles.subtitle}>
-        Створіть своє коло або приєднайтеся до існуючого
-      </Text>
+    // 2. Use KeyboardAwareScrollView as the main wrapper
+    // enableOnAndroid: crucial for Android support
+    // extraScrollHeight: adds padding above the keyboard so the input isn't glued to it
+    <KeyboardAwareScrollView
+      enableOnAndroid={true}
+      extraScrollHeight={40}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.modalInner}>
+        <View style={styles.handle} />
+        <Text style={styles.title}>Додайте нове коло</Text>
+        <Text style={styles.subtitle}>
+          Створіть своє коло або приєднайтеся до існуючого
+        </Text>
 
-      {/* Tabs */}
-      <View style={styles.segment}>
-        <TouchableOpacity
-          style={[
-            styles.segmentBtn,
-            activeTab === "join" && styles.segmentActive,
-          ]}
-          onPress={() => setActiveTab("join")}
-        >
-          <Text
+        {/* Tabs */}
+        <View style={styles.segment}>
+          <TouchableOpacity
             style={[
-              styles.segmentText,
-              activeTab === "join" && styles.segmentTextActive,
+              styles.segmentBtn,
+              activeTab === "join" && styles.segmentActive,
             ]}
+            onPress={() => setActiveTab("join")}
           >
-            Приєднатися
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={[
+                styles.segmentText,
+                activeTab === "join" && styles.segmentTextActive,
+              ]}
+            >
+              Приєднатися
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.segmentBtn,
-            activeTab === "create" && styles.segmentActive,
-          ]}
-          onPress={() => {
-            setActiveTab("create");
-            setCreateStep(1);
-          }}
-        >
-          <Text
+          <TouchableOpacity
             style={[
-              styles.segmentText,
-              activeTab === "create" && styles.segmentTextActive,
+              styles.segmentBtn,
+              activeTab === "create" && styles.segmentActive,
             ]}
+            onPress={() => {
+              setActiveTab("create");
+              setCreateStep(1);
+            }}
           >
-            Створити
-          </Text>
-        </TouchableOpacity>
-      </View>
+            <Text
+              style={[
+                styles.segmentText,
+                activeTab === "create" && styles.segmentTextActive,
+              ]}
+            >
+              Створити
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-      <ScrollView>
-        {/* JOIN */}
+        {/* JOIN Content */}
         {activeTab === "join" && (
           <View style={styles.tabContent}>
             <Text style={styles.sectionLabel}>
@@ -161,7 +171,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
           </View>
         )}
 
-        {/* CREATE */}
+        {/* CREATE Content */}
         {activeTab === "create" && (
           <View style={styles.tabContent}>
             {/* STEP 1 */}
@@ -225,13 +235,17 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
             )}
           </View>
         )}
-      </ScrollView>
-    </View>
+      </View>
+    </KeyboardAwareScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  modal: {
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  modalInner: {
     paddingHorizontal: 20,
     paddingBottom: 10,
   },
