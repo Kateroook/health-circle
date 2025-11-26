@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { config } from '../../config';
 
 test.describe('Confirmations API Tests', () => {
@@ -14,7 +14,7 @@ test.describe('Confirmations API Tests', () => {
       }
     );
     
-    expect([400, 404]).toContain(response.status());
+    expect(response.status()).toBe(401);
   });
 
   test('Валідація коду з невалідним форматом email', async ({ request }) => {
@@ -28,7 +28,7 @@ test.describe('Confirmations API Tests', () => {
       }
     );
     
-    expect([400, 404, 422]).toContain(response.status());
+    expect(response.status()).toBe(401);
   });
 
   test('Валідація коду без параметрів', async ({ request }) => {

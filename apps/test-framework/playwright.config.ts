@@ -15,6 +15,7 @@ export default defineConfig({
       'Content-Type': 'application/json',
     },
     trace: 'on-first-retry',
+    isolate: true,
   },
 
   projects: [

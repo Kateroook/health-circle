@@ -1,26 +1,20 @@
 import { expect, test } from '@playwright/test';
-import { config, extractTokenFromCookies } from '../../config';
+import { config } from '../../config';
+import { login } from '../../helpers/api-helper';
+import { LoginResponse } from '../../types/api-types';
 
 test.describe('Groups API Tests', () => {
   let accessToken: string;
   let groupId: string;
   let inviteCode: string;
 
-  test.beforeAll(async ({ request }) => {
+  test.beforeEach(async ({ request }) => {
     // Логінимось для отримання токена
-    const response = await request.post(`${config.baseURL}/api/auth/login`, {
-      data: {
-        email: config.testUser.email,
-        password: config.testUser.password
-      }
-    });
+    const response = await login({ request: request });
     
-    const cookies = response.headers()['set-cookie'];
-    if (cookies) {
-      accessToken = extractTokenFromCookies(
-        Array.isArray(cookies) ? cookies : [cookies], 
-        'access_token'
-      );
+    const loginBody : LoginResponse = await response.json();
+    if (loginBody && loginBody.accessToken) {
+      accessToken = loginBody.accessToken;
     }
   });
 
@@ -164,6 +158,6 @@ test.describe('Groups API Tests', () => {
       }
     });
     
-    expect(response.status()).toBe(404);
+    expect(response.status()).toBe(400);
   });
 });

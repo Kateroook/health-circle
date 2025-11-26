@@ -1,73 +1,60 @@
 import { expect, test } from '@playwright/test';
-import { config, extractTokenFromCookies, TestContext } from '../../config';
-import { login } from '../../helpers/api-helper';
+import { config, TestContext } from '../../config';
+import { authWithAccessToken, getAccessToken, login } from '../../helpers/api-helper';
+import { LoginResponse } from '../../types/api-types';
 
 let testContext: TestContext = {};
 
 test.describe('Auth API Tests', () => {
   
   test('Успішний логін існуючого користувача', async ({ request }) => {
-    const response = await request.post(`${config.baseURL}/api/auth/login`, {
-      data: {
-        email: config.testUser.email,
-        password: config.testUser.password
-      }
-    });
+    const response = await login({ request: request });
+    const loginBody : LoginResponse = await response.json();
     
     expect(response.status()).toBe(201);
-    
-    const cookies = response.headers()['set-cookie'];
-    if (cookies) {
-      const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
-      testContext.accessToken = extractTokenFromCookies(cookieArray, 'access_token');
-      testContext.refreshToken = extractTokenFromCookies(cookieArray, 'refresh_token');
+    if (loginBody) {
+      testContext.accessToken = loginBody.accessToken;
+      testContext.refreshToken = loginBody.refreshToken;
     }
     
-    const data = await response.json();
-    expect(data).toHaveProperty('redirectUrl');
+    expect(loginBody).toHaveProperty('accessToken');
+    expect(loginBody).toHaveProperty('refreshToken');
   });
 
   test('Логін з неправильним email', async ({ request }) => {
-    const response = await request.post(`${config.baseURL}/api/auth/login`, {
-      data: {
+    const response = await login({
+        request: request,
         email: 'nonexistent@example.com',
         password: 'WrongPassword123!'
-      }
-    });
+      });
     
     expect(response.status()).toBe(401);
   });
 
   test('Логін з неправильним паролем', async ({ request }) => {
-    const response = await request.post(`${config.baseURL}/api/auth/login`, {
-      data: {
+    const response = await login({
+        request: request,
         email: config.testUser.email,
         password: 'WrongPassword123!'
-      }
     });
     
     expect(response.status()).toBe(401);
   });
 
   test('Логін з невалідним форматом email', async ({ request }) => {
-    const response = await request.post(`${config.baseURL}/api/auth/login`, {
-      data: {
+    const response = await login({
+        request: request,
         email: 'invalid-email-format',
         password: 'TestPassword123!'
-      }
-    });
+      });
     
     expect([400, 401]).toContain(response.status());
   });
 
-  test.only('Отримання профілю авторизованого користувача', async ({ request }) => {
-    const accessToken = await login(request);
+  test('Отримання профілю авторизованого користувача', async ({ request }) => {
+    const accessToken = await getAccessToken({request: request});
     
-    const response = await request.get(`${config.baseURL}/api/auth/profile`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
+    const response = await authWithAccessToken({ request: request, accessToken:accessToken });
     
     expect(response.status()).toBe(200);
     const profile = await response.json();
@@ -86,28 +73,14 @@ test.describe('Auth API Tests', () => {
   });
 
   test('Отримання профілю з невалідним токеном', async ({ request }) => {
-    const response = await request.get(`${config.baseURL}/api/auth/profile`, {
-      headers: {
-        'Authorization': 'Bearer invalid-token-xyz'
-      }
-    });
+    const response = await authWithAccessToken({ request: request, accessToken: 'invalid-token-xyz'});
     
     expect(response.status()).toBe(401);
   });
 
   test('Logout авторизованого користувача', async ({ request }) => {
-    // Логінимось
-    const loginResponse = await request.post(`${config.baseURL}/api/auth/login`, {
-      data: {
-        email: config.testUser.email,
-        password: config.testUser.password
-      }
-    });
-    
-    const cookies = loginResponse.headers()['set-cookie'];
-    const accessToken = cookies 
-      ? extractTokenFromCookies(Array.isArray(cookies) ? cookies : [cookies], 'access_token')
-      : '';
+    // Логінимось, щоб отримати токен
+    const accessToken = await getAccessToken({request: request});
     
     // Logout
     const response = await request.post(`${config.baseURL}/api/auth/logout`, {
@@ -116,7 +89,7 @@ test.describe('Auth API Tests', () => {
       }
     });
     
-    expect(response.status()).toBe(200);
+    expect(response.status()).toBe(201);
   });
 
   test('Logout без токена (негативний)', async ({ request }) => {

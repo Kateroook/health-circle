@@ -12,11 +12,11 @@ export const config = {
   
   // Для тестів, які не вимагають авторизації
   tempUser: {
-    email: `temp.user.${Date.now()}@example.com`,
-    phone: '+380501234567',
-    firstName: 'Тимчасовий',
-    middleName: 'Тестович',
-    lastName: 'Користувач',
+    email: `temp-user-${Date.now()}@gmail.com`,
+    phone: "+380501134567",
+    firstName: "Temporary",
+    middleName: "Test",
+    lastName: "User",
   }
 };
 
