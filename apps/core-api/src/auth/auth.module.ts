@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfirmationsModule } from 'src/confirmations/confirmations.module';
-import { PostgresService } from 'src/postgres/postgres.service';
 import { SecurityModule } from 'src/security/security.module';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -24,6 +23,6 @@ import { UserLocalStrategy } from './strategies/user-local.strategy';
     ConfirmationsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, UserLocalStrategy, UserJwtAccessStrategy, UserJwtRefreshStrategy, PostgresService],
+  providers: [AuthService, UserLocalStrategy, UserJwtAccessStrategy, UserJwtRefreshStrategy],
 })
 export class AuthModule {}
