@@ -1,0 +1,342 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { EntityManager, Repository } from 'typeorm';
+import { UsersService } from './users.service';
+
+import { NotFoundException, NotImplementedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
+import { UserEntity } from 'src/common/entities/user.entity';
+import { UserActivityTypes } from 'src/common/enums/user-activity-types';
+import { UserStatus } from 'src/common/enums/user-status';
+import { ConfirmationsService } from 'src/confirmations/confirmations.service';
+import { SetupPasswordReasons } from 'src/confirmations/enums/setup-password-reasons';
+import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { UserActivitiesService } from 'src/user-activities/user-activities.service';
+
+describe('UsersService', () => {
+  let service: UsersService;
+
+  let repository: jest.Mocked<Repository<UserEntity>>;
+  let passwordRepository: jest.Mocked<Repository<UserPasswordEntity>>;
+
+  let confirmationsService: jest.Mocked<ConfirmationsService>;
+  let userActivitiesService: jest.Mocked<UserActivitiesService>;
+  let externalFilesService: jest.Mocked<ExternalFilesService>;
+  let notificationsService: jest.Mocked<NotificationsService>;
+
+  const mockUser = {
+    id: 'user1',
+    firstName: 'John',
+    lastName: 'Doe',
+    fcmToken: null,
+    status: UserStatus.UNKNOWN,
+    groups: [
+      {
+        members: [
+          { id: 'user1', fcmToken: null },
+          { id: 'user2', fcmToken: 'token-abc' },
+        ],
+      },
+    ],
+  } as any;
+
+  //
+  // MOCK FACTORIES
+  //
+  const createRepoMock = () => {
+    return {
+      findOne: jest.fn(),
+      update: jest.fn(),
+      save: jest.fn(),
+      remove: jest.fn(),
+      existsBy: jest.fn(),
+      create: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        getOne: jest.fn(),
+      }),
+      manager: {
+        transaction: jest.fn().mockImplementation(async (fn) => {
+          // Create a mock transaction manager
+          const trx = {
+            findOne: jest.fn(),
+            save: jest.fn(),
+            remove: jest.fn(),
+            queryRunner: {},
+          } as unknown as EntityManager; // Force cast to EntityManager
+          return fn(trx);
+        }),
+      },
+    } as unknown as jest.Mocked<Repository<any>>;
+  };
+
+  const mockConfirmationsService = (): any => ({
+    setupPasswordCode: jest.fn(),
+  });
+
+  const mockUserActivitiesService = (): any => ({
+    logActivity: jest.fn(),
+  });
+
+  const mockExternalFilesService = (): any => ({
+    replaceFile: jest.fn(),
+    getStreamableFile: jest.fn(),
+    delete: jest.fn(),
+  });
+
+  const mockNotificationsService = (): any => ({
+    sendMulticast: jest.fn(),
+  });
+
+  //
+  // BEFORE EACH
+  //
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        { provide: getRepositoryToken(UserEntity), useValue: createRepoMock() },
+        { provide: getRepositoryToken(UserPasswordEntity), useValue: createRepoMock() },
+        { provide: ConfirmationsService, useValue: mockConfirmationsService() },
+        { provide: UserActivitiesService, useValue: mockUserActivitiesService() },
+        { provide: ExternalFilesService, useValue: mockExternalFilesService() },
+        { provide: NotificationsService, useValue: mockNotificationsService() },
+        { provide: ConfigService, useValue: {} },
+      ],
+    }).compile();
+
+    service = module.get<UsersService>(UsersService);
+
+    repository = module.get(getRepositoryToken(UserEntity));
+    passwordRepository = module.get(getRepositoryToken(UserPasswordEntity));
+
+    confirmationsService = module.get(ConfirmationsService);
+    userActivitiesService = module.get(UserActivitiesService);
+    externalFilesService = module.get(ExternalFilesService);
+    notificationsService = module.get(NotificationsService);
+  });
+
+  //
+  // TEST SUITE
+  //
+
+  describe('updateStatus', () => {
+    it('updates status and sends push', async () => {
+      repository.findOne.mockResolvedValue(mockUser);
+      repository.save.mockResolvedValue(mockUser);
+
+      await service.updateStatus('user1', UserStatus.SAFE);
+
+      expect(repository.save).toHaveBeenCalled();
+      expect(notificationsService.sendMulticast).toHaveBeenCalledWith(
+        ['token-abc'],
+        expect.any(String),
+        expect.any(String),
+        expect.objectContaining({
+          userId: mockUser.id,
+          status: UserStatus.SAFE,
+        }),
+      );
+    });
+
+    it('returns undefined if user not found', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      const res = await service.updateStatus('x', UserStatus.SAFE);
+      expect(res).toBeUndefined();
+    });
+  });
+
+  describe('saveFcmToken', () => {
+    it('updates token', async () => {
+      repository.update.mockResolvedValue({} as any);
+
+      const res = await service.saveFcmToken('u1', 't-123');
+
+      expect(repository.update).toHaveBeenCalledWith({ id: 'u1' }, { fcmToken: 't-123' });
+
+      expect(res).toEqual({ message: 'Token updated' });
+    });
+  });
+
+  describe('upsertFile', () => {
+    it('replaces file', async () => {
+      // Manual mock for the specific transaction in this test
+      const trx = {
+        findOne: jest.fn().mockResolvedValue({ id: 'user1', file: null }),
+        save: jest.fn().mockResolvedValue({ id: 'user1', file: { id: 'file123' } }),
+        queryRunner: {},
+      } as unknown as EntityManager;
+
+      // Override the default mock implementation for this test
+      (repository.manager.transaction as jest.Mock).mockImplementation((fn) => fn(trx));
+
+      externalFilesService.replaceFile.mockResolvedValue({ id: 'file123' } as any);
+
+      await service.upsertFile('user1', {
+        originalname: 'a.png',
+        buffer: Buffer.from('123'),
+        mimetype: 'image/png',
+      } as any);
+
+      expect(externalFilesService.replaceFile).toHaveBeenCalled();
+
+      // Ensure we check that save was called with the user object
+      expect(trx.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'user1',
+          file: { id: 'file123' },
+        }),
+      );
+    });
+
+    it('throws if user not found inside transaction', async () => {
+      const trx = {
+        findOne: jest.fn().mockResolvedValue(null),
+        save: jest.fn(),
+        queryRunner: {},
+      } as unknown as EntityManager;
+
+      (repository.manager.transaction as jest.Mock).mockImplementation((fn) => fn(trx));
+
+      await expect(service.upsertFile('x', {} as any)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getFile', () => {
+    it('returns stream', async () => {
+      repository.findOne.mockResolvedValue({ file: { id: 'f1' } } as any);
+      externalFilesService.getStreamableFile.mockReturnValue('STREAM' as any);
+
+      const res = await service.getFile('u1');
+      expect(res).toBe('STREAM');
+    });
+
+    it('throws if no user', async () => {
+      repository.findOne.mockResolvedValue(null);
+      await expect(service.getFile('x')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('removeFile', () => {
+    it('removes file', async () => {
+      // Mock EntityManager for removeFile
+      const manager = {
+        findOne: jest.fn().mockResolvedValue({ id: 'u1', file: { id: 'f1' } }),
+        save: jest.fn().mockResolvedValue({ id: 'u1', file: undefined }),
+        queryRunner: {},
+      } as unknown as EntityManager;
+
+      await service.removeFile('u1', manager);
+
+      expect(externalFilesService.delete).toHaveBeenCalledWith('f1', manager.queryRunner);
+
+      // In service: await entityManager.save(UserEntity, user);
+      // We check that save was called.
+      expect(manager.save).toHaveBeenCalled();
+    });
+
+    it('throws if user missing', async () => {
+      const manager = {
+        findOne: jest.fn().mockResolvedValue(null),
+        queryRunner: {},
+      } as unknown as EntityManager;
+
+      await expect(service.removeFile('x', manager)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getOne', () => {
+    it('returns user', async () => {
+      // Mocking the query builder chain
+      const qbMock = {
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ id: 'u1' }),
+      };
+      repository.createQueryBuilder.mockReturnValue(qbMock as any);
+
+      const res = await service.getOne('u1', { id: 'u1' } as any);
+      expect(res).toEqual({ id: 'u1' });
+      expect(repository.createQueryBuilder).toHaveBeenCalledWith('users');
+      expect(qbMock.where).toHaveBeenCalledWith('users.id = :id', { id: 'u1' });
+    });
+
+    it('throws if not found', async () => {
+      const qbMock = {
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+      repository.createQueryBuilder.mockReturnValue(qbMock as any);
+
+      await expect(service.getOne('x', { id: 'x' } as any)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('save', () => {
+    it('creates new user', async () => {
+      repository.save.mockResolvedValue({ id: 'u1', email: 'a@a.com' } as any);
+
+      await service.save(
+        { email: 'a@a.com' } as any,
+        {} as any,
+        true, // isNew = true
+        { id: 'u1' } as any,
+      );
+
+      expect(confirmationsService.setupPasswordCode).toHaveBeenCalledWith('a@a.com', 'u1', SetupPasswordReasons.setup);
+
+      expect(userActivitiesService.logActivity).toHaveBeenCalledWith(UserActivityTypes.createUser, {}, { userId: 'u1' });
+    });
+
+    it('modifies existing user', async () => {
+      repository.existsBy.mockResolvedValue(true);
+      repository.save.mockResolvedValue({ id: 'u1' } as any);
+
+      await service.save(
+        { id: 'u1', email: 'x' } as any,
+        {} as any,
+        false, // isNew = false
+        { id: 'u1' } as any,
+      );
+
+      expect(userActivitiesService.logActivity).toHaveBeenCalledWith(UserActivityTypes.modifyUser, {}, { userId: 'u1' });
+    });
+
+    it('throws if modifying missing', async () => {
+      // isNew = false
+      repository.existsBy.mockResolvedValue(false);
+
+      await expect(service.save({ id: 'wrong' } as any, {} as any, false, { id: 'wrong' } as any)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('throws NotImplementedException', async () => {
+      await expect(service.resetPassword('u1', {} as any)).rejects.toThrow(NotImplementedException);
+    });
+  });
+
+  describe('remove', () => {
+    it('removes user', async () => {
+      repository.findOne.mockResolvedValue({ id: 'u1' } as any);
+      repository.remove.mockResolvedValue({} as any);
+
+      const res = await service.remove('u1', { id: 'u1' } as any, {} as any);
+
+      expect(repository.remove).toHaveBeenCalled();
+      expect(userActivitiesService.logActivity).toHaveBeenCalled();
+      expect(res).toEqual({ success: true });
+    });
+
+    it('throws if not found', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(service.remove('x', { id: 'x' } as any, {} as any)).rejects.toThrow(NotFoundException);
+    });
+  });
+});
