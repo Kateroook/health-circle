@@ -152,7 +152,7 @@ export class UsersService {
     ensureSameUser(id, user.id);
     const userToDelete = await this.repository.findOne({ where: { id } });
     if (!userToDelete) throw new NotFoundException(`Користувача не знайдено`);
-    await this.repository.remove(userToDelete);
+    await this.repository.save({ id, email: null, firstName: '', middleName: '', lastName: '', fcmToken: null, phone: null });
     await this.userActivitiesService.logActivity(UserActivityTypes.deleteAccount, metadata, { userId: user.id });
 
     return { success: true };

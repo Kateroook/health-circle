@@ -29,11 +29,11 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 100 })
   lastName: string;
 
-  @Column({ type: 'varchar', unique: true })
-  email: string;
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  email: string | null;
 
-  @Column({ type: 'varchar', nullable: true })
-  phone: string;
+  @Column({ type: 'varchar', unique: true, nullable: true })
+  phone: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })
   lastLoginDate: Date;
@@ -41,8 +41,8 @@ export class UserEntity {
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.UNKNOWN })
   status: UserStatus;
 
-  @Column({ nullable: true })
-  fcmToken: string;
+  @Column({ type: 'varchar', nullable: true })
+  fcmToken: string | null;
 
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMPTZ' })
   lastStatusUpdate: Date;
