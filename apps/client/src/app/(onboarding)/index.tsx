@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 0,
     backgroundColor: "#FAFAFA",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
   },
   header: {
     alignItems: "center",
@@ -121,17 +121,17 @@ const styles = StyleSheet.create({
     color: "#4A4A4A",
     textAlign: "center",
     lineHeight: 24,
-    marginBottom: 32,
+    marginBottom: 20,
   },
   featuresContainer: {
     width: "100%",
-    gap: 16,
+    gap: 10,
   },
   feature: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    padding: 16,
+    padding: 12,
     borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   },
   buttonsContainer: {
     width: "100%",
-    gap: 12,
+    gap: 16,
   },
   primaryButton: {
     backgroundColor: "#FF6B6B",
@@ -194,6 +194,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 13,
     color: "#999",
-    marginTop: 10,
   },
 });
