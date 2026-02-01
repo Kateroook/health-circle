@@ -1,9 +1,7 @@
-import KeyvRedis from '@keyv/redis';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import Joi from 'joi';
 
-import { CacheModule } from '@nestjs/cache-manager';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SecurityModule } from 'src/security/security.module';
 import { AuthModule } from './auth/auth.module';
@@ -85,21 +83,6 @@ import { UsersModule } from './users/users.module';
     SecurityModule,
     GroupsModule,
     ExternalFilesModule,
-    CacheModule.registerAsync({
-      isGlobal: true,
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const host = configService.get<string>('REDIS_HOST');
-        const port = configService.get<number>('REDIS_PORT');
-        const password = configService.get<string>('REDIS_PASSWORD');
-        const redis = new KeyvRedis({ socket: { host, port }, password, database: 3 });
-        redis.on('error', (err) => {
-          console.error('Redis Connection Error:', err);
-        });
-        return { stores: [redis] };
-      },
-    }),
     ScheduleModule.forRoot(),
     NotificationsModule,
   ],

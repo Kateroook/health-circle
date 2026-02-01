@@ -10,7 +10,6 @@ import { UserSessionEntity } from 'src/common/entities/user-sessions.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { RequestMetadata } from 'src/common/types/request-metadata';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
-import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { Repository } from 'typeorm';
@@ -277,7 +276,7 @@ describe('AuthService', () => {
         user: { id: userProfile.id },
         passwordHash: 'hashed-pass',
       });
-      expect(confirmationService.consumeToken).toHaveBeenCalledWith(ConfirmationTypes.setupPassword, userProfile.id);
+      expect(confirmationService.consumeToken).toHaveBeenCalledWith(userProfile.id);
     });
 
     it('should throw if passwords mismatch', async () => {

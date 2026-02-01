@@ -10,7 +10,6 @@ import { UserEntity } from 'src/common/entities/user.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
-import { SetupPasswordReasons } from 'src/confirmations/enums/setup-password-reasons';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
@@ -286,8 +285,6 @@ describe('UsersService', () => {
         { id: 'u1' } as any,
       );
 
-      expect(confirmationsService.setupPasswordCode).toHaveBeenCalledWith('a@a.com', 'u1', SetupPasswordReasons.setup);
-
       expect(userActivitiesService.logActivity).toHaveBeenCalledWith(UserActivityTypes.createUser, {}, { userId: 'u1' });
     });
 
@@ -328,7 +325,7 @@ describe('UsersService', () => {
 
       const res = await service.remove('u1', { id: 'u1' } as any, {} as any);
 
-      expect(repository.remove).toHaveBeenCalled();
+      expect(repository.save).toHaveBeenCalled();
       expect(userActivitiesService.logActivity).toHaveBeenCalled();
       expect(res).toEqual({ success: true });
     });
