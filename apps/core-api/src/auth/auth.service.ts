@@ -15,7 +15,6 @@ import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { RequestMetadata } from '../common/types/request-metadata';
-import { ConfirmationTypes } from '../confirmations/enums/confirmation-type';
 import { UserSetupPasswordDto } from './dto/user-setup-password.dto';
 import { UserTokenDto } from './dto/user-token.dto';
 import { UserTokenPayload } from './types/user-token-payload';
@@ -224,6 +223,6 @@ export class AuthService {
       passwordHash,
     });
     // Consume the setup token
-    await this.confirmationService.consumeToken(ConfirmationTypes.setupPassword, user.id);
+    await this.confirmationService.consumeToken(user.id);
   }
 }

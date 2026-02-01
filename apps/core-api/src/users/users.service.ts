@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
-import { SetupPasswordReasons } from 'src/confirmations/enums/setup-password-reasons';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { EntityManager, QueryRunner, Repository } from 'typeorm';
 
@@ -13,6 +12,7 @@ import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
 import { ensureSameUser } from 'src/common/helpers/ensure-same-user.util';
 import { RequestMetadata } from 'src/common/types/request-metadata';
+import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -138,7 +138,7 @@ export class UsersService {
     }
     const saved = await this.repository.save(item);
     const userActivityType = isNew ? UserActivityTypes.createUser : UserActivityTypes.modifyUser;
-    if (isNew) await this.confirmationsService.setupPasswordCode(saved.email, saved.id, SetupPasswordReasons.setup);
+    if (isNew) await this.confirmationsService.setupPasswordCode(saved.email, saved.id, ConfirmationTypes.REGISTRATION);
     await this.userActivitiesService.logActivity(userActivityType, metadata, { userId: saved.id });
     return saved;
   }

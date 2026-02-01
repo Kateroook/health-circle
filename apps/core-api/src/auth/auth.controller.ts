@@ -7,12 +7,11 @@ import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 
 import { AuthStrategies } from '../common/enums/auth-strategies';
-import { ConfirmationGuard, ConfirmationType } from '../common/guards/confirmation.guard';
+import { ConfirmationRegistrationGuard } from '../common/guards/confirmation.guard';
 import { UserJwtAccessGuard } from '../common/guards/user-jwt-access.guard';
 import { UserJwtRefreshGuard } from '../common/guards/user-jwt-refresh.guard';
 import { UserLocalGuard } from '../common/guards/user-local.guard';
 import type { AuthRequest } from '../common/types/auth-request';
-import { ConfirmationTypes } from '../confirmations/enums/confirmation-type';
 import { AuthService } from './auth.service';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { SetupPasswordDto } from './dto/token-query.dto';
@@ -62,8 +61,7 @@ export class AuthController {
   }
 
   @Post('password-setup')
-  @UseGuards(ConfirmationGuard)
-  @ConfirmationType(ConfirmationTypes.setupPassword)
+  @UseGuards(ConfirmationRegistrationGuard)
   @ApiOperation({ summary: 'Setup new password' })
   async setupPassword(@Query() query: SetupPasswordDto, @Body() body: UserSetupPasswordDto, @Req() req: AuthRequest) {
     return this.authService.setupPassword(req.user, body);

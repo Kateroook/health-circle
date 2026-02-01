@@ -1,3 +1,4 @@
 export enum ConfirmationTypes {
-  setupPassword = 'USER_REGISTER',
+  REGISTRATION = 'REGISTRATION',
+  PASSWORD_RESET = 'PASSWORD_RESET',
 }

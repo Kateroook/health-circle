@@ -1,76 +1,78 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import type { Cache } from 'cache-manager';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { EmailService } from 'src/email/email.service';
 import { IsNull, Repository } from 'typeorm';
 
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ConfirmationCodeEntity } from 'src/common/entities/confirmation-code.entity';
 import { SecurityService } from '../security/security.service';
-import { SetupPasswordConfirmationDto } from './dto/setup-password-confirmation.dto';
 import { ConfirmationTypes } from './enums/confirmation-type';
-import { SetupPasswordReasons } from './enums/setup-password-reasons';
 
 @Injectable()
 export class ConfirmationsService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly usersRepository: Repository<UserEntity>,
+    @InjectRepository(ConfirmationCodeEntity)
+    private readonly codeRepository: Repository<ConfirmationCodeEntity>,
     private readonly securityService: SecurityService,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
-  async setupPasswordCode(email: string, userId: string, reason: SetupPasswordReasons): Promise<string> {
-    const code = await this.generateCode(userId, ConfirmationTypes.setupPassword, reason);
+  async setupPasswordCode(email: string, userId: string, type: ConfirmationTypes): Promise<string> {
+    const code = await this.generateCode(userId, type);
 
-    switch (reason) {
-      case SetupPasswordReasons.setup:
+    switch (type) {
+      case ConfirmationTypes.REGISTRATION:
         await this.emailService.registration(email, { code, year: new Date().getFullYear() });
         break;
-      case SetupPasswordReasons.reset:
+      case ConfirmationTypes.PASSWORD_RESET:
         await this.emailService.changePassword(email, { code, year: new Date().getFullYear() });
+        break
     }
 
     return code;
   }
 
-  private getSetupPasswordTtl(reason: SetupPasswordReasons): number {
-    switch (reason) {
-      case SetupPasswordReasons.reset:
+  private getTTL(type: ConfirmationTypes): number {
+    switch (type) {
+      case ConfirmationTypes.PASSWORD_RESET:
         return this.configService.get<number>('RESET_PASSWORD_TOKEN_TTL')!;
-      case SetupPasswordReasons.setup:
+      case ConfirmationTypes.REGISTRATION:
         return this.configService.get<number>('SETUP_PASSWORD_TOKEN_TTL')!;
-      case SetupPasswordReasons.expire:
-        return this.configService.get<number>('EXPIRE_PASSWORD_TOKEN_TTL')!;
+      default: return 24*60*60; // 1 day
     }
   }
 
-  private async generateCode(userId: string, type: ConfirmationTypes, reason: SetupPasswordReasons): Promise<string> {
+  private async generateCode(userId: string, type: ConfirmationTypes): Promise<string> {
     const code = this.securityService.getConfirmCode();
-    const key = `${type}:${userId}`;
-
-    await this.cacheManager.set(key, { code, reason }, this.getSetupPasswordTtl(reason) * 1000);
+    const ttl = this.getTTL(type);
+    await this.codeRepository.delete({ user: { id: userId }, type });
+    await this.codeRepository.save({
+      user: {id: userId},
+      code,
+      type,
+      expiresAt: new Date(Date.now() + ttl * 1000),
+    });
     return code;
   }
 
-  async verifyCode(type: ConfirmationTypes, email: string, code: string) {
-    const user = await this.usersRepository.findOne({
-      where: { email, lockedAt: IsNull() },
-    });
+// todo: regenerate code if expired
+async verifyCode(type: ConfirmationTypes, email: string, code: string) {
+    const user = await this.usersRepository.findOne({ where: { email, lockedAt: IsNull() }});
     if (!user) throw new UnauthorizedException('Невірні облікові дані');
-
-    const key = `${type}:${user.id}`;
-    const data = await this.cacheManager.get<SetupPasswordConfirmationDto>(key);
-    if (data?.code !== code) throw new UnauthorizedException('Недійсний або прострочений токен');
-
+    const savedCode = await this.codeRepository.findOne({
+      where: { user: {id: user.id}, type },
+    });
+    const isCodeValid = savedCode && savedCode.code === code && savedCode.expiresAt > new Date();
+    if (!isCodeValid) throw new UnauthorizedException('Недійсний або прострочений токен'); 
     return new UserProfileDto(user);
   }
 
-  async consumeToken(type: ConfirmationTypes, userId: string): Promise<void> {
-    await this.cacheManager.del(`${type}:${userId}`);
+  async consumeToken(userId: string): Promise<void> {
+    await this.codeRepository.delete({ user: { id: userId } });
   }
 }
