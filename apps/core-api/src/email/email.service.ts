@@ -1,39 +1,31 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { existsSync, readFileSync } from 'fs';
 import { compile, TemplateDelegate } from 'handlebars';
 import { Bunyan } from 'nestjs-bunyan';
-import { createTransport, Transporter } from 'nodemailer';
 import { resolve } from 'path';
+import { Resend } from 'resend';
 import { LoggingTypes } from 'src/common/enums/logging-types';
 
 import { RegistrationContext, SetupPasswordContext } from './email.types';
 
 @Injectable()
 export class EmailService {
-  private transporter: Transporter;
+  private resend: Resend;
   private registrationTemplate: TemplateDelegate;
   private changePasswordTemplate: TemplateDelegate;
-  private contactFormTemplate: TemplateDelegate;
+  private fromEmail: string;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly logger: Bunyan,
   ) {
-    this.transporter = createTransport({
-      host: this.configService.getOrThrow<string>('EMAIL_HOST'),
-      port: this.configService.getOrThrow<number>('EMAIL_PORT'),
-      secure: this.configService.getOrThrow<number>('EMAIL_PORT') === 465, // auto-secure for 465
-      auth: {
-        user: this.configService.getOrThrow<string>('EMAIL_USER'),
-        pass: this.configService.getOrThrow<string>('EMAIL_PASS'),
-      },
-    });
+    this.resend = new Resend(this.configService.getOrThrow<string>('RESEND_API_KEY'));
+    
+    this.fromEmail = this.configService.getOrThrow<string>('EMAIL_FROM');
+
     this.registrationTemplate = this.loadTemplate('registration.hbs');
     // this.changePasswordTemplate = this.loadTemplate('change-password.hbs');
-    // this.contactFormTemplate = this.loadTemplate('contact-form.hbs');
   }
 
   private loadTemplate(templateName: string): TemplateDelegate {
@@ -51,30 +43,42 @@ export class EmailService {
   public async registration(to: string, context: RegistrationContext) {
     const html = this.registrationTemplate(context);
 
-    try {
-      await this.transporter.sendMail({
-        to,
-        from: this.configService.getOrThrow<string>('EMAIL_USER'),
-        subject: 'Ваш обліковий запис успішно створено',
-        html,
-      });
-    } catch (error: unknown) {
-      this.logger.error({ to, error, type: LoggingTypes.sendMail }, 'Failed to send registration confirmation email');
+    const { data, error } = await this.resend.emails.send({
+      from: this.fromEmail,
+      to,
+      subject: 'Ваш обліковий запис успішно створено',
+      html,
+    });
+
+    if (error) {
+      this.logger.error(
+        { to, error, type: LoggingTypes.sendMail }, 
+        'Failed to send registration confirmation email via Resend'
+      );
+      return;
     }
+
+    this.logger.info({ to, messageId: data?.id }, 'Registration email sent successfully');
   }
 
   public async changePassword(to: string, context: SetupPasswordContext) {
     const html = this.changePasswordTemplate(context);
 
-    try {
-      await this.transporter.sendMail({
-        to,
-        from: this.configService.getOrThrow<string>('EMAIL_USER'),
-        subject: 'Зміна пароля до вашого облікового запису',
-        html,
-      });
-    } catch (error: unknown) {
-      this.logger.error({ to, error, type: LoggingTypes.sendMail }, 'Failed to send setup password email');
+    const { data, error } = await this.resend.emails.send({
+      from: this.fromEmail,
+      to,
+      subject: 'Зміна пароля до вашого облікового запису',
+      html,
+    });
+
+    if (error) {
+      this.logger.error(
+        { to, error, type: LoggingTypes.sendMail }, 
+        'Failed to send setup password email via Resend'
+      );
+      return;
     }
+
+    this.logger.info({ to, messageId: data?.id }, 'Password change email sent successfully');
   }
 }

@@ -49,10 +49,8 @@ import { UsersModule } from './users/users.module';
         SERVER_SALT: Joi.string().required(),
 
         // Email
-        EMAIL_HOST: Joi.string().required(),
-        EMAIL_PORT: Joi.number().required(),
-        EMAIL_USER: Joi.string().required(),
-        EMAIL_PASS: Joi.string().required(),
+        EMAIL_FROM: Joi.string().email().required(),
+        RESEND_API_KEY: Joi.string().required(),
 
         // FILES
         EXTERNAL_FILES_PATH: Joi.string().required(),
