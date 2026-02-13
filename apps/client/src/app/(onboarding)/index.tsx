@@ -60,12 +60,7 @@ export default function Index() {
             <Text style={styles.secondaryButtonText}>Увійти</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={() => router.replace("/Dashboard")}
-          >
-            <Text style={styles.skipButtonText}>Пропустити</Text>
-          </TouchableOpacity>
+
         </View>
       </View>
     </SafeAreaView>
@@ -181,15 +176,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
   },
-  skipButton: {
-    paddingVertical: 8,
-    alignItems: "center",
-  },
-  skipButtonText: {
-    color: "#999",
-    fontSize: 15,
-    fontWeight: "500",
-  },
+
   footer: {
     textAlign: "center",
     fontSize: 13,
