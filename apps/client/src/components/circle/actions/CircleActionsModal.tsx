@@ -56,6 +56,7 @@ export default function CircleActionsModal({
 
   const user = useAuthStore().user;
   const isOwner = user?.id === ownerId;
+  const insets = useSafeAreaInsets();
   console.log(user?.id);
 
   React.useEffect(() => {
@@ -111,7 +112,7 @@ export default function CircleActionsModal({
       animationOut="slideOutDown"
       propagateSwipe
     >
-      <View style={styles.sheet}>
+      <View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
         <View style={styles.handle} />
 
         {/* ===== RENAME MODE (Owner Only) ===== */}
@@ -265,7 +266,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     paddingHorizontal: 24,
     paddingTop: 12,
-    paddingBottom: 40,
   },
   handle: {
     alignSelf: "center",
