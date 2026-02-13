@@ -39,16 +39,12 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL || env.EXPO_PUBLIC_API_URL }}
-        run: eas build --platform android --profile preview --local --non-interactive --output build.apk
+        run: eas build --platform android --profile preview --local --non-interactive --output build.apk --verbose
 
       - name: Define Artifact Name
         id: artifact_name
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "NAME=health-circle-pr-${{ github.event.number }}-android" >> $GITHUB_OUTPUT
-          else
-            echo "NAME=health-circle-dev-${{ github.run_number }}-android" >> $GITHUB_OUTPUT
-          fi
+          echo "NAME=health-circle-dev-${{ github.run_number }}-android" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Rename APK
@@ -60,3 +56,27 @@ jobs:
           name: ${{ steps.artifact_name.outputs.NAME }}
           path: apps/client/${{ steps.artifact_name.outputs.NAME }}.apk
           retention-days: 7
+
+      - name: Send APK to Telegram
+        if: success()
+        run: |
+          curl -F document=@"${{ steps.artifact_name.outputs.NAME }}.apk" \
+               -F caption="✅ *Android Build Success*
+               
+               📦 *Artifact:* ${{ steps.artifact_name.outputs.NAME }}.apk
+               🔢 *Run:* ${{ github.run_number }}
+               🔗 [View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" \
+               -F parse_mode="Markdown" \
+               https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: Notify Failure to Telegram
+        if: failure()
+        run: |
+          curl -X POST \
+               -H 'Content-Type: application/json' \
+               -d '{"chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}", "text": "❌ *Android Build Failed*
+               
+               🔢 *Run:* ${{ github.run_number }}
+               🔗 [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "parse_mode": "Markdown"}' \
+               https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
+
