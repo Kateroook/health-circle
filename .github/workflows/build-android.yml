@@ -1,0 +1,70 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'apps/client/**'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/client/**'
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./apps/client
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: apps/client/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Build Android APK
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL || env.EXPO_PUBLIC_API_URL }}
+        run: eas build --platform android --profile preview --local --non-interactive --output build.apk
+
+      - name: Define Artifact Name
+        id: artifact_name
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "NAME=health-circle-pr-${{ github.event.number }}-android" >> $GITHUB_OUTPUT
+          else
+            echo "NAME=health-circle-dev-${{ github.run_number }}-android" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Rename APK
+        run: mv build.apk ${{ steps.artifact_name.outputs.NAME }}.apk
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.artifact_name.outputs.NAME }}
+          path: apps/client/${{ steps.artifact_name.outputs.NAME }}.apk
+          retention-days: 7
