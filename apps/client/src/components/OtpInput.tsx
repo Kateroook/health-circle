@@ -15,10 +15,14 @@ const OtpInput: React.FC<OtpInputProps> = ({
   const refs = useRef<(TextInput | null)[]>([]);
 
   const handleChange = (text: string, index: number) => {
+    // Only allow alphanumeric characters (letters and numbers)
+    const filtered = text.replace(/[^a-zA-Z0-9]/g, "");
+    if (!filtered && text) return; // ignore if all chars were invalid
+
     const newCode = [...value];
 
-    if (text.length > 1) {
-      const chars = text.split("");
+    if (filtered.length > 1) {
+      const chars = filtered.split("");
       chars.forEach((char, i) => {
         const targetIndex = index + i;
         if (targetIndex < value.length) {
@@ -29,9 +33,9 @@ const OtpInput: React.FC<OtpInputProps> = ({
       const nextIndex = Math.min(index + chars.length, value.length - 1);
       refs.current[nextIndex]?.focus();
     } else {
-      newCode[index] = text.toUpperCase();
+      newCode[index] = filtered.toUpperCase();
       onChange(newCode);
-      if (text && index < value.length - 1) {
+      if (filtered && index < value.length - 1) {
         refs.current[index + 1]?.focus();
       }
     }

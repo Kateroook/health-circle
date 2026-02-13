@@ -7,15 +7,23 @@ import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  BackHandler,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    BackHandler,
+    Keyboard,
+    LayoutAnimation,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    UIManager,
+    View,
 } from "react-native";
 import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface Member {
   id: string;
@@ -28,6 +36,25 @@ interface Member {
 export default function CirclesScreen() {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setIsKeyboardVisible(true);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setIsKeyboardVisible(false);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
   const [activeCircle, setActiveCircle] = useState<null | {
     id: string;
     inviteCode: string;
@@ -124,8 +151,8 @@ export default function CirclesScreen() {
         animationOut="slideOutDown"
         propagateSwipe
       >
-        <View style={styles.modalWrapper}>
-          <SafeAreaView edges={["bottom"]}>
+        <View style={[styles.modalWrapper, isKeyboardVisible && styles.modalWrapperExpanded]}>
+          <SafeAreaView edges={isKeyboardVisible ? ["top", "bottom"] : ["bottom"]} style={isKeyboardVisible ? { flex: 1 } : undefined}>
             <AddCircleModal
               onClose={() => setIsAddModalVisible(false)}
               onUpdated={fetchCircles} // refresh after adding
@@ -218,5 +245,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     maxHeight: "92%",
     paddingBottom: 10,
+  },
+  modalWrapperExpanded: {
+    maxHeight: "80%",
+    flex: 1,
   },
 });
