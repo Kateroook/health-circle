@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_DARK,
     textAlign: "center",
     marginBottom: 20,
-    paddingHorizontal: 10,
+    paddingHorizontal: 24,
   },
   item: {
     paddingVertical: 12,
