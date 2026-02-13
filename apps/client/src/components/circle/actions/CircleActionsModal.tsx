@@ -3,18 +3,26 @@ import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
 import Feather from "@expo/vector-icons/Feather";
 import * as Clipboard from "expo-clipboard";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Keyboard,
+  LayoutAnimation,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  UIManager,
   View,
 } from "react-native";
 import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface Member {
   id: string;
@@ -55,10 +63,28 @@ export default function CircleActionsModal({
   const [isEditingMembers, setIsEditingMembers] = useState(false);
   const [newName, setNewName] = useState("");
   const [localMembers, setLocalMembers] = useState<Member[]>([]);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const user = useAuthStore().user;
   const isOwner = user?.id === ownerId;
-  console.log(user?.id);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setIsKeyboardVisible(true);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setIsKeyboardVisible(false);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   React.useEffect(() => {
     if (visible) {
@@ -114,8 +140,8 @@ export default function CircleActionsModal({
       propagateSwipe
     >
       <SafeAreaView
-        style={styles.sheet}
-        edges={["bottom"]}
+        style={[styles.sheet, isKeyboardVisible && styles.sheetExpanded]}
+        edges={isKeyboardVisible ? ["top", "bottom"] : ["bottom"]}
       >
         <View style={styles.handle} />
 
@@ -294,6 +320,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     paddingHorizontal: 24,
     paddingTop: 12,
+    maxHeight: "92%",
+  },
+  sheetExpanded: {
+    maxHeight: "80%",
+    flex: 1,
   },
   handle: {
     alignSelf: "center",
