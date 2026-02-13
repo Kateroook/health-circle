@@ -68,7 +68,7 @@ async verifyCode(type: ConfirmationTypes, email: string, code: string) {
       where: { user: {id: user.id}, type },
     });
     const isCodeValid = savedCode && savedCode.code === code && savedCode.expiresAt > new Date();
-    if (!isCodeValid) throw new UnauthorizedException('Недійсний або прострочений токен'); 
+    if (!isCodeValid) throw new UnauthorizedException('Недійсний або протермінований токен'); 
     return new UserProfileDto(user);
   }
 
