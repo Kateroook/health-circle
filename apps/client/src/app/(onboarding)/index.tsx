@@ -12,34 +12,41 @@ export default function Index() {
             <Text style={styles.icon}>&#x2764;&#xfe0f;</Text>
           </View>
           <Text style={styles.title}>HealthCircle</Text>
-          <Text style={styles.subtitle}>Турбота без мікроменеджменту</Text>
+          <Text style={styles.subtitle}>Спокій вашої родини</Text>
         </View>
 
         {/* Description Section */}
         <View style={styles.descriptionContainer}>
           <Text style={styles.description}>
-            Одна кнопка для спокою. Будьте на зв&#39;язку з близькими під час
-            тривоги, відстежуйте здоров&#39;я і синхронізуйте графіки — навіть
-            без інтернету.
+            Одна кнопка — і ваші близькі знають, що ви в безпеці. Будьте на
+            зв&#39;язку під час тривоги навіть без інтернету.
           </Text>
 
           {/* Features */}
           <View style={styles.featuresContainer}>
             <View style={styles.feature}>
+              <Text style={styles.featureIcon}>&#x1F7E2;</Text>
+              <Text style={styles.featureText}>
+                Статус &quot;У безпеці&quot; одним натисканням
+              </Text>
+            </View>
+            <View style={styles.feature}>
               <Text style={styles.featureIcon}>&#x1F6A8;</Text>
               <Text style={styles.featureText}>
-                SOS &quot;Я в безпеці&quot;
+                SOS-сповіщення через SMS без інтернету
               </Text>
             </View>
             <View style={styles.feature}>
-              <Text style={styles.featureIcon}>&#x1F48A;</Text>
+              <Text style={styles.featureIcon}>&#x1F465;</Text>
               <Text style={styles.featureText}>
-                Нагадування про здоров&#39;я
+                Кола близьких із відстеженням статусів
               </Text>
             </View>
             <View style={styles.feature}>
-              <Text style={styles.featureIcon}>&#x1F4C5;</Text>
-              <Text style={styles.featureText}>Спільні графіки</Text>
+              <Text style={styles.featureIcon}>&#x1F4CB;</Text>
+              <Text style={styles.featureText}>
+                Історія останніх змін статусу
+              </Text>
             </View>
           </View>
         </View>
@@ -59,8 +66,6 @@ export default function Index() {
           >
             <Text style={styles.secondaryButtonText}>Увійти</Text>
           </TouchableOpacity>
-
-
         </View>
       </View>
     </SafeAreaView>
@@ -139,7 +144,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   featureText: {
-    fontSize: 15,
+    fontSize: 13,
     color: "#333",
     fontWeight: "600",
   },
