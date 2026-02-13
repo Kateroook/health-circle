@@ -5,6 +5,7 @@ import Feather from "@expo/vector-icons/Feather";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +14,7 @@ import {
   View,
 } from "react-native";
 import Modal from "react-native-modal";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface Member {
   id: string;
@@ -56,7 +58,6 @@ export default function CircleActionsModal({
 
   const user = useAuthStore().user;
   const isOwner = user?.id === ownerId;
-  const insets = useSafeAreaInsets();
   console.log(user?.id);
 
   React.useEffect(() => {
@@ -112,7 +113,10 @@ export default function CircleActionsModal({
       animationOut="slideOutDown"
       propagateSwipe
     >
-      <View style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
+      <SafeAreaView
+        style={styles.sheet}
+        edges={["bottom"]}
+      >
         <View style={styles.handle} />
 
         {/* ===== RENAME MODE (Owner Only) ===== */}
@@ -239,21 +243,45 @@ export default function CircleActionsModal({
                   <Text style={styles.text}>Редагувати склад</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.delete} onPress={onDelete}>
+                <TouchableOpacity
+                  style={styles.delete}
+                  onPress={() =>
+                    Alert.alert(
+                      "Видалити групу",
+                      "Ви впевнені, що хочете видалити цю групу? Цю дію не можна скасувати.",
+                      [
+                        { text: "Скасувати", style: "cancel" },
+                        { text: "Видалити", style: "destructive", onPress: onDelete },
+                      ]
+                    )
+                  }
+                >
                   <Text style={styles.deleteText}>Видалити групу</Text>
                 </TouchableOpacity>
               </>
             ) : (
               /* User Actions */
               <>
-                <TouchableOpacity style={styles.delete} onPress={onLeave}>
+                <TouchableOpacity
+                  style={styles.delete}
+                  onPress={() =>
+                    Alert.alert(
+                      "Покинути групу",
+                      "Ви впевнені, що хочете покинути цю групу?",
+                      [
+                        { text: "Скасувати", style: "cancel" },
+                        { text: "Покинути", style: "destructive", onPress: onLeave },
+                      ]
+                    )
+                  }
+                >
                   <Text style={styles.deleteText}>Покинути групу</Text>
                 </TouchableOpacity>
               </>
             )}
           </>
         )}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -306,7 +334,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  delete: { backgroundColor: "transparent", marginTop: 8 },
+  delete: { backgroundColor: "transparent", marginTop: 24, marginBottom: 20 },
   deleteText: {
     color: COLORS.STATE_DANGER,
     fontSize: 16,
