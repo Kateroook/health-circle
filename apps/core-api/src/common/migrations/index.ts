@@ -12,6 +12,7 @@ import { CreateExternalFilesEntity1763916392841 } from './1763916392841-create-e
 import { AddUserStatus1764020197638 } from './1764020197638-add-user-status';
 import { AlterUserEntity1764228077216 } from './1764228077216-alter-user-entity';
 import { CreateConfirmationCodeEntity1769962454307 } from './1769962454307-create-confirmation-code-entity';
+import { AlterUserUniqueness1771007170534 } from './1771007170534-alter-user-uniqueness';
 
 export const migrations = [
   CreateEntities1762501994652,
@@ -28,4 +29,5 @@ export const migrations = [
   AddUserStatus1764020197638,
   AlterUserEntity1764228077216,
   CreateConfirmationCodeEntity1769962454307,
+  AlterUserUniqueness1771007170534,
 ];
