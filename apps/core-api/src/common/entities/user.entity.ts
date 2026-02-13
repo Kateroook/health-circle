@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToMany,
   OneToMany,
@@ -29,10 +30,12 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 100 })
   lastName: string;
 
-  @Column({ type: 'varchar', unique: true, nullable: true })
+  @Index({ unique: true, where: '"email" IS NOT NULL' })
+  @Column({ type: 'varchar', nullable: true })
   email: string | null;
 
-  @Column({ type: 'varchar', unique: true, nullable: true })
+  @Index({ unique: true, where: '"phone" IS NOT NULL' })
+  @Column({ type: 'varchar', nullable: true })
   phone: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })
