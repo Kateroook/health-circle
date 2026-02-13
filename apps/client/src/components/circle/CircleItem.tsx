@@ -26,7 +26,9 @@ const CircleItem: React.FC<CircleItemProps> = ({
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+          {title}
+        </Text>
         <TouchableOpacity
           onPress={onMenuPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -68,6 +70,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     color: COLORS.TEXT_DARK,
+    flex: 1,
+    marginRight: 10,
   },
   menu: {
     fontSize: 26,
