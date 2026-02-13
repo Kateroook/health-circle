@@ -60,8 +60,13 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
       setCreateStep(2);
 
       if (onUpdated) onUpdated();
-    } catch (error) {
-      Alert.alert("Помилка", "Не вдалося створити коло. Спробуйте ще раз.");
+    } catch (error: any) {
+      let msg = "Не вдалося створити коло. Спробуйте ще раз.";
+      try {
+        const parsed = JSON.parse(error?.message);
+        if (parsed?.message) msg = parsed.message;
+      } catch {}
+      Alert.alert("Помилка", msg);
       console.error("Create circle error:", error);
     } finally {
       setIsCreating(false);
@@ -85,8 +90,13 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
 
       if (onUpdated) onUpdated();
       onClose();
-    } catch (error) {
-      Alert.alert("Помилка", "Не вдалося приєднатися до кола. Перевірте код.");
+    } catch (error: any) {
+      let msg = "Не вдалося приєднатися до кола. Перевірте код.";
+      try {
+        const parsed = JSON.parse(error?.message);
+        if (parsed?.message) msg = parsed.message;
+      } catch {}
+      Alert.alert("Помилка", msg);
       console.error("Join circle error:", error);
     } finally {
       setIsJoining(false);
