@@ -186,14 +186,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
                   onChangeText={setCircleName}
                   maxLength={100}
                 />
-                <Text style={styles.sectionLabel}>Код кола</Text>
-                <View style={styles.codeRow}>
-                  {Array(6)
-                    .fill(null)
-                    .map((_, i) => (
-                      <View key={i} style={styles.codeBoxDisabled} />
-                    ))}
-                </View>
+
                 <TouchableOpacity
                   style={[
                     styles.btn,
@@ -291,17 +284,7 @@ const styles = StyleSheet.create({
     color: COLORS.PRIMARY_BLUE,
     marginBottom: 20,
   },
-  codeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  codeBoxDisabled: {
-    width: 46,
-    height: 56,
-    borderRadius: 8,
-    backgroundColor: "#E5E5EA",
-  },
+
   codeHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
