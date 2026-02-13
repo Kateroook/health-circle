@@ -175,7 +175,7 @@ export default function CircleActionsModal({
                   style={styles.memberItem}
                   onPress={() => toggleMember(m.id)}
                 >
-                  <Text style={styles.memberName}>
+                  <Text style={styles.memberName} numberOfLines={1} ellipsizeMode="tail">
                     {`${m.lastName} ${m.firstName}`}
                   </Text>
                   {m.active ? (
@@ -380,5 +380,5 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.BACKGROUND_CARD,
   },
-  memberName: { fontSize: 16, fontWeight: "600", color: COLORS.TEXT_DARK },
+  memberName: { fontSize: 16, fontWeight: "600", color: COLORS.TEXT_DARK, flex: 1, marginRight: 12 },
 });
