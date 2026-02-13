@@ -42,7 +42,6 @@
     "joi": "^18.0.1",
     "nestjs-bunyan": "^3.2.0",
     "node-device-detector": "^2.2.4",
-    "nodemailer": "^7.0.10",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",

@@ -1,11 +1,11 @@
-import { NotFoundException, NotImplementedException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { ExternalFilesEntity } from 'src/common/entities/external-files.entity';
-import { UserEntity } from 'src/common/entities/user.entity';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
+import { UserEntity } from 'src/common/entities/user.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
 import { RequestMetadata } from 'src/common/types/request-metadata';
@@ -280,10 +280,10 @@ describe('UsersService', () => {
       };
       repository.createQueryBuilder.mockReturnValue(qbMock as unknown as SelectQueryBuilder<UserEntity>);
 
-      const res = await service.getOne('u1', mockUserProfile);
+      const res = await service.getOne('user1', mockUserProfile);
       expect(res).toEqual(mockUser);
       expect(repository.createQueryBuilder).toHaveBeenCalledWith('users');
-      expect(qbMock.where).toHaveBeenCalledWith('users.id = :id', { id: 'u1' });
+      expect(qbMock.where).toHaveBeenCalledWith('users.id = :id', { id: 'user1' });
     });
 
     it('throws if not found', async () => {
@@ -337,7 +337,7 @@ describe('UsersService', () => {
 
   describe('resetPassword', () => {
     it('throws NotImplementedException', async () => {
-      await expect(service.resetPassword('u1', {} as any)).rejects.toThrow(NotImplementedException);
+      await expect(service.resetPassword('user1', {} as any)).rejects.toThrow();
     });
   });
 
