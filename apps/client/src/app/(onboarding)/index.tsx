@@ -1,8 +1,16 @@
 import { router } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuthStore } from "../../store/authStore";
 
 export default function Index() {
+  const completeOnboarding = useAuthStore((s) => s.completeOnboarding);
+
+  const handleNavigate = (path: "/Register" | "/Login") => {
+    completeOnboarding();
+    router.push(path);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <View style={styles.container}>
@@ -55,14 +63,14 @@ export default function Index() {
         <View style={styles.buttonsContainer}>
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={() => router.push("/Register")}
+            onPress={() => handleNavigate("/Register")}
           >
             <Text style={styles.primaryButtonText}>Створити акаунт</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.secondaryButton}
-            onPress={() => router.push("/Login")}
+            onPress={() => handleNavigate("/Login")}
           >
             <Text style={styles.secondaryButtonText}>Увійти</Text>
           </TouchableOpacity>

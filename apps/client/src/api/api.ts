@@ -9,6 +9,7 @@ export async function apiFetch(
   options: RequestInit & {
     headers?: Record<string, string | number>;
     token?: string;
+    _isRetry?: boolean;
   } = {}
 ) {
   const url = `${API_URL}${path}`;
@@ -52,6 +53,26 @@ export async function apiFetch(
   }
 
   if (!res.ok) {
+    // Auto-refresh on 401: try to refresh the session and retry the request once
+    if (res.status === 401 && !options._isRetry) {
+      const { useAuthStore } = require("../store/authStore");
+      const refreshed = await useAuthStore.getState().refreshSession();
+      if (refreshed) {
+        // Retry with new access token
+        const newToken = useAuthStore.getState().accessToken;
+        const retryHeaders: Record<string, string> = {
+          ...headers,
+        };
+        if (newToken) {
+          retryHeaders["Authorization"] = `Bearer ${newToken}`;
+        }
+        return apiFetch(path, {
+          ...options,
+          headers: retryHeaders,
+          _isRetry: true,
+        });
+      }
+    }
     throw new Error(text || res.statusText);
   }
 
