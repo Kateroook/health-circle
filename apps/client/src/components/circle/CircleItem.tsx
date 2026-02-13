@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: COLORS.TEXT_DARK,
     flex: 1,
-    maxWidth: "75%",
+    maxWidth: "82%",
     marginRight: 20,
   },
   members: {
