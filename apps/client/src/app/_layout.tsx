@@ -20,6 +20,7 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
   const { loading } = useAuthStore();
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const hasCompletedOnboarding = useAuthStore((s) => s.hasCompletedOnboarding);
 
   useFcmToken();
 
@@ -49,8 +50,10 @@ export default function RootLayout() {
         <Stack.Protected guard={isLoggedIn}>
           <Stack.Screen name="(tabs)" />
         </Stack.Protected>
+        <Stack.Protected guard={!isLoggedIn && !hasCompletedOnboarding}>
+          <Stack.Screen name="(onboarding)/index" />
+        </Stack.Protected>
         <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(onboarding)/index" />
       </Stack>
     </React.Fragment>
   );

@@ -24,6 +24,7 @@ interface User {
 interface AuthStoreState {
   user: User | null;
   accessToken: string | null;
+  refreshToken: string | null;
   loading: boolean;
 
   // onboarding flag
@@ -36,6 +37,7 @@ interface AuthStoreState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshSession: () => Promise<boolean>;
   completeOnboarding: () => void;
 }
 
@@ -44,6 +46,7 @@ export const useAuthStore = create<AuthStoreState>()(
     (set, get) => ({
       user: null,
       accessToken: null,
+      refreshToken: null,
       loading: true,
       hasCompletedOnboarding: false,
       isLoggedIn: false,
@@ -71,14 +74,58 @@ export const useAuthStore = create<AuthStoreState>()(
             isLoggedIn: true,
           });
         } catch (error) {
-          console.error("Token refresh failed:", error);
+          console.error("Profile fetch failed, trying refresh:", error);
+
+          // Try refreshing the session before giving up
+          const refreshed = await get().refreshSession();
+          if (refreshed) {
+            // Retry profile fetch with new token
+            try {
+              const newToken = get().accessToken;
+              const profile = await apiFetch("/auth/profile", {
+                headers: { Authorization: `Bearer ${newToken}` },
+              });
+              set({
+                user: profile as User,
+                loading: false,
+                isLoggedIn: true,
+              });
+              return;
+            } catch {}
+          }
 
           set({
             user: null,
             accessToken: null,
+            refreshToken: null,
             loading: false,
             isLoggedIn: false,
           });
+        }
+      },
+
+      // Refresh the session using the refresh token
+      refreshSession: async () => {
+        const currentRefreshToken = get().refreshToken;
+        if (!currentRefreshToken) return false;
+
+        try {
+          const res = await apiFetch("/auth/refresh", {
+            method: "POST",
+            token: currentRefreshToken,
+          });
+
+          if (res.accessToken && res.refreshToken) {
+            set({
+              accessToken: res.accessToken,
+              refreshToken: res.refreshToken,
+            });
+            return true;
+          }
+          return false;
+        } catch (error) {
+          console.error("Session refresh failed:", error);
+          return false;
         }
       },
 
@@ -97,8 +144,11 @@ export const useAuthStore = create<AuthStoreState>()(
           throw new Error("Failed to get access token.");
         }
 
-        // store token
-        set({ accessToken: res.accessToken });
+        // store both tokens
+        set({
+          accessToken: res.accessToken,
+          refreshToken: res.refreshToken || null,
+        });
 
         // fetch profile
         await get().refreshProfile();
@@ -122,8 +172,8 @@ export const useAuthStore = create<AuthStoreState>()(
         set({
           user: null,
           accessToken: null,
+          refreshToken: null,
           loading: false,
-          hasCompletedOnboarding: false,
           isLoggedIn: false,
         });
       },
@@ -137,6 +187,7 @@ export const useAuthStore = create<AuthStoreState>()(
       storage: createJSONStorage(() => secureStorage),
       partialize: (state) => ({
         accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
       }),
 
