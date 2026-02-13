@@ -1,4 +1,5 @@
 import { COLORS } from "@/src/theme/colors";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import MemberAvatar from "../MemberAvatar";
@@ -26,12 +27,18 @@ const CircleItem: React.FC<CircleItemProps> = ({
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+          {title}
+        </Text>
         <TouchableOpacity
           onPress={onMenuPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Text style={styles.menu}>...</Text>
+          <MaterialCommunityIcons
+            name="dots-horizontal"
+            size={24}
+            color={COLORS.TEXT_GRAY}
+          />
         </TouchableOpacity>
       </View>
 
@@ -62,17 +69,16 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 14,
   },
   title: {
     fontSize: 20,
     fontWeight: "700",
     color: COLORS.TEXT_DARK,
-  },
-  menu: {
-    fontSize: 26,
-    color: COLORS.TEXT_GRAY,
-    marginTop: -8,
+    flex: 1,
+    maxWidth: "82%",
+    marginRight: 20,
   },
   members: {
     flexDirection: "row",

@@ -233,6 +233,13 @@ export default function CircleActionsModal({
         {/* ===== MAIN MENU ===== */}
         {!isRenaming && !isEditingMembers && (
           <>
+            <Text
+              style={styles.modalTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {currentName}
+            </Text>
             {/* Show Invite Code only to Owner */}
             {isOwner && (
               <View style={styles.inviteContainer}>
@@ -333,6 +340,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#D1D1D6",
     borderRadius: 3,
     marginVertical: 12,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: COLORS.TEXT_DARK,
+    textAlign: "center",
+    marginBottom: 20,
+    paddingHorizontal: 24,
   },
   item: {
     paddingVertical: 12,
