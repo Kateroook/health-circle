@@ -1,14 +1,14 @@
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -25,6 +25,8 @@ export default function SettingsScreen() {
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const defaultAvatar = require("../../assets/images/default-avatar.png");
 
   useEffect(() => {
     // TODO: figure out a better way to force refresh after avatar update (http caching causes issues)
@@ -152,13 +154,13 @@ export default function SettingsScreen() {
         <View style={styles.headerContainer}>
           <Text style={styles.header}>Налаштування</Text>
 
-          {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarPlaceholderText}>?</Text>
-            </View>
-          )}
+          <Image
+            source={
+              !imageError && avatarUrl ? { uri: avatarUrl } : defaultAvatar
+            }
+            style={styles.avatar}
+            onError={() => setImageError(true)}
+          />
 
           <View style={styles.avatarButtons}>
             <TouchableOpacity
@@ -176,7 +178,6 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             )}
           </View>
-          <Text style={styles.avatarHint}>Аватар буде круглий</Text>
         </View>
 
         {fields.map((field) => (
@@ -215,16 +216,6 @@ const styles = StyleSheet.create({
   header: { fontSize: 28, fontWeight: "600", marginBottom: 20 },
 
   avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
-  avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#ddd",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  avatarPlaceholderText: { fontSize: 32, fontWeight: "600", color: "#999" },
   avatarButtons: { flexDirection: "row", gap: 10, marginBottom: 5 },
   avatarButton: {
     backgroundColor: "#2196F3",
@@ -234,7 +225,6 @@ const styles = StyleSheet.create({
   },
   removeButton: { backgroundColor: "#FF6B6B" },
   avatarButtonText: { color: "#fff", fontWeight: "600" },
-  avatarHint: { fontSize: 12, color: "#555", marginTop: 5 },
 
   block: { marginBottom: 20, paddingHorizontal: 20 },
   label: { fontSize: 18, marginBottom: 8 },
