@@ -2,6 +2,7 @@ import { PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsDefined, IsUUID, ValidateNested } from 'class-validator';
 import { UUIdEntryDto } from 'src/common/dto/uuid-entry.dto';
+
 import { CreateGroupDto } from './create-group.dto';
 
 export class UpdateGroupDto extends PartialType(CreateGroupDto) {

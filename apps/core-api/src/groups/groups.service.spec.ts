@@ -5,6 +5,7 @@ import { GroupEntity } from 'src/common/entities/group.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { SecurityService } from 'src/security/security.service';
 import { In, Repository } from 'typeorm';
+
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { GroupService } from './groups.service';
@@ -124,8 +125,9 @@ describe('GroupService', () => {
   describe('createGroup', () => {
     it('should create a group with unique invite code', async () => {
       securityService.generateRandomToken.mockReturnValue('NEW');
+      securityService.generateRandomToken.mockReturnValue('NEW');
       groupRepository.findOneBy.mockResolvedValue(null); // Code is unique
-      groupRepository.save.mockResolvedValue({ id: 'g1', inviteCode: 'NEW' } as any);
+      groupRepository.save.mockResolvedValue({ id: 'g1', inviteCode: 'NEW' } as GroupEntity);
 
       const dto = { name: 'New Group', members: [] } as CreateGroupDto;
       const result = await service.createGroup('owner-1', dto);
@@ -146,7 +148,7 @@ describe('GroupService', () => {
         .mockResolvedValueOnce({ id: 'existing' } as GroupEntity) // First check: Taken
         .mockResolvedValueOnce(null); // Second check: Free
 
-      groupRepository.save.mockResolvedValue({} as any);
+      groupRepository.save.mockResolvedValue({} as GroupEntity);
 
       await service.createGroup('owner-1', { name: 'G' } as CreateGroupDto);
 
@@ -185,7 +187,7 @@ describe('GroupService', () => {
 
       groupRepository.findOne.mockResolvedValue(groupWithOneMember);
       userRepository.findOneBy.mockResolvedValue(mockUser);
-      groupRepository.save.mockResolvedValue({} as any);
+      groupRepository.save.mockResolvedValue({} as GroupEntity);
 
       const result = await service.joinByInviteCode('user-1', 'ABC');
 
@@ -212,7 +214,7 @@ describe('GroupService', () => {
       groupRepository.findOne.mockResolvedValue(mockGroup);
       const newMember = { id: 'new-mem' } as UserEntity;
       userRepository.find.mockResolvedValue([newMember]);
-      groupRepository.save.mockImplementation(async (g) => g as any);
+      groupRepository.save.mockImplementation(async (g) => g as GroupEntity);
 
       const dto = { id: 'group-1', name: 'Updated Name', members: [{ id: 'new-mem' }] } as UpdateGroupDto;
 
@@ -238,7 +240,7 @@ describe('GroupService', () => {
       // Explicitly define group state for this test
       const group = { ...mockGroup, members: [mockOwner, mockUser] } as GroupEntity;
       groupRepository.findOne.mockResolvedValue(group);
-      groupRepository.save.mockResolvedValue({} as any);
+      groupRepository.save.mockResolvedValue({} as GroupEntity);
 
       await service.leaveGroup('user-1', 'group-1');
 
@@ -256,7 +258,7 @@ describe('GroupService', () => {
   describe('deleteGroup', () => {
     it('should remove group if owner', async () => {
       groupRepository.findOne.mockResolvedValue(mockGroup);
-      groupRepository.remove.mockResolvedValue({} as any);
+      groupRepository.remove.mockResolvedValue({} as GroupEntity);
 
       await service.deleteGroup('owner-1', 'group-1');
 

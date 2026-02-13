@@ -7,6 +7,7 @@ import * as path from 'path';
 import { ExternalFilesEntity } from 'src/common/entities/external-files.entity';
 import { FileParam } from 'src/common/types/file-param';
 import { QueryRunner, Repository } from 'typeorm';
+
 import { ExternalFilesService } from './external-files.service';
 
 jest.mock('fs', () => {
@@ -41,7 +42,7 @@ describe('ExternalFilesService', () => {
     buffer: MOCK_FILE_BUFFER,
     mimetype: 'image/png',
     size: MOCK_FILE_BUFFER.length,
-  } as any;
+  } as FileParam;
 
   const mockEntity = {
     id: 'file-123',
@@ -140,7 +141,7 @@ describe('ExternalFilesService', () => {
 
   describe('getStreamableFile', () => {
     it('should call getFile if id provided', async () => {
-      const spy = jest.spyOn(service, 'getFile').mockResolvedValue('STREAM' as any);
+      const spy = jest.spyOn(service, 'getFile').mockResolvedValue('STREAM' as unknown as StreamableFile);
       const result = await service.getStreamableFile({ id: '123' });
       expect(spy).toHaveBeenCalledWith('123');
       expect(result).toBe('STREAM');
@@ -192,7 +193,7 @@ describe('ExternalFilesService', () => {
   describe('replaceFile', () => {
     it('should upload new and delete old', async () => {
       const spyUpload = jest.spyOn(service, 'upload').mockResolvedValue(mockEntity);
-      const spyDelete = jest.spyOn(service, 'delete').mockResolvedValue({} as any);
+      const spyDelete = jest.spyOn(service, 'delete').mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
       await service.replaceFile('old-id', mockFileParam);
       expect(spyUpload).toHaveBeenCalledWith(mockFileParam, undefined);
       expect(spyDelete).toHaveBeenCalledWith('old-id', undefined);

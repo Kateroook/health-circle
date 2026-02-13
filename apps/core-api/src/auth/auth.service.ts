@@ -1,19 +1,19 @@
 import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
 import type { Response } from 'express';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
-import { UserSessionEntity } from 'src/common/entities/user-sessions.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
+import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
+import { UserSessionEntity } from 'src/common/entities/user-sessions.entity';
+import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { SecurityService } from 'src/security/security.service';
+import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { IsNull, Repository } from 'typeorm';
 
-import { InjectRepository } from '@nestjs/typeorm';
-import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
-import { UserActivityTypes } from 'src/common/enums/user-activity-types';
-import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { RequestMetadata } from '../common/types/request-metadata';
 import { UserSetupPasswordDto } from './dto/user-setup-password.dto';
 import { UserTokenDto } from './dto/user-token.dto';

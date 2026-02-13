@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
+
 import { SecurityService } from './security.service';
 
 jest.mock('bcrypt', () => ({
@@ -52,7 +53,7 @@ describe('SecurityService', () => {
       expect(bcrypt.genSalt).toHaveBeenCalled();
       expect(bcrypt.hash).toHaveBeenCalledWith(expect.any(String), mockSalt);
 
-      const callArgs = (bcrypt.hash as jest.Mock).mock.calls[0];
+      const callArgs = (bcrypt.hash as jest.Mock).mock.calls[0] as [string, string];
       expect(callArgs[0]).not.toBe(data);
 
       expect(result).toBe(mockHash);
@@ -70,7 +71,7 @@ describe('SecurityService', () => {
 
       expect(bcrypt.compare).toHaveBeenCalledWith(expect.any(String), hash);
 
-      const callArgs = (bcrypt.compare as jest.Mock).mock.calls[0];
+      const callArgs = (bcrypt.compare as jest.Mock).mock.calls[0] as [string, string];
       expect(callArgs[0]).not.toBe(data);
 
       expect(result).toBe(true);

@@ -1,18 +1,21 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
-import { UsersService } from './users.service';
-
 import { NotFoundException, NotImplementedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { UserProfileDto } from 'src/common/dto/user-profile.dto';
+import { ExternalFilesEntity } from 'src/common/entities/external-files.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
+import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
+import { RequestMetadata } from 'src/common/types/request-metadata';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
+import { EntityManager, Repository, SelectQueryBuilder, UpdateResult } from 'typeorm';
+
+import { UsersService } from './users.service';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -39,7 +42,26 @@ describe('UsersService', () => {
         ],
       },
     ],
-  } as any;
+  } as UserEntity;
+
+  const mockMetadata: RequestMetadata = {
+    ipAddress: '127.0.0.1',
+    userAgent: 'test-agent',
+    deviceInfo: {
+      os: { name: 'Mac', version: '', platform: '', short_name: '', family: '' },
+      client: { type: 'library', name: 'test', version: '1.0', short_name: '', engine: '', engine_version: '', family: '' },
+      device: { type: 'desktop', brand: 'Apple', model: 'Mac', id: '' },
+    },
+  };
+
+  const mockUserProfile: UserProfileDto = {
+    id: 'user1',
+    email: 'test@example.com',
+    firstName: 'John',
+    lastName: 'Doe',
+    phone: null,
+    middleName: undefined,
+  };
 
   //
   // MOCK FACTORIES
@@ -52,11 +74,7 @@ describe('UsersService', () => {
       remove: jest.fn(),
       existsBy: jest.fn(),
       create: jest.fn(),
-      createQueryBuilder: jest.fn().mockReturnValue({
-        where: jest.fn().mockReturnThis(),
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-        getOne: jest.fn(),
-      }),
+
       manager: {
         transaction: jest.fn().mockImplementation(async (fn) => {
           // Create a mock transaction manager
@@ -69,24 +87,29 @@ describe('UsersService', () => {
           return fn(trx);
         }),
       },
-    } as unknown as jest.Mocked<Repository<any>>;
+      createQueryBuilder: jest.fn(() => ({
+          where: jest.fn().mockReturnThis(),
+          leftJoinAndSelect: jest.fn().mockReturnThis(),
+          getOne: jest.fn(),
+      })),
+    } as unknown as jest.Mocked<Repository<UserEntity>>;
   };
 
-  const mockConfirmationsService = (): any => ({
+  const mockConfirmationsService = () => ({
     setupPasswordCode: jest.fn(),
   });
 
-  const mockUserActivitiesService = (): any => ({
+  const mockUserActivitiesService = () => ({
     logActivity: jest.fn(),
   });
 
-  const mockExternalFilesService = (): any => ({
+  const mockExternalFilesService = () => ({
     replaceFile: jest.fn(),
     getStreamableFile: jest.fn(),
     delete: jest.fn(),
   });
 
-  const mockNotificationsService = (): any => ({
+  const mockNotificationsService = () => ({
     sendMulticast: jest.fn(),
   });
 
@@ -151,7 +174,7 @@ describe('UsersService', () => {
 
   describe('saveFcmToken', () => {
     it('updates token', async () => {
-      repository.update.mockResolvedValue({} as any);
+      repository.update.mockResolvedValue({ affected: 1 } as UpdateResult);
 
       const res = await service.saveFcmToken('u1', 't-123');
 
@@ -173,13 +196,13 @@ describe('UsersService', () => {
       // Override the default mock implementation for this test
       (repository.manager.transaction as jest.Mock).mockImplementation((fn) => fn(trx));
 
-      externalFilesService.replaceFile.mockResolvedValue({ id: 'file123' } as any);
+      externalFilesService.replaceFile.mockResolvedValue({ id: 'file123' } as ExternalFilesEntity);
 
       await service.upsertFile('user1', {
         originalname: 'a.png',
         buffer: Buffer.from('123'),
         mimetype: 'image/png',
-      } as any);
+      } as Express.Multer.File);
 
       expect(externalFilesService.replaceFile).toHaveBeenCalled();
 
@@ -201,13 +224,13 @@ describe('UsersService', () => {
 
       (repository.manager.transaction as jest.Mock).mockImplementation((fn) => fn(trx));
 
-      await expect(service.upsertFile('x', {} as any)).rejects.toThrow(NotFoundException);
+      await expect(service.upsertFile('x', {} as Express.Multer.File)).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getFile', () => {
     it('returns stream', async () => {
-      repository.findOne.mockResolvedValue({ file: { id: 'f1' } } as any);
+      repository.findOne.mockResolvedValue({ file: { id: 'f1' } } as UserEntity);
       externalFilesService.getStreamableFile.mockReturnValue('STREAM' as any);
 
       const res = await service.getFile('u1');
@@ -253,12 +276,12 @@ describe('UsersService', () => {
       // Mocking the query builder chain
       const qbMock = {
         where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue({ id: 'u1' }),
+        getOne: jest.fn().mockResolvedValue(mockUser),
       };
-      repository.createQueryBuilder.mockReturnValue(qbMock as any);
+      repository.createQueryBuilder.mockReturnValue(qbMock as unknown as SelectQueryBuilder<UserEntity>);
 
-      const res = await service.getOne('u1', { id: 'u1' } as any);
-      expect(res).toEqual({ id: 'u1' });
+      const res = await service.getOne('u1', mockUserProfile);
+      expect(res).toEqual(mockUser);
       expect(repository.createQueryBuilder).toHaveBeenCalledWith('users');
       expect(qbMock.where).toHaveBeenCalledWith('users.id = :id', { id: 'u1' });
     });
@@ -276,7 +299,7 @@ describe('UsersService', () => {
 
   describe('save', () => {
     it('creates new user', async () => {
-      repository.save.mockResolvedValue({ id: 'u1', email: 'a@a.com' } as any);
+      repository.save.mockResolvedValue({ id: 'u1', email: 'a@a.com' } as UserEntity);
 
       await service.save(
         { email: 'a@a.com' } as any,
@@ -290,7 +313,7 @@ describe('UsersService', () => {
 
     it('modifies existing user', async () => {
       repository.existsBy.mockResolvedValue(true);
-      repository.save.mockResolvedValue({ id: 'u1' } as any);
+      repository.save.mockResolvedValue({ id: 'u1' } as UserEntity);
 
       await service.save(
         { id: 'u1', email: 'x' } as any,
@@ -320,8 +343,8 @@ describe('UsersService', () => {
 
   describe('remove', () => {
     it('removes user', async () => {
-      repository.findOne.mockResolvedValue({ id: 'u1' } as any);
-      repository.remove.mockResolvedValue({} as any);
+      repository.findOne.mockResolvedValue({ id: 'u1' } as UserEntity);
+      repository.remove.mockResolvedValue({} as UserEntity);
 
       const res = await service.remove('u1', { id: 'u1' } as any, {} as any);
 

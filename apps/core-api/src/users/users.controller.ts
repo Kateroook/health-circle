@@ -14,6 +14,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -27,14 +28,13 @@ import {
   ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
+import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UUIdParamDto } from 'src/common/dto/uuid-param.dto';
 import { UserEntity } from 'src/common/entities/user.entity';
-
-import { FileInterceptor } from '@nestjs/platform-express';
-import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { AuthStrategies } from 'src/common/enums/auth-strategies';
 import { UserJwtAccessGuard } from 'src/common/guards/user-jwt-access.guard';
 import type { AuthRequest } from 'src/common/types/auth-request';
+
 import { CreateUserDto } from './dto/create-user.dto';
 import { ModifyUserDto } from './dto/modify-user.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';

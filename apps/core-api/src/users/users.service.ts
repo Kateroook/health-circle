@@ -1,20 +1,20 @@
 import { Injectable, NotFoundException, NotImplementedException, StreamableFile } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserEntity } from 'src/common/entities/user.entity';
-import { ConfirmationsService } from 'src/confirmations/confirmations.service';
-import { UserActivitiesService } from 'src/user-activities/user-activities.service';
-import { EntityManager, QueryRunner, Repository } from 'typeorm';
-
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
+import { UserEntity } from 'src/common/entities/user.entity';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
 import { ensureSameUser } from 'src/common/helpers/ensure-same-user.util';
 import { RequestMetadata } from 'src/common/types/request-metadata';
+import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { UserActivitiesService } from 'src/user-activities/user-activities.service';
+import { EntityManager, QueryRunner, Repository } from 'typeorm';
+
 import { CreateUserDto } from './dto/create-user.dto';
 import { ModifyUserDto } from './dto/modify-user.dto';
 
@@ -104,7 +104,7 @@ export class UsersService {
   async removeFile(userId: string, manager?: EntityManager): Promise<void> {
     const entityManager = manager || this.repository.manager;
     const user = await entityManager.findOne(UserEntity, {
-      where: { id: userId as any },
+      where: { id: userId },
       relations: ['file'],
     });
     if (!user) throw new NotFoundException(`Користувача не знайдено`);
@@ -143,9 +143,9 @@ export class UsersService {
     return saved;
   }
 
-  async resetPassword(userId: string, metadata: RequestMetadata) {
+  resetPassword(_userId: string, _metadata: RequestMetadata): Promise<void> {
     // todo: change to reset by email
-    throw new NotImplementedException('Reset is not implemented');
+    throw new NotImplementedException();
   }
 
   public async remove(id: string, user: UserProfileDto, metadata: RequestMetadata): Promise<{ success: boolean }> {

@@ -1,9 +1,9 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import Joi from 'joi';
-
 import { ScheduleModule } from '@nestjs/schedule';
+import Joi from 'joi';
 import { SecurityModule } from 'src/security/security.module';
+
 import { AuthModule } from './auth/auth.module';
 import { entities } from './common/entities';
 import { migrations } from './common/migrations';

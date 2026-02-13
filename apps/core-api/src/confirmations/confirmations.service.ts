@@ -2,11 +2,11 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
+import { ConfirmationCodeEntity } from 'src/common/entities/confirmation-code.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { EmailService } from 'src/email/email.service';
 import { IsNull, Repository } from 'typeorm';
 
-import { ConfirmationCodeEntity } from 'src/common/entities/confirmation-code.entity';
 import { SecurityService } from '../security/security.service';
 import { ConfirmationTypes } from './enums/confirmation-type';
 

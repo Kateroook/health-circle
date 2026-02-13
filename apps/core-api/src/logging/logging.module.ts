@@ -14,7 +14,7 @@ import { PostgresStream } from './postgres.stream';
           const streams: Stream[] = [];
 
           const logLevelName = configService.get<string>('LOG_LEVEL') || 'info';
-          const logLevel = (levelFromName as Record<string, number>)[logLevelName.toLowerCase()] || INFO;
+          const logLevel = (levelFromName as unknown as Record<string, number>)[logLevelName.toLowerCase()] || INFO;
           streams.push({
             stream: new PostgresStream({
               connection: {

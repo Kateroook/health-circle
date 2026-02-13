@@ -1,7 +1,7 @@
 import { BadRequestException, CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
-
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
+
 import { AuthRequest } from '../types/auth-request';
 
 @Injectable()

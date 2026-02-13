@@ -51,14 +51,14 @@ export class EmailService {
     });
 
     if (error) {
-      this.logger.error(
-        { to, error, type: LoggingTypes.sendMail }, 
-        'Failed to send registration confirmation email via Resend'
+      (this.logger as any).error(
+        { to, error: error as unknown as Error, type: LoggingTypes.sendMail },
+        'Failed to send registration confirmation email via Resend',
       );
       return;
     }
 
-    this.logger.info({ to, messageId: data?.id }, 'Registration email sent successfully');
+    (this.logger as any).info({ to, messageId: data?.id }, 'Registration email sent successfully');
   }
 
   public async changePassword(to: string, context: SetupPasswordContext) {
@@ -72,13 +72,13 @@ export class EmailService {
     });
 
     if (error) {
-      this.logger.error(
-        { to, error, type: LoggingTypes.sendMail }, 
-        'Failed to send setup password email via Resend'
+      (this.logger as any).error(
+        { to, error: error as unknown as Error, type: LoggingTypes.sendMail },
+        'Failed to send setup password email via Resend',
       );
       return;
     }
 
-    this.logger.info({ to, messageId: data?.id }, 'Password change email sent successfully');
+    (this.logger as any).info({ to, messageId: data?.id }, 'Password change email sent successfully');
   }
 }
