@@ -2,8 +2,8 @@ import { Injectable, NotFoundException, NotImplementedException, StreamableFile 
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
-import { UserEntity } from 'src/common/entities/user.entity';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
+import { UserEntity } from 'src/common/entities/user.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
 import { ensureSameUser } from 'src/common/helpers/ensure-same-user.util';
@@ -143,7 +143,7 @@ export class UsersService {
     return saved;
   }
 
-  resetPassword(_userId: string, _metadata: RequestMetadata): Promise<void> {
+  async resetPassword(_userId: string, _metadata: RequestMetadata): Promise<void> {
     // todo: change to reset by email
     throw new NotImplementedException();
   }

@@ -1,23 +1,23 @@
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Bunyan } from 'nestjs-bunyan';
+import { Resend } from 'resend';
 import { LoggingTypes } from 'src/common/enums/logging-types';
 
 import { EmailService } from './email.service';
 
 jest.mock('fs');
-jest.mock('nodemailer');
 jest.mock('handlebars');
+jest.mock('resend');
 
 import * as fs from 'fs';
 import * as handlebars from 'handlebars';
-import * as nodemailer from 'nodemailer';
 
 describe('EmailService', () => {
   let service: EmailService;
   let logger: jest.Mocked<Bunyan>;
   let configService: jest.Mocked<ConfigService>;
-  let mockTransporter: { sendMail: jest.Mock };
+  let mockResend: jest.Mocked<Resend>;
   let mockTemplateDelegate: jest.Mock;
 
   beforeEach(async () => {
@@ -29,17 +29,27 @@ describe('EmailService', () => {
     mockTemplateDelegate = jest.fn().mockReturnValue('<h1>Compiled HTML</h1>');
     (handlebars.compile as jest.Mock).mockReturnValue(mockTemplateDelegate);
 
-    mockTransporter = { sendMail: jest.fn().mockResolvedValue({}) };
-    (nodemailer.createTransport as jest.Mock).mockReturnValue(mockTransporter);
+    const mockEmails = {
+        send: jest.fn().mockResolvedValue({ data: { id: 'msg_123' }, error: null }),
+    };
+
+    // Mock Resend constructor
+    (Resend as unknown as jest.Mock).mockImplementation(() => ({
+      emails: mockEmails,
+    }));
 
     const mockConfigService = {
       getOrThrow: jest.fn((key: string) => {
-        if (key === 'EMAIL_PORT') return 587;
+        if (key === 'RESEND_API_KEY') return 're_123';
+        if (key === 'EMAIL_FROM') return 'test@example.com';
         return 'test-value';
       }),
     };
 
-    const mockLogger = { error: jest.fn() };
+    const mockLogger = { 
+        error: jest.fn(),
+        info: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -52,17 +62,14 @@ describe('EmailService', () => {
     service = module.get<EmailService>(EmailService);
     logger = module.get(Bunyan);
     configService = module.get(ConfigService);
+    
+    // Access the mocked instance of Resend
+    mockResend = (service as any).resend;
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
-    expect(nodemailer.createTransport).toHaveBeenCalledWith(
-      expect.objectContaining({
-        host: 'test-value',
-        port: 587,
-        auth: { user: 'test-value', pass: 'test-value' },
-      }),
-    );
+    expect(Resend).toHaveBeenCalledWith('re_123');
   });
 
   describe('constructor / loadTemplate', () => {
@@ -91,28 +98,32 @@ describe('EmailService', () => {
     const to = 'test@example.com';
     const context = { name: 'User', link: 'http://...' } as any;
 
-    it('should compile template and send email', async () => {
+    it('should compile template and send email via Resend', async () => {
       await service.registration(to, context);
 
       expect(mockTemplateDelegate).toHaveBeenCalledWith(context);
-      expect(mockTransporter.sendMail).toHaveBeenCalledWith({
+      expect(mockResend.emails.send).toHaveBeenCalledWith({
+        from: 'test@example.com',
         to,
-        from: 'test-value',
         subject: 'Ваш обліковий запис успішно створено',
         html: '<h1>Compiled HTML</h1>',
       });
       expect(logger.error).not.toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ to, messageId: 'msg_123' }),
+        'Registration email sent successfully'
+      );
     });
 
     it('should log error if sending fails', async () => {
-      const error = new Error('SMTP Error');
-      mockTransporter.sendMail.mockRejectedValueOnce(error);
+      const error = new Error('Resend Error');
+      (mockResend.emails.send as jest.Mock).mockResolvedValueOnce({ data: null, error: error });
 
       await service.registration(to, context);
 
       expect(logger.error).toHaveBeenCalledWith(
         expect.objectContaining({ to, error, type: LoggingTypes.sendMail }),
-        'Failed to send registration confirmation email',
+        'Failed to send registration confirmation email via Resend',
       );
     });
   });
@@ -121,7 +132,7 @@ describe('EmailService', () => {
     const to = 'test@example.com';
     const context = { name: 'User', link: 'http://...' } as any;
 
-    it('should compile template and send email', async () => {
+    it('should compile template and send email via Resend', async () => {
       if (!service['changePasswordTemplate']) {
         service['changePasswordTemplate'] = mockTemplateDelegate;
       }
@@ -129,12 +140,15 @@ describe('EmailService', () => {
       await service.changePassword(to, context);
 
       expect(mockTemplateDelegate).toHaveBeenCalledWith(context);
-      expect(mockTransporter.sendMail).toHaveBeenCalledWith(
-        expect.objectContaining({
-          to,
-          subject: 'Зміна пароля до вашого облікового запису',
-          html: '<h1>Compiled HTML</h1>',
-        }),
+      expect(mockResend.emails.send).toHaveBeenCalledWith({
+        from: 'test@example.com',
+        to,
+        subject: 'Зміна пароля до вашого облікового запису',
+        html: '<h1>Compiled HTML</h1>',
+      });
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ to, messageId: 'msg_123' }),
+        'Password change email sent successfully'
       );
     });
 
@@ -143,14 +157,14 @@ describe('EmailService', () => {
         service['changePasswordTemplate'] = mockTemplateDelegate;
       }
 
-      const error = new Error('SMTP Error');
-      mockTransporter.sendMail.mockRejectedValueOnce(error);
+      const error = new Error('Resend Error');
+      (mockResend.emails.send as jest.Mock).mockResolvedValueOnce({ data: null, error: error });
 
       await service.changePassword(to, context);
 
       expect(logger.error).toHaveBeenCalledWith(
         expect.objectContaining({ to, error, type: LoggingTypes.sendMail }),
-        'Failed to send setup password email',
+        'Failed to send setup password email via Resend',
       );
     });
   });

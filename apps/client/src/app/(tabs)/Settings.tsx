@@ -1,14 +1,14 @@
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,6 +19,7 @@ import { cleanObj } from "../../utils/clean.util";
 export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const refreshProfile = useAuthStore((s) => s.refreshProfile);
 
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [middleName, setMiddleName] = useState(user?.middleName || "");
@@ -49,6 +50,7 @@ export default function SettingsScreen() {
         ),
       });
       Alert.alert("Успіх", "Дані оновлено");
+      await refreshProfile();
     } catch (e: any) {
       Alert.alert("Помилка", e?.message || "Не вдалося оновити дані");
     }
