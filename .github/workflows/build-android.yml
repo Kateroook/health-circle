@@ -2,15 +2,7 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - dev
-    paths:
-      - 'apps/client/**'
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - 'apps/client/**'
+
 
 jobs:
   build:

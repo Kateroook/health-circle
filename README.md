@@ -5,6 +5,12 @@
 - **Client**: мобільний додаток на Expo + React Native + TypeScript
 - **Core API**: бекенд на NestJS + TypeORM + PostgreSQL
 
+### Triggering the Build
+1.  Go to the **Actions** tab in the GitHub repository.
+2.  Select **Build Android APK** from the workflows list.
+3.  Click **Run workflow**.
+4.  Once finished, the `.apk` file will be available in the **Artifacts** section of the run summary.
+
 ---
 
 ## Встановлення залежностей
