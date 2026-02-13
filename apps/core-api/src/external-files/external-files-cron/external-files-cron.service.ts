@@ -9,6 +9,7 @@ import { ExternalFilesEntity } from 'src/common/entities/external-files.entity';
 import { LoggingTypes } from 'src/common/enums/logging-types';
 import { getErrorStack } from 'src/common/helpers/get-error-stack.util';
 import { In, IsNull, Not, Repository } from 'typeorm';
+
 import config from '../../../config';
 
 const cronConfig = config().cron;
@@ -59,8 +60,12 @@ export class ExternalFilesCronService {
           `Deleted ${onlyInDir.length} files, Updated ${onlyInDbIds.length} entities`,
         );
       }
-    } catch (e) {
-      this.logger.error({ type, stack: getErrorStack(e) }, e.message || `Failed to process missing files.`);
+    } catch (e: unknown) {
+      const error = e as Error;
+      (this.logger as any).error(
+        { type, stack: getErrorStack(error) },
+        error.message || `Failed to process missing files.`,
+      );
     }
   }
 
@@ -85,10 +90,14 @@ export class ExternalFilesCronService {
           }),
         );
 
-        this.logger.info({ type, data: { toUnlinkIds } }, `Unlinked ${toUnlinkIds.length} files`);
+        (this.logger as any).info({ type, data: { toUnlinkIds } }, `Unlinked ${toUnlinkIds.length} files`);
       }
-    } catch (e) {
-      this.logger.error({ type, stack: getErrorStack(e) }, e.message || `Failed to process unlink files.`);
+    } catch (e: unknown) {
+      const error = e as Error;
+      (this.logger as any).error(
+        { type, stack: getErrorStack(error) },
+        error.message || `Failed to process unlink files.`,
+      );
     }
   }
 }

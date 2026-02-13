@@ -5,6 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConfirmationCodeEntity } from 'src/common/entities/confirmation-code.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { EmailService } from 'src/email/email.service';
+
 import { SecurityService } from '../security/security.service';
 import { ConfirmationsService } from './confirmations.service';
 import { ConfirmationTypes } from './enums/confirmation-type';

@@ -3,12 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { useContainer } from 'class-validator';
 import cookieParser from 'cookie-parser';
 import * as admin from 'firebase-admin';
+import { Bunyan } from 'nestjs-bunyan';
 import { types } from 'pg';
 
-import { useContainer } from 'class-validator';
-import { Bunyan } from 'nestjs-bunyan';
 import { AppModule } from './app.module';
 import { AuthStrategies } from './common/enums/auth-strategies';
 import { GlobalExceptionFilter } from './common/exception-filters/global-exception.filter';

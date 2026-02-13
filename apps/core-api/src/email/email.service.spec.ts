@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Bunyan } from 'nestjs-bunyan';
 import { LoggingTypes } from 'src/common/enums/logging-types';
+
 import { EmailService } from './email.service';
 
 jest.mock('fs');

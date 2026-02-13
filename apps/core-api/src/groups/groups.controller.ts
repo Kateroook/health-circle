@@ -5,6 +5,7 @@ import { GroupEntity } from 'src/common/entities/group.entity';
 import { AuthStrategies } from 'src/common/enums/auth-strategies';
 import { UserJwtAccessGuard } from 'src/common/guards/user-jwt-access.guard';
 import type { AuthRequest } from 'src/common/types/auth-request';
+
 import { CreateGroupDto } from './dto/create-group.dto';
 import { JoinGroupDto } from './dto/join-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';

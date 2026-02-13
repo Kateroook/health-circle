@@ -1,4 +1,5 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
+
 import { UserActivityTypes } from '../enums/user-activity-types';
 
 export class CreateDataLogsEntity1762594452409 implements MigrationInterface {

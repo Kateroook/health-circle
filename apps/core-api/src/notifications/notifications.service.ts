@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 
 @Injectable()
 export class NotificationsService {
-  async sendMulticast(tokens: string[], title: string, body: string, data?: any) {
+  async sendMulticast(tokens: string[], title: string, body: string, data?: Record<string, string>) {
     if (!tokens.length) return;
 
     try {

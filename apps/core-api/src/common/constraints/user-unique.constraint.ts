@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
 import { ModifyUserDto } from 'src/users/dto/modify-user.dto';
 import { Repository } from 'typeorm';
+
 import { UserEntity } from '../entities/user.entity';
 
 @ValidatorConstraint({ name: 'IsUserUnique', async: true })

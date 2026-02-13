@@ -1,8 +1,15 @@
 // @ts-check
 import eslint from '@eslint/js';
 import prettierConfig from 'eslint-config-prettier';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
+import unusedImports from 'eslint-plugin-unused-imports';
 import globals from 'globals';
+import { dirname } from 'path';
 import tseslint from 'typescript-eslint';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default tseslint.config(
   {
@@ -19,12 +26,17 @@ export default tseslint.config(
       },
       sourceType: 'commonjs',
       parserOptions: {
-        project: true,
-        tsconfigRootDir: import.meta.dirname,
+        project: 'tsconfig.json',
+        tsconfigRootDir: __dirname,
+        sourceType: 'module',
       },
     },
   },
   {
+    plugins: {
+      'simple-import-sort': simpleImportSort,
+      'unused-imports': unusedImports,
+    },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
@@ -53,6 +65,12 @@ export default tseslint.config(
           argsIgnorePattern: '^_',
         },
       ],
+    },
+  },
+  {
+    files: ['**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
 );

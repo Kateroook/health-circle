@@ -5,14 +5,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Response } from 'express';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
+import { UserEntity } from 'src/common/entities/user.entity';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserSessionEntity } from 'src/common/entities/user-sessions.entity';
-import { UserEntity } from 'src/common/entities/user.entity';
 import { RequestMetadata } from 'src/common/types/request-metadata';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { Repository } from 'typeorm';
+
 import { AuthService } from './auth.service';
 import { UserSetupPasswordDto } from './dto/user-setup-password.dto';
 
@@ -23,7 +24,6 @@ describe('AuthService', () => {
   let userSessionRepository: jest.Mocked<Repository<UserSessionEntity>>;
   let securityService: jest.Mocked<SecurityService>;
   let jwtService: jest.Mocked<JwtService>;
-  let configService: jest.Mocked<ConfigService>;
   let confirmationService: jest.Mocked<ConfirmationsService>;
   let userActivitiesService: jest.Mocked<UserActivitiesService>;
 
@@ -80,7 +80,7 @@ describe('AuthService', () => {
           useValue: {
             findOne: jest.fn(),
             find: jest.fn(),
-            create: jest.fn((dto) => dto),
+            create: jest.fn((dto: unknown) => dto as UserSessionEntity),
             save: jest.fn(),
           },
         },
@@ -112,7 +112,6 @@ describe('AuthService', () => {
     userSessionRepository = module.get(getRepositoryToken(UserSessionEntity));
     securityService = module.get(SecurityService);
     jwtService = module.get(JwtService);
-    configService = module.get(ConfigService);
     confirmationService = module.get(ConfirmationsService);
     userActivitiesService = module.get(UserActivitiesService);
   });
@@ -124,7 +123,7 @@ describe('AuthService', () => {
   describe('validateUser', () => {
     it('should return user profile if credentials are valid', async () => {
       userRepository.findOne.mockResolvedValue(mockUserEntity);
-      userPasswordRepository.findOne.mockResolvedValue({ passwordHash: 'hash' } as any);
+      userPasswordRepository.findOne.mockResolvedValue({ passwordHash: 'hash' } as UserPasswordEntity);
       securityService.validate.mockResolvedValue(true);
 
       const result = await service.validateUser('test@example.com', 'pass', mockMetadata);
@@ -139,13 +138,13 @@ describe('AuthService', () => {
     });
 
     it('should throw ForbiddenException if user is locked', async () => {
-      userRepository.findOne.mockResolvedValue({ ...mockUserEntity, lockedAt: new Date() } as any);
+      userRepository.findOne.mockResolvedValue({ ...mockUserEntity, lockedAt: new Date() } as UserEntity);
       await expect(service.validateUser('x', 'p', mockMetadata)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw UnauthorizedException if password invalid', async () => {
       userRepository.findOne.mockResolvedValue(mockUserEntity);
-      userPasswordRepository.findOne.mockResolvedValue({ passwordHash: 'hash' } as any);
+      userPasswordRepository.findOne.mockResolvedValue({ passwordHash: 'hash' } as UserPasswordEntity);
       securityService.validate.mockResolvedValue(false);
 
       await expect(service.validateUser('x', 'p', mockMetadata)).rejects.toThrow(UnauthorizedException);
@@ -158,8 +157,8 @@ describe('AuthService', () => {
       const session = {
         id: 'sess-1',
         user: mockUserEntity,
-      };
-      userSessionRepository.findOne.mockResolvedValue(session as any);
+      } as UserSessionEntity;
+      userSessionRepository.findOne.mockResolvedValue(session);
 
       const payload = { sub: 'user-123', jti: 'jti-123' };
       const result = await service.verifyUser(payload, mockMetadata);
@@ -176,7 +175,7 @@ describe('AuthService', () => {
     it('should throw ForbiddenException if user locked', async () => {
       userSessionRepository.findOne.mockResolvedValue({
         user: { ...mockUserEntity, lockedAt: new Date() },
-      } as any);
+      } as UserSessionEntity);
       await expect(service.verifyUser({ sub: 'u', jti: 'j' }, mockMetadata)).rejects.toThrow(ForbiddenException);
     });
   });
@@ -187,8 +186,8 @@ describe('AuthService', () => {
         id: 'sess-1',
         user: mockUserEntity,
         tokenHash: 'hashed-token',
-      };
-      userSessionRepository.findOne.mockResolvedValue(session as any);
+      } as UserSessionEntity;
+      userSessionRepository.findOne.mockResolvedValue(session);
       securityService.validate.mockResolvedValue(true);
 
       const result = await service.verifySession('raw-token', { sub: 'u', jti: 'j' });
@@ -197,7 +196,7 @@ describe('AuthService', () => {
 
     it('should throw UnauthorizedException if hash mismatch', async () => {
       const session = { tokenHash: 'hashed-token' };
-      userSessionRepository.findOne.mockResolvedValue(session as any);
+      userSessionRepository.findOne.mockResolvedValue(session as unknown as UserSessionEntity);
       securityService.validate.mockResolvedValue(false);
 
       await expect(service.verifySession('t', { sub: 'u', jti: 'j' })).rejects.toThrow(UnauthorizedException);
@@ -207,8 +206,8 @@ describe('AuthService', () => {
   describe('login', () => {
     it('should generate tokens, revoke old sessions, and save new session', async () => {
       const userProfile = new UserProfileDto({ ...mockUserEntity });
-      userSessionRepository.find.mockResolvedValue([{ id: 'old-sess' } as any]);
-      userSessionRepository.save.mockResolvedValue({} as any);
+      userSessionRepository.find.mockResolvedValue([{ id: 'old-sess' } as UserSessionEntity]);
+      userSessionRepository.save.mockResolvedValue({} as UserSessionEntity);
       securityService.hash.mockResolvedValue('new-hash');
 
       const result = await service.login(userProfile, mockMetadata, mockResponse);
@@ -219,7 +218,7 @@ describe('AuthService', () => {
 
       // 2. Old sessions revoked
       expect(userSessionRepository.save).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ revokedAt: expect.any(Date) })]),
+        expect.arrayContaining([expect.objectContaining({ revokedAt: expect.any(Date) as unknown })]),
       );
 
       // 3. Activity logged
@@ -253,7 +252,7 @@ describe('AuthService', () => {
 
       expect(userSessionRepository.save).toHaveBeenCalledWith({
         id: 'sess-1',
-        revokedAt: expect.any(Date),
+        revokedAt: expect.any(Date) as unknown,
       });
       expect(userActivitiesService.logActivity).toHaveBeenCalled();
     });
@@ -284,7 +283,7 @@ describe('AuthService', () => {
     });
 
     it('should throw if user already has password', async () => {
-      userPasswordRepository.findOne.mockResolvedValue({ id: 'existing' } as any);
+      userPasswordRepository.findOne.mockResolvedValue({ id: 'existing' } as UserPasswordEntity);
       await expect(service.setupPassword(userProfile, dto)).rejects.toThrow(ForbiddenException);
     });
   });

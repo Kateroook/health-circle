@@ -4,6 +4,7 @@ import { Strategy } from 'passport-local';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { AuthStrategies } from 'src/common/enums/auth-strategies';
 import { AuthRequest } from 'src/common/types/auth-request';
+
 import { AuthService } from '../auth.service';
 
 @Injectable()

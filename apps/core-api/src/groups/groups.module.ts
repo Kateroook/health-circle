@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { GroupEntity } from 'src/common/entities/group.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { SecurityModule } from 'src/security/security.module';
+
 import { GroupController } from './groups.controller';
 import { GroupService } from './groups.service';
 

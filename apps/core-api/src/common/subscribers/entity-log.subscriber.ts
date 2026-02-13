@@ -1,7 +1,7 @@
 import { EntitySubscriberInterface, EventSubscriber, InsertEvent, UpdateEvent } from 'typeorm';
 
-import { DataLogChangesEntity } from '../entities/data-logs-changes.entity';
 import { DataLogEntity } from '../entities/data-logs.entity';
+import { DataLogChangesEntity } from '../entities/data-logs-changes.entity';
 import { getErrorStack } from '../helpers/get-error-stack.util';
 
 // Define interfaces for entities with logging fields
