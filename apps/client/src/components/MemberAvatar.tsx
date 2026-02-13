@@ -1,7 +1,7 @@
 import { getAvatarUrl } from "@/src/api/api";
 import { COLORS } from "@/src/theme/colors";
 import React, { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 import { Member } from "./circle/CircleItem";
 
 const getBorderColor = (status: Member["status"]) => {
@@ -17,26 +17,16 @@ const getBorderColor = (status: Member["status"]) => {
 const MemberAvatar = ({ member }: { member: Member }) => {
   const [imageError, setImageError] = useState(false);
   const avatarUrl = getAvatarUrl(member.id);
-
   const borderColor = getBorderColor(member.status);
-
-  const initials =
-    `${member.firstName?.[0] || ""}${member.lastName?.[0] || ""}`.toUpperCase() ||
-    "?";
+  const defaultAvatar = require("@/src/assets/images/default-avatar.png");
 
   return (
     <View style={[styles.avatarWrapper, { borderColor }]}>
-      {!imageError ? (
-        <Image
-          source={{ uri: avatarUrl }}
-          style={styles.avatar}
-          onError={() => setImageError(true)}
-        />
-      ) : (
-        <View style={[styles.avatar, styles.initialsContainer]}>
-          <Text style={styles.initialsText}>{initials}</Text>
-        </View>
-      )}
+      <Image
+        source={!imageError && avatarUrl ? { uri: avatarUrl } : defaultAvatar}
+        style={styles.avatar}
+        onError={() => setImageError(true)}
+      />
     </View>
   );
 };
