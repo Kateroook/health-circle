@@ -53,7 +53,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
     try {
       const response = await apiFetch("/groups", {
         method: "POST",
-        body: JSON.stringify({ name: circleName }),
+        body: JSON.stringify({ name: circleName.trim() }),
       });
       const code = response.inviteCode || "";
       setGeneratedCode(code.split(""));
@@ -184,6 +184,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
                   placeholderTextColor="#C7C7CC"
                   value={circleName}
                   onChangeText={setCircleName}
+                  maxLength={100}
                 />
                 <Text style={styles.sectionLabel}>Код кола</Text>
                 <View style={styles.codeRow}>
@@ -197,9 +198,10 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
                   style={[
                     styles.btn,
                     styles.blueBtn,
-                    (!circleName || isCreating) && styles.disabled,
+                    (circleName.trim().length < 3 || isCreating) &&
+                      styles.disabled,
                   ]}
-                  disabled={!circleName || isCreating}
+                  disabled={circleName.trim().length < 3 || isCreating}
                   onPress={handleCreateCircle}
                 >
                   <Text style={styles.btnText}>
