@@ -34,17 +34,55 @@ export default function SettingsScreen() {
     if (user?.id) setAvatarUrl(`${getAvatarUrl(user.id)}?t=${Date.now()}`);
   }, [user]);
 
+  const validate = () => {
+    const errors: string[] = [];
+    const trimmedFirst = firstName.trim();
+    const trimmedLast = lastName.trim();
+    const trimmedMiddle = middleName.trim();
+    const trimmedPhone = phone.trim();
+
+    if (!trimmedFirst || trimmedFirst.length < 2) {
+      errors.push("Імʼя має містити не менше 2 символів");
+    } else if (trimmedFirst.length > 50) {
+      errors.push("Імʼя має містити не більше 50 символів");
+    }
+
+    if (!trimmedLast || trimmedLast.length < 2) {
+      errors.push("Прізвище має містити не менше 2 символів");
+    } else if (trimmedLast.length > 50) {
+      errors.push("Прізвище має містити не більше 50 символів");
+    }
+
+    if (trimmedMiddle && trimmedMiddle.length < 2) {
+      errors.push("По-батькові має містити не менше 2 символів");
+    } else if (trimmedMiddle.length > 50) {
+      errors.push("По-батькові має містити не більше 50 символів");
+    }
+
+    if (!trimmedPhone) {
+      errors.push("Номер телефону є обовʼязковим");
+    }
+
+    return errors;
+  };
+
   const handleSave = async () => {
+    const errors = validate();
+    if (errors.length > 0) {
+      Alert.alert("Помилка", errors.join("\n"));
+      return;
+    }
+
     try {
       await apiFetch("/users", {
         method: "PUT",
         body: JSON.stringify(
           cleanObj({
             id: user?.id,
-            firstName,
-            middleName,
-            lastName,
-            phone,
+            firstName: firstName.trim(),
+            middleName: middleName.trim(),
+            lastName: lastName.trim(),
+            phone: phone.trim(),
             email: user?.email,
           })
         ),
@@ -124,22 +162,28 @@ export default function SettingsScreen() {
 
   const fields = [
     {
+      label: "Прізвище",
+      value: lastName,
+      setter: setLastName,
+      placeholder: "Введіть прізвище",
+      maxLength: 50,
+      required: true,
+    },
+    {
       label: "Імʼя",
       value: firstName,
       setter: setFirstName,
       placeholder: "Введіть імʼя",
+      maxLength: 50,
+      required: true,
     },
     {
       label: "По-батькові",
       value: middleName,
       setter: setMiddleName,
       placeholder: "Введіть по-батькові",
-    },
-    {
-      label: "Прізвище",
-      value: lastName,
-      setter: setLastName,
-      placeholder: "Введіть прізвище",
+      maxLength: 50,
+      required: false,
     },
     {
       label: "Номер телефону",
@@ -147,6 +191,7 @@ export default function SettingsScreen() {
       setter: setPhone,
       placeholder: "+380...",
       keyboardType: "phone-pad",
+      required: true,
     },
   ];
 
@@ -184,7 +229,10 @@ export default function SettingsScreen() {
 
         {fields.map((field) => (
           <View key={field.label} style={styles.block}>
-            <Text style={styles.label}>{field.label}</Text>
+            <Text style={styles.label}>
+              {field.label}
+              {field.required && <Text style={styles.requiredStar}> *</Text>}
+            </Text>
             <TextInput
               style={styles.input}
               value={field.value}
@@ -192,6 +240,7 @@ export default function SettingsScreen() {
               placeholder={field.placeholder}
               placeholderTextColor="#999"
               keyboardType={field.keyboardType as any}
+              maxLength={field.maxLength}
             />
           </View>
         ))}
@@ -230,6 +279,7 @@ const styles = StyleSheet.create({
 
   block: { marginBottom: 20, paddingHorizontal: 20 },
   label: { fontSize: 18, marginBottom: 8 },
+  requiredStar: { color: "#D9534F", fontSize: 18 },
   input: {
     height: 50,
     backgroundColor: "#eee",
