@@ -2,51 +2,35 @@ import { useAuthStore } from "@/src/store/authStore";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
+import { formatErrorMessage } from "../../utils/error.util";
 
 export default function Login() {
   const { login } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   async function handleLogin() {
-    setError("");
+    setFormError("");
     setLoading(true);
     try {
       await login(email, password);
       router.navigate("/Dashboard");
     } catch (e: any) {
-      let errorMessage = "Сталася помилка";
-
-      if (e.message) {
-        try {
-          const parsed = JSON.parse(e.message);
-          if (parsed.message) {
-            if (Array.isArray(parsed.message)) {
-              errorMessage = parsed.message.join(", ");
-            } else {
-              errorMessage = parsed.message;
-            }
-          }
-        } catch {
-          errorMessage = e.message;
-        }
-      }
-
-      setError(errorMessage);
+      setFormError(formatErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -114,7 +98,7 @@ export default function Login() {
               </View>
             </View>
 
-            {error && (
+            {formError && (
               <View style={styles.errorContainer}>
                 <Icon
                   name="alert-circle"
@@ -122,7 +106,7 @@ export default function Login() {
                   color="#D32F2F"
                   style={{ marginRight: 8 }}
                 />
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={styles.errorText}>{formError}</Text>
               </View>
             )}
 

@@ -13,6 +13,7 @@ import {
 } from "react-native";
 // 1. Import the library
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { formatErrorMessage } from "../../utils/error.util";
 import OtpInput from "../OtpInput";
 
 interface AddCircleModalProps {
@@ -61,11 +62,10 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
 
       if (onUpdated) onUpdated();
     } catch (error: any) {
-      let msg = "Не вдалося створити коло. Спробуйте ще раз.";
-      try {
-        const parsed = JSON.parse(error?.message);
-        if (parsed?.message) msg = parsed.message;
-      } catch {}
+      const msg = formatErrorMessage(
+        error,
+        "Не вдалося створити коло. Спробуйте ще раз."
+      );
       Alert.alert("Помилка", msg);
       console.error("Create circle error:", error);
     } finally {
@@ -91,11 +91,10 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
       if (onUpdated) onUpdated();
       onClose();
     } catch (error: any) {
-      let msg = "Не вдалося приєднатися до кола. Перевірте код.";
-      try {
-        const parsed = JSON.parse(error?.message);
-        if (parsed?.message) msg = parsed.message;
-      } catch {}
+      const msg = formatErrorMessage(
+        error,
+        "Не вдалося приєднатися до кола. Перевірте код."
+      );
       Alert.alert("Помилка", msg);
       console.error("Join circle error:", error);
     } finally {

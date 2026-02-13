@@ -1,31 +1,32 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
 import { apiFetch } from "../../api/api";
+import { formatErrorMessage } from "../../utils/error.util";
 
 export default function PasswordSetup() {
   const { email } = useLocalSearchParams<{ email: string }>();
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleSubmit() {
-    setError("");
+    setFormError("");
     setLoading(true);
     try {
       await apiFetch(`/auth/password-setup?email=${email}&code=${code}`, {
@@ -34,24 +35,7 @@ export default function PasswordSetup() {
       });
       router.replace("/Login");
     } catch (e: any) {
-      let errorMessage = "Сталася помилка";
-
-      if (e.message) {
-        try {
-          const parsed = JSON.parse(e.message);
-          if (parsed.message) {
-            if (Array.isArray(parsed.message)) {
-              errorMessage = parsed.message.join(", ");
-            } else {
-              errorMessage = parsed.message;
-            }
-          }
-        } catch {
-          errorMessage = e.message;
-        }
-      }
-
-      setError(errorMessage);
+      setFormError(formatErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -154,7 +138,7 @@ export default function PasswordSetup() {
               </View>
             </View>
 
-            {error && (
+            {formError && (
               <View style={styles.errorContainer}>
                 <Icon
                   name="alert-circle"
@@ -162,7 +146,7 @@ export default function PasswordSetup() {
                   color="#D32F2F"
                   style={{ marginRight: 8 }}
                 />
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={styles.errorText}>{formError}</Text>
               </View>
             )}
 

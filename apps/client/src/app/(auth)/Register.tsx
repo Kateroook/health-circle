@@ -1,17 +1,18 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
+import { formatErrorMessage } from "../../utils/error.util";
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -22,13 +23,13 @@ export default function Register() {
     lastName: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
 
   const handleChange = (key: string, value: string) =>
     setForm({ ...form, [key]: value });
 
   async function handleRegister() {
-    setError("");
+    setFormError("");
     setLoading(true);
     try {
       await apiFetch("/users", { method: "POST", body: JSON.stringify(form) });
@@ -37,27 +38,7 @@ export default function Register() {
         params: { email: form.email },
       });
     } catch (e: any) {
-      // Парсимо помилку для читабельного виводу
-      let errorMessage = "Сталася помилка";
-
-      if (e.message) {
-        try {
-          // Якщо помилка у форматі JSON
-          const parsed = JSON.parse(e.message);
-          if (parsed.message) {
-            if (Array.isArray(parsed.message)) {
-              errorMessage = parsed.message.join(", ");
-            } else {
-              errorMessage = parsed.message;
-            }
-          }
-        } catch {
-          // Якщо не JSON, використовуємо як є
-          errorMessage = e.message;
-        }
-      }
-
-      setError(errorMessage);
+      setFormError(formatErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -124,10 +105,10 @@ export default function Register() {
               </View>
             ))}
 
-            {error && (
+            {formError && (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorIcon}>⚠️</Text>
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={styles.errorText}>{formError}</Text>
               </View>
             )}
 
