@@ -1,13 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class NotificationsService {
-  constructor(
-    @InjectPinoLogger(NotificationsService.name)
-    private readonly logger: PinoLogger,
-  ) {}
+  private readonly logger = new Logger(NotificationsService.name);
 
   async sendMulticast(tokens: string[], title: string, body: string, data?: Record<string, string>) {
     if (!tokens.length) return;
@@ -19,16 +15,16 @@ export class NotificationsService {
         data,
       });
 
-      this.logger.info('Notifications sent: %d success, %d failed', response.successCount, response.failureCount);
+      this.logger.log(`Notifications sent: ${response.successCount} success, ${response.failureCount} failed`);
       if (response.failureCount > 0) {
         response.responses.forEach((resp, idx) => {
           if (!resp.success) {
-            this.logger.error({ token: tokens[idx], error: resp.error }, 'Failed to send notification');
+            this.logger.error(`Failed to send notification to token ${tokens[idx]}: ${resp.error?.message}`);
           }
         });
       }
     } catch (error: unknown) {
-      this.logger.error({ error: String(error) }, 'Error sending notification');
+      this.logger.error('Error sending notification', error instanceof Error ? error.stack : String(error));
     }
   }
 }
