@@ -132,8 +132,14 @@ export async function apiUploadFile(
   return res;
 }
 
-export function getAvatarUrl(userId: string) {
-  const url = `${API_URL}/users/${userId}/avatar`;
+export function getAvatarUrl(
+  userId: string,
+  timestamp?: string | number | Date
+) {
+  let url = `${API_URL}/users/${userId}/avatar`;
+  if (timestamp) {
+    url += `?t=${new Date(timestamp).getTime()}`;
+  }
   if (__DEV__) console.log(`[getAvatarUrl] → ${url}`);
   return url;
 }

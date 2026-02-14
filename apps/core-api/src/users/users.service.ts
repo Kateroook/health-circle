@@ -91,6 +91,7 @@ export class UsersService {
         },
         trx.queryRunner,
       );
+      user.avatarUpdatedAt = new Date();
       return trx.save(user);
     });
   }
@@ -111,6 +112,7 @@ export class UsersService {
     if (!user.file?.id) throw new NotFoundException(`Нема файлу для видалення`);
     await this.externalFilesService.delete(user.file.id, entityManager.queryRunner);
     user.file = undefined;
+    user.avatarUpdatedAt = new Date();
     await entityManager.save(UserEntity, user);
   }
 

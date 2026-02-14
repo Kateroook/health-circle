@@ -19,6 +19,7 @@ export default () => ({
     username: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASS,
     database: process.env.POSTGRES_DB_NAME,
+    ssl: process.env.POSTGRES_SSL === 'true',
   },
   cron: {
     missedFilesEnabled: process.env.CRON_MISSED_FILES_ENABLED === 'true',

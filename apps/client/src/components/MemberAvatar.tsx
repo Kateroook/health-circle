@@ -16,7 +16,7 @@ const getBorderColor = (status: Member["status"]) => {
 
 const MemberAvatar = ({ member }: { member: Member }) => {
   const [imageError, setImageError] = useState(false);
-  const avatarUrl = getAvatarUrl(member.id);
+  const avatarUrl = getAvatarUrl(member.id, member.avatarUpdatedAt);
   const borderColor = getBorderColor(member.status);
   const defaultAvatar = require("@/src/assets/images/default-avatar.png");
 

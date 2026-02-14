@@ -1,14 +1,14 @@
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToMany,
-  OneToMany,
-  OneToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    Entity,
+    Index,
+    JoinColumn,
+    ManyToMany,
+    OneToMany,
+    OneToOne,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 
 import { UserStatus } from '../enums/user-status';
@@ -61,6 +61,9 @@ export class UserEntity {
 
   @Column({ type: 'timestamptz', nullable: true })
   lockedAt: Date;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  avatarUpdatedAt: Date;
 
   @OneToOne(() => ExternalFilesEntity, { nullable: true, cascade: true })
   @JoinColumn()

@@ -30,6 +30,7 @@ interface Member {
   firstName: string;
   middleName: string;
   lastName: string;
+  avatarUpdatedAt?: string;
   active: boolean;
 }
 

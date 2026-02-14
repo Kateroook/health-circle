@@ -44,8 +44,8 @@ export default function SettingsScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
-    // TODO: figure out a better way to force refresh after avatar update (http caching causes issues)
-    if (user?.id) setAvatarUrl(`${getAvatarUrl(user.id)}?t=${Date.now()}`);
+    if (user?.id)
+      setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
   }, [user]);
 
   const validate = () => {
@@ -129,7 +129,8 @@ export default function SettingsScreen() {
           type,
         });
         // refresh avatar with cache-busting
-        setAvatarUrl(`${getAvatarUrl(user?.id)}?t=${Date.now()}`);
+        // setAvatarUrl(`${getAvatarUrl(user?.id)}?t=${Date.now()}`);
+        await refreshProfile();
         Alert.alert("Успіх", "Аватар оновлено");
       } catch (e: any) {
         Alert.alert("Помилка", e?.message || "Не вдалося оновити аватар");
