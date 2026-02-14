@@ -1,0 +1,4 @@
+{
+  "apps/client/**/*.{ts,tsx}": "npm run lint --prefix apps/client",
+  "apps/core-api/**/*.ts": "npm run lint --prefix apps/core-api"
+}
