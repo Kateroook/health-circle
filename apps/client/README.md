@@ -1,50 +1,67 @@
-# Welcome to your Expo app 👋
+# HealthCircle Client 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This is the mobile client for HealthCircle, built with [Expo](https://expo.dev).
 
-## Get started
+## Prerequisites
 
-1. Install dependencies
+Before you start, ensure you have the following installed:
 
-   ```bash
-   npm install
-   ```
+1.  **Node.js**: Latest LTS version.
+2.  **Java Development Kit (JDK)**: OpenJDK 17 is recommended.
+3.  **Android SDK**: Install via Android Studio, including **SDK Platform-Tools** (for `adb`).
 
-2. Start the app
+## Get Started
 
-   ```bash
-   npx expo start
-   ```
+1.  **Install dependencies**
+    ```bash
+    npm install
+    ```
 
-In the output, you'll find options to open the app in a
+2.  **Configure environment**
+    Copy the example environment file and update it if necessary:
+    ```bash
+    cp .env.example .env
+    ```
+    Ensure `EXPO_PUBLIC_API_URL` points to your backend (local or production).
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Android Physical Device Setup
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+To run the app on a physical Android device:
 
-## Get a fresh project
+1.  **Enable Developer Options**: Go to *Settings > About phone* and tap *Build number* 7 times.
+2.  **Enable USB Debugging**: Go to *Settings > Developer options* and toggle *USB debugging* on.
+3.  **Connect Device**: Plug your device into your computer via USB.
+4.  **Verify Connection**:
+    ```bash
+    adb devices
+    ```
+    You should see your device listed.
 
-When you're ready, run:
+## Running the App
+
+### Development Build (Android)
+
+To build and run the app on your connected Android device:
 
 ```bash
-npm run reset-project
+npm run android
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+This command will:
+-   Start the Expo CLI.
+-   Compile the native Android code.
+-   Install and launch the **development build** on your device.
 
-## Learn more
+### iOS (Simulator)
 
-To learn more about developing your project with Expo, look at the following resources:
+If you are on macOS and have Xcode installed:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm run ios
+```
 
-## Join the community
+## Learn More
 
-Join our community of developers creating universal apps.
+- [Expo documentation](https://docs.expo.dev/)
+- [React Native documentation](https://reactnative.dev/docs/getting-started)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
