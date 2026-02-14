@@ -2,6 +2,7 @@ import { saveFcmTokenToBackend } from "@/src/api/api";
 import { useAuthStore } from "@/src/store/authStore";
 import messaging from "@react-native-firebase/messaging";
 import { useEffect } from "react";
+import { showMessage } from "react-native-flash-message";
 
 export function useFcmToken() {
   const { user, accessToken } = useAuthStore();
@@ -35,6 +36,24 @@ export function useFcmToken() {
       await saveFcmTokenToBackend(newToken);
     });
 
-    return unsubscribe;
+    const unsubscribeOnMessage = messaging().onMessage(async (remoteMessage) => {
+      console.log("A new FCM message arrived!", JSON.stringify(remoteMessage));
+      if (remoteMessage.notification) {
+        showMessage({
+          message: remoteMessage.notification.title || "Нове сповіщення",
+          description: remoteMessage.notification.body,
+          type: "info",
+          duration: 3000,
+          onPress: () => {
+             // Handle notification press if needed (e.g., navigate)
+          }
+        });
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeOnMessage();
+    };
   }, [user, accessToken]);
 }
