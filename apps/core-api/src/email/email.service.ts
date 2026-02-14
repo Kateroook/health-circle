@@ -32,7 +32,8 @@ export class EmailService {
     const templatePath = resolve(__dirname, '..', 'common', 'assets', 'templates', templateName);
 
     if (!existsSync(templatePath)) {
-      this.logger.error({ type: LoggingTypes.generateMail, templatePath }, 'Email template not found');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      (this.logger as any).error({ type: LoggingTypes.generateMail, templatePath }, 'Email template not found');
       throw new Error(`Template not found: ${templateName}`);
     }
 
@@ -51,6 +52,7 @@ export class EmailService {
     });
 
     if (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       (this.logger as any).error(
         { to, error: error as unknown as Error, type: LoggingTypes.sendMail },
         'Failed to send registration confirmation email via Resend',
@@ -58,6 +60,7 @@ export class EmailService {
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     (this.logger as any).info({ to, messageId: data?.id }, 'Registration email sent successfully');
   }
 
@@ -72,6 +75,7 @@ export class EmailService {
     });
 
     if (error) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       (this.logger as any).error(
         { to, error: error as unknown as Error, type: LoggingTypes.sendMail },
         'Failed to send setup password email via Resend',
@@ -79,6 +83,7 @@ export class EmailService {
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     (this.logger as any).info({ to, messageId: data?.id }, 'Password change email sent successfully');
   }
 }

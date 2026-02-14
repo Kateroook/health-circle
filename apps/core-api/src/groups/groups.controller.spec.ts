@@ -78,7 +78,7 @@ describe('GroupController', () => {
   describe('create', () => {
     it('should create a new group', async () => {
       const dto = new CreateGroupDto();
-      const result = { inviteCode: 'ABC-123' } as any;
+      const result = { inviteCode: 'ABC-123' } as unknown as GroupEntity;
       service.createGroup.mockResolvedValue(result);
 
       const response = await controller.create(dto, mockRequest);
@@ -91,8 +91,8 @@ describe('GroupController', () => {
   describe('leave', () => {
     it('should leave the group', async () => {
       const params = { id: 'group-id' };
-      const result = { success: true };
-      service.leaveGroup.mockResolvedValue(result as any);
+      const result = { message: 'Left' };
+      service.leaveGroup.mockResolvedValue(result);
 
       const response = await controller.leave(params, mockRequest);
 
@@ -117,8 +117,8 @@ describe('GroupController', () => {
   describe('delete', () => {
     it('should delete the group', async () => {
       const params = { id: 'group-id' };
-      const result = { success: true };
-      service.deleteGroup.mockResolvedValue(result as any);
+      const result = { message: 'Deleted' };
+      service.deleteGroup.mockResolvedValue(result);
 
       const response = await controller.delete(params, mockRequest);
 
@@ -130,8 +130,8 @@ describe('GroupController', () => {
   describe('regenerateInvite', () => {
     it('should generate a new invite code', async () => {
       const params = { id: 'group-id' };
-      const result = { inviteCode: 'NEW-CODE' };
-      service.regenerateInviteCode.mockResolvedValue(result as any);
+      const result = { code: 'NEW-CODE' };
+      service.regenerateInviteCode.mockResolvedValue(result);
 
       const response = await controller.regenerateInvite(params, mockRequest);
 
@@ -143,8 +143,8 @@ describe('GroupController', () => {
   describe('joinGroup', () => {
     it('should join group by code', async () => {
       const dto: JoinGroupDto = { code: 'ABC-123' };
-      const result = { success: true };
-      service.joinByInviteCode.mockResolvedValue(result as any);
+      const result = { message: 'Joined', group: {} as GroupEntity };
+      service.joinByInviteCode.mockResolvedValue(result);
 
       const response = await controller.joinGroup(dto, mockRequest);
 

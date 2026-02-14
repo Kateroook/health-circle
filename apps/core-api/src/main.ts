@@ -30,7 +30,8 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  const logger = await app.get(Bunyan);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument
+  const logger = await app.get<Bunyan>(Bunyan);
   app.useGlobalFilters(new GlobalExceptionFilter(app.get(HttpAdapterHost), logger));
 
   app.useGlobalPipes(

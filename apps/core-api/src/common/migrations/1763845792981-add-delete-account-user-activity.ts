@@ -10,7 +10,7 @@ export class AddDeleteAccountUserActivity1763845792981 implements MigrationInter
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    return queryRunner.query(`
+    await queryRunner.query(`
       DELETE FROM dict_user_activity_types
       WHERE code = 'delete_account';
     `);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { INFO, levelFromName, Stream } from 'bunyan';

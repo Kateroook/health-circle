@@ -147,7 +147,6 @@ export class LoggerSubscriber implements EntitySubscriberInterface {
 
   async afterUpdate(event: UpdateEvent<LoggableEntity>) {
     try {
-      const entity = event.entity as LoggableEntity;
       if (loggingEntities.includes(event.metadata.name)) {
         const updatedFields = event.updatedColumns.map((item) => item.propertyName);
         event.updatedRelations.forEach((item) => {

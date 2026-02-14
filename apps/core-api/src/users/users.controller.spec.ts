@@ -122,7 +122,7 @@ describe('UsersController', () => {
       const expectedResult = { status: UserStatus.SAFE, message: 'Updated' };
 
       // We assume service returns something, though your service signature might be void or object
-      service.updateStatus.mockResolvedValue(expectedResult as any);
+      service.updateStatus.mockResolvedValue(expectedResult);
 
       const response = await controller.updateStatus(dto, mockRequest);
 
@@ -145,11 +145,11 @@ describe('UsersController', () => {
   });
 
   describe('resetPassword', () => {
-    it('should call reset password service', async () => {
+    it('should call reset password service', () => {
       const params = { id: 'user-id-123' };
-      service.resetPassword.mockResolvedValue(undefined);
+      service.resetPassword.mockReturnValue(undefined);
 
-      await controller.resetPassword(params, mockRequest);
+      controller.resetPassword(params, mockRequest);
 
       expect(service.resetPassword).toHaveBeenCalledWith(params.id, mockRequest.metadata);
     });

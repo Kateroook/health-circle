@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
 import { NotFoundException, StreamableFile } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -32,7 +33,6 @@ jest.mock('src/common/helpers/generate-hash.util', () => ({
 describe('ExternalFilesService', () => {
   let service: ExternalFilesService;
   let repository: jest.Mocked<Repository<ExternalFilesEntity>>;
-  let configService: jest.Mocked<ConfigService>;
 
   const MOCK_BASE_PATH = '/tmp/uploads';
   const MOCK_FILE_BUFFER = Buffer.from('test-content');
@@ -86,7 +86,6 @@ describe('ExternalFilesService', () => {
 
     service = module.get<ExternalFilesService>(ExternalFilesService);
     repository = module.get(getRepositoryToken(ExternalFilesEntity));
-    configService = module.get(ConfigService);
   });
 
   it('should be defined', () => {

@@ -137,7 +137,7 @@ export class AuthService {
     return new UserProfileDto({ ...user, sessionId: session.id });
   }
 
-  async login(user: UserProfileDto, metadata: RequestMetadata, response: Response) {
+  async login(user: UserProfileDto, metadata: RequestMetadata, _response: Response) {
     const accessToken = await this.getAccessToken(user.id);
     const refreshToken = await this.getRefreshToken(user.id, accessToken.jti!);
     // Revoke all user active sessions
@@ -170,7 +170,7 @@ export class AuthService {
     };
   }
 
-  async refresh(user: UserProfileDto, metadata: RequestMetadata, response: Response) {
+  async refresh(user: UserProfileDto, metadata: RequestMetadata, _response: Response) {
     const accessToken = await this.getAccessToken(user.id);
     const refreshToken = await this.getRefreshToken(user.id, accessToken.jti!);
     // Update current user session with new jti, userAgent, device info, ip, expiresAt, tokenHash
