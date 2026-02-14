@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiBody, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { instanceToPlain } from 'class-transformer';
 import type { Response } from 'express';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
@@ -9,6 +9,7 @@ import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { AuthStrategies } from '../common/enums/auth-strategies';
 import { ConfirmationRegistrationGuard } from '../common/guards/confirmation.guard';
 import { ConfirmationPasswordResetGuard } from '../common/guards/confirmation-password-reset.guard';
+import { EmailThrottlerGuard } from '../common/guards/email-throttler.guard';
 import { UserJwtAccessGuard } from '../common/guards/user-jwt-access.guard';
 import { UserJwtRefreshGuard } from '../common/guards/user-jwt-refresh.guard';
 import { UserLocalGuard } from '../common/guards/user-local.guard';
@@ -26,12 +27,12 @@ import { UserSetupPasswordDto } from './dto/user-setup-password.dto';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly configService: ConfigService,
     protected readonly confirmationsService: ConfirmationsService,
   ) {}
 
   @Post('login')
-  @UseGuards(UserLocalGuard)
+  @UseGuards(EmailThrottlerGuard, UserLocalGuard)
+  @Throttle({ long: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'User login' })
   @ApiBody({ type: UserLoginDto })
   @ApiOkResponse({
@@ -64,7 +65,8 @@ export class AuthController {
   }
 
   @Post('password-setup')
-  @UseGuards(ConfirmationRegistrationGuard)
+  @UseGuards(EmailThrottlerGuard, ConfirmationRegistrationGuard)
+  @Throttle({ long: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Setup new password' })
   async setupPassword(@Query() query: SetupPasswordDto, @Body() body: UserSetupPasswordDto, @Req() req: AuthRequest) {
     return this.authService.setupPassword(req.user, body);
@@ -92,6 +94,8 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @UseGuards(EmailThrottlerGuard)
+  @Throttle({ long: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: 'Request password reset code via email' })
   @ApiOkResponse({ description: 'If the email exists, a reset code will be sent' })
   async forgotPassword(@Body() body: ForgotPasswordDto) {
@@ -100,6 +104,8 @@ export class AuthController {
   }
 
   @Post('resend-registration-code')
+  @UseGuards(EmailThrottlerGuard)
+  @Throttle({ long: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: 'Resend registration confirmation code' })
   @ApiOkResponse({ description: 'New registration code sent' })
   async resendRegistrationCode(@Body() body: { email: string }) {

@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule } from '@nestjs/throttler';
 import Joi from 'joi';
 import { SecurityModule } from 'src/security/security.module';
 
@@ -62,18 +63,16 @@ import { UsersModule } from './users/users.module';
         EMAIL_FROM: Joi.string().email().required(),
         RESEND_API_KEY: Joi.string().required(),
 
-        // FILES
-        EXTERNAL_FILES_PATH: Joi.string().required(),
         // Cron job variables
-        CRON_MISSED_FILES_ENABLED: Joi.boolean().required(),
+        CRON_MISSED_FILES_ENABLED: Joi.string().allow('true', 'false').required(),
         CRON_MISSED_FILES_RULE: Joi.string().when('CRON_MISSED_FILES_ENABLED', {
-          is: true,
+          is: 'true',
           then: Joi.required(),
           otherwise: Joi.optional(),
         }),
-        CRON_UNLINKED_FILES_ENABLED: Joi.boolean().required(),
+        CRON_UNLINKED_FILES_ENABLED: Joi.string().allow('true', 'false').required(),
         CRON_UNLINKED_FILES_RULE: Joi.string().when('CRON_UNLINKED_FILES_ENABLED', {
-          is: true,
+          is: 'true',
           then: Joi.required(),
           otherwise: Joi.optional(),
         }),
@@ -93,6 +92,23 @@ import { UsersModule } from './users/users.module';
     ExternalFilesModule,
     ScheduleModule.forRoot(),
     NotificationsModule,
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000,
+        limit: 10, // 10 requests per second
+      },
+      {
+        name: 'medium',
+        ttl: 10000,
+        limit: 50, // 50 requests per 10 seconds
+      },
+      {
+        name: 'long',
+        ttl: 60000,
+        limit: 100, // 100 requests per minute
+      },
+    ]),
   ],
 })
 export class AppModule implements NestModule {
