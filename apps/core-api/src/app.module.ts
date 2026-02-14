@@ -12,6 +12,7 @@ import { subscribers } from './common/subscribers';
 import { EmailModule } from './email/email.module';
 import { ExternalFilesModule } from './external-files/external-files.module';
 import { GroupsModule } from './groups/groups.module';
+import { HealthModule } from './health/health.module';
 import { LoggingModule } from './logging/logging.module';
 import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -92,6 +93,7 @@ import { UsersModule } from './users/users.module';
     ExternalFilesModule,
     ScheduleModule.forRoot(),
     NotificationsModule,
+    HealthModule,
     ThrottlerModule.forRoot([
       {
         name: 'short',

@@ -69,5 +69,7 @@ async function bootstrap() {
   types.setTypeParser(types.builtins.NUMERIC, (value: string): number => parseFloat(value));
   // Write warning stack into console
   process.on('warning', (e) => console.warn('WARNING: ', e.stack));
+  
+  app.enableShutdownHooks();
 }
 void bootstrap();
