@@ -19,7 +19,7 @@ test.describe('Groups API Tests', () => {
   });
 
   test.afterAll(async ({ request }) => {
-    // Cleanup: видаляємо створену групу
+    // Cleanup: видаляємо створене коло
     if (groupId && accessToken) {
       await request.delete(`${config.baseURL}/api/groups/${groupId}`, {
         headers: {
@@ -29,13 +29,13 @@ test.describe('Groups API Tests', () => {
     }
   });
 
-  test('Створення нової групи', async ({ request }) => {
+  test('Створення нового кола', async ({ request }) => {
     const response = await request.post(`${config.baseURL}/api/groups`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
       },
       data: {
-        name: `Тестова група ${Date.now()}`
+        name: `Тестове коло ${Date.now()}`
       }
     });
     
@@ -49,7 +49,7 @@ test.describe('Groups API Tests', () => {
     expect(group).toHaveProperty('inviteCode');
   });
 
-  test('Отримання всіх груп користувача', async ({ request }) => {
+  test('Отримання всіх кіл користувача', async ({ request }) => {
     const response = await request.get(`${config.baseURL}/api/groups`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
@@ -62,8 +62,8 @@ test.describe('Groups API Tests', () => {
     expect(Array.isArray(groups)).toBeTruthy();
   });
 
-  test('Отримання групи за ID', async ({ request }) => {
-    test.skip(!groupId, 'Група не створена');
+  test('Отримання кола за ID', async ({ request }) => {
+    test.skip(!groupId, 'Коло не створено');
     
     const response = await request.get(`${config.baseURL}/api/groups/${groupId}`, {
       headers: {
@@ -80,10 +80,10 @@ test.describe('Groups API Tests', () => {
     expect(group).toHaveProperty('members');
   });
 
-  test('Оновлення назви групи', async ({ request }) => {
-    test.skip(!groupId, 'Група не створена');
+  test('Оновлення назви кола', async ({ request }) => {
+    test.skip(!groupId, 'Коло не створено');
     
-    const newName = `Оновлена група ${Date.now()}`;
+    const newName = `Оновлене коло ${Date.now()}`;
     const response = await request.put(`${config.baseURL}/api/groups`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
@@ -103,7 +103,7 @@ test.describe('Groups API Tests', () => {
   });
 
   test('Регенерація invite коду', async ({ request }) => {
-    test.skip(!groupId, 'Група не створена');
+    test.skip(!groupId, 'Коло не створено');
     
     const response = await request.post(`${config.baseURL}/api/groups/${groupId}/invite`, {
       headers: {
@@ -118,7 +118,7 @@ test.describe('Groups API Tests', () => {
     expect(result.inviteCode).not.toBe(inviteCode);
   });
 
-  test('Приєднання до групи з невалідним кодом', async ({ request }) => {
+  test('Приєднання до кола з невалідним кодом', async ({ request }) => {
     const response = await request.post(`${config.baseURL}/api/groups/join`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`
@@ -131,25 +131,25 @@ test.describe('Groups API Tests', () => {
     expect(response.status()).toBe(404);
   });
 
-  test('Отримання групи без авторизації', async ({ request }) => {
-    test.skip(!groupId, 'Група не створена');
+  test('Отримання кола без авторизації', async ({ request }) => {
+    test.skip(!groupId, 'Коло не створено');
     
     const response = await request.get(`${config.baseURL}/api/groups/${groupId}`);
     
     expect(response.status()).toBe(401);
   });
 
-  test('Створення групи без авторизації', async ({ request }) => {
+  test('Створення кола без авторизації', async ({ request }) => {
     const response = await request.post(`${config.baseURL}/api/groups`, {
       data: {
-        name: 'Неавторизована група'
+        name: 'Неавторизоване коло'
       }
     });
     
     expect(response.status()).toBe(401);
   });
 
-  test('Видалення групи за неіснуючим ID', async ({ request }) => {
+  test('Видалення кола за неіснуючим ID', async ({ request }) => {
     const fakeUUID = '00000000-0000-0000-0000-000000000000';
     
     const response = await request.delete(`${config.baseURL}/api/groups/${fakeUUID}`, {
