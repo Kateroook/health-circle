@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { instanceToPlain } from 'class-transformer';
 import { Response } from 'express';
 import { AuthRequest } from 'src/common/types/auth-request';
@@ -57,6 +58,14 @@ describe('AuthController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        ThrottlerModule.forRoot([
+          {
+            limit: 10,
+            ttl: 60,
+          },
+        ]),
+      ],
       controllers: [AuthController],
       providers: [
         { provide: AuthService, useValue: mockAuthService },
