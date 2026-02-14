@@ -24,17 +24,17 @@ jobs:
       - name: Install dependencies (Root)
         run: npm ci
 
-      # - name: Install dependencies (Client)
-      #   working-directory: ./apps/client
-      #   run: npm ci
+      - name: Install dependencies (Client)
+        working-directory: ./apps/client
+        run: npm ci
 
       - name: Install dependencies (Core API)
         working-directory: ./apps/core-api
         run: npm ci
 
-      # - name: Lint Client
-      #   working-directory: ./apps/client
-      #   run: npm run lint
+      - name: Lint Client
+        working-directory: ./apps/client
+        run: npm run lint
 
       - name: Lint Core API
         working-directory: ./apps/core-api
