@@ -9,6 +9,7 @@ export class UserProfileDto {
   lastName: string;
   email: string | null;
   phone: string | null;
+  avatarUpdatedAt?: Date;
 
   @ApiHideProperty()
   @Exclude()
@@ -27,6 +28,7 @@ export class UserProfileDto {
     this.middleName = user.middleName;
     this.email = user.email;
     this.phone = user.phone;
+    this.avatarUpdatedAt = user.avatarUpdatedAt;
     this.sessionId = user.sessionId;
   }
 }

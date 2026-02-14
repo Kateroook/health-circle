@@ -8,6 +8,7 @@ export interface Member {
   id: string;
   firstName: string;
   lastName: string;
+  avatarUpdatedAt?: string;
   status: "SAFE" | "DANGER" | "UNKNOWN";
 }
 

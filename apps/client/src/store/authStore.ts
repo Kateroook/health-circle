@@ -18,6 +18,7 @@ interface User {
   middleName: string;
   lastName: string;
   phone: string;
+  avatarUpdatedAt?: string;
   status: "SAFE" | "DANGER" | "UNKNOWN";
 }
 
@@ -65,7 +66,12 @@ export const useAuthStore = create<AuthStoreState>()(
 
         try {
           const profile = await apiFetch("/auth/profile", {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+              Pragma: "no-cache",
+              Expires: "0",
+            },
           });
 
           set({
