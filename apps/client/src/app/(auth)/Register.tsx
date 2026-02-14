@@ -22,17 +22,82 @@ export default function Register() {
     middleName: "",
     lastName: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState("");
 
-  const handleChange = (key: string, value: string) =>
+  const handleChange = (key: string, value: string) => {
     setForm({ ...form, [key]: value });
+    if (errors[key]) {
+      const newErrors = { ...errors };
+      delete newErrors[key];
+      setErrors(newErrors);
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    // First Name validation
+    if (!form.firstName.trim()) {
+      newErrors.firstName = "Поле імені є обовʼязковим";
+    } else if (form.firstName.length < 2) {
+      newErrors.firstName = "Імʼя має містити не менше 2 символів";
+    } else if (form.firstName.length > 50) {
+      newErrors.firstName = "Імʼя має містити не більше 50 символів";
+    }
+
+    // Last Name validation
+    if (!form.lastName.trim()) {
+      newErrors.lastName = "Поле прізвища є обовʼязковим";
+    } else if (form.lastName.length < 2) {
+      newErrors.lastName = "Прізвище має містити не менше 2 символів";
+    } else if (form.lastName.length > 50) {
+      newErrors.lastName = "Прізвище має містити не більше 50 символів";
+    }
+
+    // Middle Name validation (optional)
+    if (form.middleName.trim()) {
+      if (form.middleName.length < 2) {
+        newErrors.middleName = "По-батькові має містити не менше 2 символів";
+      } else if (form.middleName.length > 50) {
+        newErrors.middleName = "По-батькові має містити не більше 50 символів";
+      }
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!form.email.trim()) {
+      newErrors.email = "Поле електронної пошти є обовʼязковим";
+    } else if (!emailRegex.test(form.email)) {
+      newErrors.email = "Некоректний формат електронної пошти";
+    }
+
+    // Phone validation
+    const phoneRegex = /^\+380\d{9}$/;
+    if (!form.phone.trim()) {
+      newErrors.phone = "Поле номера телефону є обовʼязковим";
+    } else if (!phoneRegex.test(form.phone.replace(/\s/g, ""))) {
+      newErrors.phone = "Некоректний формат номера телефону (+380...)";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   async function handleRegister() {
     setFormError("");
+    if (!validateForm()) return;
+
     setLoading(true);
     try {
-      await apiFetch("/users", { method: "POST", body: JSON.stringify(form) });
+      await apiFetch("/users", {
+        method: "POST",
+        body: JSON.stringify({
+          ...form,
+          phone: form.phone.replace(/\s/g, ""), // Clean phone for API
+        }),
+      });
       router.push({
         pathname: "/PasswordSetup",
         params: { email: form.email },
@@ -45,24 +110,37 @@ export default function Register() {
   }
 
   const fields = [
-    { key: "firstName", label: "Ім'я", placeholder: "Введіть ім'я" },
+    {
+      key: "lastName",
+      label: "Прізвище",
+      placeholder: "Введіть прізвище",
+      required: true,
+    },
+    {
+      key: "firstName",
+      label: "Ім'я",
+      placeholder: "Введіть ім'я",
+      required: true,
+    },
     {
       key: "middleName",
       label: "По батькові",
       placeholder: "Введіть по батькові",
+      required: false,
     },
-    { key: "lastName", label: "Прізвище", placeholder: "Введіть прізвище" },
     {
       key: "phone",
       label: "Телефон",
       placeholder: "+380 XX XXX XX XX",
       keyboardType: "phone-pad",
+      required: true,
     },
     {
       key: "email",
       label: "Email",
       placeholder: "example@mail.com",
       keyboardType: "email-address",
+      required: true,
     },
   ];
 
@@ -91,17 +169,23 @@ export default function Register() {
 
           {/* Form */}
           <View style={styles.formContainer}>
-            {fields.map(({ key, label, placeholder, keyboardType }) => (
+            {fields.map(({ key, label, placeholder, keyboardType, required }) => (
               <View key={key} style={styles.inputGroup}>
-                <Text style={styles.label}>{label}</Text>
+                <Text style={styles.label}>
+                  {label}
+                  {required && <Text style={styles.requiredStar}> *</Text>}
+                </Text>
                 <TextInput
                   placeholder={placeholder}
                   value={(form as any)[key]}
                   onChangeText={(v) => handleChange(key, v)}
                   keyboardType={keyboardType as any}
-                  style={styles.input}
+                  style={[styles.input, errors[key] && styles.inputError]}
                   placeholderTextColor="#999"
                 />
+                {errors[key] && (
+                  <Text style={styles.fieldError}>{errors[key]}</Text>
+                )}
               </View>
             ))}
 
@@ -206,6 +290,18 @@ const styles = StyleSheet.create({
     color: "#1A1A1A",
     borderWidth: 1,
     borderColor: "#E5E5E5",
+  },
+  inputError: {
+    borderColor: "#FF6B6B",
+  },
+  requiredStar: {
+    color: "#FF6B6B",
+  },
+  fieldError: {
+    color: "#FF6B6B",
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
   errorContainer: {
     flexDirection: "row",
