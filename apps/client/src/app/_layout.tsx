@@ -3,6 +3,7 @@ import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import FlashMessage from "react-native-flash-message";
 import { useFcmToken } from "../hooks/useFcmToken";
 import { useAuthStore } from "../store/authStore";
 
@@ -55,6 +56,7 @@ export default function RootLayout() {
         </Stack.Protected>
         <Stack.Screen name="(auth)" />
       </Stack>
+      <FlashMessage position="top" />
     </React.Fragment>
   );
 }

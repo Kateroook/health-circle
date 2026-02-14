@@ -9,14 +9,22 @@ export class NotificationsService {
     if (!tokens.length) return;
 
     try {
-      await admin.messaging().sendEachForMulticast({
+      const response = await admin.messaging().sendEachForMulticast({
         tokens,
         notification: { title, body },
         data,
       });
+
+      this.logger.log(`Notifications sent: ${response.successCount} success, ${response.failureCount} failed`);
+      if (response.failureCount > 0) {
+        response.responses.forEach((resp, idx) => {
+          if (!resp.success) {
+            this.logger.error(`Failed to send notification to token ${tokens[idx]}: ${resp.error?.message}`);
+          }
+        });
+      }
     } catch (error: unknown) {
       this.logger.error('Error sending notification', error instanceof Error ? error.stack : String(error));
     }
   }
 }
-
