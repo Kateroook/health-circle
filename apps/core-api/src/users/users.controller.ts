@@ -107,7 +107,7 @@ export class UsersController {
   @UseGuards(UserJwtAccessGuard)
   @ApiOperation({ summary: 'Reset user password' })
   @ApiOkResponse({ description: 'Password reset successfully' })
-  async resetPassword(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
+  resetPassword(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
     return this.service.resetPassword(params.id, req.metadata);
   }
 

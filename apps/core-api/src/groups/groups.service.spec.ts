@@ -214,7 +214,7 @@ describe('GroupService', () => {
       groupRepository.findOne.mockResolvedValue(mockGroup);
       const newMember = { id: 'new-mem' } as UserEntity;
       userRepository.find.mockResolvedValue([newMember]);
-      groupRepository.save.mockImplementation(async (g) => g as GroupEntity);
+      groupRepository.save.mockImplementation((g) => Promise.resolve(g as GroupEntity));
 
       const dto = { id: 'group-1', name: 'Updated Name', members: [{ id: 'new-mem' }] } as UpdateGroupDto;
 

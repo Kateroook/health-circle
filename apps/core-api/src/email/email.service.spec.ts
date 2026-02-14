@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Bunyan } from 'nestjs-bunyan';
@@ -16,7 +17,6 @@ import * as handlebars from 'handlebars';
 describe('EmailService', () => {
   let service: EmailService;
   let logger: jest.Mocked<Bunyan>;
-  let configService: jest.Mocked<ConfigService>;
   let mockResend: jest.Mocked<Resend>;
   let mockTemplateDelegate: jest.Mock;
 
@@ -61,7 +61,7 @@ describe('EmailService', () => {
 
     service = module.get<EmailService>(EmailService);
     logger = module.get(Bunyan);
-    configService = module.get(ConfigService);
+    
     
     // Access the mocked instance of Resend
     mockResend = (service as any).resend;

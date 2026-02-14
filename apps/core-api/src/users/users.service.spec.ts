@@ -1,14 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
 import { NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { ExternalFilesEntity } from 'src/common/entities/external-files.entity';
-import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
+import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
-import { RequestMetadata } from 'src/common/types/request-metadata';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
@@ -21,9 +21,6 @@ describe('UsersService', () => {
   let service: UsersService;
 
   let repository: jest.Mocked<Repository<UserEntity>>;
-  let passwordRepository: jest.Mocked<Repository<UserPasswordEntity>>;
-
-  let confirmationsService: jest.Mocked<ConfirmationsService>;
   let userActivitiesService: jest.Mocked<UserActivitiesService>;
   let externalFilesService: jest.Mocked<ExternalFilesService>;
   let notificationsService: jest.Mocked<NotificationsService>;
@@ -44,15 +41,7 @@ describe('UsersService', () => {
     ],
   } as UserEntity;
 
-  const mockMetadata: RequestMetadata = {
-    ipAddress: '127.0.0.1',
-    userAgent: 'test-agent',
-    deviceInfo: {
-      os: { name: 'Mac', version: '', platform: '', short_name: '', family: '' },
-      client: { type: 'library', name: 'test', version: '1.0', short_name: '', engine: '', engine_version: '', family: '' },
-      device: { type: 'desktop', brand: 'Apple', model: 'Mac', id: '' },
-    },
-  };
+
 
   const mockUserProfile: UserProfileDto = {
     id: 'user1',
@@ -76,7 +65,7 @@ describe('UsersService', () => {
       create: jest.fn(),
 
       manager: {
-        transaction: jest.fn().mockImplementation(async (fn) => {
+        transaction: jest.fn().mockImplementation((fn) => {
           // Create a mock transaction manager
           const trx = {
             findOne: jest.fn(),
@@ -133,9 +122,6 @@ describe('UsersService', () => {
     service = module.get<UsersService>(UsersService);
 
     repository = module.get(getRepositoryToken(UserEntity));
-    passwordRepository = module.get(getRepositoryToken(UserPasswordEntity));
-
-    confirmationsService = module.get(ConfirmationsService);
     userActivitiesService = module.get(UserActivitiesService);
     externalFilesService = module.get(ExternalFilesService);
     notificationsService = module.get(NotificationsService);
@@ -336,8 +322,8 @@ describe('UsersService', () => {
   });
 
   describe('resetPassword', () => {
-    it('throws NotImplementedException', async () => {
-      await expect(service.resetPassword('user1', {} as any)).rejects.toThrow();
+    it('throws NotImplementedException', () => {
+      expect(() => service.resetPassword('user1', {} as any)).toThrow();
     });
   });
 

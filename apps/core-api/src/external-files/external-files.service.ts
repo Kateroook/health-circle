@@ -78,7 +78,7 @@ export class ExternalFilesService {
   }
 
   public async upload(file: FileParam, queryRunner?: QueryRunner): Promise<ExternalFilesEntity> {
-    const [name, extension] = file.originalname.split(/\.(?=[^\.]+$)/);
+    const [_name, extension] = file.originalname.split(/\.(?=[^.]+$)/);
     const externalId = `${randomUUID()}.${extension}`;
     const filePath = path.join(this.basePath, externalId);
 
@@ -104,7 +104,9 @@ export class ExternalFilesService {
     if (oldFileId) {
       try {
         await this.delete(oldFileId, queryRunner);
-      } catch (e) {}
+      } catch {
+        // ignore
+      }
     }
 
     return uploadedFile;

@@ -11,7 +11,8 @@ export class PostgresStream extends Stream.Writable {
     super();
     this.pool = new Pool(options.connection);
     this.tableName = options.tableName;
-    this._write = (chunk, enc, cb) => this._writePgPool(chunk, enc, cb);
+    this._write = (chunk: any, enc: BufferEncoding, cb: (error?: Error | null) => void) =>
+      this._writePgPool(chunk as Buffer, enc, cb);
   }
 
   private async insert(content: SystemLogsParams) {
