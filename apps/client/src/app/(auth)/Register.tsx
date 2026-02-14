@@ -1,14 +1,14 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
@@ -122,13 +122,6 @@ export default function Register() {
                 <Text style={styles.primaryButtonText}>
                   {loading ? "Зачекайте..." : "Зареєструватися"}
                 </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.skipButton}
-                onPress={() => router.replace("/Dashboard")}
-              >
-                <Text style={styles.skipButtonText}>Пропустити</Text>
               </TouchableOpacity>
             </View>
           </View>
