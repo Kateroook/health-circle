@@ -99,6 +99,14 @@ export class AuthController {
     return { success: true, message: 'Код для скидання паролю надіслано на вашу пошту' };
   }
 
+  @Post('resend-registration-code')
+  @ApiOperation({ summary: 'Resend registration confirmation code' })
+  @ApiOkResponse({ description: 'New registration code sent' })
+  async resendRegistrationCode(@Body() body: { email: string }) {
+    await this.authService.resendRegistrationCode(body.email);
+    return { success: true, message: 'Код підтвердження надіслано повторно' };
+  }
+
   @Post('reset-password')
   @UseGuards(ConfirmationPasswordResetGuard)
   @ApiOperation({ summary: 'Reset password using confirmation code' })

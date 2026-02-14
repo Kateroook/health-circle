@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
 import { formatErrorMessage } from "../../utils/error.util";
@@ -24,7 +25,6 @@ export default function Register() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [formError, setFormError] = useState("");
 
   const handleChange = (key: string, value: string) => {
     setForm({ ...form, [key]: value });
@@ -86,7 +86,6 @@ export default function Register() {
   };
 
   async function handleRegister() {
-    setFormError("");
     if (!validateForm()) return;
 
     setLoading(true);
@@ -103,7 +102,12 @@ export default function Register() {
         params: { email: form.email },
       });
     } catch (e: any) {
-      setFormError(formatErrorMessage(e));
+      showMessage({
+        message: "Помилка",
+        description: formatErrorMessage(e),
+        type: "danger",
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }
@@ -188,13 +192,6 @@ export default function Register() {
                 )}
               </View>
             ))}
-
-            {formError && (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorIcon}>⚠️</Text>
-                <Text style={styles.errorText}>{formError}</Text>
-              </View>
-            )}
 
             {/* Buttons */}
             <View style={styles.buttonsContainer}>

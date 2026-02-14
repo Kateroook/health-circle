@@ -1,15 +1,15 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
@@ -25,12 +25,20 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [countdown, setCountdown] = useState(60);
+
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
 
   async function handleSubmit() {
     setFormError("");
     setLoading(true);
     try {
-      await apiFetch(`/auth/reset-password?email=${email}&code=${code}`, {
+      await apiFetch(`/auth/reset-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`, {
         method: "POST",
         body: JSON.stringify({ newPassword, confirmNewPassword: confirm }),
       });
@@ -45,11 +53,13 @@ export default function ResetPassword() {
   }
 
   async function handleResendCode() {
+    if (countdown > 0) return;
     try {
       await apiFetch("/auth/forgot-password", {
         method: "POST",
         body: JSON.stringify({ email }),
       });
+      setCountdown(60);
       Alert.alert("Успіх", "Код надіслано повторно на вашу пошту");
     } catch (e: any) {
       Alert.alert("Помилка", formatErrorMessage(e));
@@ -191,8 +201,13 @@ export default function ResetPassword() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Не отримали код?{" "}
-              <Text style={styles.footerLink} onPress={handleResendCode}>
-                Надіслати повторно
+              <Text
+                style={[styles.footerLink, countdown > 0 && styles.linkDisabled]}
+                onPress={handleResendCode}
+              >
+                {countdown > 0
+                  ? `Надіслати повторно (${countdown}с)`
+                  : "Надіслати повторно"}
               </Text>
             </Text>
           </View>
@@ -354,5 +369,8 @@ const styles = StyleSheet.create({
   footerLink: {
     color: "#FF6B6B",
     fontWeight: "600",
+  },
+  linkDisabled: {
+    color: "#999",
   },
 });

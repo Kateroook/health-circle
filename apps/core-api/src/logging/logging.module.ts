@@ -28,6 +28,7 @@ import { PostgresStream } from './postgres.stream';
               user: configService.get<string>('LOG_DB_USER')!,
               password: configService.get<string>('LOG_DB_PASS')!,
               database: configService.get<string>('LOG_DB_NAME')!,
+              ssl: configService.get<string>('LOG_DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
             },
             tableName: configService.get<string>('LOG_DB_TABLE')!,
           }),
