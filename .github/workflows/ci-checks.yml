@@ -1,0 +1,66 @@
+name: CI Checks
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies (Root)
+        run: npm ci
+
+      - name: Install dependencies (Client)
+        working-directory: ./apps/client
+        run: npm ci
+
+      - name: Install dependencies (Core API)
+        working-directory: ./apps/core-api
+        run: npm ci
+
+      - name: Lint Client
+        working-directory: ./apps/client
+        run: npm run lint
+
+      - name: Lint Core API
+        working-directory: ./apps/core-api
+        run: npm run lint
+
+  test-core-api:
+    name: Test Core API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies (Root)
+        run: npm ci
+
+      - name: Install dependencies (Core API)
+        working-directory: ./apps/core-api
+        run: npm ci
+
+      - name: Run Tests
+        working-directory: ./apps/core-api
+        run: npm test
