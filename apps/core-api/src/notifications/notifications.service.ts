@@ -19,12 +19,12 @@ export class NotificationsService {
       if (response.failureCount > 0) {
         response.responses.forEach((resp, idx) => {
           if (!resp.success) {
-            this.logger.error(`Failed to send notification to token ${tokens[idx]}: ${resp.error?.message}`);
+            this.logger.error(`Failed to send notification to token ${tokens[idx]}: ${resp.error?.message || 'Unknown error'}`);
           }
         });
       }
     } catch (error: unknown) {
-      this.logger.error('Error sending notification', error instanceof Error ? error.stack : String(error));
+      this.logger.error(`Error sending notification: ${String(error)}`);
     }
   }
 }

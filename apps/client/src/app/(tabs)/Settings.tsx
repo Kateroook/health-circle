@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
     Alert,
     Image,
+    Modal,
     ScrollView,
     StyleSheet,
     Text,
@@ -11,10 +12,12 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Icon from "react-native-vector-icons/Feather";
 
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import { useAuthStore } from "../../store/authStore";
 import { cleanObj } from "../../utils/clean.util";
+import { formatErrorMessage } from "../../utils/error.util";
 
 export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
@@ -28,6 +31,17 @@ export default function SettingsScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const defaultAvatar = require("../../assets/images/default-avatar.png");
+
+  // Change password state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     // TODO: figure out a better way to force refresh after avatar update (http caching causes issues)
@@ -160,6 +174,42 @@ export default function SettingsScreen() {
     ]);
   };
 
+  const handleChangePassword = async () => {
+    setPasswordError("");
+    if (!oldPassword.trim()) {
+      setPasswordError("Введіть поточний пароль");
+      return;
+    }
+    if (!newPassword.trim() || newPassword.length < 12) {
+      setPasswordError("Новий пароль має містити щонайменше 12 символів");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Новий пароль та підтвердження не співпадають");
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await apiFetch("/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({
+          oldPassword: oldPassword.trim(),
+          newPassword: newPassword.trim(),
+          confirmNewPassword: confirmPassword.trim(),
+        }),
+      });
+      Alert.alert("Успіх", "Пароль успішно змінено");
+      setShowPasswordModal(false);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (e: any) {
+      setPasswordError(formatErrorMessage(e, "Не вдалося змінити пароль"));
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
   const fields = [
     {
       label: "Прізвище",
@@ -249,6 +299,13 @@ export default function SettingsScreen() {
           <Text style={styles.saveText}>Зберегти</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.changePassword}
+          onPress={() => setShowPasswordModal(true)}
+        >
+          <Text style={styles.changePasswordText}>Змінити пароль</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.logout} onPress={logout}>
           <Text style={styles.logoutText}>Вийти</Text>
         </TouchableOpacity>
@@ -257,6 +314,90 @@ export default function SettingsScreen() {
           <Text style={styles.deleteText}>Видалити акаунт</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Change Password Modal */}
+      <Modal
+        visible={showPasswordModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowPasswordModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Змінити пароль</Text>
+
+            <View style={styles.modalPasswordContainer}>
+              <TextInput
+                style={styles.modalPasswordInput}
+                placeholder="Поточний пароль"
+                placeholderTextColor="#999"
+                secureTextEntry={!showOldPassword}
+                value={oldPassword}
+                onChangeText={setOldPassword}
+              />
+              <TouchableOpacity onPress={() => setShowOldPassword(!showOldPassword)} style={styles.eyeButton}>
+                <Icon name={showOldPassword ? "eye-off" : "eye"} size={20} color="#999" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalPasswordContainer}>
+              <TextInput
+                style={styles.modalPasswordInput}
+                placeholder="Новий пароль (мін. 12 символів)"
+                placeholderTextColor="#999"
+                secureTextEntry={!showNewPassword}
+                value={newPassword}
+                onChangeText={setNewPassword}
+              />
+              <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeButton}>
+                <Icon name={showNewPassword ? "eye-off" : "eye"} size={20} color="#999" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalPasswordContainer}>
+              <TextInput
+                style={styles.modalPasswordInput}
+                placeholder="Підтвердити новий пароль"
+                placeholderTextColor="#999"
+                secureTextEntry={!showConfirmPassword}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
+                <Icon name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#999" />
+              </TouchableOpacity>
+            </View>
+
+            {passwordError ? (
+              <Text style={styles.modalError}>{passwordError}</Text>
+            ) : null}
+
+            <TouchableOpacity
+              style={[
+                styles.modalSave,
+                passwordLoading && { opacity: 0.6 },
+              ]}
+              onPress={handleChangePassword}
+              disabled={passwordLoading}
+            >
+              <Text style={styles.modalSaveText}>
+                {passwordLoading ? "Збереження..." : "Змінити пароль"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancel}
+              onPress={() => {
+                setShowPasswordModal(false);
+                setPasswordError("");
+                setOldPassword("");
+                setNewPassword("");
+                setConfirmPassword("");
+              }}
+            >
+              <Text style={styles.modalCancelText}>Скасувати</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -317,4 +458,86 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   deleteText: { color: "#fff", fontSize: 16 },
+
+  changePassword: {
+    marginTop: 15,
+    backgroundColor: "#2196F3",
+    padding: 15,
+    borderRadius: 12,
+    alignItems: "center",
+    marginHorizontal: 20,
+  },
+  changePasswordText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#1A1A1A",
+  },
+  modalInput: {
+    height: 50,
+    backgroundColor: "#F5F5F5",
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+  },
+  modalPasswordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+    marginBottom: 12,
+  },
+  modalPasswordInput: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    color: "#1A1A1A",
+  },
+  eyeButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  modalError: {
+    color: "#D32F2F",
+    fontSize: 14,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  modalSave: {
+    backgroundColor: "#4CAF50",
+    padding: 15,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  modalSaveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  modalCancel: {
+    padding: 15,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  modalCancelText: { color: "#999", fontSize: 16, fontWeight: "500" },
 });

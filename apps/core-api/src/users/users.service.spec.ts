@@ -322,8 +322,18 @@ describe('UsersService', () => {
   });
 
   describe('resetPassword', () => {
-    it('throws NotImplementedException', () => {
-      expect(() => service.resetPassword('user1', {} as any)).toThrow();
+    it('sends a password reset code when user exists', async () => {
+      repository.findOne.mockResolvedValue({ id: 'user1', email: 'test@example.com' } as UserEntity);
+
+      const res = await service.resetPassword('user1', {} as any);
+
+      expect(res).toEqual({ success: true, message: 'Код для скидання паролю надіслано на пошту' });
+    });
+
+    it('throws if user not found', async () => {
+      repository.findOne.mockResolvedValue(null);
+
+      await expect(service.resetPassword('x', {} as any)).rejects.toThrow(NotFoundException);
     });
   });
 

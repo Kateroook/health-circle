@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,11 +10,13 @@ import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserSessionEntity } from 'src/common/entities/user-sessions.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
+import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { IsNull, Repository } from 'typeorm';
 
 import { RequestMetadata } from '../common/types/request-metadata';
+import { UserChangePasswordDto } from './dto/user-change-password.dto';
 import { UserSetupPasswordDto } from './dto/user-setup-password.dto';
 import { UserTokenDto } from './dto/user-token.dto';
 import { UserTokenPayload } from './types/user-token-payload';
@@ -223,6 +225,68 @@ export class AuthService {
       passwordHash,
     });
     // Consume the setup token
+    await this.confirmationService.consumeToken(user.id);
+  }
+
+  async changePassword(user: UserProfileDto, data: UserChangePasswordDto): Promise<void> {
+    const { oldPassword, newPassword, confirmNewPassword } = data;
+    if (newPassword !== confirmNewPassword) {
+      throw new BadRequestException('Новий пароль та підтвердження не співпадають');
+    }
+    // Find current active password
+    const currentPassword = await this.userPasswordRepository.findOne({
+      where: { user: { id: user.id }, revokedAt: IsNull() },
+      order: { createdAt: 'DESC' },
+    });
+    if (!currentPassword) throw new NotFoundException('Активний пароль не знайдено');
+    // Verify old password
+    const isOldPasswordValid = await this.securityService.validate(oldPassword, currentPassword.passwordHash);
+    if (!isOldPasswordValid) throw new UnauthorizedException('Невірний поточний пароль');
+    // Revoke old password
+    currentPassword.revokedAt = new Date();
+    await this.userPasswordRepository.save(currentPassword);
+    // Hash and save new password
+    const passwordHash = await this.securityService.hash(newPassword);
+    await this.userPasswordRepository.save({
+      user: { id: user.id },
+      passwordHash,
+    });
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new NotFoundException('Користувача з таким email не знайдено');
+    }
+    if (user.lockedAt) {
+      throw new ForbiddenException('Цей обліковий запис заблоковано');
+    }
+    await this.confirmationService.setupPasswordCode(email, user.id, ConfirmationTypes.PASSWORD_RESET);
+  }
+
+  async resetPassword(user: UserProfileDto, data: UserSetupPasswordDto): Promise<void> {
+    const { newPassword, confirmNewPassword } = data;
+    if (newPassword !== confirmNewPassword) {
+      throw new BadRequestException('Новий пароль та підтвердження не співпадають');
+    }
+    // Revoke all existing passwords
+    const existingPasswords = await this.userPasswordRepository.find({
+      where: { user: { id: user.id }, revokedAt: IsNull() },
+    });
+    const revokedAt = new Date();
+    for (const pw of existingPasswords) {
+      pw.revokedAt = revokedAt;
+    }
+    if (existingPasswords.length > 0) {
+      await this.userPasswordRepository.save(existingPasswords);
+    }
+    // Hash and save new password
+    const passwordHash = await this.securityService.hash(newPassword);
+    await this.userPasswordRepository.save({
+      user: { id: user.id },
+      passwordHash,
+    });
+    // Consume the reset token
     await this.confirmationService.consumeToken(user.id);
   }
 }

@@ -26,7 +26,7 @@ export class EmailService {
     this.fromEmail = this.configService.getOrThrow<string>('EMAIL_FROM');
 
     this.registrationTemplate = this.loadTemplate('registration.hbs');
-    // this.changePasswordTemplate = this.loadTemplate('change-password.hbs');
+    this.changePasswordTemplate = this.loadTemplate('change-password.hbs');
   }
 
   private loadTemplate(templateName: string): TemplateDelegate {

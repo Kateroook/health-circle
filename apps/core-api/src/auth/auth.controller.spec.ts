@@ -7,8 +7,10 @@ import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { SetupPasswordDto } from './dto/token-query.dto';
+import { UserChangePasswordDto } from './dto/user-change-password.dto';
 import { UserSetupPasswordDto } from './dto/user-setup-password.dto';
 
 describe('AuthController', () => {
@@ -21,6 +23,9 @@ describe('AuthController', () => {
     logout: jest.fn(),
     refresh: jest.fn(),
     setupPassword: jest.fn(),
+    changePassword: jest.fn(),
+    forgotPassword: jest.fn(),
+    resetPassword: jest.fn(),
   };
 
   const mockConfigService = {
@@ -139,4 +144,49 @@ describe('AuthController', () => {
       expect(result).toHaveProperty('email', 'test@test.com');
     });
   });
+
+  describe('changePassword', () => {
+    it('should delegate to authService.changePassword and return success', async () => {
+      const body: UserChangePasswordDto = {
+        oldPassword: 'OldPass123!@#',
+        newPassword: 'NewPass456!@#',
+        confirmNewPassword: 'NewPass456!@#',
+      };
+      mockAuthService.changePassword.mockResolvedValue(undefined);
+
+      const result = await controller.changePassword(body, mockRequest);
+
+      expect(authService.changePassword).toHaveBeenCalledWith(mockRequest.user, body);
+      expect(result).toEqual({ success: true, message: 'Пароль успішно змінено' });
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('should delegate to authService.forgotPassword and return success', async () => {
+      const body: ForgotPasswordDto = { email: 'test@test.com' };
+      mockAuthService.forgotPassword.mockResolvedValue(undefined);
+
+      const result = await controller.forgotPassword(body);
+
+      expect(authService.forgotPassword).toHaveBeenCalledWith('test@test.com');
+      expect(result).toEqual({ success: true, message: 'Код для скидання паролю надіслано на вашу пошту' });
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('should delegate to authService.resetPassword and return success', async () => {
+      const query: SetupPasswordDto = { email: 'test@test.com', code: '123456' };
+      const body: UserSetupPasswordDto = {
+        newPassword: 'ResetPass789!@#',
+        confirmNewPassword: 'ResetPass789!@#',
+      };
+      mockAuthService.resetPassword.mockResolvedValue(undefined);
+
+      const result = await controller.resetPassword(query, body, mockRequest);
+
+      expect(authService.resetPassword).toHaveBeenCalledWith(mockRequest.user, body);
+      expect(result).toEqual({ success: true, message: 'Пароль успішно скинуто' });
+    });
+  });
 });
+

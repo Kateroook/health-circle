@@ -1,4 +1,4 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -15,6 +15,7 @@ import { UserActivitiesService } from 'src/user-activities/user-activities.servi
 import { Repository } from 'typeorm';
 
 import { AuthService } from './auth.service';
+import { UserChangePasswordDto } from './dto/user-change-password.dto';
 import { UserSetupPasswordDto } from './dto/user-setup-password.dto';
 
 describe('AuthService', () => {
@@ -72,6 +73,7 @@ describe('AuthService', () => {
           provide: getRepositoryToken(UserPasswordEntity),
           useValue: {
             findOne: jest.fn(),
+            find: jest.fn(),
             save: jest.fn(),
           },
         },
@@ -101,6 +103,7 @@ describe('AuthService', () => {
           provide: ConfirmationsService,
           useValue: {
             consumeToken: jest.fn(),
+            setupPasswordCode: jest.fn(),
           },
         },
       ],
@@ -287,4 +290,132 @@ describe('AuthService', () => {
       await expect(service.setupPassword(userProfile, dto)).rejects.toThrow(ForbiddenException);
     });
   });
+
+  describe('changePassword', () => {
+    const userProfile = new UserProfileDto({ ...mockUserEntity });
+    const dto: UserChangePasswordDto = {
+      oldPassword: 'OldPass123!@#',
+      newPassword: 'NewPass456!@#',
+      confirmNewPassword: 'NewPass456!@#',
+    };
+
+    it('should revoke old password and save new one', async () => {
+      const existingPw = { id: 'pw-1', passwordHash: 'old-hash', revokedAt: null } as unknown as UserPasswordEntity;
+      userPasswordRepository.findOne.mockResolvedValue(existingPw);
+      securityService.validate.mockResolvedValue(true);
+      securityService.hash.mockResolvedValue('new-hash');
+
+      await service.changePassword(userProfile, dto);
+
+      // Old password revoked
+      expect(existingPw.revokedAt).toBeInstanceOf(Date);
+      expect(userPasswordRepository.save).toHaveBeenCalledWith(existingPw);
+
+      // New password saved
+      expect(userPasswordRepository.save).toHaveBeenCalledWith({
+        user: { id: userProfile.id },
+        passwordHash: 'new-hash',
+      });
+    });
+
+    it('should throw BadRequestException if passwords do not match', async () => {
+      await expect(
+        service.changePassword(userProfile, { ...dto, confirmNewPassword: 'Different123!' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException if no active password exists', async () => {
+      userPasswordRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.changePassword(userProfile, dto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw UnauthorizedException if old password is incorrect', async () => {
+      userPasswordRepository.findOne.mockResolvedValue({ passwordHash: 'hash' } as UserPasswordEntity);
+      securityService.validate.mockResolvedValue(false);
+
+      await expect(service.changePassword(userProfile, dto)).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('should call setupPasswordCode when user exists and is not locked', async () => {
+      userRepository.findOne.mockResolvedValue(mockUserEntity);
+
+      await service.forgotPassword('test@example.com');
+
+      expect(confirmationService.setupPasswordCode).toHaveBeenCalledWith(
+        'test@example.com',
+        'user-123',
+        expect.anything(),
+      );
+    });
+
+    it('should throw NotFoundException if user does not exist', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.forgotPassword('noone@test.com')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException if user is locked', async () => {
+      userRepository.findOne.mockResolvedValue({ ...mockUserEntity, lockedAt: new Date() } as UserEntity);
+
+      await expect(service.forgotPassword('test@example.com')).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('resetPassword', () => {
+    const userProfile = new UserProfileDto({ ...mockUserEntity });
+    const dto: UserSetupPasswordDto = {
+      newPassword: 'ResetPass123!@',
+      confirmNewPassword: 'ResetPass123!@',
+    };
+
+    it('should revoke existing passwords, save new one, and consume token', async () => {
+      const existingPws = [
+        { id: 'pw-1', revokedAt: null },
+        { id: 'pw-2', revokedAt: null },
+      ] as unknown as UserPasswordEntity[];
+      userPasswordRepository.find.mockResolvedValue(existingPws);
+      securityService.hash.mockResolvedValue('reset-hash');
+
+      await service.resetPassword(userProfile, dto);
+
+      // All existing passwords revoked
+      for (const pw of existingPws) {
+        expect(pw.revokedAt).toBeInstanceOf(Date);
+      }
+      expect(userPasswordRepository.save).toHaveBeenCalledWith(existingPws);
+
+      // New password saved
+      expect(userPasswordRepository.save).toHaveBeenCalledWith({
+        user: { id: userProfile.id },
+        passwordHash: 'reset-hash',
+      });
+
+      // Token consumed
+      expect(confirmationService.consumeToken).toHaveBeenCalledWith(userProfile.id);
+    });
+
+    it('should work even when no existing passwords to revoke', async () => {
+      userPasswordRepository.find.mockResolvedValue([]);
+      securityService.hash.mockResolvedValue('reset-hash');
+
+      await service.resetPassword(userProfile, dto);
+
+      // New password saved
+      expect(userPasswordRepository.save).toHaveBeenCalledWith({
+        user: { id: userProfile.id },
+        passwordHash: 'reset-hash',
+      });
+      expect(confirmationService.consumeToken).toHaveBeenCalledWith(userProfile.id);
+    });
+
+    it('should throw BadRequestException if passwords do not match', async () => {
+      await expect(
+        service.resetPassword(userProfile, { ...dto, confirmNewPassword: 'Mismatch123!' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
 });
+
