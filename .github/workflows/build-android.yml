@@ -57,17 +57,13 @@ jobs:
           path: apps/client/${{ steps.artifact_name.outputs.NAME }}.apk
           retention-days: 7
 
-      - name: Send APK to Telegram
+      - name: Send Build Notification to Telegram
         if: success()
         run: |
-          curl -F document=@"${{ steps.artifact_name.outputs.NAME }}.apk" \
-               -F caption="✅ *Android Build Success*
-               
-               📦 *Artifact:* ${{ steps.artifact_name.outputs.NAME }}.apk
-               🔢 *Run:* ${{ github.run_number }}
-               🔗 [View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" \
-               -F parse_mode="Markdown" \
-               https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument?chat_id=${{ secrets.TELEGRAM_CHAT_ID }}
+          curl -X POST \
+               -H 'Content-Type: application/json' \
+               -d '{"chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}", "text": "✅ *Android Build Success*\n\n📦 *Artifact:* ${{ steps.artifact_name.outputs.NAME }}.apk\n🔢 *Run:* ${{ github.run_number }}\n🔗 [Download Artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n_Note: The artifact is available for download at the bottom of the run page._", "parse_mode": "Markdown"}' \
+               https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
 
       - name: Notify Failure to Telegram
         if: failure()
