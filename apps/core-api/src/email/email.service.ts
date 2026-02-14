@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { existsSync, readFileSync } from 'fs';
 import { compile, TemplateDelegate } from 'handlebars';
-import { Bunyan } from 'nestjs-bunyan';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { resolve } from 'path';
 import { Resend } from 'resend';
 import { LoggingTypes } from 'src/common/enums/logging-types';
@@ -18,7 +18,8 @@ export class EmailService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly logger: Bunyan,
+    @InjectPinoLogger(EmailService.name)
+    private readonly logger: PinoLogger,
   ) {
     this.resend = new Resend(this.configService.getOrThrow<string>('RESEND_API_KEY'));
     
@@ -32,8 +33,8 @@ export class EmailService {
     const templatePath = resolve(__dirname, '..', 'common', 'assets', 'templates', templateName);
 
     if (!existsSync(templatePath)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      (this.logger as any).error({ type: LoggingTypes.generateMail, templatePath }, 'Email template not found');
+       
+      this.logger.error({ type: LoggingTypes.generateMail, templatePath }, 'Email template not found');
       throw new Error(`Template not found: ${templateName}`);
     }
 
@@ -52,16 +53,14 @@ export class EmailService {
     });
 
     if (error) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      (this.logger as any).error(
+      this.logger.error(
         { to, error: error as unknown as Error, type: LoggingTypes.sendMail },
         'Failed to send registration confirmation email via Resend',
       );
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    (this.logger as any).info({ to, messageId: data?.id }, 'Registration email sent successfully');
+    this.logger.info({ to, messageId: data?.id }, 'Registration email sent successfully');
   }
 
   public async changePassword(to: string, context: SetupPasswordContext) {
@@ -75,15 +74,13 @@ export class EmailService {
     });
 
     if (error) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      (this.logger as any).error(
+      this.logger.error(
         { to, error: error as unknown as Error, type: LoggingTypes.sendMail },
         'Failed to send setup password email via Resend',
       );
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    (this.logger as any).info({ to, messageId: data?.id }, 'Password change email sent successfully');
+    this.logger.info({ to, messageId: data?.id }, 'Password change email sent successfully');
   }
 }

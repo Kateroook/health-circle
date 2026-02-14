@@ -6,7 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { useContainer } from 'class-validator';
 import cookieParser from 'cookie-parser';
 import * as admin from 'firebase-admin';
-import { Bunyan } from 'nestjs-bunyan';
+import { Logger } from 'nestjs-pino';
 import { types } from 'pg';
 
 import { AppModule } from './app.module';
@@ -26,13 +26,13 @@ async function bootstrap() {
     }),
   });
 
+  app.useLogger(app.get(Logger));
+
   const configService = app.get(ConfigService);
 
   app.use(cookieParser());
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument
-  const logger = await app.get<Bunyan>(Bunyan);
-  app.useGlobalFilters(new GlobalExceptionFilter(app.get(HttpAdapterHost), logger));
+  app.useGlobalFilters(new GlobalExceptionFilter(app.get(HttpAdapterHost), app.get(Logger)));
 
   app.useGlobalPipes(
     new ValidationPipe({

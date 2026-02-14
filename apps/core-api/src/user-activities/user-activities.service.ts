@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Bunyan } from 'nestjs-bunyan';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { UserActivityEntity } from 'src/common/entities/user-activities.entity';
 import { LoggingTypes } from 'src/common/enums/logging-types';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
@@ -13,7 +13,8 @@ export class UserActivitiesService {
   constructor(
     @InjectRepository(UserActivityEntity)
     private readonly repository: Repository<UserActivityEntity>,
-    private readonly logger: Bunyan,
+    @InjectPinoLogger(UserActivitiesService.name)
+    private readonly logger: PinoLogger,
   ) {}
 
   async logActivity(
@@ -31,11 +32,11 @@ export class UserActivitiesService {
         userAgent,
       });
     } catch (error: unknown) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+       
       this.logger.error(
         {
           type: LoggingTypes.other,
-          error,
+          error: error as Record<string, unknown>,
           actionCode,
           metadata: { deviceInfo, ipAddress, userAgent },
           user: { userId, subUserId },

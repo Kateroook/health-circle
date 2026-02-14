@@ -87,6 +87,6 @@ import { UsersModule } from './users/users.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(DeviceInfoMiddleware).forRoutes('*path');
+    consumer.apply(DeviceInfoMiddleware).forRoutes('{*path}');
   }
 }
