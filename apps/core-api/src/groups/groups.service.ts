@@ -46,7 +46,7 @@ export class GroupService {
       where: { id },
       relations: ['owner', 'members'],
     });
-    if (!group) throw new NotFoundException('Групу не знайдено');
+    if (!group) throw new NotFoundException('Коло не знайдено');
     const isMember = group.members.some((member) => member.id === userId);
     if (!isMember && group.owner.id !== userId) throw new ForbiddenException('Доступ заборонено');
     return group;
@@ -90,15 +90,15 @@ export class GroupService {
     if (!group) throw new NotFoundException('Код недійсний');
     const user = await this.userRepository.findOneBy({ id: userId });
     if (!user) throw new NotFoundException('Користувач не знайдено');
-    if (group.members.some((m) => m.id === userId)) throw new BadRequestException('Ви вже приєднались до цієї групи');
+    if (group.members.some((m) => m.id === userId)) throw new BadRequestException('Ви вже приєднались до цього кола');
     group.members.push(user);
     await this.repository.save(group);
-    return { message: 'Ви приєдналися до групи', group };
+    return { message: 'Ви приєдналися до кола', group };
   }
 
   async updateGroup(userId: string, dto: UpdateGroupDto) {
     const group = await this.findOne(dto.id, userId);
-    if (group.owner.id !== userId) throw new ForbiddenException('Тільки власник може оновлювати групу');
+    if (group.owner.id !== userId) throw new ForbiddenException('Тільки власник може оновлювати коло');
     if (dto.name) group.name = dto.name;
     if (dto.members) {
       const members = await this.userRepository.find({ where: { id: In(dto.members.map((m) => m.id)) } });
@@ -112,19 +112,19 @@ export class GroupService {
       where: { id: groupId },
       relations: ['owner', 'members'],
     });
-    if (!group) throw new NotFoundException('Групу не знайдено');
+    if (!group) throw new NotFoundException('Коло не знайдено');
     if (group.owner.id === userId) {
-      throw new ForbiddenException('Власник не може покинути групу. Видаліть групу натомість');
+      throw new ForbiddenException('Власник не може покинути коло. Видаліть коло натомість');
     }
     group.members = group.members.filter((m) => m.id !== userId);
     await this.repository.save(group);
-    return { message: 'Ви покинули групу' };
+    return { message: 'Ви покинули коло' };
   }
 
   async deleteGroup(userId: string, groupId: string) {
     const group = await this.findOne(groupId, userId);
-    if (group.owner.id !== userId) throw new ForbiddenException('Тільки власник може видалити групу');
+    if (group.owner.id !== userId) throw new ForbiddenException('Тільки власник може видалити коло');
     await this.repository.remove(group);
-    return { message: 'Групу успішно видалено' };
+    return { message: 'Коло успішно видалено' };
   }
 }
