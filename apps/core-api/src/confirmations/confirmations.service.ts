@@ -37,6 +37,9 @@ export class ConfirmationsService {
     return code;
   }
 
+  /**
+   * Returns TTL in seconds
+   */
   private getTTL(type: ConfirmationTypes): number {
     switch (type) {
       case ConfirmationTypes.PASSWORD_RESET:

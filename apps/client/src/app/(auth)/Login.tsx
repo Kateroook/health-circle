@@ -2,14 +2,14 @@ import { useAuthStore } from "@/src/store/authStore";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
@@ -142,13 +142,6 @@ export default function Login() {
                 Зареєструватися
               </Text>
             </Text>
-
-            <TouchableOpacity
-              style={styles.skipButton}
-              onPress={() => router.replace("/Dashboard")}
-            >
-              <Text style={styles.skipButtonText}>Пропустити</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -47,6 +47,14 @@ import { UsersModule } from './users/users.module';
         // Security
         SERVER_SECRET: Joi.string().required(),
         SERVER_SALT: Joi.string().required(),
+        ACCESS_TOKEN_SECRET: Joi.string().required(),
+        ACCESS_TOKEN_TTL: Joi.number().required(),
+        REFRESH_TOKEN_SECRET: Joi.string().required(),
+        REFRESH_TOKEN_TTL: Joi.number().required(),
+
+        // Confirmations
+        RESET_PASSWORD_TOKEN_TTL: Joi.number().required(),
+        SETUP_PASSWORD_TOKEN_TTL: Joi.number().required(),
 
         // Email
         EMAIL_FROM: Joi.string().email().required(),
