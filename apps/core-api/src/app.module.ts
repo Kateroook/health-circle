@@ -35,6 +35,7 @@ import { UsersModule } from './users/users.module';
         POSTGRES_PASS: Joi.string().required(),
         POSTGRES_DB_NAME: Joi.string().required(),
         POSTGRES_IS_LOGGING_ENABLED: Joi.string().optional().default('false').allow('true', 'false'),
+        POSTGRES_SSL: Joi.string().optional().default('false').allow('true', 'false'),
         // Logger (PostgreSQL)
         LOG_DB_HOST: Joi.string().required(),
         LOG_DB_PORT: Joi.number().required(),
@@ -42,6 +43,7 @@ import { UsersModule } from './users/users.module';
         LOG_DB_PASS: Joi.string().required(),
         LOG_DB_NAME: Joi.string().required(),
         LOG_DB_TABLE: Joi.string().required(),
+        LOG_DB_SSL: Joi.string().optional().default('false').allow('true', 'false'),
         LOG_STD_OUT: Joi.string().optional().default('false').allow('true', 'false'),
         LOG_LEVEL: Joi.string().optional().valid('trace', 'debug', 'info', 'warn', 'error', 'fatal'),
         // Security

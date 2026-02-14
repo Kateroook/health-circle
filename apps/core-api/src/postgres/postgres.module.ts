@@ -19,7 +19,7 @@ export class PostgresModule {
             password: configService.getOrThrow<string>('POSTGRES_PASS'),
             database: configService.getOrThrow<string>('POSTGRES_DB_NAME'),
             logging: configService.getOrThrow<string>('POSTGRES_IS_LOGGING_ENABLED') === 'true',
-            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+            ssl: configService.get<string>('POSTGRES_SSL') === 'true' ? { rejectUnauthorized: false } : false,
             migrationsTableName: '_migrations',
             logger: 'advanced-console',
             migrations,

@@ -264,6 +264,17 @@ export class AuthService {
     await this.confirmationService.setupPasswordCode(email, user.id, ConfirmationTypes.PASSWORD_RESET);
   }
 
+  async resendRegistrationCode(email: string): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) {
+      throw new NotFoundException('Користувача з таким email не знайдено');
+    }
+    if (user.lockedAt) {
+      throw new ForbiddenException('Цей обліковий запис заблоковано');
+    }
+    await this.confirmationService.setupPasswordCode(email, user.id, ConfirmationTypes.REGISTRATION);
+  }
+
   async resetPassword(user: UserProfileDto, data: UserSetupPasswordDto): Promise<void> {
     const { newPassword, confirmNewPassword } = data;
     if (newPassword !== confirmNewPassword) {

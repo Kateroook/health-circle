@@ -1,14 +1,14 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
@@ -24,12 +24,20 @@ export default function PasswordSetup() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [countdown, setCountdown] = useState(60);
+
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown]);
 
   async function handleSubmit() {
     setFormError("");
     setLoading(true);
     try {
-      await apiFetch(`/auth/password-setup?email=${email}&code=${code}`, {
+      await apiFetch(`/auth/password-setup?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`, {
         method: "POST",
         body: JSON.stringify({ newPassword, confirmNewPassword: confirm }),
       });
@@ -38,6 +46,20 @@ export default function PasswordSetup() {
       setFormError(formatErrorMessage(e));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResendCode() {
+    if (countdown > 0) return;
+    try {
+      await apiFetch("/auth/resend-registration-code", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      setCountdown(60);
+      alert("Код надіслано повторно");
+    } catch (e: any) {
+      setFormError(formatErrorMessage(e));
     }
   }
 
@@ -168,7 +190,14 @@ export default function PasswordSetup() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Не отримали код?{" "}
-              <Text style={styles.footerLink}>Надіслати повторно</Text>
+              <Text
+                style={[styles.footerLink, countdown > 0 && styles.linkDisabled]}
+                onPress={handleResendCode}
+              >
+                {countdown > 0
+                  ? `Надіслати повторно (${countdown}с)`
+                  : "Надіслати повторно"}
+              </Text>
             </Text>
           </View>
         </ScrollView>
@@ -324,5 +353,8 @@ const styles = StyleSheet.create({
   footerLink: {
     color: "#FF6B6B",
     fontWeight: "600",
+  },
+  linkDisabled: {
+    color: "#999",
   },
 });
