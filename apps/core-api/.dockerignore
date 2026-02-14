@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+test
+jest.config.ts
+test-config
+
+# Production
+dist
+build
+
+# Misc
+.DS_Store
+.env
+.env.*
+.env.example
+*.pem
+.git
+.github
+.husky
+.vscode
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lint_report.txt
+Dockerfile
+.dockerignore
