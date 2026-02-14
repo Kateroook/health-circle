@@ -1,10 +1,11 @@
 /* eslint-disable */
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 
 import { PostgresStream } from './postgres.stream';
 
+@Global()
 @Module({
   imports: [
     LoggerModule.forRootAsync({

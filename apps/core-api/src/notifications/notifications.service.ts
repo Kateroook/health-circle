@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   async sendMulticast(tokens: string[], title: string, body: string, data?: Record<string, string>) {
     if (!tokens.length) return;
 
@@ -12,8 +14,9 @@ export class NotificationsService {
         notification: { title, body },
         data,
       });
-    } catch (error) {
-      console.error('Error sending notification:', error);
+    } catch (error: unknown) {
+      this.logger.error('Error sending notification', error instanceof Error ? error.stack : String(error));
     }
   }
 }
+
