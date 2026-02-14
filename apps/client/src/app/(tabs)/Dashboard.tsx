@@ -247,7 +247,7 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <Text style={styles.greeting}>
+        <Text style={styles.greeting} numberOfLines={1}>
           Привіт, {user?.firstName || "Користувач"}!
         </Text>
 
@@ -298,6 +298,7 @@ export default function DashboardScreen() {
                 onPress={() => setSelectedGroupId(group.id)}
               >
                 <Text
+                  numberOfLines={1}
                   style={
                     selectedGroupId === group.id
                       ? styles.statusFilterTextActive
@@ -316,8 +317,8 @@ export default function DashboardScreen() {
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateText}>
                   {groups.length === 0
-                    ? "У вас ще немає груп"
-                    : "Немає контактів у цій групі"}
+                    ? "У вас ще немає кіл"
+                    : "Немає контактів у цьому колі"}
                 </Text>
               </View>
             ) : (
@@ -407,6 +408,7 @@ const styles = StyleSheet.create({
     backgroundColor: LIGHT_GRAY,
     borderRadius: 20,
     marginRight: 10,
+    maxWidth: 150,
   },
   statusFilterActive: {
     paddingVertical: 8,
@@ -414,6 +416,7 @@ const styles = StyleSheet.create({
     backgroundColor: TEXT_COLOR,
     borderRadius: 20,
     marginRight: 10,
+    maxWidth: 150,
   },
   statusFilterText: {
     fontSize: 14,

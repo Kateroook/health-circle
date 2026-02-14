@@ -28,7 +28,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      router.navigate("/Dashboard");
+      router.replace("/Dashboard");
     } catch (e: any) {
       setFormError(formatErrorMessage(e));
     } finally {

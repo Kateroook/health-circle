@@ -280,8 +280,8 @@ export default function CircleActionsModal({
                   style={styles.delete}
                   onPress={() =>
                     Alert.alert(
-                      "Видалити групу",
-                      "Ви впевнені, що хочете видалити цю групу? Цю дію не можна скасувати.",
+                      "Видалити коло",
+                      "Ви впевнені, що хочете видалити це коло? Цю дію не можна скасувати.",
                       [
                         { text: "Скасувати", style: "cancel" },
                         { text: "Видалити", style: "destructive", onPress: onDelete },
@@ -289,7 +289,7 @@ export default function CircleActionsModal({
                     )
                   }
                 >
-                  <Text style={styles.deleteText}>Видалити групу</Text>
+                  <Text style={styles.deleteText}>Видалити коло</Text>
                 </TouchableOpacity>
               </>
             ) : (
@@ -299,8 +299,8 @@ export default function CircleActionsModal({
                   style={styles.delete}
                   onPress={() =>
                     Alert.alert(
-                      "Покинути групу",
-                      "Ви впевнені, що хочете покинути цю групу?",
+                      "Покинути коло",
+                      "Ви впевнені, що хочете покинути це коло?",
                       [
                         { text: "Скасувати", style: "cancel" },
                         { text: "Покинути", style: "destructive", onPress: onLeave },
@@ -308,7 +308,7 @@ export default function CircleActionsModal({
                     )
                   }
                 >
-                  <Text style={styles.deleteText}>Покинути групу</Text>
+                  <Text style={styles.deleteText}>Покинути коло</Text>
                 </TouchableOpacity>
               </>
             )}

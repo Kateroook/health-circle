@@ -131,32 +131,34 @@ export const useAuthStore = create<AuthStoreState>()(
 
       // Login
       login: async (email, password) => {
-        set({ loading: true });
+        try {
+          const res = await apiFetch("/auth/login", {
+            method: "POST",
+            body: JSON.stringify({ email, password }),
+            headers: { "Content-Type": "application/json" },
+          });
 
-        const res = await apiFetch("/auth/login", {
-          method: "POST",
-          body: JSON.stringify({ email, password }),
-          headers: { "Content-Type": "application/json" },
-        });
+          if (!res.accessToken) {
+            throw new Error("Failed to get access token.");
+          }
 
-        if (!res.accessToken) {
+          // store both tokens
+          set({
+            accessToken: res.accessToken,
+            refreshToken: res.refreshToken || null,
+          });
+
+          // fetch profile
+          await get().refreshProfile();
+
+          set({
+            isLoggedIn: true,
+            loading: false,
+          });
+        } catch (error) {
           set({ loading: false });
-          throw new Error("Failed to get access token.");
+          throw error;
         }
-
-        // store both tokens
-        set({
-          accessToken: res.accessToken,
-          refreshToken: res.refreshToken || null,
-        });
-
-        // fetch profile
-        await get().refreshProfile();
-
-        set({
-          isLoggedIn: true,
-          loading: false,
-        });
       },
 
       // Logout

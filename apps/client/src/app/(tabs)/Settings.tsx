@@ -1,14 +1,14 @@
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -216,7 +216,7 @@ export default function SettingsScreen() {
             >
               <Text style={styles.avatarButtonText}>Змінити аватар</Text>
             </TouchableOpacity>
-            {avatarUrl && (
+            {avatarUrl && !imageError && (
               <TouchableOpacity
                 style={[styles.avatarButton, styles.removeButton]}
                 onPress={handleRemoveAvatar}
