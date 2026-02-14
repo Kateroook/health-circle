@@ -11,61 +11,60 @@ import { PostgresStream } from './postgres.stream';
     LoggerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const streams: { stream: NodeJS.WritableStream }[] = [];
-        const pino = require('pino'); 
+            useFactory: (configService: ConfigService) => {
+              const pino = require('pino');
 
-        const logLevel = configService.get<string>('LOG_LEVEL') || 'info';
-        
-        const destinationStreams: any[] = [];
+              const logLevel = configService.get<string>('LOG_LEVEL') || 'info';
 
-        // Postgres Stream
-        destinationStreams.push({
-          stream: new PostgresStream({
-            connection: {
-              host: configService.get<string>('LOG_DB_HOST')!,
-              port: configService.get<number>('LOG_DB_PORT')!,
-              user: configService.get<string>('LOG_DB_USER')!,
-              password: configService.get<string>('LOG_DB_PASS')!,
-              database: configService.get<string>('LOG_DB_NAME')!,
-              ssl: configService.get<string>('LOG_DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
-            },
-            tableName: configService.get<string>('LOG_DB_TABLE')!,
-          }),
-          level: logLevel,
-        });
+              const destinationStreams: any[] = [];
 
-        // Stdout Stream
-        if (configService.get<string>('LOG_STD_OUT') === 'true') {
-           if (process.env.NODE_ENV !== 'production') {
-             destinationStreams.push({
-                stream: require('pino-pretty')(),
-                level: logLevel
-             });
-           } else {
-             destinationStreams.push({
-               stream: process.stdout,
-               level: logLevel
-             });
-           }
-        }
-        
-        return {
-          pinoHttp: {
-            name: 'health-circle-core-api', // Or 'app', checking previous config it was 'app'
-            level: logLevel,
-            stream: pino.multistream(destinationStreams),
-            autoLogging: true,
-            serializers: {
-                req: (req) => ({
-                    id: req.id,
-                    method: req.method,
-                    url: req.url,
+              // Postgres Stream
+              destinationStreams.push({
+                stream: new PostgresStream({
+                  connection: {
+                    host: configService.getOrThrow<string>('LOG_DB_HOST'),
+                    port: configService.getOrThrow<number>('LOG_DB_PORT'),
+                    user: configService.getOrThrow<string>('LOG_DB_USER'),
+                    password: configService.getOrThrow<string>('LOG_DB_PASS'),
+                    database: configService.getOrThrow<string>('LOG_DB_NAME'),
+                    ssl: configService.get<string>('LOG_DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
+                  },
+                  tableName: configService.getOrThrow<string>('LOG_DB_TABLE'),
                 }),
+                level: logLevel,
+              });
+
+              // Stdout Stream
+              if (configService.get<string>('LOG_STD_OUT') === 'true') {
+                 if (process.env.NODE_ENV !== 'production') {
+                   destinationStreams.push({
+                      stream: require('pino-pretty')(),
+                      level: logLevel
+                   });
+                 } else {
+                   destinationStreams.push({
+                     stream: process.stdout,
+                     level: logLevel
+                   });
+                 }
+              }
+
+              return {
+                pinoHttp: {
+                  name: 'health-circle-core-api',
+                  level: logLevel,
+                  stream: pino.multistream(destinationStreams),
+                  autoLogging: true,
+                  serializers: {
+                      req: (req) => ({
+                          id: req.id,
+                          method: req.method,
+                          url: req.url,
+                      }),
+                  },
+                },
+              };
             },
-          },
-        };
-      },
     }),
   ],
   exports: [LoggerModule],

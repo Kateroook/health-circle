@@ -4,8 +4,10 @@ import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { useContainer } from 'class-validator';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import * as admin from 'firebase-admin';
+import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { types } from 'pg';
 
@@ -31,6 +33,8 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   app.use(cookieParser());
+  app.use(helmet());
+  app.use(compression());
 
   app.useGlobalFilters(new GlobalExceptionFilter(app.get(HttpAdapterHost), app.get(Logger)));
 
