@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Bunyan } from 'nestjs-bunyan';
+import { getLoggerToken, PinoLogger } from 'nestjs-pino';
 import { Resend } from 'resend';
 import { LoggingTypes } from 'src/common/enums/logging-types';
 
@@ -16,7 +16,7 @@ import * as handlebars from 'handlebars';
 
 describe('EmailService', () => {
   let service: EmailService;
-  let logger: jest.Mocked<Bunyan>;
+  let logger: jest.Mocked<PinoLogger>;
   let mockResend: jest.Mocked<Resend>;
   let mockTemplateDelegate: jest.Mock;
 
@@ -55,12 +55,12 @@ describe('EmailService', () => {
       providers: [
         EmailService,
         { provide: ConfigService, useValue: mockConfigService },
-        { provide: Bunyan, useValue: mockLogger },
+        { provide: getLoggerToken(EmailService.name), useValue: mockLogger },
       ],
     }).compile();
 
     service = module.get<EmailService>(EmailService);
-    logger = module.get(Bunyan);
+    logger = module.get(getLoggerToken(EmailService.name));
     
     
     // Access the mocked instance of Resend
@@ -82,7 +82,7 @@ describe('EmailService', () => {
         providers: [
           EmailService,
           { provide: ConfigService, useValue: { getOrThrow: jest.fn().mockReturnValue('x') } },
-          { provide: Bunyan, useValue: mockLogger },
+          { provide: getLoggerToken(EmailService.name), useValue: mockLogger },
         ],
       }).compile();
 

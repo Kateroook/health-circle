@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+ 
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as fs from 'fs';
-import { Bunyan } from 'nestjs-bunyan';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import * as path from 'path';
 import { ExternalFilesEntity } from 'src/common/entities/external-files.entity';
 import { LoggingTypes } from 'src/common/enums/logging-types';
@@ -23,7 +23,8 @@ export class ExternalFilesCronService {
     @InjectRepository(ExternalFilesEntity)
     private readonly repository: Repository<ExternalFilesEntity>,
     private readonly configService: ConfigService,
-    private readonly logger: Bunyan,
+    @InjectPinoLogger(ExternalFilesCronService.name)
+    private readonly logger: PinoLogger,
   ) {
     this.basePath = configService.get<string>('EXTERNAL_FILES_PATH')!;
     if (!fs.existsSync(this.basePath)) {
@@ -63,7 +64,7 @@ export class ExternalFilesCronService {
       }
     } catch (e: unknown) {
       const error = e as Error;
-      (this.logger as any).error(
+      this.logger.error(
         { type, stack: getErrorStack(error) },
         error.message || `Failed to process missing files.`,
       );
@@ -91,11 +92,11 @@ export class ExternalFilesCronService {
           }),
         );
 
-        (this.logger as any).info({ type, data: { toUnlinkIds } }, `Unlinked ${toUnlinkIds.length} files`);
+        this.logger.info({ type, data: { toUnlinkIds } }, `Unlinked ${toUnlinkIds.length} files`);
       }
     } catch (e: unknown) {
       const error = e as Error;
-      (this.logger as any).error(
+      this.logger.error(
         { type, stack: getErrorStack(error) },
         error.message || `Failed to process unlink files.`,
       );

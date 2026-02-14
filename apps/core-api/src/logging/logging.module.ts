@@ -1,52 +1,71 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable */
 import { Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { INFO, levelFromName, Stream } from 'bunyan';
-import { BunyanLoggerModule } from 'nestjs-bunyan';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { LoggerModule } from 'nestjs-pino';
 
 import { PostgresStream } from './postgres.stream';
 
 @Module({
   imports: [
-    BunyanLoggerModule.forRootAsync({
-      isGlobal: true,
-      bunyan: {
-        useFactory: (configService: ConfigService) => {
-          const streams: Stream[] = [];
+    LoggerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const streams: { stream: NodeJS.WritableStream }[] = [];
+        const pino = require('pino'); 
 
-          const logLevelName = configService.get<string>('LOG_LEVEL') || 'info';
-          const logLevel = (levelFromName as unknown as Record<string, number>)[logLevelName.toLowerCase()] || INFO;
-          streams.push({
-            stream: new PostgresStream({
-              connection: {
-                host: configService.get<string>('LOG_DB_HOST')!,
-                port: configService.get<number>('LOG_DB_PORT')!,
-                user: configService.get<string>('LOG_DB_USER')!,
-                password: configService.get<string>('LOG_DB_PASS')!,
-                database: configService.get<string>('LOG_DB_NAME')!,
-              },
-              tableName: configService.get<string>('LOG_DB_TABLE')!,
-            }),
+        const logLevel = configService.get<string>('LOG_LEVEL') || 'info';
+        
+        const destinationStreams: any[] = [];
+
+        // Postgres Stream
+        destinationStreams.push({
+          stream: new PostgresStream({
+            connection: {
+              host: configService.get<string>('LOG_DB_HOST')!,
+              port: configService.get<number>('LOG_DB_PORT')!,
+              user: configService.get<string>('LOG_DB_USER')!,
+              password: configService.get<string>('LOG_DB_PASS')!,
+              database: configService.get<string>('LOG_DB_NAME')!,
+            },
+            tableName: configService.get<string>('LOG_DB_TABLE')!,
+          }),
+          level: logLevel,
+        });
+
+        // Stdout Stream
+        if (configService.get<string>('LOG_STD_OUT') === 'true') {
+           if (process.env.NODE_ENV !== 'production') {
+             destinationStreams.push({
+                stream: require('pino-pretty')(),
+                level: logLevel
+             });
+           } else {
+             destinationStreams.push({
+               stream: process.stdout,
+               level: logLevel
+             });
+           }
+        }
+        
+        return {
+          pinoHttp: {
+            name: 'health-circle-core-api', // Or 'app', checking previous config it was 'app'
             level: logLevel,
-          });
-
-          if (configService.get<string>('LOG_STD_OUT') === 'true') {
-            streams.push({
-              stream: process.stdout,
-              level: logLevel,
-            });
-          }
-
-          return {
-            src: true,
-            name: 'app',
-            streams,
-          };
-        },
-        inject: [ConfigService],
+            stream: pino.multistream(destinationStreams),
+            autoLogging: true,
+            serializers: {
+                req: (req) => ({
+                    id: req.id,
+                    method: req.method,
+                    url: req.url,
+                }),
+            },
+          },
+        };
       },
     }),
   ],
-  exports: [BunyanLoggerModule],
+  exports: [LoggerModule],
 })
 export class LoggingModule {}

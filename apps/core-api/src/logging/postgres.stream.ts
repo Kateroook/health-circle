@@ -11,7 +11,7 @@ export class PostgresStream extends Stream.Writable {
     super();
     this.pool = new Pool(options.connection);
     this.tableName = options.tableName;
-    this._write = (chunk: any, enc: BufferEncoding, cb: (error?: Error | null) => void) =>
+    this._write = (chunk: unknown, enc: BufferEncoding, cb: (error?: Error | null) => void) =>
       this._writePgPool(chunk as Buffer, enc, cb);
   }
 
@@ -27,11 +27,11 @@ export class PostgresStream extends Stream.Writable {
         content.hostname,
         content.msg,
         content.pid,
-        content.time,
+        new Date(content.time), // Convert epoch or ISO string to Date
         content.userId ?? null,
         content.statusCode ?? null,
         content.path ?? null,
-        content.src.func,
+        content.src?.func ?? null, // Safely access func
         content.stack ?? null,
         content.data ?? null,
         content.type ?? 'other',
