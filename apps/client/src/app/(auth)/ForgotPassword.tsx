@@ -1,4 +1,3 @@
-import { useAuthStore } from "@/src/store/authStore";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -13,22 +12,30 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
+import { apiFetch } from "../../api/api";
 import { formatErrorMessage } from "../../utils/error.util";
 
-export default function Login() {
-  const { login } = useAuthStore();
+export default function ForgotPassword() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  async function handleLogin() {
+  async function handleSubmit() {
     setFormError("");
+    if (!email.trim()) {
+      setFormError("Введіть email");
+      return;
+    }
     setLoading(true);
     try {
-      await login(email, password);
-      router.replace("/Dashboard");
+      await apiFetch("/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      setSent(true);
+      // Navigate to ResetPassword screen with email
+      router.push({ pathname: "/ResetPassword", params: { email: email.trim().toLowerCase() } });
     } catch (e: any) {
       setFormError(formatErrorMessage(e));
     } finally {
@@ -48,14 +55,23 @@ export default function Login() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Back button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Icon name="arrow-left" size={24} color="#1A1A1A" />
+          </TouchableOpacity>
+
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Icon name="lock" size={36} color="#FF6B6B" />
+              <Icon name="mail" size={36} color="#FF6B6B" />
             </View>
-            <Text style={styles.title}>Вітаємо знову!</Text>
+            <Text style={styles.title}>Забули пароль?</Text>
             <Text style={styles.subtitle}>
-              Увійдіть, щоб продовжити турбуватися про близьких
+              Введіть email, який ви використовували при реєстрації. Ми надішлемо
+              вам код для скидання паролю.
             </Text>
           </View>
 
@@ -74,37 +90,6 @@ export default function Login() {
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Пароль</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  placeholder="Введіть пароль"
-                  value={password}
-                  secureTextEntry={!showPassword}
-                  onChangeText={setPassword}
-                  style={styles.passwordInput}
-                  placeholderTextColor="#999"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeButton}
-                >
-                  <Icon
-                    name={showPassword ? "eye-off" : "eye"}
-                    size={20}
-                    color="#999"
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              onPress={() => router.push("/ForgotPassword")}
-              style={styles.forgotPasswordButton}
-            >
-              <Text style={styles.forgotPasswordText}>Забули пароль?</Text>
-            </TouchableOpacity>
-
             {formError && (
               <View style={styles.errorContainer}>
                 <Icon
@@ -117,15 +102,14 @@ export default function Login() {
               </View>
             )}
 
-            {/* Buttons */}
             <View style={styles.buttonsContainer}>
               <TouchableOpacity
                 style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleLogin}
+                onPress={handleSubmit}
                 disabled={loading}
               >
                 <Text style={styles.primaryButtonText}>
-                  {loading ? "Вхід..." : "Увійти"}
+                  {loading ? "Надсилання..." : "Надіслати код"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -134,21 +118,14 @@ export default function Login() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Ще немає акаунту?{" "}
+              Згадали пароль?{" "}
               <Text
                 style={styles.footerLink}
-                onPress={() => router.push("/Register")}
+                onPress={() => router.back()}
               >
-                Зареєструватися
+                Увійти
               </Text>
             </Text>
-
-            <TouchableOpacity
-              style={styles.skipButton}
-              onPress={() => router.replace("/Dashboard")}
-            >
-              <Text style={styles.skipButtonText}>Пропустити</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -167,13 +144,18 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 20,
     paddingBottom: 40,
     justifyContent: "space-between",
   },
+  backButton: {
+    marginBottom: 10,
+    padding: 4,
+    alignSelf: "flex-start",
+  },
   header: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 10,
   },
   iconContainer: {
     width: 70,
@@ -194,7 +176,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#666",
     textAlign: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     lineHeight: 22,
   },
   formContainer: {
@@ -218,24 +200,6 @@ const styles = StyleSheet.create({
     color: "#1A1A1A",
     borderWidth: 1,
     borderColor: "#E5E5E5",
-  },
-  passwordContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-  },
-  passwordInput: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: "#1A1A1A",
-  },
-  eyeButton: {
-    paddingHorizontal: 16,
   },
   errorContainer: {
     flexDirection: "row",
@@ -286,23 +250,5 @@ const styles = StyleSheet.create({
   footerLink: {
     color: "#FF6B6B",
     fontWeight: "600",
-  },
-  forgotPasswordButton: {
-    alignSelf: "flex-end",
-    marginBottom: 12,
-    marginTop: -8,
-  },
-  forgotPasswordText: {
-    color: "#FF6B6B",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  skipButton: {
-    paddingVertical: 8,
-  },
-  skipButtonText: {
-    color: "#999",
-    fontSize: 14,
-    fontWeight: "500",
   },
 });

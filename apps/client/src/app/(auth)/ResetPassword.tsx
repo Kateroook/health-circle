@@ -1,7 +1,7 @@
-import { useAuthStore } from "@/src/store/authStore";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
+    Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -13,26 +13,46 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
+import { apiFetch } from "../../api/api";
 import { formatErrorMessage } from "../../utils/error.util";
 
-export default function Login() {
-  const { login } = useAuthStore();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function ResetPassword() {
+  const { email } = useLocalSearchParams<{ email: string }>();
+  const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  async function handleLogin() {
+  async function handleSubmit() {
     setFormError("");
     setLoading(true);
     try {
-      await login(email, password);
-      router.replace("/Dashboard");
+      await apiFetch(`/auth/reset-password?email=${email}&code=${code}`, {
+        method: "POST",
+        body: JSON.stringify({ newPassword, confirmNewPassword: confirm }),
+      });
+      Alert.alert("Успіх", "Пароль успішно скинуто. Увійдіть з новим паролем.", [
+        { text: "OK", onPress: () => router.replace("/Login") },
+      ]);
     } catch (e: any) {
       setFormError(formatErrorMessage(e));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResendCode() {
+    try {
+      await apiFetch("/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      Alert.alert("Успіх", "Код надіслано повторно на вашу пошту");
+    } catch (e: any) {
+      Alert.alert("Помилка", formatErrorMessage(e));
     }
   }
 
@@ -48,40 +68,59 @@ export default function Login() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Back button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Icon name="arrow-left" size={24} color="#1A1A1A" />
+          </TouchableOpacity>
+
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Icon name="lock" size={36} color="#FF6B6B" />
+              <Icon name="key" size={36} color="#FF6B6B" />
             </View>
-            <Text style={styles.title}>Вітаємо знову!</Text>
+            <Text style={styles.title}>Скидання паролю</Text>
             <Text style={styles.subtitle}>
-              Увійдіть, щоб продовжити турбуватися про близьких
+              Введіть код із вашої електронної пошти та новий пароль
             </Text>
+          </View>
+
+          {/* Email Badge */}
+          <View style={styles.emailBadge}>
+            <Icon
+              name="mail"
+              size={16}
+              color="#666"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.emailText}>{email}</Text>
           </View>
 
           {/* Form */}
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>Код підтвердження</Text>
               <TextInput
-                placeholder="example@mail.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={styles.input}
+                placeholder="Введіть 6-значний код"
+                value={code}
+                onChangeText={setCode}
+                keyboardType="number-pad"
+                maxLength={6}
+                style={styles.codeInput}
                 placeholderTextColor="#999"
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Пароль</Text>
+              <Text style={styles.label}>Новий пароль</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
-                  placeholder="Введіть пароль"
-                  value={password}
+                  placeholder="Введіть новий пароль"
+                  value={newPassword}
                   secureTextEntry={!showPassword}
-                  onChangeText={setPassword}
+                  onChangeText={setNewPassword}
                   style={styles.passwordInput}
                   placeholderTextColor="#999"
                 />
@@ -98,12 +137,29 @@ export default function Login() {
               </View>
             </View>
 
-            <TouchableOpacity
-              onPress={() => router.push("/ForgotPassword")}
-              style={styles.forgotPasswordButton}
-            >
-              <Text style={styles.forgotPasswordText}>Забули пароль?</Text>
-            </TouchableOpacity>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Підтвердіть пароль</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  placeholder="Повторіть пароль"
+                  value={confirm}
+                  secureTextEntry={!showConfirm}
+                  onChangeText={setConfirm}
+                  style={styles.passwordInput}
+                  placeholderTextColor="#999"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirm(!showConfirm)}
+                  style={styles.eyeButton}
+                >
+                  <Icon
+                    name={showConfirm ? "eye-off" : "eye"}
+                    size={20}
+                    color="#999"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
 
             {formError && (
               <View style={styles.errorContainer}>
@@ -121,11 +177,11 @@ export default function Login() {
             <View style={styles.buttonsContainer}>
               <TouchableOpacity
                 style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleLogin}
+                onPress={handleSubmit}
                 disabled={loading}
               >
                 <Text style={styles.primaryButtonText}>
-                  {loading ? "Вхід..." : "Увійти"}
+                  {loading ? "Збереження..." : "Скинути пароль"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -134,21 +190,11 @@ export default function Login() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Ще немає акаунту?{" "}
-              <Text
-                style={styles.footerLink}
-                onPress={() => router.push("/Register")}
-              >
-                Зареєструватися
+              Не отримали код?{" "}
+              <Text style={styles.footerLink} onPress={handleResendCode}>
+                Надіслати повторно
               </Text>
             </Text>
-
-            <TouchableOpacity
-              style={styles.skipButton}
-              onPress={() => router.replace("/Dashboard")}
-            >
-              <Text style={styles.skipButtonText}>Пропустити</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -167,13 +213,17 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 20,
     paddingBottom: 40,
-    justifyContent: "space-between",
+  },
+  backButton: {
+    marginBottom: 10,
+    padding: 4,
+    alignSelf: "flex-start",
   },
   header: {
     alignItems: "center",
-    marginTop: 20,
+    marginBottom: 24,
   },
   iconContainer: {
     width: 70,
@@ -197,8 +247,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     lineHeight: 22,
   },
+  emailBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E8F5FF",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginBottom: 32,
+  },
+  emailText: {
+    fontSize: 14,
+    color: "#1A1A1A",
+    fontWeight: "600",
+  },
   formContainer: {
-    marginTop: 40,
+    marginBottom: 24,
   },
   inputGroup: {
     marginBottom: 20,
@@ -209,7 +274,7 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 8,
   },
-  input: {
+  codeInput: {
     backgroundColor: "#FFFFFF",
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -218,6 +283,9 @@ const styles = StyleSheet.create({
     color: "#1A1A1A",
     borderWidth: 1,
     borderColor: "#E5E5E5",
+    textAlign: "center",
+    letterSpacing: 4,
+    fontWeight: "600",
   },
   passwordContainer: {
     flexDirection: "row",
@@ -276,33 +344,15 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: "center",
-    gap: 16,
     marginTop: 24,
   },
   footerText: {
     fontSize: 14,
     color: "#666",
+    textAlign: "center",
   },
   footerLink: {
     color: "#FF6B6B",
     fontWeight: "600",
-  },
-  forgotPasswordButton: {
-    alignSelf: "flex-end",
-    marginBottom: 12,
-    marginTop: -8,
-  },
-  forgotPasswordText: {
-    color: "#FF6B6B",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  skipButton: {
-    paddingVertical: 8,
-  },
-  skipButtonText: {
-    color: "#999",
-    fontSize: 14,
-    fontWeight: "500",
   },
 });

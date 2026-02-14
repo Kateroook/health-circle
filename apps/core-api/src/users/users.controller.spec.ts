@@ -145,13 +145,15 @@ describe('UsersController', () => {
   });
 
   describe('resetPassword', () => {
-    it('should call reset password service', () => {
+    it('should call reset password service', async () => {
       const params = { id: 'user-id-123' };
-      service.resetPassword.mockReturnValue(undefined);
+      const expectedResult = { success: true, message: 'Код для скидання паролю надіслано на пошту' };
+      service.resetPassword.mockResolvedValue(expectedResult);
 
-      controller.resetPassword(params, mockRequest);
+      const response = await controller.resetPassword(params, mockRequest);
 
       expect(service.resetPassword).toHaveBeenCalledWith(params.id, mockRequest.metadata);
+      expect(response).toBe(expectedResult);
     });
   });
 

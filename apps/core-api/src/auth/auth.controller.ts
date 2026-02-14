@@ -8,13 +8,16 @@ import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 
 import { AuthStrategies } from '../common/enums/auth-strategies';
 import { ConfirmationRegistrationGuard } from '../common/guards/confirmation.guard';
+import { ConfirmationPasswordResetGuard } from '../common/guards/confirmation-password-reset.guard';
 import { UserJwtAccessGuard } from '../common/guards/user-jwt-access.guard';
 import { UserJwtRefreshGuard } from '../common/guards/user-jwt-refresh.guard';
 import { UserLocalGuard } from '../common/guards/user-local.guard';
 import type { AuthRequest } from '../common/types/auth-request';
 import { AuthService } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { SetupPasswordDto } from './dto/token-query.dto';
+import { UserChangePasswordDto } from './dto/user-change-password.dto';
 import { UserLoginDto } from './dto/user-login.dto';
 import { UserSetupPasswordDto } from './dto/user-setup-password.dto';
 
@@ -75,5 +78,33 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   getProfile(@Req() req: AuthRequest) {
     return instanceToPlain(req.user);
+  }
+
+  @Post('change-password')
+  @UseGuards(UserJwtAccessGuard)
+  @ApiBearerAuth(AuthStrategies.userJwtAccess)
+  @ApiOperation({ summary: 'Change user password (authenticated)' })
+  @ApiOkResponse({ description: 'Password changed successfully' })
+  @ApiUnauthorizedResponse({ description: 'Invalid old password' })
+  async changePassword(@Body() body: UserChangePasswordDto, @Req() req: AuthRequest) {
+    await this.authService.changePassword(req.user, body);
+    return { success: true, message: 'Пароль успішно змінено' };
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Request password reset code via email' })
+  @ApiOkResponse({ description: 'If the email exists, a reset code will be sent' })
+  async forgotPassword(@Body() body: ForgotPasswordDto) {
+    await this.authService.forgotPassword(body.email);
+    return { success: true, message: 'Код для скидання паролю надіслано на вашу пошту' };
+  }
+
+  @Post('reset-password')
+  @UseGuards(ConfirmationPasswordResetGuard)
+  @ApiOperation({ summary: 'Reset password using confirmation code' })
+  @ApiOkResponse({ description: 'Password reset successfully' })
+  async resetPassword(@Query() query: SetupPasswordDto, @Body() body: UserSetupPasswordDto, @Req() req: AuthRequest) {
+    await this.authService.resetPassword(req.user, body);
+    return { success: true, message: 'Пароль успішно скинуто' };
   }
 }

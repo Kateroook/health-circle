@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, NotImplementedException, StreamableFile } from '@nestjs/common';
+import { Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
@@ -143,9 +143,11 @@ export class UsersService {
     return saved;
   }
 
-  resetPassword(_userId: string, _metadata: RequestMetadata): void {
-    // todo: change to reset by email
-    throw new NotImplementedException();
+  async resetPassword(userId: string, _metadata: RequestMetadata): Promise<{ success: boolean; message: string }> {
+    const user = await this.repository.findOne({ where: { id: userId } });
+    if (!user || !user.email) throw new NotFoundException('Користувача не знайдено');
+    await this.confirmationsService.setupPasswordCode(user.email, userId, ConfirmationTypes.PASSWORD_RESET);
+    return { success: true, message: 'Код для скидання паролю надіслано на пошту' };
   }
 
   public async remove(id: string, user: UserProfileDto, metadata: RequestMetadata): Promise<{ success: boolean }> {
