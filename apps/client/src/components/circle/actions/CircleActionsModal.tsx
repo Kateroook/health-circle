@@ -5,15 +5,16 @@ import Feather from "@expo/vector-icons/Feather";
 import * as Clipboard from "expo-clipboard";
 import React, { useEffect, useState } from "react";
 import {
-    Keyboard,
-    LayoutAnimation,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    UIManager,
-    View
+  Keyboard,
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  UIManager,
+  View
 } from "react-native";
 import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -329,5 +330,115 @@ export default function CircleActionsModal({
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  sheetWrapper: { justifyContent: "flex-end", margin: 0 },
+  sheet: {
+    backgroundColor: COLORS.BACKGROUND_LIGHT,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    maxHeight: "92%",
+  },
+  sheetExpanded: {
+    maxHeight: "80%",
+    flex: 1,
+  },
+  handle: {
+    alignSelf: "center",
+    width: 48,
+    height: 5,
+    backgroundColor: "#D1D1D6",
+    borderRadius: 3,
+    marginVertical: 12,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: COLORS.TEXT_DARK,
+    textAlign: "center",
+    marginBottom: 20,
+    paddingHorizontal: 24,
+  },
+  item: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: COLORS.BACKGROUND_CARD,
+    borderRadius: 16,
+    marginBottom: 14,
+  },
+  text: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: COLORS.TEXT_DARK,
+    textAlign: "center",
+  },
+  inviteContainer: {
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EEF2F6",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    marginBottom: 32,
+  },
+  inviteText: { fontSize: 16, fontWeight: "600", marginRight: 8 },
+  inviteButton: {
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: "#5D6470",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  delete: { backgroundColor: "transparent", marginTop: 24, marginBottom: 20 },
+  deleteText: {
+    color: COLORS.STATE_DANGER,
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  input: {
+    backgroundColor: COLORS.BACKGROUND_CARD,
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    fontSize: 26,
+    fontWeight: "700",
+    color: COLORS.TEXT_DARK,
+    textAlign: "center",
+    marginTop: 10,
+    marginBottom: 26,
+  },
+  backButton: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.PRIMARY_BLUE,
+    marginLeft: 8,
+  },
+  doneButton: {
+    backgroundColor: COLORS.BLACK_BTN,
+    borderRadius: 28,
+    paddingVertical: 15,
+    alignItems: "center",
+    marginTop: 24,
+  },
+  doneButtonText: {
+    color: COLORS.BACKGROUND_LIGHT,
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  memberItem: {
+    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BACKGROUND_CARD,
+  },
+  memberName: { fontSize: 16, fontWeight: "600", color: COLORS.TEXT_DARK, flex: 1, marginRight: 12 },
+});
 
 
