@@ -5,7 +5,6 @@ import Feather from "@expo/vector-icons/Feather";
 import * as Clipboard from "expo-clipboard";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Keyboard,
   LayoutAnimation,
   Platform,
@@ -15,10 +14,11 @@ import {
   TextInput,
   TouchableOpacity,
   UIManager,
-  View,
+  View
 } from "react-native";
 import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
+import ConfirmationModal from "../../ConfirmationModal";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -64,6 +64,8 @@ export default function CircleActionsModal({
   const [newName, setNewName] = useState("");
   const [localMembers, setLocalMembers] = useState<Member[]>([]);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [isDeleteVisible, setIsDeleteVisible] = useState(false);
+  const [isLeaveVisible, setIsLeaveVisible] = useState(false);
 
   const user = useAuthStore().user;
   const isOwner = user?.id === ownerId;
@@ -278,16 +280,7 @@ export default function CircleActionsModal({
 
                 <TouchableOpacity
                   style={styles.delete}
-                  onPress={() =>
-                    Alert.alert(
-                      "Видалити коло",
-                      "Ви впевнені, що хочете видалити це коло? Цю дію не можна скасувати.",
-                      [
-                        { text: "Скасувати", style: "cancel" },
-                        { text: "Видалити", style: "destructive", onPress: onDelete },
-                      ]
-                    )
-                  }
+                  onPress={() => setIsDeleteVisible(true)}
                 >
                   <Text style={styles.deleteText}>Видалити коло</Text>
                 </TouchableOpacity>
@@ -297,16 +290,7 @@ export default function CircleActionsModal({
               <>
                 <TouchableOpacity
                   style={styles.delete}
-                  onPress={() =>
-                    Alert.alert(
-                      "Покинути коло",
-                      "Ви впевнені, що хочете покинути це коло?",
-                      [
-                        { text: "Скасувати", style: "cancel" },
-                        { text: "Покинути", style: "destructive", onPress: onLeave },
-                      ]
-                    )
-                  }
+                  onPress={() => setIsLeaveVisible(true)}
                 >
                   <Text style={styles.deleteText}>Покинути коло</Text>
                 </TouchableOpacity>
@@ -315,6 +299,34 @@ export default function CircleActionsModal({
           </>
         )}
       </SafeAreaView>
+
+      <ConfirmationModal
+        isVisible={isDeleteVisible}
+        onCancel={() => setIsDeleteVisible(false)}
+        onConfirm={() => {
+          setIsDeleteVisible(false);
+          // Wait a bit for modal to close before triggering delete/onClose
+          // Or just trigger it. onDelete usually closes the Modal itself.
+          setTimeout(() => onDelete(), 300);
+        }}
+        title="Видалити це Коло?"
+        message="Після видалення ви не зможете стежити за станом його учасників"
+        confirmText="Видалити"
+        cancelText="Назад"
+      />
+
+      <ConfirmationModal
+        isVisible={isLeaveVisible}
+        onCancel={() => setIsLeaveVisible(false)}
+        onConfirm={() => {
+          setIsLeaveVisible(false);
+          setTimeout(() => onLeave(), 300);
+        }}
+        title="Покинути Коло?"
+        message="Ви впевнені, що хочете покинути це коло?"
+        confirmText="Покинути"
+        cancelText="Назад"
+      />
     </Modal>
   );
 }
@@ -428,3 +440,5 @@ const styles = StyleSheet.create({
   },
   memberName: { fontSize: 16, fontWeight: "600", color: COLORS.TEXT_DARK, flex: 1, marginRight: 12 },
 });
+
+
