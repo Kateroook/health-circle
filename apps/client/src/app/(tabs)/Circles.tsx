@@ -222,7 +222,7 @@ export default function CirclesScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "white" },
-  content: { padding: 20 },
+  content: { padding: 20, paddingBottom: 120 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",

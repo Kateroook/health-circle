@@ -1,18 +1,19 @@
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.container}>
-      <View>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.header}>Сповіщення</Text>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  container: { flex: 1, backgroundColor: "#fff" },
+  scrollContent: { padding: 20, paddingBottom: 120 },
   header: { fontSize: 28, fontWeight: "600", marginBottom: 25 },
   notification: {
     flexDirection: "row",
