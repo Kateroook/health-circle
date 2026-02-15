@@ -42,13 +42,13 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   phone: string | null;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true, select: false })
   lastLoginDate: Date;
 
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.UNKNOWN })
   status: UserStatus;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, select: false })
   fcmToken: string | null;
 
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMPTZ' })
@@ -57,10 +57,10 @@ export class UserEntity {
   @Column({ type: 'int', default: 0 })
   failedLoginAttempts: number;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', select: false })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', select: false })
   updatedAt: Date;
 
   @Column({ type: 'timestamptz', nullable: true })

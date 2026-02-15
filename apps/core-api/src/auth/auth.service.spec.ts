@@ -51,6 +51,10 @@ describe('AuthService', () => {
         {
           provide: ConfigService,
           useValue: {
+            get: jest.fn((key: string) => {
+              if (key === 'MAX_FAILED_LOGIN_ATTEMPTS') return 5;
+              return null;
+            }),
             getOrThrow: jest.fn((key: string) => {
               if (key.includes('TTL')) return 3600; // 1 hour
               return 'secret';
@@ -67,6 +71,7 @@ describe('AuthService', () => {
           provide: getRepositoryToken(UserEntity),
           useValue: {
             findOne: jest.fn(),
+            save: jest.fn(),
           },
         },
         {
@@ -145,13 +150,39 @@ describe('AuthService', () => {
       await expect(service.validateUser('x', 'p', mockMetadata)).rejects.toThrow(ForbiddenException);
     });
 
-    it('should throw UnauthorizedException if password invalid', async () => {
-      userRepository.findOne.mockResolvedValue(mockUserEntity);
+    it('should throw UnauthorizedException if password invalid and increment failed attempts', async () => {
+      userRepository.findOne.mockResolvedValue({ ...mockUserEntity, failedLoginAttempts: 0 } as UserEntity);
       userPasswordRepository.findOne.mockResolvedValue({ passwordHash: 'hash' } as UserPasswordEntity);
       securityService.validate.mockResolvedValue(false);
 
-      await expect(service.validateUser('x', 'p', mockMetadata)).rejects.toThrow(UnauthorizedException);
+      await expect(service.validateUser('test@example.com', 'pass', mockMetadata)).rejects.toThrow(UnauthorizedException);
+      expect(userRepository.save).toHaveBeenCalledWith(expect.objectContaining({ failedLoginAttempts: 1 }));
       expect(userActivitiesService.logActivity).toHaveBeenCalled();
+    });
+
+    it('should lock user when max failed attempts reached', async () => {
+      userRepository.findOne.mockResolvedValue({ ...mockUserEntity, failedLoginAttempts: 4 } as UserEntity);
+      userPasswordRepository.findOne.mockResolvedValue({ passwordHash: 'hash' } as UserPasswordEntity);
+      securityService.validate.mockResolvedValue(false);
+
+      await expect(service.validateUser('test@example.com', 'pass', mockMetadata)).rejects.toThrow(UnauthorizedException);
+      expect(userRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          failedLoginAttempts: 5,
+          lockedAt: expect.any(Date) as unknown,
+        }),
+      );
+    });
+
+    it('should NOT reset failed attempts or update lastLoginDate in validateUser (delegated to login)', async () => {
+      userRepository.findOne.mockResolvedValue({ ...mockUserEntity, failedLoginAttempts: 2 } as UserEntity);
+      userPasswordRepository.findOne.mockResolvedValue({ passwordHash: 'hash' } as UserPasswordEntity);
+      securityService.validate.mockResolvedValue(true);
+
+      const result = await service.validateUser('test@example.com', 'pass', mockMetadata);
+
+      expect(result).toBeInstanceOf(UserProfileDto);
+      expect(userRepository.save).not.toHaveBeenCalled();
     });
   });
 
@@ -207,7 +238,7 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('should generate tokens, revoke old sessions, and save new session', async () => {
+    it('should generate tokens, revoke old sessions, and save new session with user updates', async () => {
       const userProfile = new UserProfileDto({ ...mockUserEntity });
       userSessionRepository.find.mockResolvedValue([{ id: 'old-sess' } as UserSessionEntity]);
       userSessionRepository.save.mockResolvedValue({} as UserSessionEntity);
@@ -219,9 +250,18 @@ describe('AuthService', () => {
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2); // Access + Refresh
       expect(result.accessToken).toBe('signed-token');
 
-      // 2. Old sessions revoked
+      // 2. Old sessions revoked and new session saved with user updates
       expect(userSessionRepository.save).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ revokedAt: expect.any(Date) as unknown })]),
+        expect.arrayContaining([
+          expect.objectContaining({ revokedAt: expect.any(Date) as unknown }),
+          expect.objectContaining({
+            user: expect.objectContaining({
+              id: userProfile.id,
+              lastLoginDate: expect.any(Date) as unknown,
+              failedLoginAttempts: 0,
+            }) as unknown,
+          }),
+        ]),
       );
 
       // 3. Activity logged

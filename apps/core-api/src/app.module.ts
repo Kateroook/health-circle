@@ -56,6 +56,7 @@ import { UsersModule } from './users/users.module';
         ACCESS_TOKEN_TTL: Joi.number().required(),
         REFRESH_TOKEN_SECRET: Joi.string().required(),
         REFRESH_TOKEN_TTL: Joi.number().required(),
+        MAX_FAILED_LOGIN_ATTEMPTS: Joi.number().optional().default(5),
 
         // Confirmations
         RESET_PASSWORD_TOKEN_TTL: Joi.number().required(),
