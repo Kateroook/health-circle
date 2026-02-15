@@ -3,15 +3,14 @@ import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-    Keyboard,
-    LayoutAnimation,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    UIManager,
-    View
+  Keyboard,
+  LayoutAnimation,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View
 } from "react-native";
 import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -25,6 +24,8 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 
 import { Member } from "../CircleItem";
 
+import { setContactAlias } from "@/src/api/contacts";
+
 interface Props {
   visible: boolean;
   currentName: string;
@@ -32,11 +33,12 @@ interface Props {
   members: Member[];
   ownerId: string;
   onClose: () => void;
-  onRename: (newName: string) => void; // Used for "Rename Circle" from details
   onSaveMembers: (updated: { id: string }[]) => void;
   onDelete: () => void; // Used for "Delete Circle" from details
   onLeave: () => void; // Used for "Leave Circle" from details
   onRegenerateInvite: () => Promise<void>;
+  onMemberUpdated: () => void;
+  onEdit: () => void;
 }
 
 export default function CircleDetailsModal({
@@ -46,15 +48,15 @@ export default function CircleDetailsModal({
   members,
   ownerId,
   onClose,
-  onRename,
   onSaveMembers,
   onDelete,
   onLeave,
   onRegenerateInvite,
+  onMemberUpdated,
+  onEdit,
 }: Props) {
-  const [view, setView] = useState<"details" | "member" | "rename_circle">("details");
+  const [view, setView] = useState<"details" | "member">("details");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [newName, setNewName] = useState("");
   
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [isDeleteVisible, setIsDeleteVisible] = useState(false);
@@ -68,7 +70,6 @@ export default function CircleDetailsModal({
     if (visible) {
       setView("details");
       setSelectedMember(null);
-      setNewName("");
     }
   }, [visible]);
 
@@ -95,17 +96,6 @@ export default function CircleDetailsModal({
     setView("member");
   };
 
-  const handleRenameCirclePress = () => {
-    setNewName(currentName);
-    setView("rename_circle");
-  };
-
-  const handleDoneRenameCircle = () => {
-    if (newName.trim() !== "") {
-        onRename(newName.trim());
-        setView("details");
-    }
-  };
 
   const handleRemoveMember = () => {
     if (selectedMember && isOwner) {
@@ -117,9 +107,17 @@ export default function CircleDetailsModal({
     }
   };
   
-  const handleInternalMemberRename = (newName: string) => {
-      console.log(`Requested rename for ${selectedMember?.id} to ${newName}`);
-      setView("details");
+  const handleInternalMemberRename = async (newName: string) => {
+      if (selectedMember) {
+        try {
+            await setContactAlias(selectedMember.id, newName);
+            onMemberUpdated();
+            setView("details");
+        } catch (error) {
+            console.error("Failed to rename member:", error);
+            // Optionally show an alert
+        }
+      }
   };
 
   return (
@@ -147,39 +145,6 @@ export default function CircleDetailsModal({
       >
         <View style={styles.handle} />
 
-        {/* ===== RENAME CIRCLE MODE ===== */}
-        {view === "rename_circle" && isOwner && (
-          <View style={{ padding: 20 }}>
-            <TouchableOpacity
-              onPress={() => setView("details")}
-              style={styles.backButton}
-            >
-              <AntDesign
-                name="arrow-left"
-                size={16}
-                color={COLORS.PRIMARY_BLUE}
-              />
-              <Text style={styles.backButtonText}>Назад</Text>
-            </TouchableOpacity>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Нова назва"
-              placeholderTextColor={COLORS.TEXT_GRAY}
-              value={newName}
-              onChangeText={setNewName}
-              autoFocus
-            />
-
-            <TouchableOpacity
-              style={styles.doneButton}
-              onPress={handleDoneRenameCircle}
-              disabled={newName.trim() === ""}
-            >
-              <Text style={styles.doneButtonText}>Готово</Text>
-            </TouchableOpacity>
-          </View>
-        )}
 
         {/* ===== MEMBER DETAILS MODE ===== */}
         {view === "member" && selectedMember && (
@@ -214,7 +179,7 @@ export default function CircleDetailsModal({
                 members={members}
                 isOwner={isOwner || false}
                 onClose={onClose}
-                onRenamePress={handleRenameCirclePress}
+                onRenamePress={onEdit}
                 onUnsubscribePress={() => setIsLeaveVisible(true)}
                 onMemberPress={handleMemberPress}
               />

@@ -10,6 +10,7 @@ export interface Member {
   middleName?: string;
   lastName: string;
   fullName?: string;
+  isAlias?: boolean;
   avatarUpdatedAt?: string;
   status: "SAFE" | "DANGER" | "UNKNOWN";
   active?: boolean;

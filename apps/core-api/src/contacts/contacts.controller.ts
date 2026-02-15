@@ -6,6 +6,7 @@ import {
     Param,
     Patch,
     Post,
+    Put,
     Req,
     UseGuards,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import type { AuthRequest } from 'src/common/types/auth-request';
 
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
+import { SetContactAliasDto } from './dto/set-contact-alias.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 
 @ApiTags('contacts')
@@ -53,5 +55,16 @@ export class ContactsController {
   @UseGuards(UserJwtAccessGuard)
   remove(@Req() req: AuthRequest, @Param('targetId') targetId: string) {
     return this.contactsService.remove(req.user.id, targetId);
+  }
+
+  @Put(':targetId')
+  @ApiBearerAuth(AuthStrategies.userJwtAccess)
+  @UseGuards(UserJwtAccessGuard)
+  setAlias(
+    @Req() req: AuthRequest,
+    @Param('targetId') targetId: string,
+    @Body() dto: SetContactAliasDto,
+  ) {
+    return this.contactsService.setAlias(req.user.id, targetId, dto.alias);
   }
 }

@@ -60,6 +60,16 @@ export default function CirclesScreen() {
   const [activeCircle, setActiveCircle] = useState<Circle | null>(null);
   const [circles, setCircles] = useState<Circle[]>([]);
 
+  // Sync activeCircle when circles update (e.g. after rename)
+  useEffect(() => {
+    if (activeCircle) {
+      const updated = circles.find((c) => c.id === activeCircle.id);
+      if (updated) {
+        setActiveCircle(updated);
+      }
+    }
+  }, [circles]);
+
   // Fetch all circles
   const fetchCircles = async () => {
     try {
@@ -248,13 +258,11 @@ export default function CirclesScreen() {
           });
           fetchCircles();
         }}
-        onRename={async (newName: string) => {
-          if (!activeCircle) return;
-          await apiFetch("/groups", {
-            method: "PUT",
-            body: JSON.stringify({ id: activeCircle.id, name: newName }),
-          });
-          fetchCircles();
+        onEdit={() => {
+          setIsDetailsVisible(false);
+          setTimeout(() => {
+             setIsActionsVisible(true);
+          }, 300);
         }}
         onDelete={async () => {
           if (!activeCircle) return;
@@ -279,6 +287,7 @@ export default function CirclesScreen() {
             prev ? { ...prev, inviteCode: code } : prev
           );
         }}
+        onMemberUpdated={fetchCircles}
       />
     </SafeAreaView>
   );

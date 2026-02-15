@@ -15,6 +15,7 @@ import { CreateConfirmationCodeEntity1769962454307 } from './1769962454307-creat
 import { AlterUserUniqueness1771007170534 } from './1771007170534-alter-user-uniqueness';
 import { AddAvatarUpdatedAtToUser1771090489116 } from './1771090489116-add-avatar-updated-at-to-user';
 import { RemoveAvatars1771168550000 } from './1771168550000-remove-avatars';
+import { AddContactsAndFullName1771181633191 } from './1771181633191-add-contacts-and-full-name';
 
 export const migrations = [
   CreateEntities1762501994652,
@@ -34,4 +35,5 @@ export const migrations = [
   AlterUserUniqueness1771007170534,
   AddAvatarUpdatedAtToUser1771090489116,
   RemoveAvatars1771168550000,
+  AddContactsAndFullName1771181633191,
 ];

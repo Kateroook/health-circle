@@ -25,7 +25,7 @@ export default function MemberDetailsView({
   onRemoveMember,
 }: MemberDetailsViewProps) {
   const [isRenaming, setIsRenaming] = useState(false);
-  const [newName, setNewName] = useState(member.firstName);
+  const [newName, setNewName] = useState(member.fullName || member.firstName);
 
   const handleSaveRename = () => {
     if (onInternalRename) {
@@ -34,25 +34,31 @@ export default function MemberDetailsView({
     setIsRenaming(false);
   };
 
+  const handleResetAlias = () => {
+      if (onInternalRename) {
+          onInternalRename(""); // Clearing alias
+      }
+      setIsRenaming(false);
+  }
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-         <View style={styles.dragHandle} />
-      </View>
-      
       {!isRenaming ? (
         <>
             <View style={styles.profileSection}>
                 <View style={styles.avatarContainer}>
                      <MemberAvatar member={{...member, status: member.status || 'UNKNOWN'}} />
                 </View>
-                <Text style={styles.memberName}>{member.firstName} {member.lastName}</Text>
+                <Text style={styles.memberName}>{member.fullName || `${member.firstName} ${member.lastName}`}</Text>
             </View>
 
             <View style={styles.actionsList}>
                 <TouchableOpacity 
                     style={styles.actionButton} 
-                    onPress={() => setIsRenaming(true)}
+                    onPress={() => {
+                        setNewName(member.fullName || member.firstName);
+                        setIsRenaming(true);
+                    }}
                 >
                     <Text style={styles.actionButtonText}>Редагувати імʼя</Text>
                 </TouchableOpacity>
@@ -76,9 +82,28 @@ export default function MemberDetailsView({
              />
              <Text style={styles.hintText}>Це імʼя буде відображатися у вашому колі</Text>
              
-             <TouchableOpacity style={styles.saveButton} onPress={handleSaveRename}>
-                 <Text style={styles.saveButtonText}>Зберегти</Text>
-             </TouchableOpacity>
+             <View style={{ width: '100%', gap: 10 }}>
+                 <TouchableOpacity style={styles.saveButton} onPress={handleSaveRename}>
+                     <Text style={styles.saveButtonText}>Зберегти</Text>
+                 </TouchableOpacity>
+
+                 {/* Show restore only if it is an alias */}
+                 {member.isAlias && (
+                    <TouchableOpacity 
+                        style={[styles.saveButton, { backgroundColor: '#FFEEF0' }]} 
+                        onPress={handleResetAlias}
+                    >
+                        <Text style={[styles.saveButtonText, { color: COLORS.STATE_DANGER }]}>Відновити оригінальне імʼя</Text>
+                    </TouchableOpacity>
+                 )}
+
+                  <TouchableOpacity 
+                    style={[styles.saveButton, { backgroundColor: 'transparent' }]} 
+                    onPress={() => setIsRenaming(false)}
+                 >
+                     <Text style={[styles.saveButtonText, { color: COLORS.TEXT_GRAY }]}>Скасувати</Text>
+                 </TouchableOpacity>
+             </View>
           </View>
       )}
     </View>
@@ -92,17 +117,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  header: {
-      width: '100%',
-      alignItems: 'center',
-      marginBottom: 20
-  },
-  dragHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 2,
-  },
+  // Removed header/dragHandle styles
   profileSection: {
       alignItems: 'center',
       marginBottom: 30
@@ -115,7 +130,8 @@ const styles = StyleSheet.create({
       fontSize: 24,
       fontWeight: 'bold',
       marginTop: 10,
-      color: COLORS.TEXT_DARK
+      color: COLORS.TEXT_DARK,
+      textAlign: 'center'
   },
   actionsList: {
       width: '100%',

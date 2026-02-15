@@ -60,4 +60,29 @@ export class ContactsService {
       throw new NotFoundException('Контакт не знайдено');
     }
   }
+
+  async setAlias(ownerId: string, targetId: string, alias?: string): Promise<ContactEntity | void> {
+    if (!alias || !alias.trim()) {
+       // If alias is empty, remove the contact
+       await this.repository.delete({ ownerId, targetId });
+       return;
+    }
+
+    const existing = await this.repository.findOne({
+      where: { ownerId, targetId },
+    });
+
+    if (existing) {
+      existing.alias = alias;
+      return this.repository.save(existing);
+    }
+
+    const contact = this.repository.create({
+      ownerId,
+      targetId,
+      alias,
+    });
+
+    return this.repository.save(contact);
+  }
 }

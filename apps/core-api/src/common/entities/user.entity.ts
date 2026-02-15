@@ -84,4 +84,6 @@ export class UserEntity {
 
   @OneToMany(() => ContactEntity, (contact) => contact.owner)
   contacts: ContactEntity[];
+
+  isAlias?: boolean;
 }

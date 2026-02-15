@@ -47,8 +47,12 @@ export class GroupService {
         const alias = contactsMap.get(m.id);
         if (alias) {
           m.fullName = alias;
+          m.isAlias = true;
         } else {
-          m.fullName = `${m.firstName} ${m.lastName}`.trim();
+          m.isAlias = false;
+          if (!m.fullName) {
+             m.fullName = `${m.firstName} ${m.lastName}`.trim();
+          }
         }
       });
       return g;
@@ -72,8 +76,12 @@ export class GroupService {
       const alias = contactsMap.get(m.id);
       if (alias) {
         m.fullName = alias;
+        m.isAlias = true;
       } else {
-        m.fullName = `${m.firstName} ${m.lastName}`.trim();
+        m.isAlias = false;
+        if (!m.fullName) {
+          m.fullName = `${m.firstName} ${m.lastName}`.trim();
+        }
       }
     });
 
