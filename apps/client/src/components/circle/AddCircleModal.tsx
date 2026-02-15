@@ -1,15 +1,16 @@
 import { apiFetch } from "@/src/api/api";
 import { COLORS } from "@/src/theme/colors";
-import { AntDesign } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
 import {
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Share,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 // 1. Import the library
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -220,15 +221,37 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
                 <Text style={styles.finalName}>{circleName}</Text>
                 <View style={styles.codeHeader}>
                   <Text style={styles.sectionLabel}>Код кола</Text>
-                  <TouchableOpacity onPress={handleCopy}>
+                <TouchableOpacity onPress={handleCopy}>
                     <AntDesign name="copy" size={16} color={COLORS.TEXT_GRAY} />
                   </TouchableOpacity>
                 </View>
-                <OtpInput
-                  value={generatedCode}
-                  editable={false}
-                  onChange={() => {}}
-                />
+
+                <View style={styles.codeContainer}>
+                  <OtpInput
+                    value={generatedCode}
+                    editable={false}
+                    onChange={() => {}}
+                  />
+                </View>
+
+                {/* Share Button */}
+                <TouchableOpacity
+                  style={styles.shareBtn}
+                  onPress={async () => {
+                    try {
+                      const code = generatedCode.join("");
+                      await Share.share({
+                        message: `Приєднуйся до мого Кола в Health Circle! Код: ${code}`,
+                      });
+                    } catch (error) {
+                      console.error(error);
+                    }
+                  }}
+                >
+                  <Text style={styles.shareBtnText}>Надіслати запрошення</Text>
+                  <Feather name="send" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+
                 <TouchableOpacity
                   style={[styles.btn, styles.blackBtn]}
                   onPress={onClose}
@@ -310,6 +333,26 @@ const styles = StyleSheet.create({
   blackBtn: { backgroundColor: COLORS.BLACK_BTN },
   btnText: { color: "white", fontSize: 16, fontWeight: "600" },
   disabled: { opacity: 0.4 },
+  codeContainer: {
+    marginBottom: 20,
+  },
+  shareBtn: {
+    flexDirection: "row",
+    backgroundColor: "#5A8DEE",
+    paddingVertical: 14,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    gap: 8,
+  },
+  shareBtnText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    fontVariant: ["small-caps"],
+    marginRight: 8,
+  },
 });
 
 export default AddCircleModal;
