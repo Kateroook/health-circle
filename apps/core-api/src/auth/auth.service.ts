@@ -90,18 +90,30 @@ export class AuthService {
   async validateUser(email: string, password: string, metadata: RequestMetadata): Promise<UserProfileDto> {
     // Find user by email
     const user = await this.userRepository.findOne({ where: { email } });
+
     // Check if user exists and is active
     if (!user) throw new UnauthorizedException('Невірні облікові дані');
     if (user.lockedAt) throw new ForbiddenException('Користувача заблоковано');
+
     // Validate password
     const userPassword = await this.userPasswordRepository.findOne({
       where: { user: { id: user.id }, revokedAt: IsNull() },
       order: { createdAt: 'DESC' },
     });
+
+    const maxAttempts = this.configService.get<number>('MAX_FAILED_LOGIN_ATTEMPTS') || 5;
+
     if (!userPassword || !(await this.securityService.validate(password, userPassword.passwordHash))) {
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+      if (user.failedLoginAttempts >= maxAttempts) {
+        user.lockedAt = new Date();
+      }
+      await this.userRepository.save(user);
+
       await this.userActivitiesService.logActivity(UserActivityTypes.userFailedLogin, metadata, { userId: user.id });
       throw new UnauthorizedException('Невірні облікові дані');
     }
+
     return new UserProfileDto({ ...user });
   }
 
@@ -110,6 +122,7 @@ export class AuthService {
       where: { jti: tokenPayload.jti, user: { id: tokenPayload.sub } },
       relations: { user: true },
     });
+
     // Check if session is not revoked and not expired
     if (!session) throw new UnauthorizedException('Сеанс недійсний або завершений');
     // Check if user exists and is active
@@ -130,6 +143,7 @@ export class AuthService {
       where: { jti: tokenPayload.jti, user: { id: tokenPayload.sub } },
       relations: { user: true },
     });
+
     // Check if session is not revoked and not expired and matches session tokenHash
     if (!session || !(await this.securityService.validate(token, session.tokenHash)))
       throw new UnauthorizedException('Сеанс недійсний або завершений');
