@@ -1,4 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useEffect, useState } from "react";
 import {
     Alert,
@@ -46,6 +47,8 @@ export default function SettingsScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isDeleteAccountVisible, setIsDeleteAccountVisible] = useState(false);
   const [isDeleteAvatarVisible, setIsDeleteAvatarVisible] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
 
   useEffect(() => {
     if (user?.id)
@@ -84,33 +87,34 @@ export default function SettingsScreen() {
     return errors;
   };
 
-  const handleSave = async () => {
-    const errors = validate();
-    if (errors.length > 0) {
-      Alert.alert("Помилка", errors.join("\n"));
-      return;
-    }
+    const handleSave = async () => {
+        const errors = validate();
+        if (errors.length > 0) {
+            Alert.alert("Помилка", errors.join("\n"));
+            return;
+        }
 
-    try {
-      await apiFetch("/users", {
-        method: "PUT",
-        body: JSON.stringify(
-          cleanObj({
-            id: user?.id,
-            firstName: firstName.trim(),
-            middleName: middleName.trim(),
-            lastName: lastName.trim(),
-            phone: phone.trim(),
-            email: user?.email,
-          })
-        ),
-      });
-      Alert.alert("Успіх", "Дані оновлено");
-      await refreshProfile();
-    } catch (e: any) {
-      Alert.alert("Помилка", e?.message || "Не вдалося оновити дані");
-    }
-  };
+        try {
+            await apiFetch("/users", {
+                method: "PUT",
+                body: JSON.stringify(
+                    cleanObj({
+                        id: user?.id,
+                        firstName: firstName.trim(),
+                        middleName: middleName.trim(),
+                        lastName: lastName.trim(),
+                        phone: phone.trim(),
+                        email: user?.email,
+                    })
+                ),
+            });
+            Alert.alert("Успіх", "Дані оновлено");
+            await refreshProfile();
+            setIsEditMode(false);           // ← ховаємо форму після успіху
+        } catch (e: any) {
+            Alert.alert("Помилка", e?.message || "Не вдалося оновити дані");
+        }
+    };
 
   const handlePickAvatar = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -228,71 +232,144 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        <View style={styles.headerContainer}>
-          <Text style={styles.header}>Налаштування</Text>
+              <View style={styles.headerContainer}>
 
-          <Image
-            source={
-              !imageError && avatarUrl ? { uri: avatarUrl } : defaultAvatar
-            }
-            style={styles.avatar}
-            onError={() => setImageError(true)}
-          />
+                  <Image
+                      source={!imageError && avatarUrl ? { uri: avatarUrl } : defaultAvatar}
+                      style={styles.avatar}
+                      onError={() => setImageError(true)}
+                  />
 
-          <View style={styles.avatarButtons}>
-            <TouchableOpacity
-              style={styles.avatarButton}
-              onPress={handlePickAvatar}
-            >
-              <Text style={styles.avatarButtonText}>Змінити аватар</Text>
-            </TouchableOpacity>
-            {avatarUrl && !imageError && (
+                  <Text style={styles.profileName}>
+                      {user?.firstName}
+                  </Text>
+
+                  {/* Нова кнопка "Редагувати" */}
+                  {!isEditMode && (
+                      <TouchableOpacity
+                          style={styles.editButton}
+                          onPress={() => setIsEditMode(true)}
+                      >
+                          <Icon name="edit-2" size={18} color="#ffffff" style={{ marginRight: 8 }} />
+                          <Text style={styles.editButtonText}>Редагувати</Text>
+                      </TouchableOpacity>
+                  )}
+
+                  {/* Блок редагування — показується тільки в режимі isEditMode */}
+                  {isEditMode && (
+                      <View style={styles.editContainer}>
+                          <View style={styles.avatarButtons}>
+                              <TouchableOpacity style={styles.avatarButton} onPress={handlePickAvatar}>
+                                  <Text style={styles.avatarButtonText}>Змінити аватар</Text>
+                              </TouchableOpacity>
+
+                              {avatarUrl && !imageError && (
+                                  <TouchableOpacity
+                                      style={[styles.avatarButton, styles.removeButton]}
+                                      onPress={handleRemoveAvatar}
+                                  >
+                                      <Text style={styles.avatarButtonText}>Видалити аватар</Text>
+                                  </TouchableOpacity>
+                              )}
+                          </View>
+
+                          {fields.map((field) => (
+                              <View key={field.label} style={styles.block}>
+                                  <Text style={styles.label}>
+                                      {field.label}
+                                      {field.required && <Text style={styles.requiredStar}> *</Text>}
+                                  </Text>
+                                  <TextInput
+                                      style={styles.input}
+                                      value={field.value}
+                                      onChangeText={field.setter}
+                                      placeholder={field.placeholder}
+                                      placeholderTextColor="#999"
+                                      keyboardType={field.keyboardType as any}
+                                      maxLength={field.maxLength}
+                                  />
+                              </View>
+                          ))}
+
+                          <TouchableOpacity style={styles.save} onPress={handleSave}>
+                              <Text style={styles.saveText}>Зберегти</Text>
+                          </TouchableOpacity>
+
+                          {/* Опціонально: кнопка "Скасувати" */}
+                          <TouchableOpacity
+                              style={styles.cancelButton}
+                              onPress={() => {
+                                  setIsEditMode(false);
+                                  // Якщо потрібно — скинути поля до початкових значень з user
+                                  setFirstName(user?.firstName || "");
+                                  setMiddleName(user?.middleName || "");
+                                  setLastName(user?.lastName || "");
+                                  setPhone(user?.phone || "");
+                              }}
+                          >
+                              <Text style={styles.cancelButtonText}>Скасувати</Text>
+                          </TouchableOpacity>
+                      </View>
+                  )}
+              </View>
+
+              {/* 2. Кнопка "Приватність та безпека" (нова, над "Вихід") */}
               <TouchableOpacity
-                style={[styles.avatarButton, styles.removeButton]}
-                onPress={handleRemoveAvatar}
+                  style={styles.securityHeader}
+                  onPress={() => setIsSecurityOpen(!isSecurityOpen)}
               >
-                <Text style={styles.avatarButtonText}>Видалити аватар</Text>
+                  <MaterialCommunityIcons
+                      name="shield-lock" // або "lock", "security", "shield-account"
+                      size={24}
+                      color="#000000"
+                      style={{ marginRight: 12 }}
+                  />
+                  <Text style={styles.securityHeaderText}>Приватність та безпека</Text>
+                  <MaterialCommunityIcons
+                      name={isSecurityOpen ? "chevron-up" : "chevron-down"}
+                      size={20}
+                      color="#000000"
+                      style={{ marginLeft: 'auto' }}
+                  />
               </TouchableOpacity>
-            )}
-          </View>
-        </View>
 
-        {fields.map((field) => (
-          <View key={field.label} style={styles.block}>
-            <Text style={styles.label}>
-              {field.label}
-              {field.required && <Text style={styles.requiredStar}> *</Text>}
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={field.value}
-              onChangeText={field.setter}
-              placeholder={field.placeholder}
-              placeholderTextColor="#999"
-              keyboardType={field.keyboardType as any}
-              maxLength={field.maxLength}
-            />
-          </View>
-        ))}
+              {isSecurityOpen && (
+                  <View style={styles.securityContent}>
+                      <TouchableOpacity
+                          style={styles.securityItem}
+                          onPress={() => setShowPasswordModal(true)}
+                      >
+                          <MaterialCommunityIcons name="key-variant" size={22} color="#000" style={{ marginRight: 12 }} />
+                          <Text style={styles.securityItemText}>Змінити пароль</Text>
+                          <MaterialCommunityIcons name="chevron-right" size={20} color="#888" style={{ marginLeft: 'auto' }} />
+                      </TouchableOpacity>
 
-        <TouchableOpacity style={styles.save} onPress={handleSave}>
-          <Text style={styles.saveText}>Зберегти</Text>
-        </TouchableOpacity>
+                      <View style={styles.separator} />
 
-        <TouchableOpacity
-          style={styles.changePassword}
-          onPress={() => setShowPasswordModal(true)}
-        >
-          <Text style={styles.changePasswordText}>Змінити пароль</Text>
-        </TouchableOpacity>
+                      <TouchableOpacity
+                          style={styles.securityItem}
+                          onPress={handleDeleteAccount}
+                      >
+                          <MaterialCommunityIcons name="delete-forever" size={22} color="#D32F2F" style={{ marginRight: 12 }} />
+                          <Text style={[styles.securityItemText, { color: '#D32F2F' }]}>Видалити акаунт</Text>
+                          <MaterialCommunityIcons name="chevron-right" size={20} color="#888" style={{ marginLeft: 'auto' }} />
+                      </TouchableOpacity>
+                  </View>
+              )}
 
-        <TouchableOpacity style={styles.logout} onPress={logout}>
-          <Text style={styles.logoutText}>Вийти</Text>
-        </TouchableOpacity>
+              <TouchableOpacity
+                  style={styles.logoutButton}
+                  onPress={logout}
+              >
+                  <MaterialCommunityIcons
+                      name="door-open"          // або "logout", "exit-to-app", "door-closed" — спробуй, що найкраще виглядає
+                      size={24}
+                      color="#000000"
+                      style={{ marginRight: 12 }}
+                  />
+                  <Text style={styles.logoutTextNew}>Вихід</Text>
+              </TouchableOpacity>
 
-        <TouchableOpacity style={styles.delete} onPress={handleDeleteAccount}>
-          <Text style={styles.deleteText}>Видалити акаунт</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       {/* Change Password Modal */}
@@ -424,7 +501,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+    container: { flex: 1, backgroundColor: "#F7F7F7" },
   headerContainer: { alignItems: "center", marginBottom: 30, padding: 20 },
   header: { fontSize: 28, fontWeight: "600", marginBottom: 20 },
 
@@ -433,8 +510,10 @@ const styles = StyleSheet.create({
   avatarButton: {
     backgroundColor: "#2196F3",
     padding: 10,
-    borderRadius: 10,
-    marginHorizontal: 5,
+      borderRadius: 10,
+      alignItems: "center",
+      marginHorizontal: 5,
+      
   },
   removeButton: { backgroundColor: "#FF6B6B" },
   avatarButtonText: { color: "#fff", fontWeight: "600" },
@@ -448,7 +527,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 15,
     fontSize: 16,
-  },
+    },
+
+    profileName: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: '#000000',
+        marginTop: 12,
+        marginBottom: 8,
+        textAlign: 'center',
+    },
 
   save: {
     marginTop: 10,
@@ -458,7 +546,57 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 20,
   },
-  saveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+    saveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+
+    securityHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        marginTop: 16,
+        marginHorizontal: 20,
+        //borderWidth: 1,
+        borderColor: '#e0e0e0',
+    },
+
+    securityHeaderText: {
+        color: '#000000',
+        fontSize: 16,
+        fontWeight: '500',
+        flex: 1,
+    },
+
+    securityContent: {
+        marginTop: 8,
+        marginHorizontal: 20,
+        backgroundColor: '#ffffff',
+        borderRadius: 12,
+        //borderWidth: 1,
+        borderColor: '#e0e0e0',
+        overflow: 'hidden', // щоб дочірні елементи не вилазили за кути
+    },
+
+    securityItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+    },
+
+    securityItemText: {
+        color: '#000000',
+        fontSize: 16,
+        fontWeight: '400',
+        flex: 1,
+    },
+
+    separator: {
+        height: 1,
+        backgroundColor: '#e0e0e0',
+        marginHorizontal: 20,
+    },
 
   logout: {
     marginTop: 20,
@@ -468,7 +606,71 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 20,
   },
-  logoutText: { color: "#fff", fontSize: 16 },
+    logoutText: { color: "#fff", fontSize: 16 },
+
+    logoutButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',     // вміст зліва
+        backgroundColor: '#ffffff',       // білий фон
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        marginTop: 20,
+        marginHorizontal: 20,
+        // опціонально: легка тінь або обводка, щоб виглядало як кнопка
+        // shadowColor: '#000',
+        // shadowOffset: { width: 0, height: 2 },
+        // shadowOpacity: 0.1,
+        // shadowRadius: 4,
+        // elevation: 2,
+    },
+
+    logoutTextNew: {
+        color: '#000000',
+        fontSize: 16,
+        fontWeight: '500',              // або '600' якщо хочеш жирніший текст
+    },
+
+    editButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',           // ← центр
+        backgroundColor: '#5B8DEE',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        marginTop: 16,
+        marginHorizontal: 20,               // те саме, що в logoutButton
+        marginBottom: 20,
+    },
+
+    editButtonText: {
+        color: '#ffffff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+
+    editContainer: {
+        width: '100%',
+        paddingHorizontal: 20,
+        marginTop: 10,
+    },
+
+    cancelButton: {
+        marginTop: 10,
+        padding: 15,
+        borderRadius: 12,
+        backgroundColor: '#f0f0f0',
+        alignItems: 'center',
+        marginHorizontal: 20,
+    },
+
+    cancelButtonText: {
+        color: '#666',
+        fontSize: 16,
+        fontWeight: '500',
+    },
 
   delete: {
     marginTop: 15,
