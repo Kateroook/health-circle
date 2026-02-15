@@ -17,6 +17,7 @@ interface CircleItemProps {
   members: Member[];
   extraCount?: number;
   onMenuPress?: () => void;
+  onPress?: () => void;
 }
 
 const CircleItem: React.FC<CircleItemProps> = ({
@@ -24,9 +25,14 @@ const CircleItem: React.FC<CircleItemProps> = ({
   members,
   extraCount,
   onMenuPress,
+  onPress,
 }) => {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity 
+      style={styles.card} 
+      onPress={onPress}
+      activeOpacity={0.9}
+    >
       <View style={styles.header}>
         <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
           {title}
@@ -56,7 +62,7 @@ const CircleItem: React.FC<CircleItemProps> = ({
           </View>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
