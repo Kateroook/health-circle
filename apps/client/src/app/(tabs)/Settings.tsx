@@ -1,15 +1,15 @@
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
-  Alert,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
@@ -24,6 +24,7 @@ export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
+  const updateUser = useAuthStore((s) => s.updateUser);
 
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [middleName, setMiddleName] = useState(user?.middleName || "");
@@ -126,13 +127,17 @@ export default function SettingsScreen() {
       const type = match ? `image/${match[1]}` : "image";
 
       try {
-        await apiUploadFile(`/users/${user?.id}/avatar`, {
+        const response = await apiUploadFile(`/users/${user?.id}/avatar`, {
           uri: localUri,
           name: filename,
           type,
         });
-        // refresh avatar with cache-busting
-        // setAvatarUrl(`${getAvatarUrl(user?.id)}?t=${Date.now()}`);
+
+        // Update local user state immediately with new avatarUpdatedAt
+        if (response && response.avatarUpdatedAt) {
+          updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
+        }
+        
         await refreshProfile();
         Alert.alert("Успіх", "Аватар оновлено");
       } catch (e: any) {
@@ -399,6 +404,7 @@ export default function SettingsScreen() {
           setIsDeleteAvatarVisible(false);
           try {
             await apiFetch(`/users/${user?.id}/avatar`, { method: "DELETE" });
+            updateUser({ avatarUpdatedAt: undefined });
             setAvatarUrl(null);
             // Alert.alert("Успіх", "Аватар видалено");
             // No need for alert if UI updates visibly? Or keep it?
