@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   btnText: { color: "white", fontSize: 16, fontWeight: "600" },
   disabled: { opacity: 0.4 },
   codeContainer: {
-    marginBottom: 20,
+    marginBottom: 0,
   },
   shareBtn: {
     flexDirection: "row",
@@ -343,7 +343,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 10,
+    marginTop: 0,
+    marginBottom: 20,
     gap: 8,
   },
   shareBtnText: {
