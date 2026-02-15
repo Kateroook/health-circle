@@ -1,18 +1,19 @@
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
+import ConfirmationModal from "../../components/ConfirmationModal";
 
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import { useAuthStore } from "../../store/authStore";
@@ -42,6 +43,8 @@ export default function SettingsScreen() {
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isDeleteAccountVisible, setIsDeleteAccountVisible] = useState(false);
+  const [isDeleteAvatarVisible, setIsDeleteAvatarVisible] = useState(false);
 
   useEffect(() => {
     if (user?.id)
@@ -139,40 +142,11 @@ export default function SettingsScreen() {
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert("Видалити акаунт?", "Цю дію не можна скасувати.", [
-      { text: "Скасувати", style: "cancel" },
-      {
-        text: "Видалити",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await apiFetch("/users", { method: "DELETE" });
-            logout();
-          } catch (e) {
-            Alert.alert("Помилка", "Не вдалося видалити акаунт");
-          }
-        },
-      },
-    ]);
+    setIsDeleteAccountVisible(true);
   };
 
   const handleRemoveAvatar = async () => {
-    Alert.alert("Видалити аватар?", "", [
-      { text: "Скасувати", style: "cancel" },
-      {
-        text: "Видалити",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await apiFetch(`/users/${user?.id}/avatar`, { method: "DELETE" });
-            setAvatarUrl(null);
-            Alert.alert("Успіх", "Аватар видалено");
-          } catch (e) {
-            Alert.alert("Помилка", "Не вдалося видалити аватар");
-          }
-        },
-      },
-    ]);
+    setIsDeleteAvatarVisible(true);
   };
 
   const handleChangePassword = async () => {
@@ -399,6 +373,46 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
+
+      <ConfirmationModal
+        isVisible={isDeleteAccountVisible}
+        onCancel={() => setIsDeleteAccountVisible(false)}
+        onConfirm={async () => {
+          setIsDeleteAccountVisible(false);
+          try {
+            await apiFetch("/users", { method: "DELETE" });
+            logout();
+          } catch (e) {
+            Alert.alert("Помилка", "Не вдалося видалити акаунт");
+          }
+        }}
+        title="Видалити акаунт?"
+        message="Цю дію не можна скасувати."
+        confirmText="Видалити"
+        cancelText="Скасувати"
+      />
+
+      <ConfirmationModal
+        isVisible={isDeleteAvatarVisible}
+        onCancel={() => setIsDeleteAvatarVisible(false)}
+        onConfirm={async () => {
+          setIsDeleteAvatarVisible(false);
+          try {
+            await apiFetch(`/users/${user?.id}/avatar`, { method: "DELETE" });
+            setAvatarUrl(null);
+            // Alert.alert("Успіх", "Аватар видалено");
+            // No need for alert if UI updates visibly? Or keep it?
+            // User requested modal for confirmation. Success message can be alert or toast.
+            // I'll keep the logic simple.
+          } catch (e) {
+            Alert.alert("Помилка", "Не вдалося видалити аватар");
+          }
+        }}
+        title="Видалити аватар?"
+        message="Ви впевнені, що хочете видалити фото профілю?"
+        confirmText="Видалити"
+        cancelText="Скасувати"
+      />
     </SafeAreaView>
   );
 }
