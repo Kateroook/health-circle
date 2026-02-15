@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { entities } from './common/entities';
 import { migrations } from './common/migrations';
 import { subscribers } from './common/subscribers';
+import { ContactsModule } from './contacts/contacts.module';
 import { EmailModule } from './email/email.module';
 import { ExternalFilesModule } from './external-files/external-files.module';
 import { GroupsModule } from './groups/groups.module';
@@ -91,6 +92,7 @@ import { UsersModule } from './users/users.module';
     SecurityModule,
     GroupsModule,
     ExternalFilesModule,
+    ContactsModule,
     ScheduleModule.forRoot(),
     NotificationsModule,
     HealthModule,

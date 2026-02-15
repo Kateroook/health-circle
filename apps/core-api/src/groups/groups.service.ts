@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { InjectRepository } from '@nestjs/typeorm';
 import { GroupEntity } from 'src/common/entities/group.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
+import { ContactsService } from 'src/contacts/contacts.service';
 import { SecurityService } from 'src/security/security.service';
 import { In, Repository } from 'typeorm';
 
@@ -16,6 +17,7 @@ export class GroupService {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly securityService: SecurityService,
+    private readonly contactsService: ContactsService,
   ) {}
 
   async findAllForUser(userId: string) {
@@ -35,8 +37,20 @@ export class GroupService {
       })
       .setParameter('userId', userId)
       .getMany();
+
+    const contacts = await this.contactsService.findAllForUser(userId);
+    const contactsMap = new Map(contacts.map((c) => [c.targetId, c.alias]));
+
     return groups.map((g) => {
       g.members = g.members.filter((m) => m.id !== userId);
+      g.members.forEach((m) => {
+        const alias = contactsMap.get(m.id);
+        if (alias) {
+          m.fullName = alias;
+        } else {
+          m.fullName = `${m.firstName} ${m.lastName}`.trim();
+        }
+      });
       return g;
     });
   }
@@ -49,6 +63,20 @@ export class GroupService {
     if (!group) throw new NotFoundException('Коло не знайдено');
     const isMember = group.members.some((member) => member.id === userId);
     if (!isMember && group.owner.id !== userId) throw new ForbiddenException('Доступ заборонено');
+
+    const contacts = await this.contactsService.findAllForUser(userId);
+    const contactsMap = new Map(contacts.map((c) => [c.targetId, c.alias]));
+
+    group.members.forEach((m) => {
+      if (m.id === userId) return;
+      const alias = contactsMap.get(m.id);
+      if (alias) {
+        m.fullName = alias;
+      } else {
+        m.fullName = `${m.firstName} ${m.lastName}`.trim();
+      }
+    });
+
     return group;
   }
 

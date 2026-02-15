@@ -7,9 +7,12 @@ import MemberAvatar from "../MemberAvatar";
 export interface Member {
   id: string;
   firstName: string;
+  middleName?: string;
   lastName: string;
+  fullName?: string;
   avatarUpdatedAt?: string;
   status: "SAFE" | "DANGER" | "UNKNOWN";
+  active?: boolean;
 }
 
 interface CircleItemProps {

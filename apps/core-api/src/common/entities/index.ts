@@ -1,4 +1,5 @@
 import { ConfirmationCodeEntity } from './confirmation-code.entity';
+import { ContactEntity } from './contact.entity';
 import { DataLogEntity } from './data-logs.entity';
 import { DataLogChangesEntity } from './data-logs-changes.entity';
 import { ExternalFilesEntity } from './external-files.entity';
@@ -21,4 +22,5 @@ export const entities = [
   DataLogChangesEntity,
   ExternalFilesEntity,
   ConfirmationCodeEntity,
+  ContactEntity,
 ];

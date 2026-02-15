@@ -27,9 +27,10 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 interface Member {
   id: string;
   firstName: string;
-  middleName: string;
+  middleName?: string;
   lastName: string;
-  active: boolean;
+  fullName?: string;
+  active?: boolean;
 }
 
 interface Props {
@@ -204,7 +205,7 @@ export default function CircleActionsModal({
                   onPress={() => toggleMember(m.id)}
                 >
                   <Text style={styles.memberName} numberOfLines={1} ellipsizeMode="tail">
-                    {`${m.lastName} ${m.firstName}`}
+                    {m.fullName || `${m.lastName} ${m.firstName}`.trim()}
                   </Text>
                   {m.active ? (
                     <AntDesign

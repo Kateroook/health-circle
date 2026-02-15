@@ -1,0 +1,63 @@
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ContactEntity } from 'src/common/entities/contact.entity';
+import { Repository } from 'typeorm';
+
+import { CreateContactDto } from './dto/create-contact.dto';
+import { UpdateContactDto } from './dto/update-contact.dto';
+
+@Injectable()
+export class ContactsService {
+  constructor(
+    @InjectRepository(ContactEntity)
+    private readonly repository: Repository<ContactEntity>,
+  ) {}
+
+  async findAllForUser(ownerId: string): Promise<ContactEntity[]> {
+    return this.repository.find({
+      where: { ownerId },
+      relations: ['target'],
+    });
+  }
+
+  async create(ownerId: string, dto: CreateContactDto): Promise<ContactEntity> {
+    const existing = await this.repository.findOne({
+      where: { ownerId, targetId: dto.target.id },
+    });
+
+    if (existing) {
+      throw new ConflictException('Контакт вже існує');
+    }
+
+    const contact = this.repository.create({
+      ownerId,
+      targetId: dto.target.id,
+      alias: dto.alias,
+    });
+
+    return this.repository.save(contact);
+  }
+
+  async update(ownerId: string, targetId: string, dto: UpdateContactDto): Promise<ContactEntity> {
+    const contact = await this.repository.findOne({
+      where: { ownerId, targetId },
+    });
+
+    if (!contact) {
+      throw new NotFoundException('Контакт не знайдено');
+    }
+
+    if (dto.alias) {
+      contact.alias = dto.alias;
+    }
+
+    return this.repository.save(contact);
+  }
+
+  async remove(ownerId: string, targetId: string): Promise<void> {
+    const result = await this.repository.delete({ ownerId, targetId });
+    if (result.affected === 0) {
+      throw new NotFoundException('Контакт не знайдено');
+    }
+  }
+}

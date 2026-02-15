@@ -3,11 +3,11 @@ import { AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import MemberAvatar from "../../MemberAvatar";
 
@@ -66,7 +66,7 @@ export default function CircleDetailsView({
                  <MemberAvatar member={{...member, status: member.status || 'UNKNOWN'}} />
                  <View style={styles.memberNameContainer}>
                     <Text style={styles.memberName}>
-                        {member.firstName} {member.lastName}
+                        {member.fullName || `${member.firstName} ${member.lastName}`.trim()}
                     </Text>
                     <View style={styles.statusContainer}>
                         <Text style={styles.statusText}>
