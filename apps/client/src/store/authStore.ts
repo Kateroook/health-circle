@@ -13,10 +13,11 @@ const secureStorage: StateStorage = {
 
 interface User {
   id: string;
-  email: string;
+  email: string | null;
   firstName: string;
   middleName: string;
   lastName: string;
+  fullName?: string;
   phone: string;
   avatarUpdatedAt?: string;
   status: "SAFE" | "DANGER" | "UNKNOWN";

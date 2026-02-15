@@ -1,7 +1,9 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GroupEntity } from 'src/common/entities/group.entity';
+import { GroupBlockListEntity } from 'src/common/entities/group-block-list.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
+import { ContactsService } from 'src/contacts/contacts.service';
 import { SecurityService } from 'src/security/security.service';
 import { In, Repository } from 'typeorm';
 
@@ -15,7 +17,10 @@ export class GroupService {
     private readonly repository: Repository<GroupEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(GroupBlockListEntity)
+    private readonly blockListRepository: Repository<GroupBlockListEntity>,
     private readonly securityService: SecurityService,
+    private readonly contactsService: ContactsService,
   ) {}
 
   async findAllForUser(userId: string) {
@@ -35,8 +40,24 @@ export class GroupService {
       })
       .setParameter('userId', userId)
       .getMany();
+
+    const contacts = await this.contactsService.findAllForUser(userId);
+    const contactsMap = new Map(contacts.map((c) => [c.targetId, c.alias]));
+
     return groups.map((g) => {
       g.members = g.members.filter((m) => m.id !== userId);
+      g.members.forEach((m: UserEntity) => {
+        const alias = contactsMap.get(m.id);
+        if (alias) {
+          m.fullName = alias;
+          m.isAlias = true;
+        } else {
+          m.isAlias = false;
+          if (!m.fullName) {
+             m.fullName = `${m.firstName} ${m.lastName}`.trim();
+          }
+        }
+      });
       return g;
     });
   }
@@ -49,6 +70,24 @@ export class GroupService {
     if (!group) throw new NotFoundException('Коло не знайдено');
     const isMember = group.members.some((member) => member.id === userId);
     if (!isMember && group.owner.id !== userId) throw new ForbiddenException('Доступ заборонено');
+
+    const contacts = await this.contactsService.findAllForUser(userId);
+    const contactsMap = new Map(contacts.map((c) => [c.targetId, c.alias]));
+
+    group.members.forEach((m: UserEntity) => {
+      if (m.id === userId) return;
+      const alias = contactsMap.get(m.id);
+      if (alias) {
+        m.fullName = alias;
+        m.isAlias = true;
+      } else {
+        m.isAlias = false;
+        if (!m.fullName) {
+          m.fullName = `${m.firstName} ${m.lastName}`.trim();
+        }
+      }
+    });
+
     return group;
   }
 
@@ -88,6 +127,13 @@ export class GroupService {
       relations: ['members', 'owner'],
     });
     if (!group) throw new NotFoundException('Код недійсний');
+
+    // Check if user is blocked
+    const isBlocked = await this.blockListRepository.findOne({
+      where: { group: { id: group.id }, user: { id: userId } },
+    });
+    if (isBlocked) throw new ForbiddenException('Ви заблоковані в цьому колі');
+
     const user = await this.userRepository.findOneBy({ id: userId });
     if (!user) throw new NotFoundException('Користувач не знайдено');
     if (group.members.some((m) => m.id === userId)) throw new BadRequestException('Ви вже приєднались до цього кола');
@@ -126,5 +172,49 @@ export class GroupService {
     if (group.owner.id !== userId) throw new ForbiddenException('Тільки власник може видалити коло');
     await this.repository.remove(group);
     return { message: 'Коло успішно видалено' };
+  }
+
+  async blockUser(groupId: string, userId: string, requesterId: string) {
+    const group = await this.findOne(groupId, requesterId);
+    if (group.owner.id !== requesterId) throw new ForbiddenException('Тільки власник може блокувати користувачів');
+    if (userId === requesterId) throw new BadRequestException('Ви не можете заблокувати самі себе');
+
+    // Remove user from group if member
+    if (group.members.some((m) => m.id === userId)) {
+      group.members = group.members.filter((m) => m.id !== userId);
+      await this.repository.save(group);
+    }
+
+    // Add to block list
+    await this.blockListRepository.upsert(
+      {
+        group: { id: groupId },
+        user: { id: userId },
+        createdBy: { id: requesterId },
+      },
+      ['group', 'user'],
+    );
+    return { message: 'Користувач заблокований' };
+  }
+
+  async unblockUser(groupId: string, userId: string, requesterId: string) {
+    const group = await this.findOne(groupId, requesterId);
+    if (group.owner.id !== requesterId) throw new ForbiddenException('Тільки власник може розблокувати користувачів');
+
+    await this.blockListRepository.delete({
+      group: { id: groupId },
+      user: { id: userId },
+    });
+    return { message: 'Користувач розблокований' };
+  }
+
+  async getBlockedUsers(groupId: string, requesterId: string) {
+    const group = await this.findOne(groupId, requesterId);
+    if (group.owner.id !== requesterId) throw new ForbiddenException('Тільки власник може переглядати заблокованих користувачів');
+
+    return this.blockListRepository.find({
+      where: { group: { id: groupId } },
+      relations: ['user'],
+    });
   }
 }

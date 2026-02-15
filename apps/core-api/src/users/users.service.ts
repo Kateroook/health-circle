@@ -138,6 +138,11 @@ export class UsersService {
       const exists = await this.repository.existsBy({ id: item.id });
       if (!exists) throw new NotFoundException(`Користувача з id = ${item.id} не знайдено`);
     }
+
+    if (!item.fullName && item.firstName && item.lastName) {
+      item.fullName = `${item.firstName} ${item.lastName}`.trim();
+    }
+
     const saved = await this.repository.save(item);
     const userActivityType = isNew ? UserActivityTypes.createUser : UserActivityTypes.modifyUser;
     if (isNew) await this.confirmationsService.setupPasswordCode(saved.email, saved.id, ConfirmationTypes.REGISTRATION);

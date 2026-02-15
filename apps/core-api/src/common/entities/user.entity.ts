@@ -1,17 +1,18 @@
 import {
-    Column,
-    CreateDateColumn,
-    Entity,
-    Index,
-    JoinColumn,
-    ManyToMany,
-    OneToMany,
-    OneToOne,
-    PrimaryGeneratedColumn,
-    UpdateDateColumn,
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToMany,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 import { UserStatus } from '../enums/user-status';
+import { ContactEntity } from './contact.entity';
 import { ExternalFilesEntity } from './external-files.entity';
 import { GroupEntity } from './group.entity';
 import { UserSessionEntity } from './user-sessions.entity';
@@ -29,6 +30,9 @@ export class UserEntity {
 
   @Column({ type: 'varchar', length: 100 })
   lastName: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  fullName: string | null;
 
   @Index({ unique: true, where: '"email" IS NOT NULL' })
   @Column({ type: 'varchar', nullable: true })
@@ -77,4 +81,9 @@ export class UserEntity {
 
   @ManyToMany(() => GroupEntity, (group) => group.members, { onDelete: 'CASCADE' })
   groups: GroupEntity[];
+
+  @OneToMany(() => ContactEntity, (contact) => contact.owner)
+  contacts: ContactEntity[];
+
+  isAlias?: boolean;
 }

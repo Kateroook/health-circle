@@ -5,15 +5,15 @@ import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
-    Alert,
-    Image,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    Vibration,
-    View,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  Vibration,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -23,6 +23,7 @@ interface Member {
   id: string;
   firstName: string;
   lastName: string;
+  fullName?: string;
   avatarUpdatedAt?: string;
   status: UserStatus;
   active: boolean;
@@ -155,7 +156,7 @@ const ContactStatusRow = ({ member }: { member: Member }) => {
 
       <View style={styles.contactInfo}>
         <Text style={styles.contactName}>
-          {member.firstName} {member.lastName}
+          {member.fullName || `${member.firstName} ${member.lastName}`.trim()}
         </Text>
         <Text style={[styles.contactStatusText, { color: statusColor }]}>
           {statusText}
@@ -249,7 +250,7 @@ export default function DashboardScreen() {
       >
         {/* Header */}
         <Text style={styles.greeting} numberOfLines={1}>
-          Привіт, {user?.firstName || "Користувач"}!
+          Привіт, {user?.fullName || user?.firstName || "Користувач"}!
         </Text>
 
         {/* Status Button */}

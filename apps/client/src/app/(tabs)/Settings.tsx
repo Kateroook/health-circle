@@ -1,15 +1,15 @@
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
@@ -29,6 +29,7 @@ export default function SettingsScreen() {
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [middleName, setMiddleName] = useState(user?.middleName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
+  const [fullName, setFullName] = useState(user?.fullName || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
@@ -77,6 +78,11 @@ export default function SettingsScreen() {
       errors.push("По-батькові має містити не більше 50 символів");
     }
 
+    const trimmedFullName = fullName.trim();
+    if (trimmedFullName && trimmedFullName.length > 255) {
+      errors.push("Повне імʼя має містити не більше 255 символів");
+    }
+
     if (!trimmedPhone) {
       errors.push("Номер телефону є обовʼязковим");
     }
@@ -100,6 +106,7 @@ export default function SettingsScreen() {
             firstName: firstName.trim(),
             middleName: middleName.trim(),
             lastName: lastName.trim(),
+            fullName: fullName.trim(),
             phone: phone.trim(),
             email: user?.email,
           })
@@ -213,6 +220,14 @@ export default function SettingsScreen() {
       setter: setMiddleName,
       placeholder: "Введіть по-батькові",
       maxLength: 50,
+      required: false,
+    },
+    {
+      label: "Відображаєме імʼя",
+      value: fullName,
+      setter: setFullName,
+      placeholder: "Введіть відображаєме імʼя",
+      maxLength: 255,
       required: false,
     },
     {
