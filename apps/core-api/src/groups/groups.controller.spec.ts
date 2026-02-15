@@ -25,6 +25,9 @@ describe('GroupController', () => {
     deleteGroup: jest.fn(),
     regenerateInviteCode: jest.fn(),
     joinByInviteCode: jest.fn(),
+    blockUser: jest.fn(),
+    unblockUser: jest.fn(),
+    getBlockedUsers: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -149,6 +152,46 @@ describe('GroupController', () => {
       const response = await controller.joinGroup(dto, mockRequest);
 
       expect(service.joinByInviteCode).toHaveBeenCalledWith(mockRequest.user.id, dto.code);
+      expect(response).toBe(result);
+    });
+  });
+  describe('blockUser', () => {
+    it('should block user', async () => {
+      const groupId = 'group-1';
+      const userId = 'user-2';
+      const result = { message: 'Blocked' };
+      service.blockUser.mockResolvedValue(result);
+
+      const response = await controller.blockUser(groupId, userId, mockRequest);
+
+      expect(service.blockUser).toHaveBeenCalledWith(groupId, userId, mockRequest.user.id);
+      expect(response).toBe(result);
+    });
+  });
+
+  describe('unblockUser', () => {
+    it('should unblock user', async () => {
+      const groupId = 'group-1';
+      const userId = 'user-2';
+      const result = { message: 'Unblocked' };
+      service.unblockUser.mockResolvedValue(result);
+
+      const response = await controller.unblockUser(groupId, userId, mockRequest);
+
+      expect(service.unblockUser).toHaveBeenCalledWith(groupId, userId, mockRequest.user.id);
+      expect(response).toBe(result);
+    });
+  });
+
+  describe('getBlockedUsers', () => {
+    it('should return blocked users', async () => {
+      const groupId = 'group-1';
+      const result = [];
+      service.getBlockedUsers.mockResolvedValue(result);
+
+      const response = await controller.getBlockedUsers(groupId, mockRequest);
+
+      expect(service.getBlockedUsers).toHaveBeenCalledWith(groupId, mockRequest.user.id);
       expect(response).toBe(result);
     });
   });
