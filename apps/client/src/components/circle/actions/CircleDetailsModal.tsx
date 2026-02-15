@@ -18,16 +18,17 @@ import ConfirmationModal from "../../ConfirmationModal";
 import CircleDetailsView from "./CircleDetailsView";
 import MemberDetailsView from "./MemberDetailsView";
 
+import { setContactAlias } from "@/src/api/contacts";
+import { blockUser } from "@/src/api/groups";
+import { Member } from "../CircleItem";
+
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-import { Member } from "../CircleItem";
-
-import { setContactAlias } from "@/src/api/contacts";
-
 interface Props {
   visible: boolean;
+  circleId: string;
   currentName: string;
   inviteCode: string;
   members: Member[];
@@ -43,6 +44,7 @@ interface Props {
 
 export default function CircleDetailsModal({
   visible,
+  circleId,
   currentName,
   inviteCode,
   members,
@@ -61,6 +63,7 @@ export default function CircleDetailsModal({
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [isDeleteVisible, setIsDeleteVisible] = useState(false);
   const [isLeaveVisible, setIsLeaveVisible] = useState(false);
+  const [isBlockConfirmVisible, setIsBlockConfirmVisible] = useState(false);
 
   const user = useAuthStore().user;
   const isOwner = user?.id === ownerId;
@@ -120,6 +123,19 @@ export default function CircleDetailsModal({
       }
   };
 
+  const handleBlockUser = async () => {
+      if (selectedMember && circleId) {
+          try {
+              await blockUser(circleId, selectedMember.id);
+              onMemberUpdated(); 
+              setView("details");
+              setIsBlockConfirmVisible(false);
+          } catch (error) {
+              console.error("Failed to block user:", error);
+          }
+      }
+  };
+
   return (
     <Modal
       isVisible={visible}
@@ -166,6 +182,7 @@ export default function CircleDetailsModal({
                     onInternalRename={handleInternalMemberRename}
                     onClose={() => setView("details")}
                     onRemoveMember={handleRemoveMember}
+                    onBlock={isOwner ? () => setIsBlockConfirmVisible(true) : undefined}
                 />
             </View>
         )}
@@ -230,6 +247,16 @@ export default function CircleDetailsModal({
         message="Ви впевнені, що хочете покинути це коло?"
         confirmText="Покинути"
         cancelText="Назад"
+      />
+
+      <ConfirmationModal
+        isVisible={isBlockConfirmVisible}
+        onCancel={() => setIsBlockConfirmVisible(false)}
+        onConfirm={handleBlockUser}
+        title={`Заблокувати ${selectedMember?.fullName || selectedMember?.firstName}?`}
+        message="Цей користувач буде видалений з кола і не зможе приєднатися знову."
+        confirmText="Заблокувати"
+        cancelText="Скасувати"
       />
     </Modal>
   );

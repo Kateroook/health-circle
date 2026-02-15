@@ -4,6 +4,7 @@ import { DataLogEntity } from './data-logs.entity';
 import { DataLogChangesEntity } from './data-logs-changes.entity';
 import { ExternalFilesEntity } from './external-files.entity';
 import { GroupEntity } from './group.entity';
+import { GroupBlockListEntity } from './group-block-list.entity';
 import { UserEntity } from './user.entity';
 import { UserActivityEntity } from './user-activities.entity';
 import { UserActivityTypeEntity } from './user-activity-type.entity';
@@ -23,4 +24,5 @@ export const entities = [
   ExternalFilesEntity,
   ConfirmationCodeEntity,
   ContactEntity,
+  GroupBlockListEntity,
 ];

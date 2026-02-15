@@ -5,20 +5,21 @@ import Feather from "@expo/vector-icons/Feather";
 import * as Clipboard from "expo-clipboard";
 import React, { useEffect, useState } from "react";
 import {
-  Keyboard,
-  LayoutAnimation,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  UIManager,
-  View
+    Keyboard,
+    LayoutAnimation,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    UIManager,
+    View
 } from "react-native";
 import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ConfirmationModal from "../../ConfirmationModal";
+import BlockedUsersView from "./BlockedUsersView";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -35,6 +36,7 @@ interface Member {
 
 interface Props {
   visible: boolean;
+  circleId: string;
   currentName: string;
   inviteCode: string;
   members: Member[];
@@ -49,6 +51,7 @@ interface Props {
 
 export default function CircleActionsModal({
   visible,
+  circleId,
   currentName,
   inviteCode,
   members,
@@ -62,6 +65,7 @@ export default function CircleActionsModal({
 }: Props) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [isEditingMembers, setIsEditingMembers] = useState(false);
+  const [isViewingBlocked, setIsViewingBlocked] = useState(false);
   const [newName, setNewName] = useState("");
   const [localMembers, setLocalMembers] = useState<Member[]>([]);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -233,8 +237,16 @@ export default function CircleActionsModal({
           </View>
         )}
 
+        {/* ===== BLOCKED USERS MODE (Owner Only) ===== */}
+        {!isRenaming && !isEditingMembers && isViewingBlocked && isOwner && (
+          <BlockedUsersView
+             circleId={circleId}
+             onClose={() => setIsViewingBlocked(false)}
+          />
+        )}
+
         {/* ===== MAIN MENU ===== */}
-        {!isRenaming && !isEditingMembers && (
+        {!isRenaming && !isEditingMembers && !isViewingBlocked && (
           <>
             <Text
               style={styles.modalTitle}
@@ -277,6 +289,13 @@ export default function CircleActionsModal({
                   onPress={() => setIsEditingMembers(true)}
                 >
                   <Text style={styles.text}>Редагувати склад</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.item}
+                  onPress={() => setIsViewingBlocked(true)}
+                >
+                  <Text style={styles.text}>Заблоковані користувачі</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity

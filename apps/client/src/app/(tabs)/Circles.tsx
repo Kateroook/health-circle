@@ -30,11 +30,14 @@ interface Circle {
   id: string;
   name: string;
   inviteCode: string;
-  owner: { id: string };
+  owner: { id: string; firstName?: string; lastName?: string };
   members: Member[];
 }
 
+import { useAuthStore } from "@/src/store/authStore";
+
 export default function CirclesScreen() {
+  const user = useAuthStore().user;
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
@@ -188,6 +191,7 @@ export default function CirclesScreen() {
       <CircleActionsModal
         visible={isActionsVisible}
         onClose={() => setIsActionsVisible(false)}
+        circleId={activeCircle ? activeCircle.id : ''}
         ownerId={activeCircle?.owner.id || ""}
         currentName={activeCircle?.name || ""}
         inviteCode={activeCircle?.inviteCode || ""}
@@ -243,8 +247,16 @@ export default function CirclesScreen() {
       <CircleDetailsModal
         visible={isDetailsVisible}
         onClose={() => setIsDetailsVisible(false)}
-        ownerId={activeCircle?.owner.id || ""}
-        currentName={activeCircle?.name || ""}
+        circleId={activeCircle ? activeCircle.id : ''}
+        ownerId={activeCircle && activeCircle.owner ? activeCircle.owner.id : ""}
+        currentName={
+          activeCircle
+            ? activeCircle.name ||
+              (activeCircle.owner && activeCircle.owner.id === user?.id
+                ? 'Моє коло'
+                : activeCircle.owner ? `${activeCircle.owner.firstName} ${activeCircle.owner.lastName}` : '')
+            : ''
+        }
         inviteCode={activeCircle?.inviteCode || ""}
         members={activeCircle?.members || []}
         onSaveMembers={async (updatedMembers: { id: string }[]) => {

@@ -16,6 +16,7 @@ interface MemberDetailsViewProps {
   onInternalRename?: (newName: string) => void; 
   onClose: () => void;
   onRemoveMember: () => void;
+  onBlock?: () => void;
 }
 
 export default function MemberDetailsView({
@@ -23,6 +24,7 @@ export default function MemberDetailsView({
   onInternalRename,
   onClose,
   onRemoveMember,
+  onBlock,
 }: MemberDetailsViewProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(member.fullName || member.firstName);
@@ -69,6 +71,15 @@ export default function MemberDetailsView({
                 >
                     <Text style={[styles.actionButtonText, styles.dangerText]}>Видалити з кола</Text>
                 </TouchableOpacity>
+
+                {onBlock && (
+                  <TouchableOpacity 
+                      style={styles.actionButton}
+                      onPress={onBlock}
+                  >
+                      <Text style={[styles.actionButtonText, styles.dangerText]}>Заблокувати</Text>
+                  </TouchableOpacity>
+                )}
             </View>
         </>
       ) : (
