@@ -40,6 +40,7 @@ interface AuthStoreState {
   refreshProfile: () => Promise<void>;
   refreshSession: () => Promise<boolean>;
   completeOnboarding: () => void;
+  updateUser: (data: Partial<User>) => void;
 }
 
 export const useAuthStore = create<AuthStoreState>()(
@@ -188,6 +189,13 @@ export const useAuthStore = create<AuthStoreState>()(
 
       completeOnboarding: () => {
         set({ hasCompletedOnboarding: true });
+      },
+
+      updateUser: (data) => {
+        const currentUser = get().user;
+        if (currentUser) {
+          set({ user: { ...currentUser, ...data } });
+        }
       },
     }),
     {
