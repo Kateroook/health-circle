@@ -32,7 +32,11 @@ const CircleItem: React.FC<CircleItemProps> = ({
   onPress,
 }) => {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
+    <TouchableOpacity 
+      style={styles.card} 
+      onPress={onPress}
+      activeOpacity={0.9}
+    >
       <View style={styles.header}>
         <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
           {title}
@@ -41,7 +45,11 @@ const CircleItem: React.FC<CircleItemProps> = ({
           onPress={onMenuPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <MaterialCommunityIcons name="dots-horizontal" size={24} color={COLORS.TEXT_GRAY} />
+          <MaterialCommunityIcons
+            name="dots-horizontal"
+            size={24}
+            color={COLORS.TEXT_GRAY}
+          />
         </TouchableOpacity>
       </View>
 
@@ -52,7 +60,9 @@ const CircleItem: React.FC<CircleItemProps> = ({
 
         {(members.length > 5 || extraCount) && (
           <View style={[styles.avatarWrapper, styles.extra]}>
-            <Text style={styles.extraText}>+{extraCount || members.length - 5}</Text>
+            <Text style={styles.extraText}>
+              +{extraCount || members.length - 5}
+            </Text>
           </View>
         )}
       </View>

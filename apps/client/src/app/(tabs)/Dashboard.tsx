@@ -92,7 +92,7 @@ const MainStatusIndicator = ({
           style: "destructive",
           onPress: () => onUpdateStatus("DANGER"),
         },
-      ],
+      ]
     );
   };
 
@@ -158,7 +158,9 @@ const ContactStatusRow = ({ member }: { member: Member }) => {
         <Text style={styles.contactName}>
           {member.fullName || `${member.firstName} ${member.lastName}`.trim()}
         </Text>
-        <Text style={[styles.contactStatusText, { color: statusColor }]}>{statusText}</Text>
+        <Text style={[styles.contactStatusText, { color: statusColor }]}>
+          {statusText}
+        </Text>
       </View>
       <View style={styles.contactStatusIcon}>{Icon}</View>
     </View>
@@ -172,7 +174,10 @@ const MoodSection = () => (
       <Text style={styles.moodTitle}>Нормальний</Text>
       <Text style={styles.moodDescription}>Все добре, працюю</Text>
     </View>
-    <Image source={{ uri: "https://via.placeholder.com/60" }} style={styles.moodEmoji} />
+    <Image
+      source={{ uri: "https://via.placeholder.com/60" }}
+      style={styles.moodEmoji}
+    />
   </View>
 );
 
@@ -196,7 +201,7 @@ export default function DashboardScreen() {
       fetchGroups();
       const interval = setInterval(fetchGroups, 5000);
       return () => clearInterval(interval);
-    }, []),
+    }, [])
   );
 
   const handleStatusUpdate = async (newStatus: UserStatus) => {
@@ -239,7 +244,10 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <Text style={styles.greeting} numberOfLines={1}>
           Привіт, {user?.fullName || user?.firstName || "Користувач"}!
@@ -263,7 +271,11 @@ export default function DashboardScreen() {
             contentContainerStyle={{ paddingRight: 20 }}
           >
             <TouchableOpacity
-              style={selectedGroupId === "ALL" ? styles.statusFilterActive : styles.statusFilter}
+              style={
+                selectedGroupId === "ALL"
+                  ? styles.statusFilterActive
+                  : styles.statusFilter
+              }
               onPress={() => setSelectedGroupId("ALL")}
             >
               <Text
@@ -281,7 +293,9 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 key={group.id}
                 style={
-                  selectedGroupId === group.id ? styles.statusFilterActive : styles.statusFilter
+                  selectedGroupId === group.id
+                    ? styles.statusFilterActive
+                    : styles.statusFilter
                 }
                 onPress={() => setSelectedGroupId(group.id)}
               >
@@ -304,11 +318,15 @@ export default function DashboardScreen() {
             {displayedMembers.length === 0 ? (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateText}>
-                  {groups.length === 0 ? "У вас ще немає кіл" : "Немає контактів у цьому колі"}
+                  {groups.length === 0
+                    ? "У вас ще немає кіл"
+                    : "Немає контактів у цьому колі"}
                 </Text>
               </View>
             ) : (
-              displayedMembers.map((member) => <ContactStatusRow key={member.id} member={member} />)
+              displayedMembers.map((member) => (
+                <ContactStatusRow key={member.id} member={member} />
+              ))
             )}
           </View>
         </View>
