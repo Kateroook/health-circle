@@ -72,14 +72,15 @@ export default function SettingsScreen() {
       errors.push("Прізвище має містити не більше 50 символів");
     }
 
-    if (trimmedMiddle && trimmedMiddle.length < 2) {
+    if (!trimmedMiddle || trimmedMiddle.length < 2) {
       errors.push("По-батькові має містити не менше 2 символів");
     } else if (trimmedMiddle.length > 50) {
       errors.push("По-батькові має містити не більше 50 символів");
     }
 
-    const trimmedFullName = fullName.trim();
-    if (trimmedFullName && trimmedFullName.length > 255) {
+      const trimmedFullName = fullName.trim();
+      if (!trimmedMiddle) errors.push("Не можна зберегти порожнє повне імʼя");
+      else if (trimmedFullName.length > 255) {
       errors.push("Повне імʼя має містити не більше 255 символів");
     }
 
@@ -220,7 +221,7 @@ export default function SettingsScreen() {
       setter: setMiddleName,
       placeholder: "Введіть по-батькові",
       maxLength: 50,
-      required: false,
+      required: true,
     },
     {
       label: "Відображаєме імʼя",
