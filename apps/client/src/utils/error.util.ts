@@ -6,10 +6,7 @@
  * @param fallback - Fallback message if no specific error is found
  * @returns A formatted error string, typically using newlines for multiple errors
  */
-export function formatErrorMessage(
-  error: any,
-  fallback = "Сталася помилка"
-): string {
+export function formatErrorMessage(error: any, fallback = "Сталася помилка"): string {
   if (!error) return fallback;
 
   // apiFetch throws an Error where message is the raw response text (often JSON)

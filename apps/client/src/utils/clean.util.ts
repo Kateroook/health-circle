@@ -4,13 +4,8 @@ export function cleanObj(obj: any) {
       if (v === undefined || v === null) return false; // undefined / null
       if (typeof v === "string" && v.trim() === "") return false; // empty string
       if (Array.isArray(v) && v.length === 0) return false; // empty array
-      if (
-        typeof v === "object" &&
-        !Array.isArray(v) &&
-        Object.keys(v).length === 0
-      )
-        return false;
+      if (typeof v === "object" && !Array.isArray(v) && Object.keys(v).length === 0) return false;
       return true;
-    })
+    }),
   );
 }

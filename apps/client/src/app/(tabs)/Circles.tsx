@@ -93,7 +93,7 @@ export default function CirclesScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchCircles();
-    }, [])
+    }, []),
   );
 
   // Handle Android back button
@@ -131,10 +131,7 @@ export default function CirclesScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Кола</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setIsAddModalVisible(true)}
-          >
+          <TouchableOpacity style={styles.addButton} onPress={() => setIsAddModalVisible(true)}>
             <AntDesign name="plus" size={24} color="#FFF" />
           </TouchableOpacity>
         </View>
@@ -178,7 +175,10 @@ export default function CirclesScreen() {
         propagateSwipe
       >
         <View style={[styles.modalWrapper, isKeyboardVisible && styles.modalWrapperExpanded]}>
-          <SafeAreaView edges={isKeyboardVisible ? ["top", "bottom"] : ["bottom"]} style={isKeyboardVisible ? { flex: 1 } : undefined}>
+          <SafeAreaView
+            edges={isKeyboardVisible ? ["top", "bottom"] : ["bottom"]}
+            style={isKeyboardVisible ? { flex: 1 } : undefined}
+          >
             <AddCircleModal
               onClose={() => setIsAddModalVisible(false)}
               onUpdated={fetchCircles} // refresh after adding
@@ -191,7 +191,7 @@ export default function CirclesScreen() {
       <CircleActionsModal
         visible={isActionsVisible}
         onClose={() => setIsActionsVisible(false)}
-        circleId={activeCircle ? activeCircle.id : ''}
+        circleId={activeCircle ? activeCircle.id : ""}
         ownerId={activeCircle?.owner.id || ""}
         currentName={activeCircle?.name || ""}
         inviteCode={activeCircle?.inviteCode || ""}
@@ -237,9 +237,7 @@ export default function CirclesScreen() {
           const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
             method: "POST",
           });
-          setActiveCircle((prev) =>
-            prev ? { ...prev, inviteCode: code } : prev
-          );
+          setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
         }}
       />
 
@@ -247,15 +245,17 @@ export default function CirclesScreen() {
       <CircleDetailsModal
         visible={isDetailsVisible}
         onClose={() => setIsDetailsVisible(false)}
-        circleId={activeCircle ? activeCircle.id : ''}
+        circleId={activeCircle ? activeCircle.id : ""}
         ownerId={activeCircle && activeCircle.owner ? activeCircle.owner.id : ""}
         currentName={
           activeCircle
             ? activeCircle.name ||
               (activeCircle.owner && activeCircle.owner.id === user?.id
-                ? 'Моє коло'
-                : activeCircle.owner ? `${activeCircle.owner.firstName} ${activeCircle.owner.lastName}` : '')
-            : ''
+                ? "Моє коло"
+                : activeCircle.owner
+                  ? `${activeCircle.owner.firstName} ${activeCircle.owner.lastName}`
+                  : "")
+            : ""
         }
         inviteCode={activeCircle?.inviteCode || ""}
         members={activeCircle?.members || []}
@@ -273,7 +273,7 @@ export default function CirclesScreen() {
         onEdit={() => {
           setIsDetailsVisible(false);
           setTimeout(() => {
-             setIsActionsVisible(true);
+            setIsActionsVisible(true);
           }, 300);
         }}
         onDelete={async () => {
@@ -295,9 +295,7 @@ export default function CirclesScreen() {
           const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
             method: "POST",
           });
-          setActiveCircle((prev) =>
-            prev ? { ...prev, inviteCode: code } : prev
-          );
+          setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
         }}
         onMemberUpdated={fetchCircles}
       />

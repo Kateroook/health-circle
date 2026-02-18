@@ -7,11 +7,7 @@ interface OtpInputProps {
   editable?: boolean;
 }
 
-const OtpInput: React.FC<OtpInputProps> = ({
-  value,
-  onChange,
-  editable = true,
-}) => {
+const OtpInput: React.FC<OtpInputProps> = ({ value, onChange, editable = true }) => {
   const refs = useRef<(TextInput | null)[]>([]);
 
   const handleChange = (text: string, index: number) => {

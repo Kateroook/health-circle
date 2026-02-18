@@ -3,15 +3,7 @@ import { COLORS } from "@/src/theme/colors";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
-import {
-    Alert,
-    Share,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { Alert, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 // 1. Import the library
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { formatErrorMessage } from "../../utils/error.util";
@@ -22,10 +14,7 @@ interface AddCircleModalProps {
   onUpdated?: () => void;
 }
 
-const AddCircleModal: React.FC<AddCircleModalProps> = ({
-  onClose,
-  onUpdated,
-}) => {
+const AddCircleModal: React.FC<AddCircleModalProps> = ({ onClose, onUpdated }) => {
   const [activeTab, setActiveTab] = useState<"join" | "create">("join");
 
   // Join tab
@@ -36,14 +25,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
   const [createStep, setCreateStep] = useState<1 | 2 | 3>(1);
   const [circleName, setCircleName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState<string[]>([
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-  ]);
+  const [generatedCode, setGeneratedCode] = useState<string[]>(["", "", "", "", "", ""]);
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(generatedCode.join(""));
@@ -63,10 +45,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
 
       if (onUpdated) onUpdated();
     } catch (error: any) {
-      const msg = formatErrorMessage(
-        error,
-        "Не вдалося створити коло. Спробуйте ще раз."
-      );
+      const msg = formatErrorMessage(error, "Не вдалося створити коло. Спробуйте ще раз.");
       Alert.alert("Помилка", msg);
       console.error("Create circle error:", error);
     } finally {
@@ -92,10 +71,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
       if (onUpdated) onUpdated();
       onClose();
     } catch (error: any) {
-      const msg = formatErrorMessage(
-        error,
-        "Не вдалося приєднатися до кола. Перевірте код."
-      );
+      const msg = formatErrorMessage(error, "Не вдалося приєднатися до кола. Перевірте код.");
       Alert.alert("Помилка", msg);
       console.error("Join circle error:", error);
     } finally {
@@ -118,45 +94,27 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
       <View style={styles.modalInner}>
         <View style={styles.handle} />
         <Text style={styles.title}>Додайте нове коло</Text>
-        <Text style={styles.subtitle}>
-          Створіть своє коло або приєднайтеся до існуючого
-        </Text>
+        <Text style={styles.subtitle}>Створіть своє коло або приєднайтеся до існуючого</Text>
 
         {/* Tabs */}
         <View style={styles.segment}>
           <TouchableOpacity
-            style={[
-              styles.segmentBtn,
-              activeTab === "join" && styles.segmentActive,
-            ]}
+            style={[styles.segmentBtn, activeTab === "join" && styles.segmentActive]}
             onPress={() => setActiveTab("join")}
           >
-            <Text
-              style={[
-                styles.segmentText,
-                activeTab === "join" && styles.segmentTextActive,
-              ]}
-            >
+            <Text style={[styles.segmentText, activeTab === "join" && styles.segmentTextActive]}>
               Приєднатися
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              styles.segmentBtn,
-              activeTab === "create" && styles.segmentActive,
-            ]}
+            style={[styles.segmentBtn, activeTab === "create" && styles.segmentActive]}
             onPress={() => {
               setActiveTab("create");
               setCreateStep(1);
             }}
           >
-            <Text
-              style={[
-                styles.segmentText,
-                activeTab === "create" && styles.segmentTextActive,
-              ]}
-            >
+            <Text style={[styles.segmentText, activeTab === "create" && styles.segmentTextActive]}>
               Створити
             </Text>
           </TouchableOpacity>
@@ -165,18 +123,14 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
         {/* JOIN Content */}
         {activeTab === "join" && (
           <View style={styles.tabContent}>
-            <Text style={styles.sectionLabel}>
-              Уведіть код, щоб приєднатися до Кола.
-            </Text>
+            <Text style={styles.sectionLabel}>Уведіть код, щоб приєднатися до Кола.</Text>
             <OtpInput value={joinCode} onChange={setJoinCode} />
             <TouchableOpacity
               style={[styles.btn, styles.blueBtn, isJoining && styles.disabled]}
               disabled={isJoining}
               onPress={handleJoinCircle}
             >
-              <Text style={styles.btnText}>
-                {isJoining ? "Підключення..." : "Приєднатися"}
-              </Text>
+              <Text style={styles.btnText}>{isJoining ? "Підключення..." : "Приєднатися"}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -201,15 +155,12 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
                   style={[
                     styles.btn,
                     styles.blueBtn,
-                    (circleName.trim().length < 3 || isCreating) &&
-                      styles.disabled,
+                    (circleName.trim().length < 3 || isCreating) && styles.disabled,
                   ]}
                   disabled={circleName.trim().length < 3 || isCreating}
                   onPress={handleCreateCircle}
                 >
-                  <Text style={styles.btnText}>
-                    {isCreating ? "Створюємо..." : "Створити"}
-                  </Text>
+                  <Text style={styles.btnText}>{isCreating ? "Створюємо..." : "Створити"}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -221,17 +172,13 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
                 <Text style={styles.finalName}>{circleName}</Text>
                 <View style={styles.codeHeader}>
                   <Text style={styles.sectionLabel}>Код кола</Text>
-                <TouchableOpacity onPress={handleCopy}>
+                  <TouchableOpacity onPress={handleCopy}>
                     <AntDesign name="copy" size={16} color={COLORS.TEXT_GRAY} />
                   </TouchableOpacity>
                 </View>
 
                 <View style={styles.codeContainer}>
-                  <OtpInput
-                    value={generatedCode}
-                    editable={false}
-                    onChange={() => {}}
-                  />
+                  <OtpInput value={generatedCode} editable={false} onChange={() => {}} />
                 </View>
 
                 {/* Share Button */}
@@ -252,10 +199,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({
                   <Feather name="send" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.btn, styles.blackBtn]}
-                  onPress={onClose}
-                >
+                <TouchableOpacity style={[styles.btn, styles.blackBtn]} onPress={onClose}>
                   <Text style={styles.btnText}>Готово</Text>
                 </TouchableOpacity>
               </>
