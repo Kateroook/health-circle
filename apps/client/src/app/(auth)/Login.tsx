@@ -54,9 +54,7 @@ export default function Login() {
               <Icon name="lock" size={36} color="#FF6B6B" />
             </View>
             <Text style={styles.title}>Вітаємо знову!</Text>
-            <Text style={styles.subtitle}>
-              Увійдіть, щоб продовжити турбуватися про близьких
-            </Text>
+            <Text style={styles.subtitle}>Увійдіть, щоб продовжити турбуватися про близьких</Text>
           </View>
 
           {/* Form */}
@@ -89,11 +87,7 @@ export default function Login() {
                   onPress={() => setShowPassword(!showPassword)}
                   style={styles.eyeButton}
                 >
-                  <Icon
-                    name={showPassword ? "eye-off" : "eye"}
-                    size={20}
-                    color="#999"
-                  />
+                  <Icon name={showPassword ? "eye-off" : "eye"} size={20} color="#999" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -107,12 +101,7 @@ export default function Login() {
 
             {formError && (
               <View style={styles.errorContainer}>
-                <Icon
-                  name="alert-circle"
-                  size={18}
-                  color="#D32F2F"
-                  style={{ marginRight: 8 }}
-                />
+                <Icon name="alert-circle" size={18} color="#D32F2F" style={{ marginRight: 8 }} />
                 <Text style={styles.errorText}>{formError}</Text>
               </View>
             )}
@@ -124,9 +113,7 @@ export default function Login() {
                 onPress={handleLogin}
                 disabled={loading}
               >
-                <Text style={styles.primaryButtonText}>
-                  {loading ? "Вхід..." : "Увійти"}
-                </Text>
+                <Text style={styles.primaryButtonText}>{loading ? "Вхід..." : "Увійти"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -135,10 +122,7 @@ export default function Login() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Ще немає акаунту?{" "}
-              <Text
-                style={styles.footerLink}
-                onPress={() => router.push("/Register")}
-              >
+              <Text style={styles.footerLink} onPress={() => router.push("/Register")}>
                 Зареєструватися
               </Text>
             </Text>

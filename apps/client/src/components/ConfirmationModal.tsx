@@ -52,19 +52,14 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <TouchableOpacity
             style={[
               styles.btn,
-              confirmStyle === "destructive"
-                ? styles.destructiveBtn
-                : styles.confirmBtn,
+              confirmStyle === "destructive" ? styles.destructiveBtn : styles.confirmBtn,
               isLoading && styles.disabled,
             ]}
             onPress={onConfirm}
             disabled={isLoading}
           >
             <Text
-              style={[
-                styles.confirmText,
-                confirmStyle === "destructive" ? { color: "white" } : {},
-              ]}
+              style={[styles.confirmText, confirmStyle === "destructive" ? { color: "white" } : {}]}
             >
               {isLoading ? "..." : confirmText}
             </Text>

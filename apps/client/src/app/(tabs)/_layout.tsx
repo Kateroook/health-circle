@@ -12,14 +12,8 @@ const TabIcon = ({
   focused: boolean;
 }) => {
   return (
-    <View
-      style={[styles.iconContainer, focused && styles.iconContainerFocused]}
-    >
-      <MaterialCommunityIcons
-        name={name}
-        color={focused ? "#000000" : "#FFFFFF"}
-        size={28}
-      />
+    <View style={[styles.iconContainer, focused && styles.iconContainerFocused]}>
+      <MaterialCommunityIcons name={name} color={focused ? "#000000" : "#FFFFFF"} size={28} />
     </View>
   );
 };
@@ -77,7 +71,6 @@ const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => 
 };
 
 export default function TabLayout() {
-
   return (
     <Tabs
       screenOptions={{
