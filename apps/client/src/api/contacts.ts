@@ -17,7 +17,7 @@ export async function setContactAlias(targetId: string, alias: string) {
 }
 
 export async function removeContact(targetId: string) {
-    return apiFetch(`/contacts/${targetId}`, {
-        method: "DELETE",
-    });
+  return apiFetch(`/contacts/${targetId}`, {
+    method: "DELETE",
+  });
 }

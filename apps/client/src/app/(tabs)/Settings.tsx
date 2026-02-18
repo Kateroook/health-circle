@@ -49,8 +49,7 @@ export default function SettingsScreen() {
   const [isDeleteAvatarVisible, setIsDeleteAvatarVisible] = useState(false);
 
   useEffect(() => {
-    if (user?.id)
-      setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
+    if (user?.id) setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
   }, [user]);
 
   const validate = () => {
@@ -78,9 +77,9 @@ export default function SettingsScreen() {
       errors.push("По-батькові має містити не більше 50 символів");
     }
 
-      const trimmedFullName = fullName.trim();
-      if (!trimmedMiddle) errors.push("Не можна зберегти порожнє повне імʼя");
-      else if (trimmedFullName.length > 255) {
+    const trimmedFullName = fullName.trim();
+    if (!trimmedMiddle) errors.push("Не можна зберегти порожнє повне імʼя");
+    else if (trimmedFullName.length > 255) {
       errors.push("Повне імʼя має містити не більше 255 символів");
     }
 
@@ -110,7 +109,7 @@ export default function SettingsScreen() {
             fullName: fullName.trim(),
             phone: phone.trim(),
             email: user?.email,
-          })
+          }),
         ),
       });
       Alert.alert("Успіх", "Дані оновлено");
@@ -145,7 +144,7 @@ export default function SettingsScreen() {
         if (response && response.avatarUpdatedAt) {
           updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
         }
-        
+
         await refreshProfile();
         Alert.alert("Успіх", "Аватар оновлено");
       } catch (e: any) {
@@ -248,18 +247,13 @@ export default function SettingsScreen() {
           <Text style={styles.header}>Налаштування</Text>
 
           <Image
-            source={
-              !imageError && avatarUrl ? { uri: avatarUrl } : defaultAvatar
-            }
+            source={!imageError && avatarUrl ? { uri: avatarUrl } : defaultAvatar}
             style={styles.avatar}
             onError={() => setImageError(true)}
           />
 
           <View style={styles.avatarButtons}>
-            <TouchableOpacity
-              style={styles.avatarButton}
-              onPress={handlePickAvatar}
-            >
+            <TouchableOpacity style={styles.avatarButton} onPress={handlePickAvatar}>
               <Text style={styles.avatarButtonText}>Змінити аватар</Text>
             </TouchableOpacity>
             {avatarUrl && !imageError && (
@@ -295,10 +289,7 @@ export default function SettingsScreen() {
           <Text style={styles.saveText}>Зберегти</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.changePassword}
-          onPress={() => setShowPasswordModal(true)}
-        >
+        <TouchableOpacity style={styles.changePassword} onPress={() => setShowPasswordModal(true)}>
           <Text style={styles.changePasswordText}>Змінити пароль</Text>
         </TouchableOpacity>
 
@@ -331,7 +322,10 @@ export default function SettingsScreen() {
                 value={oldPassword}
                 onChangeText={setOldPassword}
               />
-              <TouchableOpacity onPress={() => setShowOldPassword(!showOldPassword)} style={styles.eyeButton}>
+              <TouchableOpacity
+                onPress={() => setShowOldPassword(!showOldPassword)}
+                style={styles.eyeButton}
+              >
                 <Icon name={showOldPassword ? "eye-off" : "eye"} size={20} color="#999" />
               </TouchableOpacity>
             </View>
@@ -344,7 +338,10 @@ export default function SettingsScreen() {
                 value={newPassword}
                 onChangeText={setNewPassword}
               />
-              <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeButton}>
+              <TouchableOpacity
+                onPress={() => setShowNewPassword(!showNewPassword)}
+                style={styles.eyeButton}
+              >
                 <Icon name={showNewPassword ? "eye-off" : "eye"} size={20} color="#999" />
               </TouchableOpacity>
             </View>
@@ -357,20 +354,18 @@ export default function SettingsScreen() {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
               />
-              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeButton}
+              >
                 <Icon name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#999" />
               </TouchableOpacity>
             </View>
 
-            {passwordError ? (
-              <Text style={styles.modalError}>{passwordError}</Text>
-            ) : null}
+            {passwordError ? <Text style={styles.modalError}>{passwordError}</Text> : null}
 
             <TouchableOpacity
-              style={[
-                styles.modalSave,
-                passwordLoading && { opacity: 0.6 },
-              ]}
+              style={[styles.modalSave, passwordLoading && { opacity: 0.6 }]}
               onPress={handleChangePassword}
               disabled={passwordLoading}
             >

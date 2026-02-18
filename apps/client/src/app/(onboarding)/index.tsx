@@ -26,35 +26,27 @@ export default function Index() {
         {/* Description Section */}
         <View style={styles.descriptionContainer}>
           <Text style={styles.description}>
-            Одна кнопка — і ваші близькі знають, що ви в безпеці. Будьте на
-            зв&#39;язку під час тривоги навіть без інтернету.
+            Одна кнопка — і ваші близькі знають, що ви в безпеці. Будьте на зв&#39;язку під час
+            тривоги навіть без інтернету.
           </Text>
 
           {/* Features */}
           <View style={styles.featuresContainer}>
             <View style={styles.feature}>
               <Text style={styles.featureIcon}>&#x1F7E2;</Text>
-              <Text style={styles.featureText}>
-                Статус &quot;У безпеці&quot; одним натисканням
-              </Text>
+              <Text style={styles.featureText}>Статус &quot;У безпеці&quot; одним натисканням</Text>
             </View>
             <View style={styles.feature}>
               <Text style={styles.featureIcon}>&#x1F6A8;</Text>
-              <Text style={styles.featureText}>
-                SOS-сповіщення через SMS без інтернету
-              </Text>
+              <Text style={styles.featureText}>SOS-сповіщення через SMS без інтернету</Text>
             </View>
             <View style={styles.feature}>
               <Text style={styles.featureIcon}>&#x1F465;</Text>
-              <Text style={styles.featureText}>
-                Кола близьких із відстеженням статусів
-              </Text>
+              <Text style={styles.featureText}>Кола близьких із відстеженням статусів</Text>
             </View>
             <View style={styles.feature}>
               <Text style={styles.featureIcon}>&#x1F4CB;</Text>
-              <Text style={styles.featureText}>
-                Історія останніх змін статусу
-              </Text>
+              <Text style={styles.featureText}>Історія останніх змін статусу</Text>
             </View>
           </View>
         </View>
@@ -68,10 +60,7 @@ export default function Index() {
             <Text style={styles.primaryButtonText}>Створити акаунт</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => handleNavigate("/Login")}
-          >
+          <TouchableOpacity style={styles.secondaryButton} onPress={() => handleNavigate("/Login")}>
             <Text style={styles.secondaryButtonText}>Увійти</Text>
           </TouchableOpacity>
         </View>

@@ -1,14 +1,14 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
@@ -56,10 +56,7 @@ export default function ForgotPassword() {
           showsVerticalScrollIndicator={false}
         >
           {/* Back button */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Icon name="arrow-left" size={24} color="#1A1A1A" />
           </TouchableOpacity>
 
@@ -70,8 +67,8 @@ export default function ForgotPassword() {
             </View>
             <Text style={styles.title}>Забули пароль?</Text>
             <Text style={styles.subtitle}>
-              Введіть email, який ви використовували при реєстрації. Ми надішлемо
-              вам код для скидання паролю.
+              Введіть email, який ви використовували при реєстрації. Ми надішлемо вам код для
+              скидання паролю.
             </Text>
           </View>
 
@@ -92,12 +89,7 @@ export default function ForgotPassword() {
 
             {formError && (
               <View style={styles.errorContainer}>
-                <Icon
-                  name="alert-circle"
-                  size={18}
-                  color="#D32F2F"
-                  style={{ marginRight: 8 }}
-                />
+                <Icon name="alert-circle" size={18} color="#D32F2F" style={{ marginRight: 8 }} />
                 <Text style={styles.errorText}>{formError}</Text>
               </View>
             )}
@@ -119,10 +111,7 @@ export default function ForgotPassword() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Згадали пароль?{" "}
-              <Text
-                style={styles.footerLink}
-                onPress={() => router.back()}
-              >
+              <Text style={styles.footerLink} onPress={() => router.back()}>
                 Увійти
               </Text>
             </Text>

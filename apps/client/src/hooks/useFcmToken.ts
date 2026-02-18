@@ -45,8 +45,8 @@ export function useFcmToken() {
           type: "info",
           duration: 3000,
           onPress: () => {
-             // Handle notification press if needed (e.g., navigate)
-          }
+            // Handle notification press if needed (e.g., navigate)
+          },
         });
       }
     });

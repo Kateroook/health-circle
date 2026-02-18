@@ -13,6 +13,7 @@ Before you start, ensure you have the following installed:
 ## Get Started
 
 1.  **Install dependencies**
+
     ```bash
     npm install
     ```
@@ -28,8 +29,8 @@ Before you start, ensure you have the following installed:
 
 To run the app on a physical Android device:
 
-1.  **Enable Developer Options**: Go to *Settings > About phone* and tap *Build number* 7 times.
-2.  **Enable USB Debugging**: Go to *Settings > Developer options* and toggle *USB debugging* on.
+1.  **Enable Developer Options**: Go to _Settings > About phone_ and tap _Build number_ 7 times.
+2.  **Enable USB Debugging**: Go to _Settings > Developer options_ and toggle _USB debugging_ on.
 3.  **Connect Device**: Plug your device into your computer via USB.
 4.  **Verify Connection**:
     ```bash
@@ -48,9 +49,10 @@ npm run android
 ```
 
 This command will:
--   Start the Expo CLI.
--   Compile the native Android code.
--   Install and launch the **development build** on your device.
+
+- Start the Expo CLI.
+- Compile the native Android code.
+- Install and launch the **development build** on your device.
 
 ### iOS (Simulator)
 
@@ -64,4 +66,3 @@ npm run ios
 
 - [Expo documentation](https://docs.expo.dev/)
 - [React Native documentation](https://reactnative.dev/docs/getting-started)
-
