@@ -1,3 +1,4 @@
+// test-framework/src/core/types/api-types.ts
 export interface LoginResponse {
     accessToken: string;
     refreshToken: string;
