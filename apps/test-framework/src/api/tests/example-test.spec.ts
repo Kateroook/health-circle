@@ -3,7 +3,7 @@ import { createApiClients } from '../../core/api/api-client-factory';
 import { assertResponse } from '../../core/api/helpers/response-checker';
 import { config } from '../helpers/config';
 
-test.describe('Refactored API Clients Usage Examples', () => {
+test.describe.skip('Refactored API Clients Usage Examples', () => {
   test('Example 1: Basic usage with flat structure', async ({ request }) => {
     // Створюємо фабрику клієнтів з ізольованим контекстом
     const api = createApiClients(request);

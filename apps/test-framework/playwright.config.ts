@@ -14,11 +14,15 @@ export default defineConfig({
   reporter: "html",
 
   use: {
+    actionTimeout: 30000,
+    navigationTimeout: 60000,
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    trace: 'retain-on-failure',
     baseURL: baseUrl,
     extraHTTPHeaders: {
       "Content-Type": "application/json",
     },
-    trace: "on-first-retry",
     isolate: true,
   },
 

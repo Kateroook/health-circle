@@ -1,7 +1,8 @@
 //test-framework/src/api/helpers/config.ts
 import * as dotenv from 'dotenv'
+dotenv.config();
 export const config = {
-  baseApiUrl: process.env.API_BASE_URL! || 'https://health-circle-production.up.railway.app',
+  baseApiUrl: process.env.API_BASE_URL!,
 
   // Існуючий тестовий користувач з повною реєстрацією
   testUser: {
