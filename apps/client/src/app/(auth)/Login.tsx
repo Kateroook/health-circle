@@ -21,16 +21,21 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [hasFailedAttempt, setHasFailedAttempt] = useState(false);
+    const [hasError, setHasError] = useState(false);
 
   async function handleLogin() {
-    setFormError("");
+      setFormError("");
+      setHasError(false);
     setLoading(true);
     try {
       await login(email, password);
       router.replace("/Dashboard");
     } catch (e: any) {
-      setFormError(formatErrorMessage(e));
+        setFormError(formatErrorMessage(e));
+        setHasError(true);
+        setHasFailedAttempt(true);
     } finally {
       setLoading(false);
     }
@@ -50,33 +55,31 @@ export default function Login() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Icon name="lock" size={36} color="#FF6B6B" />
-            </View>
-            <Text style={styles.title}>Вітаємо знову!</Text>
+            
+            <Text style={styles.title}>З поверненням!</Text>
             <Text style={styles.subtitle}>
-              Увійдіть, щоб продовжити турбуватися про близьких
+              Ми раді бачити тебе знову в Колі!
             </Text>
           </View>
 
           {/* Form */}
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>Електронна пошта або телефон</Text>
               <TextInput
                 placeholder="example@mail.com"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                style={styles.input}
+                style={[styles.input, hasError && styles.inputError]}
                 placeholderTextColor="#999"
               />
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Пароль</Text>
-              <View style={styles.passwordContainer}>
+                <View style={[styles.passwordContainer, hasError && styles.passwordContainerError]}>
                 <TextInput
                   placeholder="Введіть пароль"
                   value={password}
@@ -98,12 +101,14 @@ export default function Login() {
               </View>
             </View>
 
-            <TouchableOpacity
-              onPress={() => router.push("/ForgotPassword")}
-              style={styles.forgotPasswordButton}
-            >
-              <Text style={styles.forgotPasswordText}>Забули пароль?</Text>
-            </TouchableOpacity>
+                      {hasFailedAttempt && (
+                          <TouchableOpacity
+                              onPress={() => router.push("/ForgotPassword")}
+                              style={styles.forgotPasswordButton}
+                          >
+                              <Text style={styles.forgotPasswordText}>Забув свій пароль?</Text>
+                          </TouchableOpacity>
+                      )}
 
             {formError && (
               <View style={styles.errorContainer}>
@@ -166,7 +171,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 10,
+
   },
   iconContainer: {
     width: 70,
@@ -191,7 +197,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   formContainer: {
-    marginTop: 40,
+    marginTop: 10,
   },
   inputGroup: {
     marginBottom: 20,
@@ -210,8 +216,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#1A1A1A",
     borderWidth: 1,
-    borderColor: "#E5E5E5",
-  },
+      borderColor: "#E5E5E5",
+    },
+    inputError: {                      // ← окремий стиль для помилки
+        borderColor: "#D32F2F",
+    },
+
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -219,7 +229,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E5E5",
-  },
+    },
+    passwordContainerError: {
+        borderColor: "#D32F2F",
+    },
   passwordInput: {
     flex: 1,
     paddingVertical: 14,
@@ -248,18 +261,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   primaryButton: {
-    backgroundColor: "#FF6B6B",
+    backgroundColor: "#000000",
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 25,
     alignItems: "center",
-    shadowColor: "#FF6B6B",
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   buttonDisabled: {
-    backgroundColor: "#FFB3B3",
+    backgroundColor: "#000000",
     opacity: 0.7,
   },
   primaryButtonText: {
@@ -274,19 +287,20 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: "#666",
+    color: "#000000",
   },
   footerLink: {
-    color: "#FF6B6B",
+    color: "#000000",
     fontWeight: "600",
   },
   forgotPasswordButton: {
-    alignSelf: "flex-end",
+    alignSelf: "flex-start",
     marginBottom: 12,
-    marginTop: -8,
+      marginTop: -8,
+
   },
   forgotPasswordText: {
-    color: "#FF6B6B",
+    color: "#000000",
     fontSize: 14,
     fontWeight: "500",
   },
@@ -294,7 +308,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   skipButtonText: {
-    color: "#999",
+    color: "#000000",
     fontSize: 14,
     fontWeight: "500",
   },

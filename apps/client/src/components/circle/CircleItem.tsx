@@ -62,7 +62,7 @@ const CircleItem: React.FC<CircleItemProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.BACKGROUND_CARD,
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
     marginBottom: 14,

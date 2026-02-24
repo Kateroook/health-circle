@@ -11,6 +11,7 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
@@ -48,7 +49,16 @@ export default function SettingsScreen() {
   const [isDeleteAccountVisible, setIsDeleteAccountVisible] = useState(false);
   const [isDeleteAvatarVisible, setIsDeleteAvatarVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
+    const [isSecurityOpen, setIsSecurityOpen] = useState(false);
+    const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
+
+    const [toggle1, setToggle1] = useState(false);
+    const [toggle2, setToggle2] = useState(false);
+    const [toggle3, setToggle3] = useState(false);
+    const [toggle4, setToggle4] = useState(false);
+    const [toggle5, setToggle5] = useState(false);
+    const [toggle6, setToggle6] = useState(false);
+    const [toggle7, setToggle7] = useState(false);
 
   useEffect(() => {
     if (user?.id)
@@ -138,8 +148,11 @@ export default function SettingsScreen() {
         });
 
         // Update local user state immediately with new avatarUpdatedAt
-        if (response && response.avatarUpdatedAt) {
-          updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
+        if (response && response.avatarUpdatedAt && user?.id) {
+            updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
+            const freshUrl = `${getAvatarUrl(user.id, response.avatarUpdatedAt)}?_${Date.now()}`;
+            setAvatarUrl(freshUrl);
+            setImageError(false);
         }
         
         await refreshProfile();
@@ -227,7 +240,54 @@ export default function SettingsScreen() {
       keyboardType: "phone-pad",
       required: true,
     },
-  ];
+    ];
+
+    const CustomToggle = ({ value, onValueChange }: { value: boolean; onValueChange: (newValue: boolean) => void }) => {
+        return (
+            <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => onValueChange(!value)}
+                style={{
+                    width: 54,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: value ? '#5B8DEE' : '#E0E0E0',
+                    justifyContent: 'center',
+                    paddingHorizontal: 3,
+                }}
+            >
+                <View
+                    style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: 13,
+                        backgroundColor: '#FFFFFF',
+                        alignSelf: value ? 'flex-end' : 'flex-start',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.22,
+                        shadowRadius: 2.22,
+                        elevation: 3,
+                    }}
+                >
+                    {value && (
+                        <Text
+                            style={{
+                                color: '#2196F3',
+                                fontSize: 18,
+                                fontWeight: 'bold',
+                                lineHeight: 20,
+                            }}
+                        >
+                            ✓
+                        </Text>
+                    )}
+                </View>
+            </TouchableOpacity>
+        );
+    };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -235,6 +295,7 @@ export default function SettingsScreen() {
               <View style={styles.headerContainer}>
 
                   <Image
+                      key={avatarUrl || 'no-avatar'}
                       source={!imageError && avatarUrl ? { uri: avatarUrl } : defaultAvatar}
                       style={styles.avatar}
                       onError={() => setImageError(true)}
@@ -313,6 +374,25 @@ export default function SettingsScreen() {
                   )}
               </View>
 
+              <TouchableOpacity
+                  style={styles.notificationsHeader}
+                  onPress={() => setIsNotificationsModalVisible(true)}
+              >
+                  <MaterialCommunityIcons
+                      name="bell"
+                      size={24}
+                      color="#000000"
+                      style={{ marginRight: 12 }}
+                  />
+                  <Text style={styles.notificationsHeaderText}>Сповіщення</Text>
+                  <MaterialCommunityIcons
+                      name="chevron-right"
+                      size={20}
+                      color="#000000"
+                      style={{ marginLeft: 'auto' }}
+                  />
+              </TouchableOpacity>
+
               {/* 2. Кнопка "Приватність та безпека" (нова, над "Вихід") */}
               <TouchableOpacity
                   style={styles.securityHeader}
@@ -369,6 +449,8 @@ export default function SettingsScreen() {
                   />
                   <Text style={styles.logoutTextNew}>Вихід</Text>
               </TouchableOpacity>
+
+
 
       </ScrollView>
 
@@ -483,10 +565,6 @@ export default function SettingsScreen() {
             await apiFetch(`/users/${user?.id}/avatar`, { method: "DELETE" });
             updateUser({ avatarUpdatedAt: undefined });
             setAvatarUrl(null);
-            // Alert.alert("Успіх", "Аватар видалено");
-            // No need for alert if UI updates visibly? Or keep it?
-            // User requested modal for confirmation. Success message can be alert or toast.
-            // I'll keep the logic simple.
           } catch (e) {
             Alert.alert("Помилка", "Не вдалося видалити аватар");
           }
@@ -495,7 +573,93 @@ export default function SettingsScreen() {
         message="Ви впевнені, що хочете видалити фото профілю?"
         confirmText="Видалити"
         cancelText="Скасувати"
-      />
+          />
+
+          <Modal
+              visible={isNotificationsModalVisible}
+              animationType="slide"
+              transparent={false}
+              onRequestClose={() => setIsNotificationsModalVisible(false)}
+          >
+              <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+                  {/* Заголовок */}
+                  <View style={{
+                      height: 56,
+                      backgroundColor: '#fff',
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#eee',
+                      justifyContent: 'center',           // центр для заголовка
+                  }}>
+                      <Text style={{
+                          fontSize: 20,
+                          fontWeight: '600',
+                          color: '#000',
+                          textAlign: 'center',              // додатково для впевненості
+                      }}>
+                          Сповіщення
+                      </Text>
+
+                      <TouchableOpacity
+                          onPress={() => setIsNotificationsModalVisible(false)}
+                          style={{
+                              position: 'absolute',
+                              right: 16,
+                              top: 0,
+                              bottom: 0,
+                              justifyContent: 'center',
+                              paddingHorizontal: 8,
+                          }}
+                          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                      >
+                          <MaterialCommunityIcons name="close" size={28} color="#000" />
+                      </TouchableOpacity>
+                  </View>
+
+                  {/* Основний вміст */}
+                  <ScrollView
+                      style={{ flex: 1 }}
+                      contentContainerStyle={{
+                          paddingHorizontal: 20,
+                          paddingBottom: 40,           // додаємо запас знизу
+                      }}
+                  >
+                      {[
+                          { label: "Отримувати сповіщення, коли у вашому районі повітряна тривога", value: toggle1, setter: setToggle1 },
+                          { label: "Отримувати сповіщення про статус членів Кола", value: toggle2, setter: setToggle2 },
+                          { label: "Отримувати сповіщення, коли у когось стан залишається \"Невідомо\" під час тривоги", value: toggle3, setter: setToggle3 },
+                          { label: "Нагадувати оновити статус під час тривоги", value: toggle4, setter: setToggle4 },
+                          { label: "Нагадувати позначити настрій", value: toggle5, setter: setToggle5 },
+                          { label: "Отримувати SMS лише тоді, коли немає інтернету, але є важливе сповіщення", value: toggle6, setter: setToggle6 },
+                          { label: "SMS для статусу безпеки", value: toggle7, setter: setToggle7 },
+                      ].map((item, index) => (
+                          <View
+                              key={index}
+                              style={{
+                                  flexDirection: 'row',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  paddingVertical: 16,
+                                  borderBottomWidth: 1,
+                                  borderBottomColor: '#f0f0f0',
+                              }}
+                          >
+                              <Text style={{
+                                  fontSize: 16,
+                                  color: '#1A1A1A',
+                                  flex: 1,
+                                  paddingRight: 16,
+                              }}>
+                                  {item.label}
+                              </Text>
+                              <CustomToggle
+                                  value={item.value}
+                                  onValueChange={item.setter}
+                              />
+                          </View>
+                      ))}
+                  </ScrollView>
+              </SafeAreaView>
+          </Modal>
     </SafeAreaView>
   );
 }
@@ -506,7 +670,13 @@ const styles = StyleSheet.create({
   header: { fontSize: 28, fontWeight: "600", marginBottom: 20 },
 
   avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
-  avatarButtons: { flexDirection: "row", gap: 10, marginBottom: 5 },
+    avatarButtons: {
+        flexDirection: "row",
+        justifyContent: "center",          // ← головна зміна: центруємо вміст
+        gap: 16,                           // замість gap: 10, щоб було гарніше
+        marginBottom: 16,
+        width: '100%',                     // на всю ширину, щоб центр працював
+    },
   avatarButton: {
     backgroundColor: "#2196F3",
     padding: 10,
@@ -618,12 +788,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         marginTop: 20,
         marginHorizontal: 20,
-        // опціонально: легка тінь або обводка, щоб виглядало як кнопка
-        // shadowColor: '#000',
-        // shadowOffset: { width: 0, height: 2 },
-        // shadowOpacity: 0.1,
-        // shadowRadius: 4,
-        // elevation: 2,
     },
 
     logoutTextNew: {
@@ -762,5 +926,67 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
-  modalCancelText: { color: "#999", fontSize: 16, fontWeight: "500" },
+    modalCancelText: { color: "#999", fontSize: 16, fontWeight: "500" },
+    notificationsHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        marginTop: 16,
+        marginHorizontal: 20,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+    },
+
+    notificationsHeaderText: {
+        color: '#000000',
+        fontSize: 16,
+        fontWeight: '500',
+        flex: 1,
+    },
+
+    // ──────────────────────────────────────────────
+    // Стилі для модалки сповіщень
+    notificationsModalContent: {
+        width: '90%',
+        maxHeight: '80%',
+        backgroundColor: '#ffffff',
+        borderRadius: 20,
+        padding: 24,
+        alignSelf: 'center',
+        marginTop: 'auto',
+        marginBottom: 'auto',
+    },
+
+    notificationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+    },
+
+    notificationLabel: {
+        fontSize: 16,
+        color: '#1A1A1A',
+        flex: 1,
+        paddingRight: 16,
+    },
+
+    modalCloseButton: {
+        marginTop: 20,
+        backgroundColor: '#5B8DEE',
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+
+    modalCloseText: {
+        color: '#ffffff',
+        fontSize: 16,
+        fontWeight: '600',
+    },
 });
