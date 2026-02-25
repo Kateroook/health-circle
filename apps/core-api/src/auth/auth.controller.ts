@@ -9,7 +9,6 @@ import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { AuthStrategies } from '../common/enums/auth-strategies';
 import { ConfirmationRegistrationGuard } from '../common/guards/confirmation.guard';
 import { ConfirmationPasswordResetGuard } from '../common/guards/confirmation-password-reset.guard';
-import { EmailThrottlerGuard } from '../common/guards/email-throttler.guard';
 import { UserJwtAccessGuard } from '../common/guards/user-jwt-access.guard';
 import { UserJwtRefreshGuard } from '../common/guards/user-jwt-refresh.guard';
 import { UserLocalGuard } from '../common/guards/user-local.guard';
@@ -31,7 +30,7 @@ export class AuthController {
   ) {}
 
   @Post('login')
-  @UseGuards(EmailThrottlerGuard, UserLocalGuard)
+  @UseGuards(UserLocalGuard)
   @Throttle({ long: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'User login' })
   @ApiBody({ type: UserLoginDto })
@@ -65,7 +64,7 @@ export class AuthController {
   }
 
   @Post('password-setup')
-  @UseGuards(EmailThrottlerGuard, ConfirmationRegistrationGuard)
+  @UseGuards(ConfirmationRegistrationGuard)
   @Throttle({ long: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Setup new password' })
   async setupPassword(@Query() query: SetupPasswordDto, @Body() body: UserSetupPasswordDto, @Req() req: AuthRequest) {
@@ -94,7 +93,6 @@ export class AuthController {
   }
 
   @Post('forgot-password')
-  @UseGuards(EmailThrottlerGuard)
   @Throttle({ long: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: 'Request password reset code via email' })
   @ApiOkResponse({ description: 'If the email exists, a reset code will be sent' })
@@ -104,7 +102,6 @@ export class AuthController {
   }
 
   @Post('resend-registration-code')
-  @UseGuards(EmailThrottlerGuard)
   @Throttle({ long: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: 'Resend registration confirmation code' })
   @ApiOkResponse({ description: 'New registration code sent' })
