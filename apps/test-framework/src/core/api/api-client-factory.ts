@@ -20,11 +20,15 @@ export class ApiClientFactory {
    * @param request - Playwright APIRequestContext
    * @param context - Опціональний TestContext (якщо не вказано, створюється новий)
    */
-  constructor(request: APIRequestContext, context?: TestContext, dbCleaner?: DbCleaner) {
-    this.request = request;
-    this.dbCleaner = dbCleaner;
+  constructor(options: {
+    request: APIRequestContext, 
+    context?: TestContext, 
+    dbCleaner?: DbCleaner
+  }) {
+    this.request = options.request;
+    this.dbCleaner = options.dbCleaner;
     // ВАЖЛИВО: Завжди створюємо новий контекст або клонуємо переданий
-    this.context = context ? { ...context } : createTestContext();
+    this.context = options.context ? { ...options.context } : createTestContext();
   }
 
   /**
@@ -82,7 +86,10 @@ export class ApiClientFactory {
    * Корисно для тестування з декількома користувачами
    */
   public clone(): ApiClientFactory {
-    return new ApiClientFactory(this.request, undefined, this.dbCleaner);
+    return new ApiClientFactory({
+      request: this.request, 
+      dbCleaner: this.dbCleaner
+    });
   }
 
   /**
@@ -90,7 +97,11 @@ export class ApiClientFactory {
    * Корисно коли потрібно зберегти частину стану (наприклад, токени)
    */
   public cloneWithContext(): ApiClientFactory {
-    return new ApiClientFactory(this.request, { ...this.context }, this.dbCleaner);
+    return new ApiClientFactory({
+      request: this.request, 
+      context: { ...this.context }, 
+      dbCleaner: this.dbCleaner
+    });
   }
 }
 
@@ -112,5 +123,9 @@ export function createApiClients(
   context?: TestContext,
   dbCleaner?: DbCleaner,
 ): ApiClientFactory {
-  return new ApiClientFactory(request, context, dbCleaner);
+  return new ApiClientFactory({
+    request: request, 
+    context: context, 
+    dbCleaner: dbCleaner
+  });
 }

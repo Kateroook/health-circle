@@ -2,8 +2,11 @@ import { expect } from "@playwright/test";
 import { ApiClientFactory } from "../../core/api/api-client-factory";
 import { test } from "../fixtures/api-fixture";
 
-test("Create new user and delete him", async ({request, confirmationCodeRepository, userRepository, dbCleaner}) => {
-    const api = new ApiClientFactory(request, undefined, dbCleaner);
+test("Create new user and delete him", async ({request, confirmationCodeRepository, dbCleaner}) => {
+    const api = new ApiClientFactory({
+        request: request, 
+        dbCleaner: dbCleaner
+    });
 
     const newUser = (
         await api.users.createUser({
