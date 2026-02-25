@@ -42,6 +42,7 @@ export class GroupClient extends BaseClient {
     // Автоматично зберігаємо ID створеної групи
     if (result.data && result.data.id) {
       this.updateContext({ groupId: result.data.id });
+      this.dbCleaner?.add('group', result.data.id);
     }
     
     return result;

@@ -5,6 +5,7 @@ import { UserRepository } from '../../core/db/repositories/user-repository';
 import { GroupRepository } from '../../core/db/repositories/group-repository';
 import { ContactRepository } from '../../core/db/repositories/contact-repository';
 import { ConfirmationCodeRepository } from '../../core/db/repositories/confirmation-code-repository';
+import { DbCleaner } from '../../core/db/db-cleaner';
 
 
 export type ApiFixture = {
@@ -14,8 +15,8 @@ export const workerTest = base.extend<{}, ApiFixture>({
     dbClient: [
         async({}, use) => {
             const client = await DbManager.getInstance()
-            use(client);
-            // client.end();
+            await use(client);
+            await client.end();
         },
         {scope: 'worker', auto: true}
     ],
@@ -26,19 +27,25 @@ export type MyFixture = {
     groupRepository: GroupRepository;
     contactRepository: ContactRepository;
     confirmationCodeRepository: ConfirmationCodeRepository;
+    dbCleaner: DbCleaner;
 }
 
 export const test = workerTest.extend<MyFixture>({
-    userRepository: async({dbClient}, use) => {
-        use(new UserRepository(dbClient));
+    dbCleaner: async({dbClient}, use) => {
+        const dbCleaner = new DbCleaner(dbClient);
+        await use(dbCleaner);
+        await dbCleaner.cleanup();
     },
-    groupRepository: async({dbClient}, use) => {
-        use(new GroupRepository(dbClient));
+    userRepository: async({dbClient, dbCleaner}, use) => {
+        await use(new UserRepository(dbClient, dbCleaner));
     },
-    contactRepository: async({dbClient}, use) => {
-        use(new ContactRepository(dbClient));
+    groupRepository: async({dbClient, dbCleaner}, use) => {
+        await use(new GroupRepository(dbClient, dbCleaner));
     },
-    confirmationCodeRepository: async({dbClient}, use) => {
-        use(new ConfirmationCodeRepository(dbClient));
+    contactRepository: async({dbClient, dbCleaner}, use) => {
+        await use(new ContactRepository(dbClient, dbCleaner));
+    },
+    confirmationCodeRepository: async({dbClient, dbCleaner}, use) => {
+        await use(new ConfirmationCodeRepository(dbClient, dbCleaner));
     },
 });

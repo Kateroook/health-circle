@@ -1,12 +1,19 @@
 import { Client } from 'pg';
+import { DbCleaner } from '../db-cleaner';
 
 export abstract class BaseRepository<T> {
   protected readonly mapper: Record<string, string> = {}; //key = property, value = column
   protected readonly dbClient: Client;
+  protected readonly dbCLeaner?: DbCleaner;
   protected readonly tableName: string
-  constructor(dbClient: Client, tableName: string) {
-    this.dbClient = dbClient;
-    this.tableName = tableName;
+  constructor(options: {
+    dbClient: Client, 
+    tableName: string, 
+    dbCleaner?: DbCleaner
+  }) {
+    this.dbClient = options.dbClient;
+    this.tableName = options.tableName;
+    this.dbCLeaner = options.dbCleaner;
   }
 
   mapPropertyToColumn(property: string) {
@@ -30,8 +37,6 @@ export abstract class BaseRepository<T> {
 
     return entity;
   }
-
-
 
   async getAll(): Promise<T[]> {
     const query = `SELECT * FROM "${this.tableName}"`;

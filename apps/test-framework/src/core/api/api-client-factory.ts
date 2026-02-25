@@ -4,6 +4,7 @@ import { AuthClient } from './clients/auth-client';
 import { UserClient } from './clients/user-client';
 import { GroupClient } from './clients/group-client';
 import { ContactClient } from './clients/contact-client';
+import { DbCleaner } from '../db/db-cleaner';
 
 /**
  * ApiClientFactory - фабрика для створення API клієнтів
@@ -12,14 +13,16 @@ import { ContactClient } from './clients/contact-client';
 export class ApiClientFactory {
   private request: APIRequestContext;
   private context: TestContext;
+  private dbCleaner?: DbCleaner;
 
   /**
    * Створює нову фабрику з ізольованим контекстом
    * @param request - Playwright APIRequestContext
    * @param context - Опціональний TestContext (якщо не вказано, створюється новий)
    */
-  constructor(request: APIRequestContext, context?: TestContext) {
+  constructor(request: APIRequestContext, context?: TestContext, dbCleaner?: DbCleaner) {
     this.request = request;
+    this.dbCleaner = dbCleaner;
     // ВАЖЛИВО: Завжди створюємо новий контекст або клонуємо переданий
     this.context = context ? { ...context } : createTestContext();
   }
@@ -28,28 +31,28 @@ export class ApiClientFactory {
    * Отримати AuthClient
    */
   get auth(): AuthClient {
-    return new AuthClient(this.request, this.context);
+    return new AuthClient(this.request, this.context, this.dbCleaner);
   }
 
   /**
    * Отримати UserClient
    */
   get users(): UserClient {
-    return new UserClient(this.request, this.context);
+    return new UserClient(this.request, this.context, this.dbCleaner);
   }
 
   /**
    * Отримати GroupClient
    */
   get groups(): GroupClient {
-    return new GroupClient(this.request, this.context);
+    return new GroupClient(this.request, this.context, this.dbCleaner);
   }
 
   /**
    * Отримати ContactClient
    */
   get contacts(): ContactClient {
-    return new ContactClient(this.request, this.context);
+    return new ContactClient(this.request, this.context, this.dbCleaner);
   }
 
   /**
@@ -79,7 +82,7 @@ export class ApiClientFactory {
    * Корисно для тестування з декількома користувачами
    */
   public clone(): ApiClientFactory {
-    return new ApiClientFactory(this.request);
+    return new ApiClientFactory(this.request, undefined, this.dbCleaner);
   }
 
   /**
@@ -87,7 +90,7 @@ export class ApiClientFactory {
    * Корисно коли потрібно зберегти частину стану (наприклад, токени)
    */
   public cloneWithContext(): ApiClientFactory {
-    return new ApiClientFactory(this.request, { ...this.context });
+    return new ApiClientFactory(this.request, { ...this.context }, this.dbCleaner);
   }
 }
 
@@ -106,7 +109,8 @@ export class ApiClientFactory {
  */
 export function createApiClients(
   request: APIRequestContext,
-  context?: TestContext
+  context?: TestContext,
+  dbCleaner?: DbCleaner,
 ): ApiClientFactory {
-  return new ApiClientFactory(request, context);
+  return new ApiClientFactory(request, context, dbCleaner);
 }

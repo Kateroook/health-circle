@@ -1,11 +1,12 @@
+import { expect } from "@playwright/test";
 import { ApiClientFactory } from "../../core/api/api-client-factory";
 import { test } from "../fixtures/api-fixture";
 
-test("Create new user and delete him", async ({request, confirmationCodeRepository, userRepository}) => {
-    const apiClient = new ApiClientFactory(request);
+test("Create new user and delete him", async ({request, confirmationCodeRepository, userRepository, dbCleaner}) => {
+    const api = new ApiClientFactory(request, undefined, dbCleaner);
 
     const newUser = (
-        await apiClient.users.createUser({
+        await api.users.createUser({
             email: "healthcircle-test+1@gmail.com",
             phone: "+380671045018",
             firstName: "Test",
@@ -17,17 +18,25 @@ test("Create new user and delete him", async ({request, confirmationCodeReposito
     console.log(newUser);
 
     const code = (await confirmationCodeRepository.findBy({userId: newUser.id}))[0];
+    const password = "A$$_Destroyed_1488";
     
-    await apiClient.auth.setupPassword(newUser.email!, code.code, {
-        newPassword: "A$$_Destroyed_1488",
-        confirmNewPassword: "A$$_Destroyed_1488",
+    await api.auth.setupPassword(newUser.email!, code.code, {
+        newPassword: password,
+        confirmNewPassword: password,
     })
 
-    const final = await apiClient.users.getUser(newUser.id);
-    console.log(final);
-    await userRepository.delete(newUser.id);
+    await api.auth.login({
+        email: newUser.email!,
+        password: password,
+    })
 
-    const deleted = await apiClient.users.getUser(newUser.id);
+    const profile = (await api.auth.getProfile()).data;
 
-    console.log(deleted);
+    expect(newUser.id).toEqual(profile.id);
+    expect(newUser.firstName).toEqual(profile.firstName);
+    expect(newUser.lastName).toEqual(profile.lastName);
+    expect(newUser.middleName).toEqual(profile.middleName);
+    expect(newUser.phone).toEqual(profile.phone);
+
+    console.log(profile);
 });

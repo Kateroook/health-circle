@@ -33,6 +33,7 @@ export class ContactClient extends BaseClient {
     // Автоматично зберігаємо ID створеного контакту
     if (result.data && result.data.id) {
       this.updateContext({ contactId: result.data.id });
+      this.dbCleaner?.add('contacts', result.data.id);
     }
     
     return result;

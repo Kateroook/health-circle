@@ -10,6 +10,7 @@ import {
   SaveFcmTokenResponse,
   UploadUserAvatarResponse,
 } from '../../types/api';
+import { checkResponse } from '../helpers/response-checker';
 
 /**
  * UserClient - клієнт для роботи з Users API
@@ -76,7 +77,11 @@ export class UserClient extends BaseClient {
    * Створити нового користувача
    */
   public async createUser(data: CreateUserRequest): Promise<ApiResult<CreateUserResponse>> {
-    return await this.post<CreateUserResponse>('/api/users', { data });
+    const result = await this.post<CreateUserResponse>('/api/users', { data });
+    if(result.data && result.data.id) {
+      this.dbCleaner?.add('users', result.data.id);
+    }
+    return result;
   }
 
   /**

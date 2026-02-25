@@ -1,11 +1,16 @@
 import { Client } from "pg";
 import { GroupEntity } from "../../types/api";
 import { BaseRepository } from "./base-repository";
+import { DbCleaner } from "../db-cleaner";
 
-// repositories/GroupRepository.ts
 export class GroupRepository extends BaseRepository<GroupEntity> {
-  constructor(dbClient: Client) {
-    super(dbClient, 'group'); // Обережно, назва таблиці в однині
+  constructor(dbClient: Client, dbCleaner?: DbCleaner) {
+    super({
+        dbClient: dbClient, 
+        tableName: 'group',
+        dbCleaner: dbCleaner,
+    }); // Обережно, назва таблиці в однині
+
     (this as any).mapper = {
       id: 'id',
       name: 'name',
