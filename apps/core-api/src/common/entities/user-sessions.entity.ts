@@ -1,14 +1,14 @@
 import type { DetectResult } from 'node-device-detector';
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  RelationId,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    Entity,
+    Index,
+    JoinColumn,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    RelationId,
+    UpdateDateColumn,
 } from 'typeorm';
 
 import { UserEntity } from './user.entity';
@@ -21,7 +21,7 @@ export class UserSessionEntity {
   @RelationId((session: UserSessionEntity) => session.user)
   userId: string;
 
-  @ManyToOne(() => UserEntity, { nullable: false, cascade: ['update'] })
+  @ManyToOne(() => UserEntity, { nullable: false, onDelete: 'CASCADE' })
   @Index()
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;

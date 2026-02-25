@@ -26,7 +26,7 @@ export class DataLogEntity {
   @Column({ type: 'varchar', length: 64 })
   logType: string;
 
-  @ManyToOne(() => UserEntity, (value) => value.id, { onDelete: 'SET NULL' })
+  @ManyToOne(() => UserEntity, (value) => value.id, { onDelete: 'SET NULL', nullable: true })
   user: UserEntity;
 
   @Column({ type: 'timestamptz' })
