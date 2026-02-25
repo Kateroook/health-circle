@@ -60,7 +60,7 @@ export interface CreateUserDto {
   firstName: string;
   middleName: string;
   lastName: string;
-  fullName: string;
+  fullName?: string;
 }
 
 export interface ModifyUserDto {

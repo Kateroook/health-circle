@@ -34,21 +34,21 @@ export abstract class BaseRepository<T> {
 
 
   async getAll(): Promise<T[]> {
-    const query = `SELECT * FROM ${this.tableName}`;
+    const query = `SELECT * FROM "${this.tableName}"`;
     const result = await this.dbClient.query(query);
     return result.rows.map(row => this.mapRowToEntity(row));
   } 
 
   // Отримати за ID
   async getById(id: string | number): Promise<T | null> {
-    const query = `SELECT * FROM ${this.tableName} WHERE id = $1`;
+    const query = `SELECT * FROM "${this.tableName}" WHERE id = $1`;
     const result = await this.dbClient.query(query, [id]);
     return result.rows[0] ? this.mapRowToEntity(result.rows[0]) : null;
   }
 
   // Видалити
   async delete(id: string | number): Promise<void> {
-    const query = `DELETE FROM ${this.tableName} WHERE id = $1`;
+    const query = `DELETE FROM "${this.tableName}" WHERE id = $1`;
     await this.dbClient.query(query, [id]);
   }
 
@@ -69,7 +69,7 @@ export abstract class BaseRepository<T> {
         .join(' AND ');
 
     const values = Object.values(criteria);
-    const query = `SELECT * FROM ${this.tableName} WHERE ${whereClause}`;
+    const query = `SELECT * FROM "${this.tableName}" WHERE ${whereClause}`;
     
     const result = await this.dbClient.query(query, values);
     return result.rows.map(row => this.mapRowToEntity(row));

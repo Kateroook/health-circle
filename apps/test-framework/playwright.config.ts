@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 import * as dotenv from "dotenv";
+import path from 'path';
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 const baseUrl = process.env.API_BASE_URL!;
 
 export default defineConfig({

@@ -27,28 +27,28 @@ export class ApiClientFactory {
   /**
    * Отримати AuthClient
    */
-  public auth(): AuthClient {
+  get auth(): AuthClient {
     return new AuthClient(this.request, this.context);
   }
 
   /**
    * Отримати UserClient
    */
-  public users(): UserClient {
+  get users(): UserClient {
     return new UserClient(this.request, this.context);
   }
 
   /**
    * Отримати GroupClient
    */
-  public groups(): GroupClient {
+  get groups(): GroupClient {
     return new GroupClient(this.request, this.context);
   }
 
   /**
    * Отримати ContactClient
    */
-  public contacts(): ContactClient {
+  get contacts(): ContactClient {
     return new ContactClient(this.request, this.context);
   }
 
@@ -99,8 +99,8 @@ export class ApiClientFactory {
  * const user1Api = createApiClients(request);
  * const user2Api = createApiClients(request);
  * 
- * await user1Api.auth().login({ email: 'user1@test.com', password: 'pass' });
- * await user2Api.auth().login({ email: 'user2@test.com', password: 'pass' });
+ * await user1Api.auth.login({ email: 'user1@test.com', password: 'pass' });
+ * await user2Api.auth.login({ email: 'user2@test.com', password: 'pass' });
  * 
  * // Контексти ізольовані - токени не перетинаються
  */
