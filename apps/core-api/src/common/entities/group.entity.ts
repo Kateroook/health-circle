@@ -1,13 +1,13 @@
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  JoinTable,
-  ManyToMany,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    Entity,
+    JoinColumn,
+    JoinTable,
+    ManyToMany,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
 
 import { UserEntity } from './user.entity';
@@ -20,7 +20,7 @@ export class GroupEntity {
   @Column({ type: 'varchar' })
   name: string;
 
-  @ManyToOne(() => UserEntity, (user) => user.ownedGroups)
+  @ManyToOne(() => UserEntity, (user) => user.ownedGroups, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'owner_id' })
   owner: UserEntity;
 

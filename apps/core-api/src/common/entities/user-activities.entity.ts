@@ -15,18 +15,18 @@ export class UserActivityEntity {
   @RelationId((activity: UserActivityEntity) => activity.user)
   userId: string;
 
-  @ManyToOne(() => UserEntity, { nullable: false })
+  @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
   @Index()
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
-  @Column({ name: 'device_info', type: 'json', nullable: false })
+  @Column({ name: 'device_info', type: 'json', nullable: true })
   deviceInfo: DetectResult;
 
-  @Column({ name: 'ip_address', type: 'varchar', length: 45, nullable: false })
+  @Column({ name: 'ip_address', type: 'varchar', length: 45, nullable: true })
   ipAddress: string;
 
-  @Column({ name: 'user_agent', type: 'varchar', length: 255, nullable: false })
+  @Column({ name: 'user_agent', type: 'varchar', length: 255, nullable: true })
   userAgent: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
