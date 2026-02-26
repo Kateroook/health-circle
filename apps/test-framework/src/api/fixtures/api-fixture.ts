@@ -1,4 +1,4 @@
-import {test as base} from '@playwright/test';
+import {APIRequestContext, test as base} from '@playwright/test';
 import { Client } from 'pg';
 import { DbManager } from '../../core/db/db-manager';
 import { UserRepository } from '../../core/db/repositories/user-repository';
@@ -6,6 +6,7 @@ import { GroupRepository } from '../../core/db/repositories/group-repository';
 import { ContactRepository } from '../../core/db/repositories/contact-repository';
 import { ConfirmationCodeRepository } from '../../core/db/repositories/confirmation-code-repository';
 import { DbCleaner } from '../../core/db/db-cleaner';
+import { ApiClientFactory } from '../../core/api/api-client-factory';
 
 
 export type ApiFixture = {
@@ -28,6 +29,8 @@ export type MyFixture = {
     contactRepository: ContactRepository;
     confirmationCodeRepository: ConfirmationCodeRepository;
     dbCleaner: DbCleaner;
+    api: ApiClientFactory;
+    spawnApi: Promise<ApiClientFactory>;
 }
 
 export const test = workerTest.extend<MyFixture>({
@@ -47,5 +50,33 @@ export const test = workerTest.extend<MyFixture>({
     },
     confirmationCodeRepository: async({dbClient, dbCleaner}, use) => {
         await use(new ConfirmationCodeRepository(dbClient, dbCleaner));
+    },
+
+    api: async({dbCleaner, request}, use) => {
+        const api = new ApiClientFactory({
+            request: request,
+            dbCleaner: dbCleaner,
+        })
+        await use(api);
+    },
+
+    spawnApi: async({playwright, dbCleaner}, use) => {
+        const contexts : APIRequestContext[] = [];
+        
+        const spawn = async () => {
+            const context = await playwright.request.newContext();
+            contexts.push(context);
+
+            return new ApiClientFactory({
+                request: context,
+                dbCleaner: dbCleaner,
+            });
+        }
+
+        await use(spawn());
+
+        for(const context of contexts) {
+            await context.dispose();
+        }
     },
 });

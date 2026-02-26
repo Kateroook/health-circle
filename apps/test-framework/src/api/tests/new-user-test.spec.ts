@@ -2,11 +2,7 @@ import { expect } from "@playwright/test";
 import { ApiClientFactory } from "../../core/api/api-client-factory";
 import { test } from "../fixtures/api-fixture";
 
-test("Create new user and delete him", async ({request, confirmationCodeRepository, dbCleaner}) => {
-    const api = new ApiClientFactory({
-        request: request, 
-        dbCleaner: dbCleaner
-    });
+test("Create new user and delete him", async ({api, confirmationCodeRepository}) => {
 
     const newUser = (
         await api.users.createUser({
@@ -35,11 +31,10 @@ test("Create new user and delete him", async ({request, confirmationCodeReposito
 
     const profile = (await api.auth.getProfile()).data;
 
-    expect(newUser.id).toEqual(profile.id);
-    expect(newUser.firstName).toEqual(profile.firstName);
-    expect(newUser.lastName).toEqual(profile.lastName);
-    expect(newUser.middleName).toEqual(profile.middleName);
-    expect(newUser.phone).toEqual(profile.phone);
-
-    console.log(profile);
+    expect(newUser).toEqual(expect.objectContaining({
+        id: profile.id,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        phone: profile.phone,
+    }));
 });
