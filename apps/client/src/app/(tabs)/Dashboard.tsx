@@ -1,5 +1,6 @@
 import { apiFetch, updateMyStatus } from "@/src/api/api";
 import MemberAvatar from "@/src/components/MemberAvatar";
+import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
@@ -182,21 +183,21 @@ export default function DashboardScreen() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
 
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     try {
       const data = await apiFetch("/groups", { method: "GET" });
       setGroups(data);
     } catch (error) {
       console.error("Error loading groups:", error);
     }
-  };
+  }, []);
+
+  useSyncSignal(fetchGroups);
 
   useFocusEffect(
     useCallback(() => {
       fetchGroups();
-      const interval = setInterval(fetchGroups, 5000);
-      return () => clearInterval(interval);
-    }, []),
+    }, [fetchGroups]),
   );
 
   const handleStatusUpdate = async (newStatus: UserStatus) => {

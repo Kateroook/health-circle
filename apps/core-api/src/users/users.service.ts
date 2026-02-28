@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as admin from 'firebase-admin';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
@@ -67,6 +68,25 @@ export class UsersService {
         userId: user.id,
         status: status,
       });
+    }
+
+    try {
+      const memberIdsToSync = new Set<string>();
+      user.groups.forEach((group) => {
+        group.members.forEach((member) => {
+          memberIdsToSync.add(member.id);
+        });
+      });
+      memberIdsToSync.add(userId);
+
+      const batch = admin.firestore().batch();
+      memberIdsToSync.forEach((id) => {
+        const ref = admin.firestore().collection('user_sync').doc(id);
+        batch.set(ref, { timestamp: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      });
+      await batch.commit();
+    } catch (e) {
+      console.error('Error updating firestore sync signals', e);
     }
 
     return { status: user.status, message: 'Status updated' };

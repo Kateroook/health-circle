@@ -3,6 +3,7 @@ import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem, { Member } from "@/src/components/circle/CircleItem";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import CircleDetailsModal from "@/src/components/circle/actions/CircleDetailsModal";
+import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
@@ -74,7 +75,7 @@ export default function CirclesScreen() {
   }, [circles]);
 
   // Fetch all circles
-  const fetchCircles = async () => {
+  const fetchCircles = useCallback(async () => {
     try {
       const data = await apiFetch("/groups", { method: "GET" });
       const circlesWithStatus = data.map((circle: any) => ({
@@ -88,12 +89,14 @@ export default function CirclesScreen() {
     } catch (error) {
       console.error("Error loading circles:", error);
     }
-  };
+  }, []);
+
+  useSyncSignal(fetchCircles);
 
   useFocusEffect(
     useCallback(() => {
       fetchCircles();
-    }, []),
+    }, [fetchCircles]),
   );
 
   // Handle Android back button
