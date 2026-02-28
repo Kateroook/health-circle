@@ -6,15 +6,15 @@ import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
-  Alert,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  Vibration,
-  View,
+    Alert,
+    Image,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    Vibration,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -196,8 +196,9 @@ export default function DashboardScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchGroups();
-    }, [fetchGroups]),
+      // Intentionally empty, handled by useSyncSignal now
+      // fetchGroups(); 
+    }, []),
   );
 
   const handleStatusUpdate = async (newStatus: UserStatus) => {

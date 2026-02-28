@@ -9,16 +9,16 @@ import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  BackHandler,
-  Keyboard,
-  LayoutAnimation,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  UIManager,
-  View,
+    BackHandler,
+    Keyboard,
+    LayoutAnimation,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    UIManager,
+    View,
 } from "react-native";
 import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -95,8 +95,8 @@ export default function CirclesScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchCircles();
-    }, [fetchCircles]),
+      // Empty, handled by sync signal
+    }, []),
   );
 
   // Handle Android back button
