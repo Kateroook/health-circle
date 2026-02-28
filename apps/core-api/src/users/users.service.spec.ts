@@ -17,6 +17,22 @@ import { EntityManager, Repository, SelectQueryBuilder, UpdateResult } from 'typ
 
 import { UsersService } from './users.service';
 
+jest.mock('firebase-admin', () => {
+  const firestore = () => ({
+    collection: jest.fn().mockReturnThis(),
+    doc: jest.fn().mockReturnThis(),
+    batch: jest.fn(() => ({
+      set: jest.fn(),
+      commit: jest.fn().mockResolvedValue(true),
+    })),
+  });
+  firestore.FieldValue = {
+    serverTimestamp: jest.fn(),
+  };
+
+  return { firestore };
+});
+
 describe('UsersService', () => {
   let service: UsersService;
 
@@ -48,6 +64,7 @@ describe('UsersService', () => {
     email: 'test@example.com',
     firstName: 'John',
     lastName: 'Doe',
+    fullName: 'John Doe',
     phone: null,
     middleName: undefined,
   };
@@ -77,9 +94,13 @@ describe('UsersService', () => {
         }),
       },
       createQueryBuilder: jest.fn(() => ({
+          select: jest.fn().mockReturnThis(),
+          innerJoin: jest.fn().mockReturnThis(),
           where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
           leftJoinAndSelect: jest.fn().mockReturnThis(),
           getOne: jest.fn(),
+          getMany: jest.fn().mockResolvedValue([]),
       })),
     } as unknown as jest.Mocked<Repository<UserEntity>>;
   };
@@ -135,6 +156,15 @@ describe('UsersService', () => {
     it('updates status and sends push', async () => {
       repository.findOne.mockResolvedValue(mockUser);
       repository.save.mockResolvedValue(mockUser);
+      
+      const qbMock = {
+        select: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([{ id: 'user2', fcmToken: 'token-abc' }]),
+      };
+      repository.createQueryBuilder.mockReturnValue(qbMock as any);
 
       await service.updateStatus('user1', UserStatus.SAFE);
 
