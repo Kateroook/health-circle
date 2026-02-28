@@ -1,23 +1,15 @@
-import { Client } from "pg";
 import { ConfirmationCodeDbEntity } from "../../types/db/codes-and-files";
 import { BaseRepository } from "./base-repository";
 import { DbCleaner } from "../db-cleaner";
+import { Kysely } from "kysely";
+import { Database } from "../schema";
 
-export class ConfirmationCodeRepository extends BaseRepository<ConfirmationCodeDbEntity> {
-    constructor(dbClient: Client, dbCleaner?: DbCleaner) {
+export class ConfirmationCodeRepository extends BaseRepository<ConfirmationCodeDbEntity, 'confirmation_codes'> {
+    constructor(db: Kysely<Database>, dbCleaner?: DbCleaner) {
         super({
-            dbClient: dbClient, 
+            db: db, 
             tableName: 'confirmation_codes',
             dbCleaner: dbCleaner,
         });
-        
-        (this as any).mapper = {
-            id: 'id',
-            userId: 'user_id',
-            code: 'code',
-            type: 'type',
-            expiresAt: 'expires_at',
-            createdAt: 'created_at',
-        }
     }
 }

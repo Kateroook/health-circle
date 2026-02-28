@@ -1,82 +1,67 @@
-import { Client } from 'pg';
 import { DbCleaner } from '../db-cleaner';
+import { Database } from '../schema';
+import { CompiledQuery, Kysely } from 'kysely';
 
-export abstract class BaseRepository<T> {
-  protected readonly mapper: Record<string, string> = {}; //key = property, value = column
-  protected readonly dbClient: Client;
+export abstract class BaseRepository<T, K extends keyof Database> {
+  protected readonly db: Kysely<Database>;
   protected readonly dbCLeaner?: DbCleaner;
-  protected readonly tableName: string
+  protected readonly tableName: K
   constructor(options: {
-    dbClient: Client, 
-    tableName: string, 
+    db: Kysely<Database>, 
+    tableName: K, 
     dbCleaner?: DbCleaner
   }) {
-    this.dbClient = options.dbClient;
+    this.db = options.db;
     this.tableName = options.tableName;
     this.dbCLeaner = options.dbCleaner;
   }
 
-  mapPropertyToColumn(property: string) {
-    return this.mapper[property] || property;
+  async getAll(): Promise<T[]> {
+    return await this.db
+      .selectFrom(this.tableName)
+      .selectAll()
+      .execute() as unknown as T[];
+  } 
+
+  async getById(id: string | number): Promise<T | null> {
+    const result = await (this.db
+      .selectFrom(this.tableName)
+      .selectAll() as any)
+      .where('id', '=', id)
+      .executeTakeFirst();
+    
+    return (result as unknown as T) || null;
   }
 
-  protected mapRowToEntity(row: any): T {
-    if (!row) return row;
+  async delete(id: string | number): Promise<void> {
+    await (this.db
+      .deleteFrom(this.tableName) as any)
+      .where('id', '=', id)
+      .execute();
+  }
 
-    const entity = {} as T;
+  protected async query(rawSql: string, params: any[] = []): Promise<T[]> {
+    const result = await this.db.executeQuery(
+      CompiledQuery.raw(rawSql, params)
+    );
     
-    // Якщо маппер пустий, повертаємо як є (або можна додати логіку авто-мапінгу)
-    if (Object.keys(this.mapper).length === 0) return row as T;
+    return result.rows as T[];
+  }
 
-    for (const [property, column] of Object.entries(this.mapper)) {
-      if (row[column] !== undefined) {
-        // Кастуємо до any, щоб TS не сварився на динамічне заповнення
-        (entity as any)[property] = row[column];
+  async findBy(criteria: Partial<T>): Promise<T[]> {
+    let query = this.db.selectFrom(this.tableName).selectAll();
+
+    const keys = Object.keys(criteria) as (keyof T)[];
+    if (keys.length === 0) return this.getAll();
+
+    for (const key of keys) {
+      const value = criteria[key];
+      if (value !== undefined) {
+        query = (query as any).where(key, '=', value);
       }
     }
 
-    return entity;
-  }
-
-  async getAll(): Promise<T[]> {
-    const query = `SELECT * FROM "${this.tableName}"`;
-    const result = await this.dbClient.query(query);
-    return result.rows.map(row => this.mapRowToEntity(row));
-  } 
-
-  // Отримати за ID
-  async getById(id: string | number): Promise<T | null> {
-    const query = `SELECT * FROM "${this.tableName}" WHERE id = $1`;
-    const result = await this.dbClient.query(query, [id]);
-    return result.rows[0] ? this.mapRowToEntity(result.rows[0]) : null;
-  }
-
-  // Видалити
-  async delete(id: string | number): Promise<void> {
-    const query = `DELETE FROM "${this.tableName}" WHERE id = $1`;
-    await this.dbClient.query(query, [id]);
-  }
-
-  // Спеціальний метод для виконання довільних запитів
-  protected async query(sql: string, params?: any[]): Promise<T[]> {
-    const result = await this.dbClient.query(sql, params);
-    return result.rows;
-  }
-
-  // BaseRepository.ts
-  async findBy(criteria: Partial<T>): Promise<T[]> {
-    const keys = Object.keys(criteria);
-    if (keys.length === 0) return this.getAll();
-
-    // Будуємо частину WHERE: "column1" = $1 AND "column2" = $2
-    const whereClause = keys
-        .map((key, index) => `"${this.mapPropertyToColumn(key)}" = $${index + 1}`)
-        .join(' AND ');
-
-    const values = Object.values(criteria);
-    const query = `SELECT * FROM "${this.tableName}" WHERE ${whereClause}`;
-    
-    const result = await this.dbClient.query(query, values);
-    return result.rows.map(row => this.mapRowToEntity(row));
+    const result = await query.execute();
+    return result as unknown as T[];
   }
 }

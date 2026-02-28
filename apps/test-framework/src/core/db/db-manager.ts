@@ -1,38 +1,30 @@
-import {Client} from 'pg'
+import {Pool} from 'pg'
 import * as dotenv from 'dotenv'
-import path from 'path';
-import { fileURLToPath } from 'url';
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
+import { Kysely, PostgresDialect, CamelCasePlugin } from 'kysely';
+import { Database } from './schema';
 
-// const envPath = path.resolve(__dirname, '../../../.env');
-// dotenv.config({ path: envPath});
 dotenv.config();
 export class DbManager {
-    private static instance : Client | null;
-    private static connectionPromise : Promise<Client> | null;
+    private static instance : Kysely<Database> | null = null;
 
-    static async getInstance(){
-        if(this.instance){
-            return this.instance;
-        } 
-        if (!this.connectionPromise){
-            const client = new Client({
+    static async getInstance() : Promise<Kysely<Database>> {
+        if (!this.instance){
+            const pool = new Pool({
                 host: process.env.HEALTHCIRCLE_POSTGRES_HOST!,
                 port: Number(process.env.HEALTHCIRCLE_POSTGRES_PORT!),
                 user: process.env.HEALTHCIRCLE_POSTGRES_USER!,
                 password: process.env.HEALTHCIRCLE_POSTGRES_PASS!,
                 database: process.env.HEALTHCIRCLE_POSTGRES_DB_NAME!,
                 ssl: Boolean(process.env.HEALTHCIRCLE_POSTGRES_SSL!),
+                max: 10,
             });
 
-            this.connectionPromise = client.connect().then(() => {
-                this.instance = client;
-                return client;
-            })
+            this.instance = new Kysely<Database>({
+                dialect: new PostgresDialect({ pool }),
+                plugins: [new CamelCasePlugin()],
+            });
         }
 
-        return this.connectionPromise;
-
+        return this.instance;
     }
 }

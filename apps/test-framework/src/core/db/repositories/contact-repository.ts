@@ -1,23 +1,15 @@
-import { Client } from "pg";
 import { BaseRepository } from "./base-repository";
 import { ContactDbEntity } from "../../types/db/groups-and-contacts";
 import { DbCleaner } from "../db-cleaner";
+import { Kysely } from "kysely";
+import { Database } from "../schema";
 
-export class ContactRepository extends BaseRepository<ContactDbEntity> {
-    constructor(dbClient: Client, dbCleaner?: DbCleaner) {
+export class ContactRepository extends BaseRepository<ContactDbEntity, 'contacts'> {
+    constructor(db: Kysely<Database>, dbCleaner?: DbCleaner) {
         super({
-            dbClient: dbClient, 
+            db: db, 
             tableName: 'contacts',
             dbCleaner: dbCleaner,
         });
-
-        (this as any).mapper = {
-            id: 'id',
-            ownerId: 'owner_id',
-            targetId: 'target_id',
-            alias: 'alias',
-            createdAt: 'created_at',
-            updatedAt: 'uploaded_at',
-        }
     }
 }

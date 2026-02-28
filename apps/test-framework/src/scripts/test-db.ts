@@ -4,7 +4,6 @@ import { UserRepository } from '../core/db/repositories/user-repository';
 
 export async function main() {
     try {
-        // console.log("Hello World!");
         const dbClient = await DbManager.getInstance();
         const userRepo = new UserRepository(dbClient);
         const codeRepo = new ConfirmationCodeRepository(dbClient);
@@ -20,7 +19,7 @@ export async function main() {
         }
         console.log(code);
 
-        await dbClient.end();
+        await dbClient.destroy();
     } catch (error) {
         console.error('Failed to run test script:', error);
         process.exit(1);

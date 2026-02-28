@@ -1,23 +1,24 @@
-import { Client } from "pg";
+import { Database } from "./schema";
+import { Kysely } from "kysely";
 
 export interface CleanupTask{
-    table: string;
+    table: keyof Database;
     id: string | number;
 }
 
 export class DbCleaner{
 
-    private readonly dbClient : Client;
+    private readonly db : Kysely<Database>;
     private tasks : CleanupTask[] = []
 
-    constructor(dbClient : Client){
-        this.dbClient = dbClient;
+    constructor(db : Kysely<Database>){
+        this.db = db;
     }
 
     /**
    * Додати сутність у чергу на видалення
    */
-  add(table: string, id: string | number) {
+  add(table: keyof Database, id: string | number) {
     this.tasks.push({ table, id });
   }
 
@@ -30,8 +31,10 @@ export class DbCleaner{
     for (let i = this.tasks.length - 1; i >= 0; i--) {
       const task = this.tasks[i];
       try {
-        const query = `DELETE FROM "${task.table}" WHERE id = $1`;
-        await this.dbClient.query(query, [task.id]);
+        await this.db
+          .deleteFrom(task.table)
+          .where('id' as any, '=', task.id)
+          .execute();
       } 
       catch (error : any) {
         console.warn(`[Cleanup] Failed to delete from ${task.table} (ID: ${task.id}):`, error.message);
@@ -40,5 +43,4 @@ export class DbCleaner{
     
     this.tasks = []; // Очищуємо список після завершення
   }
-
 };
