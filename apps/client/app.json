@@ -14,7 +14,7 @@
       "bundleIdentifier": "com.vlad-risenhin.healthcircle"
     },
     "android": {
-      "package": "com.vlad_risenhin.healthcircle",
+      "package": "com.vlad_risenhin.health_circle",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",

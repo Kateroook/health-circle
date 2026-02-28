@@ -15,8 +15,9 @@ export class NotificationsService {
         android: {
           priority: 'high',
           notification: {
+            title,
+            body,
             channelId: 'default',
-            priority: 'high',
             sound: 'default',
           },
         },
@@ -27,7 +28,7 @@ export class NotificationsService {
             },
           },
         },
-        data,
+        data: data ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])) : undefined,
       });
 
       this.logger.log(`Notifications sent: ${response.successCount} success, ${response.failureCount} failed`);

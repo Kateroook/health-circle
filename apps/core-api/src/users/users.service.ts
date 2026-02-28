@@ -44,13 +44,22 @@ export class UsersService {
     user.lastStatusUpdate = new Date();
     await this.repository.save(user);
     const tokens = new Set<string>();
-    user.groups.forEach((group) => {
-      group.members.forEach((member) => {
-        if (member.id !== userId && member.fcmToken) {
+    const groupIds = user.groups.map(g => g.id);
+    
+    if (groupIds.length > 0) {
+      const membersWithTokens = await this.repository.createQueryBuilder('user')
+        .select(['user.id', 'user.fcmToken'])
+        .innerJoin('user.groups', 'group')
+        .where('group.id IN (:...groupIds)', { groupIds })
+        .andWhere('user.fcmToken IS NOT NULL')
+        .getMany();
+        
+      membersWithTokens.forEach(member => {
+        if (member.id != userId && member.fcmToken) {
           tokens.add(member.fcmToken);
         }
       });
-    });
+    }
 
     let title = 'Оновлення статусу';
     let body = `${user.firstName} оновив статус`;
