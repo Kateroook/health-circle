@@ -1,27 +1,36 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
+import * as dotenv from "dotenv";
+import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+const baseUrl = process.env.API_BASE_URL!;
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: "./src/api/tests",
   timeout: 30000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
-  
+  retries: process.env.CI ? 2 : 1,
+  workers: process.env.CI ? 1 : 8,
+  reporter: "html",
+
   use: {
-    baseURL: process.env.API_BASE_URL || 'http://localhost:3000',
+    actionTimeout: 30000,
+    navigationTimeout: 60000,
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    trace: 'retain-on-failure',
+    baseURL: baseUrl,
     extraHTTPHeaders: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-    trace: 'on-first-retry',
     isolate: true,
   },
 
   projects: [
     {
-      name: 'API Tests',
-      use: { ...devices['Desktop Chrome'] },
+      name: "API Tests",
+      use: { ...devices["Desktop Chrome"] },
     },
   ],
 });
