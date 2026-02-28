@@ -24,6 +24,14 @@ export function useFcmToken() {
             await saveFcmTokenToBackend(fcmToken);
           }
         }
+        
+        // Ensure channel exists for Android background messages
+        await notifee.createChannel({
+          id: "default",
+          name: "Default Channel",
+          importance: AndroidImportance.HIGH,
+        });
+
       } catch (error) {
         console.error("FCM Permission denied:", error);
       }
@@ -40,19 +48,12 @@ export function useFcmToken() {
       console.log("A new FCM message arrived!", JSON.stringify(remoteMessage));
 
       if (remoteMessage.notification) {
-        // Create a channel (required for Android)
-        const channelId = await notifee.createChannel({
-          id: "default",
-          name: "Default Channel",
-          importance: AndroidImportance.HIGH,
-        });
-
         // Display a notification
         await notifee.displayNotification({
           title: remoteMessage.notification.title,
           body: remoteMessage.notification.body,
           android: {
-            channelId,
+            channelId: "default",
             importance: AndroidImportance.HIGH,
             pressAction: {
               id: "default",

@@ -24,6 +24,7 @@
     "typeorm:migration:down": "npm run typeorm -- migration:revert -d data-source.ts"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.3",
     "@nestjs/common": "^11.1.14",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.14",
