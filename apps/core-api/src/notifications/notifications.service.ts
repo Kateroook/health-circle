@@ -12,6 +12,21 @@ export class NotificationsService {
       const response = await admin.messaging().sendEachForMulticast({
         tokens,
         notification: { title, body },
+        android: {
+          priority: 'high',
+          notification: {
+            channelId: 'default',
+            priority: 'high',
+            sound: 'default',
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'default',
+            },
+          },
+        },
         data,
       });
 
