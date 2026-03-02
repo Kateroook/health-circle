@@ -265,7 +265,7 @@ export default function Register() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Ім'я</Text>
+                                  <Text style={styles.label}>{"Ім'я"}</Text>
                   {renderInput(
                     form.firstName,
                     errors.firstName,
