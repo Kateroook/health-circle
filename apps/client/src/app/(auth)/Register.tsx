@@ -1,14 +1,14 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,382 +16,496 @@ import { apiFetch } from "../../api/api";
 import { formatErrorMessage } from "../../utils/error.util";
 
 export default function Register() {
-  const [form, setForm] = useState({
-    phone: "",
-    email: "",
-    firstName: "",
-    middleName: "",
-    lastName: "",
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [generalError, setGeneralError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+    const [step, setStep] = useState<1 | 2 | 3>(1);
+    const [form, setForm] = useState({
+        phone: "",
+        email: "",
+        firstName: "",
+        middleName: "",
+        lastName: "",
+    });
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [loading, setLoading] = useState(false);
 
-  const handleChange = (key: string, value: string) => {
-    setForm({ ...form, [key]: value });
-    if (errors[key]) {
-      const newErrors = { ...errors };
-      delete newErrors[key];
-      setErrors(newErrors);
-    }
-  };
+    // Відстежуємо, які кроки вже пройшли валідацію (щоб показувати індикатори помилок)
+    const [validatedSteps, setValidatedSteps] = useState<Set<number>>(new Set());
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    // Прізвище
-    if (!form.lastName.trim()) {
-      newErrors.lastName = "Поле прізвища є обовʼязковим";
-    } else if (form.lastName.length < 2) {
-      newErrors.lastName = "Прізвище має містити не менше 2 символів";
-    } else if (form.lastName.length > 50) {
-      newErrors.lastName = "Прізвище має містити не більше 50 символів";
-    }
-
-    // Ім'я
-    if (!form.firstName.trim()) {
-      newErrors.firstName = "Поле імені є обовʼязковим";
-    } else if (form.firstName.length < 2) {
-      newErrors.firstName = "Імʼя має містити не менше 2 символів";
-    } else if (form.firstName.length > 50) {
-      newErrors.firstName = "Імʼя має містити не більше 50 символів";
-    }
-
-    // По батькові — обов'язкове
-    if (!form.middleName.trim()) {
-      newErrors.middleName = "Поле по батькові є обовʼязковим";
-    } else if (form.middleName.length < 2) {
-      newErrors.middleName = "По-батькові має містити не менше 2 символів";
-    } else if (form.middleName.length > 50) {
-      newErrors.middleName = "По-батькові має містити не більше 50 символів";
-    }
-
-    // Email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!form.email.trim()) {
-      newErrors.email = "Поле електронної пошти є обовʼязковим";
-    } else if (!emailRegex.test(form.email)) {
-      newErrors.email = "Некоректний формат електронної пошти";
-    }
-
-    // Телефон
-    const phoneRegex = /^\+380\d{9}$/;
-    if (!form.phone.trim()) {
-      newErrors.phone = "Поле номера телефону є обовʼязковим";
-    } else if (!phoneRegex.test(form.phone.replace(/\s/g, ""))) {
-      newErrors.phone = "Некоректний формат номера телефону (+380...)";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  async function handleRegister() {
-    setGeneralError(null);
-    if (!validateForm()) return;
-
-    setLoading(true);
-    setErrors({});
-
-    try {
-      await apiFetch("/users", {
-        method: "POST",
-        body: JSON.stringify({
-          ...form,
-          phone: form.phone.replace(/\s/g, ""),
-        }),
-      });
-
-      router.push({
-        pathname: "/PasswordSetup",
-        params: { email: form.email },
-      });
-    } catch (e: any) {
-      console.log("SERVER ERROR DEBUG:", e);
-
-      const newServerErrors: Record<string, string> = {};
-
-      let errorData: any = null;
-
-      if (typeof e.message === "string") {
-        try {
-          errorData = JSON.parse(e.message);
-        } catch {}
-      }
-
-      if (!errorData && e?.response?.data) {
-        errorData = e.response.data;
-      }
-
-      if (errorData && typeof errorData === "object" && Array.isArray(errorData.message)) {
-        const messages = errorData.message;
-
-        messages.forEach((msg: string) => {
-          const lowerMsg = msg.toLowerCase();
-
-          if (
-            lowerMsg.includes("електрон") ||
-            lowerMsg.includes("пошт") ||
-            lowerMsg.includes("email")
-          ) {
-            newServerErrors.email = msg;
-          } else if (
-            lowerMsg.includes("телефон") ||
-            lowerMsg.includes("номер") ||
-            lowerMsg.includes("phone")
-          ) {
-            newServerErrors.phone = msg;
-          } else {
-            // якщо не розпізнали — кидаємо в загальний (або в будь-яке поле)
-            newServerErrors.general = (newServerErrors.general || "") + msg + "\n";
-          }
-        });
-
-        if (Object.keys(newServerErrors).length > 0) {
-          setErrors((prev) => ({ ...prev, ...newServerErrors }));
-          return;
+    const handleChange = (key: string, value: string) => {
+        setForm((prev) => ({ ...prev, [key]: value }));
+        if (errors[key]) {
+            setErrors((prev) => {
+                const newErrors = { ...prev };
+                delete newErrors[key];
+                return newErrors;
+            });
         }
-      }
+    };
 
-      // Якщо зовсім не розпізнали
-      showMessage({
-        message: "Помилка реєстрації",
-        description: formatErrorMessage(e) || "Щось пішло не так",
-        type: "danger",
-        duration: 6000,
-      });
-    } finally {
-      setLoading(false);
+    const validateCurrentStep = (): boolean => {
+        const newErrors: Record<string, string> = {};
+
+        if (step === 1) {
+            const cleanPhone = form.phone.replace(/\s/g, "");
+            const phoneRegex = /^\+380\d{9}$/;
+            if (!cleanPhone) {
+                newErrors.phone = "Поле номера телефону є обовʼязковим";
+            } else if (!phoneRegex.test(cleanPhone)) {
+                newErrors.phone = "Формат: +380XXXXXXXXX";
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!form.email.trim()) {
+                newErrors.email = "Поле електронної пошти є обовʼязковим";
+            } else if (!emailRegex.test(form.email)) {
+                newErrors.email = "Некоректний формат електронної пошти";
+            }
+        }
+
+        if (step === 2) {
+            if (!form.lastName.trim()) {
+                newErrors.lastName = "Поле прізвища є обовʼязковим";
+            } else if (form.lastName.length < 2) {
+                newErrors.lastName = "Мінімум 2 символи";
+            }
+
+            if (!form.firstName.trim()) {
+                newErrors.firstName = "Поле імені є обовʼязковим";
+            } else if (form.firstName.length < 2) {
+                newErrors.firstName = "Мінімум 2 символи";
+            }
+
+            if (form.middleName.trim() && form.middleName.length < 2) {
+                newErrors.middleName = "Мінімум 2 символи";
+            }
+        }
+
+        if (step === 3) {
+            if (!password) {
+                newErrors.password = "Введіть пароль";
+            } else if (password.length < 8) {
+                newErrors.password = "Мінімум 8 символів";
+            }
+
+            if (!confirmPassword) {
+                newErrors.confirmPassword = "Підтвердіть пароль";
+            } else if (password !== confirmPassword) {
+                newErrors.confirmPassword = "Паролі не співпадають";
+            }
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleNext = () => {
+        // Позначаємо, що цей крок вже валідувався
+        setValidatedSteps((prev) => new Set([...prev, step]));
+
+        const isValid = validateCurrentStep();
+
+        if (isValid) {
+            setStep((prev) => (prev < 3 ? (prev + 1) as 1 | 2 | 3 : prev));
+        }
+    };
+
+    const handleBack = () => {
+        setStep((prev) => (prev > 1 ? (prev - 1) as 1 | 2 | 3 : prev));
+    };
+
+    async function handleRegister() {
+        setValidatedSteps((prev) => new Set([...prev, 3])); // позначаємо останній крок
+        if (!validateCurrentStep()) return;
+
+        setLoading(true);
+        try {
+            await apiFetch("/users", {
+                method: "POST",
+                body: JSON.stringify({
+                    ...form,
+                    phone: form.phone.replace(/\s/g, ""),
+                    password,
+                }),
+            });
+            router.replace("/Login");
+        } catch (e: any) {
+            showMessage({
+                message: "Помилка реєстрації",
+                description: formatErrorMessage(e),
+                type: "danger",
+                duration: 5000,
+            });
+        } finally {
+            setLoading(false);
+        }
     }
-  }
 
-  const fields = [
-    { key: "lastName", label: "Прізвище", placeholder: "Введіть прізвище", required: true },
-    { key: "firstName", label: "Ім'я", placeholder: "Введіть ім'я", required: true },
-    { key: "middleName", label: "По батькові", placeholder: "Введіть по батькові", required: true },
-    {
-      key: "phone",
-      label: "Телефон",
-      placeholder: "+380 XX XXX XX XX",
-      keyboardType: "phone-pad",
-      required: true,
-    },
-    {
-      key: "email",
-      label: "Email",
-      placeholder: "example@mail.com",
-      keyboardType: "email-address",
-      required: true,
-    },
-  ];
+    const renderInput = (
+        value: string,
+        error: string | undefined,
+        placeholder: string,
+        keyboardType: "phone-pad" | "email-address" | "default" = "default",
+        secureTextEntry = false,
+        onChangeText: (text: string) => void,
+        autoCapitalize: "none" | "words" = "words"
+    ) => {
+        const hasBeenValidated = validatedSteps.has(step);
+        const isFilled = value.trim().length > 0;
+        const hasError = !!error;
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Text style={styles.icon}>👤</Text>
-            </View>
-            <Text style={styles.title}>Створення акаунту</Text>
-            <Text style={styles.subtitle}>Заповніть дані, щоб приєднатися до кола турботи</Text>
-          </View>
+        let indicatorStyle = null;
+        let symbol = null;
 
-          {/* Блок для серверних помилок */}
-          {generalError && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorIcon}>!</Text>
-              <Text style={styles.errorText}>{generalError}</Text>
-            </View>
-          )}
+        if (hasBeenValidated) {
+            if (hasError) {
+                indicatorStyle = styles.statusError;
+                symbol = "!";
+            } else if (isFilled) {
+                indicatorStyle = styles.statusSuccess;
+                symbol = "✓";
+            }
+        }
 
-          {/* Form */}
-          <View style={styles.formContainer}>
-            {fields.map(({ key, label, placeholder, keyboardType, required }) => (
-              <View key={key} style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  {label}
-                  {required && <Text style={styles.requiredStar}> *</Text>}
-                </Text>
+        return (
+            <View style={styles.inputWrapper}>
                 <TextInput
-                  placeholder={placeholder}
-                  value={(form as any)[key]}
-                  onChangeText={(v) => handleChange(key, v)}
-                  keyboardType={keyboardType as any}
-                  style={[styles.input, errors[key] && styles.inputError]}
-                  placeholderTextColor="#999"
+                    placeholder={placeholder}
+                    value={value}
+                    onChangeText={onChangeText}
+                    keyboardType={keyboardType}
+                    secureTextEntry={secureTextEntry}
+                    autoCapitalize={autoCapitalize}
+                    style={[
+                        styles.input,
+                        hasError ? styles.inputError : isFilled && !hasError ? styles.inputValid : null,
+                    ]}
+                    placeholderTextColor="#999"
                 />
-                {errors[key] && <Text style={styles.fieldError}>{errors[key]}</Text>}
-              </View>
-            ))}
 
-            {/* Buttons */}
-            <View style={styles.buttonsContainer}>
-              <TouchableOpacity
-                style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleRegister}
-                disabled={loading}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {loading ? "Зачекайте..." : "Зареєструватися"}
-                </Text>
-              </TouchableOpacity>
+                {indicatorStyle && (
+                    <View style={[styles.statusIndicator, indicatorStyle]}>
+                        <Text style={styles.statusSymbol}>{symbol}</Text>
+                    </View>
+                )}
             </View>
-          </View>
+        );
+    };
 
-          {/* Footer */}
-          <Text style={styles.footer}>
-            Вже є акаунт?{" "}
-            <Text style={styles.footerLink} onPress={() => router.push("/Login")}>
-              Увійти
-            </Text>
-          </Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
+    return (
+        <SafeAreaView style={styles.safeArea}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={styles.keyboardView}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+            >
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Header */}
+                    <View style={styles.header}>
+                        <Text style={styles.title}>
+                            {step === 1
+                                ? "Введи номер телефону та електронну пошту"
+                                : step === 2
+                                    ? "Як тебе звати?"
+                                    : "Створюємо твій акаунт"}
+                        </Text>
+                    </View>
+
+                    {/* Form */}
+                    <View style={styles.formContainer}>
+                        {step === 1 && (
+                            <>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Номер телефону</Text>
+                                    {renderInput(
+                                        form.phone,
+                                        errors.phone,
+                                        "+380 XX XXX XX XX",
+                                        "phone-pad",
+                                        false,
+                                        (v) => handleChange("phone", v),
+                                        "words"
+                                    )}
+                                    {errors.phone && <Text style={styles.fieldError}>{errors.phone}</Text>}
+                                </View>
+
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Електронна пошта</Text>
+                                    {renderInput(
+                                        form.email,
+                                        errors.email,
+                                        "example@mail.com",
+                                        "email-address",
+                                        false,
+                                        (v) => handleChange("email", v),
+                                        "none"
+                                    )}
+                                    {errors.email && <Text style={styles.fieldError}>{errors.email}</Text>}
+                                </View>
+                            </>
+                        )}
+
+                        {step === 2 && (
+                            <>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Прізвище</Text>
+                                    {renderInput(
+                                        form.lastName,
+                                        errors.lastName,
+                                        "Введіть прізвище",
+                                        "default",
+                                        false,
+                                        (v) => handleChange("lastName", v)
+                                    )}
+                                    {errors.lastName && <Text style={styles.fieldError}>{errors.lastName}</Text>}
+                                </View>
+
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Ім'я</Text>
+                                    {renderInput(
+                                        form.firstName,
+                                        errors.firstName,
+                                        "Введіть ім'я",
+                                        "default",
+                                        false,
+                                        (v) => handleChange("firstName", v)
+                                    )}
+                                    {errors.firstName && <Text style={styles.fieldError}>{errors.firstName}</Text>}
+                                </View>
+
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>По батькові</Text>
+                                    {renderInput(
+                                        form.middleName,
+                                        errors.middleName,
+                                        "Введіть по батькові (опціонально)",
+                                        "default",
+                                        false,
+                                        (v) => handleChange("middleName", v)
+                                    )}
+                                    {errors.middleName && <Text style={styles.fieldError}>{errors.middleName}</Text>}
+                                </View>
+                            </>
+                        )}
+
+                        {step === 3 && (
+                            <>
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Пароль</Text>
+                                    {renderInput(
+                                        password,
+                                        errors.password,
+                                        "Мінімум 8 символів",
+                                        "default",
+                                        true,
+                                        setPassword
+                                    )}
+                                    {errors.password && <Text style={styles.fieldError}>{errors.password}</Text>}
+                                </View>
+
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Підтвердіть пароль</Text>
+                                    {renderInput(
+                                        confirmPassword,
+                                        errors.confirmPassword,
+                                        "Повторіть пароль",
+                                        "default",
+                                        true,
+                                        setConfirmPassword
+                                    )}
+                                    {errors.confirmPassword && (
+                                        <Text style={styles.fieldError}>{errors.confirmPassword}</Text>
+                                    )}
+                                </View>
+                            </>
+                        )}
+
+                        {/* Buttons */}
+                        <View style={styles.buttonsContainer}>
+                            <TouchableOpacity
+                                style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                                onPress={step < 3 ? handleNext : handleRegister}
+                                disabled={loading}
+                            >
+                                <Text style={styles.primaryButtonText}>
+                                    {loading
+                                        ? "Зачекайте..."
+                                        : step < 3
+                                            ? "Далі"
+                                            : "Зареєструватися"}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {step > 1 && (
+                                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                                    <Text style={styles.backButtonText}>Назад</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+
+                    {/* Footer */}
+                    <Text style={styles.footer}>
+                        Вже є акаунт?{" "}
+                        <Text style={styles.footerLink} onPress={() => router.push("/Login")}>
+                            Увійти
+                        </Text>
+                    </Text>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
+    );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#FAFAFA",
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 32,
-  },
-  iconContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: "#E8F5FF",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  icon: {
-    fontSize: 36,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#666",
-    textAlign: "center",
-    paddingHorizontal: 20,
-    lineHeight: 22,
-  },
-  formContainer: {
-    marginBottom: 24,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    fontSize: 16,
-    color: "#1A1A1A",
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-  },
-  inputError: {
-    borderColor: "#FF6B6B",
-  },
-  requiredStar: {
-    color: "#FF6B6B",
-  },
-  fieldError: {
-    color: "#FF6B6B",
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFE5E5",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-    borderLeftWidth: 4,
-    borderLeftColor: "#FF6B6B",
-  },
-  errorIcon: {
-    fontSize: 24,
-    color: "#D32F2F",
-    marginRight: 12,
-  },
-  errorText: {
-    color: "#D32F2F",
-    fontSize: 15,
-    lineHeight: 22,
-    flex: 1,
-  },
-  buttonsContainer: {
-    marginTop: 8,
-    gap: 12,
-  },
-  primaryButton: {
-    backgroundColor: "#FF6B6B",
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    shadowColor: "#FF6B6B",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonDisabled: {
-    backgroundColor: "#FFB3B3",
-    opacity: 0.7,
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
-  },
-  footer: {
-    textAlign: "center",
-    fontSize: 14,
-    color: "#666",
-    marginTop: 16,
-    marginBottom: 20,
-  },
-  footerLink: {
-    color: "#FF6B6B",
-    fontWeight: "600",
-  },
+    safeArea: {
+        flex: 1,
+        backgroundColor: "#FAFAFA",
+    },
+    keyboardView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        paddingHorizontal: 24,
+        paddingTop: 20,
+        paddingBottom: 40,
+    },
+    header: {
+        alignItems: "center",
+        marginBottom: 32,
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: "700",
+        color: "#1A1A1A",
+        marginBottom: 8,
+        textAlign: "center",
+    },
+    formContainer: {
+        marginBottom: 24,
+    },
+    inputGroup: {
+        marginBottom: 20,
+    },
+    label: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#333",
+        marginBottom: 8,
+    },
+
+    inputWrapper: {
+        position: "relative",
+    },
+
+    input: {
+        backgroundColor: "#FFFFFF",
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        paddingRight: 48,
+        borderRadius: 10,
+        fontSize: 16,
+        color: "#1A1A1A",
+        borderWidth: 1,
+        borderColor: "#E5E5E5",
+    },
+
+    inputError: {
+        borderColor: "#FF6B6B",
+    },
+
+    inputValid: {
+        borderColor: "#4CAF50",
+    },
+
+    statusIndicator: {
+        position: "absolute",
+        right: 16,
+        top: "50%",
+        marginTop: -10,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    statusSuccess: {
+        backgroundColor: "#4CAF50",
+    },
+
+    statusError: {
+        backgroundColor: "#FF6B6B",
+    },
+
+    statusSymbol: {
+        color: "white",
+        fontSize: 14,
+        fontWeight: "bold",
+        lineHeight: 20,
+    },
+
+    fieldError: {
+        color: "#FF6B6B",
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 4,
+    },
+
+    buttonsContainer: {
+        marginTop: 16,
+        gap: 12,
+    },
+
+    primaryButton: {
+        backgroundColor: "#000000",
+        paddingVertical: 16,
+        borderRadius: 25,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+
+    buttonDisabled: {
+        backgroundColor: "#000000",
+        opacity: 0.7,
+    },
+
+    primaryButtonText: {
+        color: "#FFFFFF",
+        fontSize: 17,
+        fontWeight: "700",
+    },
+
+    backButton: {
+        paddingVertical: 12,
+        alignItems: "center",
+    },
+
+    backButtonText: {
+        color: "#000000",
+        fontSize: 16,
+        fontWeight: "500",
+    },
+
+    footer: {
+        textAlign: "center",
+        fontSize: 14,
+        color: "#666",
+        marginTop: 24,
+        marginBottom: 20,
+    },
+
+    footerLink: {
+        color: "#000000",
+        fontWeight: "600",
+    },
 });

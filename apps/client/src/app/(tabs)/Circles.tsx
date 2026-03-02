@@ -144,7 +144,7 @@ export default function CirclesScreen() {
             style={{
               textAlign: "center",
               marginTop: 20,
-              color: COLORS.TEXT_GRAY,
+              color: "#FFF",
             }}
           >
             Кола не знайдені
@@ -307,7 +307,7 @@ export default function CirclesScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "white" },
+    screen: { flex: 1, backgroundColor: "#F7F7F7" },
   content: { padding: 20, paddingBottom: 120 },
   header: {
     flexDirection: "row",
