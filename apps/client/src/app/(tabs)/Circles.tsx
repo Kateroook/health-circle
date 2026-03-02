@@ -120,7 +120,7 @@ export default function CirclesScreen() {
             style={{
               textAlign: "center",
               marginTop: 20,
-                          color: "#FFF",
+              color: "#FFF",
             }}
           >
             Кола не знайдені
