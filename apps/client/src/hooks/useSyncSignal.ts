@@ -26,7 +26,7 @@ export function useSyncSignal(onSync: () => void) {
       },
       (error) => {
         console.error("Sync signal listener error:", error);
-      }
+      },
     );
 
     return () => unsubscribe();

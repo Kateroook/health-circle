@@ -24,14 +24,13 @@ export function useFcmToken() {
             await saveFcmTokenToBackend(fcmToken);
           }
         }
-        
+
         // Ensure channel exists for Android background messages
         await notifee.createChannel({
           id: "default",
           name: "Default Channel",
           importance: AndroidImportance.HIGH,
         });
-
       } catch (error) {
         console.error("FCM Permission denied:", error);
       }

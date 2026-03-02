@@ -9,16 +9,16 @@ import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    BackHandler,
-    Keyboard,
-    LayoutAnimation,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    UIManager,
-    View,
+  BackHandler,
+  Keyboard,
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View,
 } from "react-native";
 import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -307,7 +307,7 @@ export default function CirclesScreen() {
 }
 
 const styles = StyleSheet.create({
-    screen: { flex: 1, backgroundColor: "#F7F7F7" },
+  screen: { flex: 1, backgroundColor: "#F7F7F7" },
   content: { padding: 20, paddingBottom: 120 },
   header: {
     flexDirection: "row",

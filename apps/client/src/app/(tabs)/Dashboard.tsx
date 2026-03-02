@@ -6,15 +6,15 @@ import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
-    Alert,
-    Image,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    Vibration,
-    View,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  Vibration,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -95,9 +95,7 @@ const MainStatusIndicator = ({
         },
       ],
     );
-    };
-
-
+  };
 
   return (
     <View style={styles.mainStatusContainer}>
@@ -130,105 +128,107 @@ const MainStatusIndicator = ({
 };
 
 const StatusBadge = ({ status }: { status: UserStatus }) => {
-    let bgColor: string;       // блідий фон прямокутника
-    let circleColor: string;   // колір круга
-    let symbol: string;        // символ всередині
-    let symbolColor = "#FFFFFF"; // завжди білий
+  let bgColor: string; // блідий фон прямокутника
+  let circleColor: string; // колір круга
+  let symbol: string; // символ всередині
+  let symbolColor = "#FFFFFF"; // завжди білий
 
-    switch (status) {
-        case "SAFE":
-            bgColor = "#E8F5E9";     // дуже блідо-зелений
-            circleColor = "#4CAF50"; // зелений
-            symbol = "✓";            // галочка (можна "✔" або "check")
-            break;
+  switch (status) {
+    case "SAFE":
+      bgColor = "#E8F5E9"; // дуже блідо-зелений
+      circleColor = "#4CAF50"; // зелений
+      symbol = "✓"; // галочка (можна "✔" або "check")
+      break;
 
-        case "UNKNOWN":
-            bgColor = "#FFF3E0";     // блідо-оранжевий / персиковий
-            circleColor = "#FF9800"; // оранжевий
-            symbol = "?";
-            break;
+    case "UNKNOWN":
+      bgColor = "#FFF3E0"; // блідо-оранжевий / персиковий
+      circleColor = "#FF9800"; // оранжевий
+      symbol = "?";
+      break;
 
-        case "DANGER":
-            bgColor = "#FFEBEE";     // блідо-червоний
-            circleColor = "#F44336"; // червоний
-            symbol = "!";
-            break;
+    case "DANGER":
+      bgColor = "#FFEBEE"; // блідо-червоний
+      circleColor = "#F44336"; // червоний
+      symbol = "!";
+      break;
 
-        default:
-            bgColor = "#F5F5F5";
-            circleColor = "#9E9E9E";
-            symbol = "?";
-    }
+    default:
+      bgColor = "#F5F5F5";
+      circleColor = "#9E9E9E";
+      symbol = "?";
+  }
 
-    return (
-        <View style={{
-            width: 30,
-            height: 30,
-            borderRadius: 5,
-            backgroundColor: bgColor,
-            justifyContent: 'center',
-            alignItems: 'center',
-        }}>
-            <View style={{
-                width: 20,
-                height: 20,
-                borderRadius: 10,
-                backgroundColor: circleColor,
-                justifyContent: 'center',
-                alignItems: 'center',
-            }}>
-                <Text
-                    style={{
-                        color: symbolColor,
-                        fontSize: 14,
-                        fontWeight: 'bold',
-                        includeFontPadding: false, // щоб символ сидів ідеально по центру
-                        lineHeight: 20,
-                    }}
-                >
-                    {symbol}
-                </Text>
-            </View>
-        </View>
-    );
+  return (
+    <View
+      style={{
+        width: 30,
+        height: 30,
+        borderRadius: 5,
+        backgroundColor: bgColor,
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <View
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: 10,
+          backgroundColor: circleColor,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Text
+          style={{
+            color: symbolColor,
+            fontSize: 14,
+            fontWeight: "bold",
+            includeFontPadding: false, // щоб символ сидів ідеально по центру
+            lineHeight: 20,
+          }}
+        >
+          {symbol}
+        </Text>
+      </View>
+    </View>
+  );
 };
 
 const ContactStatusRow = ({ member }: { member: Member }) => {
-    let statusText: string;
-    let statusColor: string;
+  let statusText: string;
+  let statusColor: string;
 
-    switch (member.status) {
-        case "SAFE":
-            statusText = "В безпеці";
-            statusColor = "#4CAF50";   // можна узгодити з circleColor
-            break;
-        case "DANGER":
-            statusText = "Потрібна допомога!";
-            statusColor = "#F44336";
-            break;
-        default:
-            statusText = "Невідомо";
-            statusColor = "#FF9800";   // оранжевий для UNKNOWN
-    }
+  switch (member.status) {
+    case "SAFE":
+      statusText = "В безпеці";
+      statusColor = "#4CAF50"; // можна узгодити з circleColor
+      break;
+    case "DANGER":
+      statusText = "Потрібна допомога!";
+      statusColor = "#F44336";
+      break;
+    default:
+      statusText = "Невідомо";
+      statusColor = "#FF9800"; // оранжевий для UNKNOWN
+  }
 
-    return (
-        <View style={styles.contactRow}>
-            <View style={styles.avatarContainer}>
-                <MemberAvatar member={member} />
-            </View>
-            <View style={styles.contactInfo}>
-                <Text style={styles.contactName}>
-                    {member.firstName} {member.lastName}
-                </Text>
-                <Text style={[styles.contactStatusText, { color: statusColor }]}>
-                    {statusText}
-                </Text>
-            </View>
-            <View style={styles.contactStatusIcon}>
-                <StatusBadge status={member.status} />
-            </View>
-        </View>
-    );
+  return (
+    <View style={styles.contactRow}>
+      <View style={styles.avatarContainer}>
+        <MemberAvatar member={member} />
+      </View>
+      <View style={styles.contactInfo}>
+        <Text style={styles.contactName}>
+          {member.firstName} {member.lastName}
+        </Text>
+        <Text style={[styles.contactStatusText, { color: statusColor }]}>{statusText}</Text>
+      </View>
+      <View style={styles.contactStatusIcon}>
+        <StatusBadge status={member.status} />
+      </View>
+    </View>
+  );
 };
 
 const MoodSection = () => (
@@ -262,7 +262,7 @@ export default function DashboardScreen() {
   useFocusEffect(
     useCallback(() => {
       // Intentionally empty, handled by useSyncSignal now
-      // fetchGroups(); 
+      // fetchGroups();
     }, []),
   );
 
@@ -509,11 +509,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
-    contactStatusIcon: {
-        marginLeft: 12,          // трохи більше відступу, бо іконка стала ширшою
-        width: 44,               // фіксована ширина під бейдж
-        alignItems: 'flex-end',  // вирівняти праворуч
-    },
+  contactStatusIcon: {
+    marginLeft: 12, // трохи більше відступу, бо іконка стала ширшою
+    width: 44, // фіксована ширина під бейдж
+    alignItems: "flex-end", // вирівняти праворуч
+  },
   emptyState: {
     padding: 20,
     alignItems: "center",
