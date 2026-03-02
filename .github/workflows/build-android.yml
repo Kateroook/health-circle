@@ -35,10 +35,6 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Restore google-services.json
-        run: |
-          echo "${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}" | base64 --decode > google-services.json
-
       - name: Build Android APK
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
