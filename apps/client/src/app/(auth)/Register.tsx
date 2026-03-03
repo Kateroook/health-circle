@@ -1,14 +1,14 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -269,7 +269,7 @@ export default function Register() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                                  <Text style={styles.label}>{"Ім'я"}</Text>
+                  <Text style={styles.label}>{"Ім'я"}</Text>
                   {renderInput(
                     form.firstName,
                     errors.firstName,
