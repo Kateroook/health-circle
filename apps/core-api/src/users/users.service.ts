@@ -196,7 +196,7 @@ export class UsersService {
     userToDelete.fcmToken = null;
     userToDelete.firstName = '';
     userToDelete.lastName = '';
-    userToDelete.middleName = '';
+    userToDelete.middleName = null;
 
     await this.repository.save(userToDelete);
     await this.userActivitiesService.logActivity(UserActivityTypes.deleteAccount, metadata, { userId: user.id });

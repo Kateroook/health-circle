@@ -58,7 +58,7 @@ export interface CreateUserDto {
   phone: string;
   email: string;
   firstName: string;
-  middleName: string;
+  middleName?: string;
   lastName: string;
   fullName?: string;
 }

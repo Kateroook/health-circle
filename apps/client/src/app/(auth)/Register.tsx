@@ -76,8 +76,12 @@ export default function Register() {
         newErrors.firstName = "Мінімум 2 символи";
       }
 
-      if (form.middleName.trim() && form.middleName.length < 2) {
-        newErrors.middleName = "Мінімум 2 символи";
+      if (form.middleName.trim()) {
+        if (form.middleName.length < 2) {
+          newErrors.middleName = "Мінімум 2 символи";
+        } else if (form.middleName.length > 50) {
+          newErrors.middleName = "Максимум 50 символів";
+        }
       }
     }
 
@@ -265,7 +269,7 @@ export default function Register() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                                  <Text style={styles.label}>{"Ім'я"}</Text>
+                  <Text style={styles.label}>{"Ім'я"}</Text>
                   {renderInput(
                     form.firstName,
                     errors.firstName,

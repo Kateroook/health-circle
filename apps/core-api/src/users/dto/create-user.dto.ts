@@ -1,14 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-    IsDefined,
-    IsEmail,
-    IsNotEmpty,
-    IsOptional,
-    IsPhoneNumber,
-    IsString,
-    MaxLength,
-    MinLength,
-    Validate,
+  IsDefined,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsPhoneNumber,
+  IsString,
+  MaxLength,
+  MinLength,
+  Validate,
 } from 'class-validator';
 import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constraint';
 
@@ -29,7 +29,7 @@ export class CreateUserDto {
   @IsString({ message: 'По-батькові має бути рядком' })
   @MinLength(2, { message: 'По-батькові має містити не менше 2 символів' })
   @MaxLength(50, { message: 'По-батькові має містити не більше 50 символів' })
-  middleName: string;
+  middleName?: string;
 
   @IsDefined({ message: 'Поле прізвища є обовʼязковим' })
   @IsString({ message: 'Прізвище має бути рядком' })
