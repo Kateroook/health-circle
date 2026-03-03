@@ -14,7 +14,7 @@ interface User {
   id: string;
   email: string | null;
   firstName: string;
-  middleName: string;
+  middleName?: string | null;
   lastName: string;
   fullName?: string;
   phone: string;

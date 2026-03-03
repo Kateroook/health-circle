@@ -1,14 +1,14 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -76,8 +76,12 @@ export default function Register() {
         newErrors.firstName = "Мінімум 2 символи";
       }
 
-      if (form.middleName.trim() && form.middleName.length < 2) {
-        newErrors.middleName = "Мінімум 2 символи";
+      if (form.middleName.trim()) {
+        if (form.middleName.length < 2) {
+          newErrors.middleName = "Мінімум 2 символи";
+        } else if (form.middleName.length > 50) {
+          newErrors.middleName = "Максимум 50 символів";
+        }
       }
     }
 

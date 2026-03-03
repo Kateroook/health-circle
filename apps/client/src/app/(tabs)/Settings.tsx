@@ -1,5 +1,4 @@
 import * as ImagePicker from "expo-image-picker";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -10,11 +9,11 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  Switch,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import ConfirmationModal from "../../components/ConfirmationModal";
 
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
@@ -84,14 +83,16 @@ export default function SettingsScreen() {
       errors.push("Прізвище має містити не більше 50 символів");
     }
 
-    if (!trimmedMiddle || trimmedMiddle.length < 2) {
-      errors.push("По-батькові має містити не менше 2 символів");
-    } else if (trimmedMiddle.length > 50) {
-      errors.push("По-батькові має містити не більше 50 символів");
+    if (trimmedMiddle) {
+      if (trimmedMiddle.length < 2) {
+        errors.push("По-батькові має містити не менше 2 символів");
+      } else if (trimmedMiddle.length > 50) {
+        errors.push("По-батькові має містити не більше 50 символів");
+      }
     }
 
     const trimmedFullName = fullName.trim();
-    if (!trimmedMiddle) errors.push("Не можна зберегти порожнє повне імʼя");
+    if (!trimmedFullName) errors.push("Не можна зберегти порожнє повне імʼя");
     else if (trimmedFullName.length > 255) {
       errors.push("Повне імʼя має містити не більше 255 символів");
     }
@@ -236,7 +237,7 @@ export default function SettingsScreen() {
       setter: setMiddleName,
       placeholder: "Введіть по-батькові",
       maxLength: 50,
-      required: true,
+      required: false,
     },
     {
       label: "Відображаєме імʼя",

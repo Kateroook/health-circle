@@ -25,8 +25,8 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 100 })
   firstName: string;
 
-  @Column({ type: 'varchar', length: 100 })
-  middleName: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  middleName: string | null;
 
   @Column({ type: 'varchar', length: 100 })
   lastName: string;
