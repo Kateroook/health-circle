@@ -57,8 +57,6 @@ describe('UsersService', () => {
     ],
   } as UserEntity;
 
-
-
   const mockUserProfile: UserProfileDto = {
     id: 'user1',
     email: 'test@example.com',
@@ -94,13 +92,13 @@ describe('UsersService', () => {
         }),
       },
       createQueryBuilder: jest.fn(() => ({
-          select: jest.fn().mockReturnThis(),
-          innerJoin: jest.fn().mockReturnThis(),
-          where: jest.fn().mockReturnThis(),
-          andWhere: jest.fn().mockReturnThis(),
-          leftJoinAndSelect: jest.fn().mockReturnThis(),
-          getOne: jest.fn(),
-          getMany: jest.fn().mockResolvedValue([]),
+        select: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        getOne: jest.fn(),
+        getMany: jest.fn().mockResolvedValue([]),
       })),
     } as unknown as jest.Mocked<Repository<UserEntity>>;
   };
@@ -156,7 +154,7 @@ describe('UsersService', () => {
     it('updates status and sends push', async () => {
       repository.findOne.mockResolvedValue(mockUser);
       repository.save.mockResolvedValue(mockUser);
-      
+
       const qbMock = {
         select: jest.fn().mockReturnThis(),
         innerJoin: jest.fn().mockReturnThis(),

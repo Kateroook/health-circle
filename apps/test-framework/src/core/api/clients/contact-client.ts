@@ -28,14 +28,16 @@ export class ContactClient extends BaseClient {
    * Створити новий контакт
    */
   public async createContact(data: CreateContactRequest): Promise<ApiResult<CreateContactResponse>> {
-    const result = await this.post<CreateContactResponse>('/api/contacts', { data });
-    
+    const result = await this.post<CreateContactResponse>('/api/contacts', {
+      data,
+    });
+
     // Автоматично зберігаємо ID створеного контакту
     if (result.data && result.data.id) {
       this.updateContext({ contactId: result.data.id });
       this.dbCleaner?.add('contacts', result.data.id);
     }
-    
+
     return result;
   }
 
@@ -45,7 +47,7 @@ export class ContactClient extends BaseClient {
    */
   public async updateContact(
     targetId: string,
-    body: UpdateContactRequest['body']
+    body: UpdateContactRequest['body'],
   ): Promise<ApiResult<UpdateContactResponse>> {
     return await this.patch<UpdateContactResponse>(`/api/contacts/${targetId}`, { data: body });
   }
@@ -64,7 +66,7 @@ export class ContactClient extends BaseClient {
    */
   public async setContactAlias(
     targetId: string,
-    body: SetContactAliasRequest['body']
+    body: SetContactAliasRequest['body'],
   ): Promise<ApiResult<SetContactAliasResponse>> {
     return await this.put<SetContactAliasResponse>(`/api/contacts/${targetId}`, { data: body });
   }

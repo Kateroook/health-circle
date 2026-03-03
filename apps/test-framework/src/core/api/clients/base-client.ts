@@ -73,7 +73,7 @@ export abstract class BaseClient {
       params?: Record<string, string | number | boolean>;
       headers?: Record<string, string>;
       timeout?: number;
-    }
+    },
   ): Promise<ApiResult<T>> {
     const url = `${this.baseURL}${endpoint}`;
     const headers = this.getHeaders(options?.headers);
@@ -99,7 +99,7 @@ export abstract class BaseClient {
       headers?: Record<string, string>;
       multipart?: any;
       timeout?: number;
-    }
+    },
   ): Promise<ApiResult<T>> {
     const url = `${this.baseURL}${endpoint}`;
     const headers = this.getHeaders(options?.headers);
@@ -127,7 +127,7 @@ export abstract class BaseClient {
       headers?: Record<string, string>;
       multipart?: any;
       timeout?: number;
-    }
+    },
   ): Promise<ApiResult<T>> {
     const url = `${this.baseURL}${endpoint}`;
     const headers = this.getHeaders(options?.headers);
@@ -154,7 +154,7 @@ export abstract class BaseClient {
       params?: Record<string, string | number | boolean>;
       headers?: Record<string, string>;
       timeout?: number;
-    }
+    },
   ): Promise<ApiResult<T>> {
     const url = `${this.baseURL}${endpoint}`;
     const headers = this.getHeaders(options?.headers);
@@ -179,7 +179,7 @@ export abstract class BaseClient {
       params?: Record<string, string | number | boolean>;
       headers?: Record<string, string>;
       timeout?: number;
-    }
+    },
   ): Promise<ApiResult<T>> {
     const url = `${this.baseURL}${endpoint}`;
     const headers = this.getHeaders(options?.headers);

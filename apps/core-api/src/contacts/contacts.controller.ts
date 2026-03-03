@@ -1,15 +1,4 @@
-import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    Param,
-    Patch,
-    Post,
-    Put,
-    Req,
-    UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthStrategies } from 'src/common/enums/auth-strategies';
 import { UserJwtAccessGuard } from 'src/common/guards/user-jwt-access.guard';
@@ -42,11 +31,7 @@ export class ContactsController {
   @Patch(':targetId')
   @ApiBearerAuth(AuthStrategies.userJwtAccess)
   @UseGuards(UserJwtAccessGuard)
-  update(
-    @Req() req: AuthRequest,
-    @Param('targetId') targetId: string,
-    @Body() dto: UpdateContactDto,
-  ) {
+  update(@Req() req: AuthRequest, @Param('targetId') targetId: string, @Body() dto: UpdateContactDto) {
     return this.contactsService.update(req.user.id, targetId, dto);
   }
 
@@ -60,11 +45,7 @@ export class ContactsController {
   @Put(':targetId')
   @ApiBearerAuth(AuthStrategies.userJwtAccess)
   @UseGuards(UserJwtAccessGuard)
-  setAlias(
-    @Req() req: AuthRequest,
-    @Param('targetId') targetId: string,
-    @Body() dto: SetContactAliasDto,
-  ) {
+  setAlias(@Req() req: AuthRequest, @Param('targetId') targetId: string, @Body() dto: SetContactAliasDto) {
     return this.contactsService.setAlias(req.user.id, targetId, dto.alias);
   }
 }

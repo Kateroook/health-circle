@@ -37,15 +37,12 @@ export class UserClient extends BaseClient {
    * PUT /api/users/{id}/avatar
    * Завантажити аватар користувача
    */
-  public async uploadUserAvatar(
-    id: string,
-    file: Buffer | Blob
-  ): Promise<ApiResult<UploadUserAvatarResponse>> {
+  public async uploadUserAvatar(id: string, file: Buffer | Blob): Promise<ApiResult<UploadUserAvatarResponse>> {
     const formData = new FormData();
-    
+
     if (Buffer.isBuffer(file)) {
       const uint8 = new Uint8Array(file);
-      formData.append('file', new Blob([uint8]));    
+      formData.append('file', new Blob([uint8]));
     } else {
       formData.append('file', file);
     }
@@ -78,7 +75,7 @@ export class UserClient extends BaseClient {
    */
   public async createUser(data: CreateUserRequest): Promise<ApiResult<CreateUserResponse>> {
     const result = await this.post<CreateUserResponse>('/api/users', { data });
-    if(result.data && result.data.id) {
+    if (result.data && result.data.id) {
       this.dbCleaner?.add('users', result.data.id);
     }
     return result;
@@ -104,10 +101,10 @@ export class UserClient extends BaseClient {
    * PUT /api/users/status
    * Оновити статус користувача
    */
-  public async updateUserStatus(
-    data: UpdateUserStatusRequest
-  ): Promise<ApiResult<UpdateUserStatusResponse>> {
-    return await this.put<UpdateUserStatusResponse>('/api/users/status', { data });
+  public async updateUserStatus(data: UpdateUserStatusRequest): Promise<ApiResult<UpdateUserStatusResponse>> {
+    return await this.put<UpdateUserStatusResponse>('/api/users/status', {
+      data,
+    });
   }
 
   /**

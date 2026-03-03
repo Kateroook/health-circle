@@ -22,15 +22,14 @@ export class AuthClient extends BaseClient {
    */
   public async login(data: LoginRequest): Promise<ApiResult<LoginResponse>> {
     const result = await this.post<LoginResponse>('/api/auth/login', { data });
-    
+
     // Автоматично зберігаємо токени з cookies
     // const setCookieHeaders = result.response.headers()['set-cookie'];
-    if(checkResponse.is2xx(result.response))
-    {
+    if (checkResponse.is2xx(result.response)) {
       this.setAccessToken(result.data.accessToken!);
       this.setRefreshToken(result.data.refreshToken!);
     }
-    
+
     return result;
   }
 
@@ -40,10 +39,10 @@ export class AuthClient extends BaseClient {
    */
   public async logout(): Promise<ApiResult<void>> {
     const result = await this.post<void>('/api/auth/logout');
-    
+
     // Очищаємо токени після логауту
     this.clearTokens();
-    
+
     return result;
   }
 
@@ -54,26 +53,26 @@ export class AuthClient extends BaseClient {
   public async refreshToken(): Promise<ApiResult<void>> {
     // Використовуємо refresh token для оновлення
     const oldAccessToken = this.context.accessToken;
-    
+
     // Тимчасово використовуємо refresh token
     if (this.context.refreshToken) {
       this.setAccessToken(this.context.refreshToken);
     }
-    
+
     const result = await this.post<void>('/api/auth/refresh');
-    
+
     // Відновлюємо або оновлюємо токени
     const setCookieHeaders = result.response.headers()['set-cookie'];
     if (setCookieHeaders && result.response.ok()) {
       const accessToken = extractTokenFromCookies(
         Array.isArray(setCookieHeaders) ? setCookieHeaders : [setCookieHeaders],
-        'accessToken'
+        'accessToken',
       );
       const refreshToken = extractTokenFromCookies(
         Array.isArray(setCookieHeaders) ? setCookieHeaders : [setCookieHeaders],
-        'refreshToken'
+        'refreshToken',
       );
-      
+
       if (accessToken) this.setAccessToken(accessToken);
       if (refreshToken) this.setRefreshToken(refreshToken);
     } else {
@@ -82,7 +81,7 @@ export class AuthClient extends BaseClient {
         this.setAccessToken(oldAccessToken);
       }
     }
-    
+
     return result;
   }
 
@@ -101,7 +100,7 @@ export class AuthClient extends BaseClient {
   public async setupPassword(
     email: string,
     code: string,
-    body: SetupPasswordRequest['body']
+    body: SetupPasswordRequest['body'],
   ): Promise<ApiResult<void>> {
     return await this.post<void>('/api/auth/password-setup', {
       params: { email, code },
@@ -132,7 +131,7 @@ export class AuthClient extends BaseClient {
   public async resetPassword(
     email: string,
     code: string,
-    body: ResetPasswordRequest['body']
+    body: ResetPasswordRequest['body'],
   ): Promise<ApiResult<void>> {
     return await this.post<void>('/api/auth/reset-password', {
       params: { email, code },
@@ -153,7 +152,7 @@ export class AuthClient extends BaseClient {
    */
   public async quickLogin(email: string, password: string): Promise<ApiResult<LoginResponse>> {
     const result = await this.login({ email, password });
-    
+
     // Зберігаємо userId якщо логін успішний
     if (result.response.ok()) {
       const profile = await this.getProfile();
@@ -161,7 +160,7 @@ export class AuthClient extends BaseClient {
         this.updateContext({ userId: profile.data.id });
       }
     }
-    
+
     return result;
   }
 }

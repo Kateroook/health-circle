@@ -1,7 +1,7 @@
 // test-framework/src/utils/api-helper.ts
-import { APIRequestContext, APIResponse } from "@playwright/test";
-import { config } from "../api/helpers/config";
-import { LoginResponse } from "../core/types/api-types";
+import { APIRequestContext, APIResponse } from '@playwright/test';
+import { config } from '../api/helpers/config';
+import { LoginResponse } from '../core/types/api-types';
 
 export async function login({
   request,

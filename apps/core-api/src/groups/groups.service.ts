@@ -54,7 +54,7 @@ export class GroupService {
         } else {
           m.isAlias = false;
           if (!m.fullName) {
-             m.fullName = `${m.firstName} ${m.lastName}`.trim();
+            m.fullName = `${m.firstName} ${m.lastName}`.trim();
           }
         }
       });

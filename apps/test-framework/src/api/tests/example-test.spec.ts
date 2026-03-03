@@ -14,11 +14,11 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
       email: config.testUser.email,
       password: config.testUser.password,
     });
-    
+
     // Перевіряємо відповідь
     assertResponse.is201(loginResult.response);
     console.log('Login Data:', loginResult.data);
-    
+
     // Токени автоматично збережені в контексті
     console.log('Access Token:', api.getContext().accessToken);
 
@@ -39,7 +39,9 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
 
     // ============ Groups ============
     // Створюємо групу
-    const createGroupResult = await api.groups.createGroup({ name: 'Test Group' });
+    const createGroupResult = await api.groups.createGroup({
+      name: 'Test Group',
+    });
     assertResponse.is201(createGroupResult.response);
     console.log('Created Group:', createGroupResult.data);
 
@@ -56,7 +58,7 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     // ============ Logout ============
     const logoutResult = await api.auth.logout();
     assertResponse.is201(logoutResult.response);
-    
+
     // Токени автоматично очищені
     expect(api.getContext().accessToken).toBeUndefined();
   });
@@ -65,14 +67,11 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     const api = createApiClients(request);
 
     // Метод повертає ApiResult<T>
-    const result = await api.auth.quickLogin(
-      config.testUser.email,
-      config.testUser.password
-    );
+    const result = await api.auth.quickLogin(config.testUser.email, config.testUser.password);
 
     // Доступ до даних
     console.log('Data:', result.data);
-    
+
     // Доступ до response для детальної перевірки
     expect(result.response.ok()).toBeTruthy();
     expect(result.response.status()).toBe(201);
@@ -95,13 +94,13 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     // ============ Пласкі методи для User ============
     // Замість: users.byId(id).get()
     await api.users.getUser(profile.data!.id);
-    
+
     // Замість: users.byId(id).avatar.get()
     await api.users.getUserAvatar(profile.data!.id);
-    
+
     // Замість: users.byId(id).avatar.delete()
     await api.users.deleteUserAvatar(profile.data!.id);
-    
+
     // Замість: users.byId(id).resetPassword()
     await api.users.resetUserPassword(profile.data!.id);
 
@@ -116,29 +115,29 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
 
     // Замість: group.byId(id).get()
     await api.groups.getGroup(group.data!.id);
-    
+
     // Замість: group.byId(id).leave()
     await api.groups.leaveGroup(group.data!.id);
-    
+
     // Замість: group.byId(id).invite.regenerate()
     await api.groups.regenerateInviteCode(group.data!.id);
-    
+
     // Замість: group.byId(id).blockedUsers.get()
     await api.groups.getBlockedUsers(group.data!.id);
-    
+
     // Замість: groups.byId(id).blockedUsers.user(userId).block()
     await api.groups.blockUser(group.data!.id, 'some-user-id');
-    
+
     // Замість: groups.byId(id).blockedUsers.user(userId).unblock()
     await api.groups.unblockUser(group.data!.id, 'some-user-id');
 
     // ============ Пласкі методи для Contact ============
     // Замість: contacts().byTargetId(targetId).update()
     await api.contacts.updateContact('target-id', { alias: 'New Alias' });
-    
+
     // Замість: contacts().byTargetId(targetId).setAlias()
     await api.contacts.setContactAlias('target-id', { alias: 'Updated' });
-    
+
     // Замість: contacts().byTargetId(targetId).delete()
     await api.contacts.deleteContact('target-id');
   });
@@ -162,7 +161,7 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
 
     // Тест на помилку 404 (не знайдено)
     await api.auth.quickLogin(config.testUser.email, config.testUser.password);
-    
+
     const notFoundResult = await api.users.getUser('non-existent-id');
     assertResponse.is401(notFoundResult.response);
     expect(notFoundResult.data).toBeNull();
@@ -174,10 +173,7 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     const user2Api = createApiClients(request);
 
     // Логін першого користувача
-    await user1Api.auth.quickLogin(
-      config.testUser.email,
-      config.testUser.password
-    );
+    await user1Api.auth.quickLogin(config.testUser.email, config.testUser.password);
 
     // Логін другого користувача (припустимо, маємо другі credentials)
     // await user2Api.auth.quickLogin('user2@test.com', 'password2');
@@ -198,10 +194,7 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
   test('Example 6: Cloning factory for test isolation', async ({ request }) => {
     const originalApi = createApiClients(request);
 
-    await originalApi.auth.quickLogin(
-      config.testUser.email,
-      config.testUser.password
-    );
+    await originalApi.auth.quickLogin(config.testUser.email, config.testUser.password);
 
     // Клонуємо без контексту - новий порожній контекст
     const cleanClone = originalApi.clone();
@@ -209,9 +202,7 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
 
     // Клонуємо з контекстом - копія поточного стану
     const cloneWithContext = originalApi.cloneWithContext();
-    expect(cloneWithContext.getContext().accessToken).toBe(
-      originalApi.getContext().accessToken
-    );
+    expect(cloneWithContext.getContext().accessToken).toBe(originalApi.getContext().accessToken);
 
     // Але це все одно незалежні об'єкти
     cloneWithContext.auth.clearTokens();
@@ -230,20 +221,13 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     assertResponse.is201(forgotResult.response);
 
     // Встановлення пароля (потрібен email і code)
-    await api.auth.setupPassword(
-      'user@example.com',
-      'verification-code',
-      {
-        newPassword: 'NewPassword123!',
-        confirmNewPassword: 'NewPassword123!',
-      }
-    );
+    await api.auth.setupPassword('user@example.com', 'verification-code', {
+      newPassword: 'NewPassword123!',
+      confirmNewPassword: 'NewPassword123!',
+    });
 
     // Зміна пароля (для авторизованого користувача)
-    await api.auth.quickLogin(
-      config.testUser.email,
-      config.testUser.password
-    );
+    await api.auth.quickLogin(config.testUser.email, config.testUser.password);
 
     const changeResult = await api.auth.changePassword({
       oldPassword: config.testUser.password,
@@ -258,27 +242,19 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
       confirmNewPassword: config.testUser.password,
     });
     assertResponse.is201(cleanupResult.response);
-
   });
 
   test('Example 8: Using built-in Playwright params', async ({ request }) => {
     const api = createApiClients(request);
 
-    await api.auth.quickLogin(
-      config.testUser.email,
-      config.testUser.password
-    );
+    await api.auth.quickLogin(config.testUser.email, config.testUser.password);
 
     // Playwright автоматично обробляє params
     // BaseClient передає params напряму в request.get()
-    const result = await api.auth.setupPassword(
-      'user@test.com',
-      'code123',
-      {
-        newPassword: 'NewPass123!',
-        confirmNewPassword: 'NewPass123!',
-      }
-    );
+    const result = await api.auth.setupPassword('user@test.com', 'code123', {
+      newPassword: 'NewPass123!',
+      confirmNewPassword: 'NewPass123!',
+    });
 
     // URL буде: /api/auth/password-setup?email=user@test.com&code=code123
     // Playwright сам формує query string

@@ -2,7 +2,6 @@ import { APIResponse } from '@playwright/test';
 import { expect } from '@playwright/test';
 import { ApiResponseMeta } from '../../types/api';
 
-
 const is = {
   status: (res: APIResponse, code: number) => res.status() === code,
   ok: (res: APIResponse) => res.ok(), // 2xx
@@ -26,7 +25,8 @@ export const assertResponse = {
   is404: (res: APIResponse) => expect(res.status(), `Expected 404, got ${res.status()}`).toBe(404),
   is5xx: (res: APIResponse) => expect(is.serverError(res), `Expected 5xx status, got ${res.status()}`).toBeTruthy(),
   is500: (res: APIResponse) => expect(res.status(), `Expected 500, got ${res.status()}`).toBe(500),
-  status:(res: APIResponse, status: number) => expect(res.status(), `Expected ${status}, got ${res.status()}`).toBe(status),
+  status: (res: APIResponse, status: number) =>
+    expect(res.status(), `Expected ${status}, got ${res.status()}`).toBe(status),
   json: (res: APIResponse) => expect(is.json(res), `Expected content type to be json`).toBeTruthy(),
 };
 /**

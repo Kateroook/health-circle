@@ -20,11 +20,7 @@ export class ApiClientFactory {
    * @param request - Playwright APIRequestContext
    * @param context - Опціональний TestContext (якщо не вказано, створюється новий)
    */
-  constructor(options: {
-    request: APIRequestContext, 
-    context?: TestContext, 
-    dbCleaner?: DbCleaner
-  }) {
+  constructor(options: { request: APIRequestContext; context?: TestContext; dbCleaner?: DbCleaner }) {
     this.request = options.request;
     this.dbCleaner = options.dbCleaner;
     // ВАЖЛИВО: Завжди створюємо новий контекст або клонуємо переданий
@@ -87,8 +83,8 @@ export class ApiClientFactory {
    */
   public clone(): ApiClientFactory {
     return new ApiClientFactory({
-      request: this.request, 
-      dbCleaner: this.dbCleaner
+      request: this.request,
+      dbCleaner: this.dbCleaner,
     });
   }
 
@@ -98,24 +94,24 @@ export class ApiClientFactory {
    */
   public cloneWithContext(): ApiClientFactory {
     return new ApiClientFactory({
-      request: this.request, 
-      context: { ...this.context }, 
-      dbCleaner: this.dbCleaner
+      request: this.request,
+      context: { ...this.context },
+      dbCleaner: this.dbCleaner,
     });
   }
 }
 
 /**
  * Створює фабрику API клієнтів з ізольованим контекстом
- * 
+ *
  * @example
  * // Створення окремих клієнтів для різних користувачів
  * const user1Api = createApiClients(request);
  * const user2Api = createApiClients(request);
- * 
+ *
  * await user1Api.auth.login({ email: 'user1@test.com', password: 'pass' });
  * await user2Api.auth.login({ email: 'user2@test.com', password: 'pass' });
- * 
+ *
  * // Контексти ізольовані - токени не перетинаються
  */
 export function createApiClients(
@@ -124,8 +120,8 @@ export function createApiClients(
   dbCleaner?: DbCleaner,
 ): ApiClientFactory {
   return new ApiClientFactory({
-    request: request, 
-    context: context, 
-    dbCleaner: dbCleaner
+    request: request,
+    context: context,
+    dbCleaner: dbCleaner,
   });
 }

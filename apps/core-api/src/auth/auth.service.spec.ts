@@ -359,9 +359,9 @@ describe('AuthService', () => {
     });
 
     it('should throw BadRequestException if passwords do not match', async () => {
-      await expect(
-        service.changePassword(userProfile, { ...dto, confirmNewPassword: 'Different123!' }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.changePassword(userProfile, { ...dto, confirmNewPassword: 'Different123!' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw NotFoundException if no active password exists', async () => {
@@ -384,11 +384,7 @@ describe('AuthService', () => {
 
       await service.forgotPassword('test@example.com');
 
-      expect(confirmationService.setupPasswordCode).toHaveBeenCalledWith(
-        'test@example.com',
-        'user-123',
-        expect.anything(),
-      );
+      expect(confirmationService.setupPasswordCode).toHaveBeenCalledWith('test@example.com', 'user-123', expect.anything());
     });
 
     it('should throw NotFoundException if user does not exist', async () => {
@@ -452,10 +448,9 @@ describe('AuthService', () => {
     });
 
     it('should throw BadRequestException if passwords do not match', async () => {
-      await expect(
-        service.resetPassword(userProfile, { ...dto, confirmNewPassword: 'Mismatch123!' }),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.resetPassword(userProfile, { ...dto, confirmNewPassword: 'Mismatch123!' })).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });
-

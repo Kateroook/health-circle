@@ -302,36 +302,36 @@ describe('GroupService', () => {
       await expect(service.deleteGroup('user-1', 'group-1')).rejects.toThrow(ForbiddenException);
     });
   });
-  
+
   describe('blockUser', () => {
     it('should block user and remove from members', async () => {
-        groupRepository.findOne.mockResolvedValue(mockGroup);
-        // mockGroup has mockUser as member
-        groupRepository.save.mockResolvedValue(mockGroup); 
-        blockListRepository.upsert.mockResolvedValue({} as any);
+      groupRepository.findOne.mockResolvedValue(mockGroup);
+      // mockGroup has mockUser as member
+      groupRepository.save.mockResolvedValue(mockGroup);
+      blockListRepository.upsert.mockResolvedValue({} as any);
 
-        await service.blockUser('group-1', 'user-1', 'owner-1');
-        
-        // Members should be filtered
-        expect(mockGroup.members).not.toContain(mockUser);
-        expect(groupRepository.save).toHaveBeenCalled();
-        expect(blockListRepository.upsert).toHaveBeenCalled();
+      await service.blockUser('group-1', 'user-1', 'owner-1');
+
+      // Members should be filtered
+      expect(mockGroup.members).not.toContain(mockUser);
+      expect(groupRepository.save).toHaveBeenCalled();
+      expect(blockListRepository.upsert).toHaveBeenCalled();
     });
 
     it('should throw Forbidden if not owner', async () => {
-        groupRepository.findOne.mockResolvedValue(mockGroup);
-        await expect(service.blockUser('group-1', 'user-1', 'user-1')).rejects.toThrow(ForbiddenException);
+      groupRepository.findOne.mockResolvedValue(mockGroup);
+      await expect(service.blockUser('group-1', 'user-1', 'user-1')).rejects.toThrow(ForbiddenException);
     });
   });
 
   describe('unblockUser', () => {
-      it('should unblock user', async () => {
-          groupRepository.findOne.mockResolvedValue(mockGroup);
-          blockListRepository.delete.mockResolvedValue({} as any);
+    it('should unblock user', async () => {
+      groupRepository.findOne.mockResolvedValue(mockGroup);
+      blockListRepository.delete.mockResolvedValue({} as any);
 
-          await service.unblockUser('group-1', 'user-1', 'owner-1');
+      await service.unblockUser('group-1', 'user-1', 'owner-1');
 
-          expect(blockListRepository.delete).toHaveBeenCalled();
-      });
+      expect(blockListRepository.delete).toHaveBeenCalled();
+    });
   });
 });

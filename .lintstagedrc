@@ -1,4 +1,5 @@
 {
+  "*.{js,jsx,ts,tsx,json,css,scss,md}": "prettier --write",
   "apps/client/**/*.{ts,tsx}": "npm run lint --prefix apps/client",
   "apps/core-api/**/*.ts": "npm run lint --prefix apps/core-api"
 }

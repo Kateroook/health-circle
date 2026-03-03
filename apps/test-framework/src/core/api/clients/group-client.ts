@@ -37,14 +37,16 @@ export class GroupClient extends BaseClient {
    * Створити нову групу
    */
   public async createGroup(data: CreateGroupRequest): Promise<ApiResult<CreateGroupResponse>> {
-    const result = await this.post<CreateGroupResponse>('/api/groups', { data });
-    
+    const result = await this.post<CreateGroupResponse>('/api/groups', {
+      data,
+    });
+
     // Автоматично зберігаємо ID створеної групи
     if (result.data && result.data.id) {
       this.updateContext({ groupId: result.data.id });
       this.dbCleaner?.add('group', result.data.id);
     }
-    
+
     return result;
   }
 

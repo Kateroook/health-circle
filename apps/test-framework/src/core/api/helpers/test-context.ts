@@ -23,10 +23,7 @@ export function createTestContext(): TestContext {
 /**
  * Оновлює TestContext з новими даними
  */
-export function updateTestContext(
-  context: TestContext,
-  updates: Partial<TestContext>
-): TestContext {
+export function updateTestContext(context: TestContext, updates: Partial<TestContext>): TestContext {
   return {
     ...context,
     ...updates,

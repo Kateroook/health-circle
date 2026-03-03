@@ -32,7 +32,6 @@ export class UserActivitiesService {
         userAgent,
       });
     } catch (error: unknown) {
-       
       this.logger.error(
         {
           type: LoggingTypes.other,

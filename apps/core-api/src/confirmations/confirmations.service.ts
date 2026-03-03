@@ -31,7 +31,7 @@ export class ConfirmationsService {
         break;
       case ConfirmationTypes.PASSWORD_RESET:
         await this.emailService.changePassword(email, { code, year: new Date().getFullYear() });
-        break
+        break;
     }
 
     return code;
@@ -46,7 +46,8 @@ export class ConfirmationsService {
         return this.configService.get<number>('RESET_PASSWORD_TOKEN_TTL')!;
       case ConfirmationTypes.REGISTRATION:
         return this.configService.get<number>('SETUP_PASSWORD_TOKEN_TTL')!;
-      default: return 24*60*60; // 1 day
+      default:
+        return 24 * 60 * 60; // 1 day
     }
   }
 
@@ -55,7 +56,7 @@ export class ConfirmationsService {
     const ttl = this.getTTL(type);
     await this.codeRepository.delete({ user: { id: userId }, type });
     await this.codeRepository.save({
-      user: {id: userId},
+      user: { id: userId },
       code,
       type,
       expiresAt: new Date(Date.now() + ttl * 1000),
@@ -63,15 +64,15 @@ export class ConfirmationsService {
     return code;
   }
 
-// todo: regenerate code if expired
-async verifyCode(type: ConfirmationTypes, email: string, code: string) {
-    const user = await this.usersRepository.findOne({ where: { email, lockedAt: IsNull() }});
+  // todo: regenerate code if expired
+  async verifyCode(type: ConfirmationTypes, email: string, code: string) {
+    const user = await this.usersRepository.findOne({ where: { email, lockedAt: IsNull() } });
     if (!user) throw new UnauthorizedException('Невірні облікові дані');
     const savedCode = await this.codeRepository.findOne({
-      where: { user: {id: user.id}, type },
+      where: { user: { id: user.id }, type },
     });
     const isCodeValid = savedCode && savedCode.code === code && savedCode.expiresAt > new Date();
-    if (!isCodeValid) throw new UnauthorizedException('Недійсний або протермінований токен'); 
+    if (!isCodeValid) throw new UnauthorizedException('Недійсний або протермінований токен');
     return new UserProfileDto(user);
   }
 

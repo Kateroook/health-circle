@@ -63,9 +63,9 @@ export class ContactsService {
 
   async setAlias(ownerId: string, targetId: string, alias?: string): Promise<ContactEntity | void> {
     if (!alias || !alias.trim()) {
-       // If alias is empty, remove the contact
-       await this.repository.delete({ ownerId, targetId });
-       return;
+      // If alias is empty, remove the contact
+      await this.repository.delete({ ownerId, targetId });
+      return;
     }
 
     const existing = await this.repository.findOne({
