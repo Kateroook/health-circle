@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDefined,
   IsEmail,
@@ -38,6 +38,7 @@ export class CreateUserDto {
   @MaxLength(50, { message: 'Прізвище має містити не більше 50 символів' })
   lastName: string;
 
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString({ message: 'Повне імʼя має бути рядком' })
   @MaxLength(255, { message: 'Повне імʼя має містити не більше 255 символів' })
@@ -46,7 +47,7 @@ export class CreateUserDto {
   @ApiProperty({ example: '+380922022491' })
   @IsDefined({ message: 'Поле номера телефону є обовʼязковим' })
   @IsString()
-  @IsPhoneNumber('UA', { message: 'Некоректний формат номера телефону' })
+  @IsPhoneNumber(undefined, { message: 'Некоректний формат номера телефону' })
   @Validate(UserUniqueConstraint, ['phone'], { message: 'Номер телефону вже використовується іншим користувачем' })
   phone: string;
 }

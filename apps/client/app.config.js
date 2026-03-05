@@ -14,7 +14,7 @@ export default {
       bundleIdentifier: "com.vlad-risenhin.healthcircle",
     },
     android: {
-      package: "com.vlad_risenhin.health_circle",
+      package: "com.vlad_risenhin.healthcircle",
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
@@ -24,10 +24,16 @@ export default {
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
+      permissions: [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+      ],
     },
     plugins: [
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
+      "./plugins/withNotifeeProjectGradle.js",
       "expo-router",
       [
         "expo-splash-screen",
