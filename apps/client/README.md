@@ -21,6 +21,10 @@ Before building or running the project, you need to set up the following tools:
    - In Android Studio, open the **Virtual Device Manager** and download a new Pixel device image.
    - Run the emulator inside Android Studio, or boot it from the terminal before attempting to launch the app.
 
+5. **Xcode (for iOS)**:
+   - If you are on a Mac and want to develop for iOS, install Xcode from the Mac App Store.
+   - Run Xcode once to install necessary components and ensure the Command Line Tools are correctly set up (Xcode > Settings > Locations).
+
 ## Get Started
 
 1.  **Install dependencies**
@@ -31,10 +35,17 @@ Before building or running the project, you need to set up the following tools:
 
 2.  **Configure environment**
     Copy the example environment file and update it if necessary:
+
     ```bash
     cp .env.example .env
     ```
+
     Ensure `EXPO_PUBLIC_API_URL` points to your backend (local or production).
+
+3.  **Configure Firebase**
+    To run the app on your device or simulator, you must fetch the Firebase configuration files from your Firebase Console and place them in the root `apps/client` directory:
+    - **Android**: Download `google-services.json` and place it in `apps/client/`. (Without this, the Android build will fail).
+    - **iOS**: Download `GoogleService-Info.plist` and place it in `apps/client/`. (Without this, the iOS build will fail).
 
 ## Android Physical Device Setup
 
@@ -83,11 +94,13 @@ npx expo-doctor
 
 ### iOS (Simulator)
 
-If you are on macOS and have Xcode installed:
+If you have Xcode configured and specifically placed `GoogleService-Info.plist` in the `apps/client` folder, you can build and launch the iOS Simulator natively:
 
 ```bash
 npm run ios
 ```
+
+This command automatically generates the native iOS project files (via prebuild), installs required CocoaPods, and boots up the default simulator.
 
 ## Learn More
 

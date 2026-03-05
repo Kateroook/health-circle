@@ -11,10 +11,11 @@ export default {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.vlad-risenhin.healthcircle",
+      bundleIdentifier: "com.vlad-risenhin.health-circle",
+      googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST || "./GoogleService-Info.plist",
     },
     android: {
-      package: "com.vlad_risenhin.healthcircle",
+      package: "com.vlad_risenhin.health_circle",
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
@@ -34,6 +35,7 @@ export default {
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
       "./plugins/withNotifeeProjectGradle.js",
+      "./plugins/withPodfileAllowNonModularIncludes.js",
       "expo-router",
       [
         "expo-splash-screen",
@@ -53,7 +55,9 @@ export default {
           android: {
             usesCleartextTraffic: true,
           },
-          ios: {},
+          ios: {
+            useFrameworks: "static",
+          },
         },
       ],
     ],
