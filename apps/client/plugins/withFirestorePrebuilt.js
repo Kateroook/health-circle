@@ -22,7 +22,7 @@ function withFirestorePrebuilt(config) {
       // Note: The tag should match the Firebase version used by @react-native-firebase/firestore.
       // For RNF 23.x, it's typically Firebase 11.2.0+
       const firestorePod =
-        "  pod 'FirebaseFirestore', :git => 'https://github.com/invertase/firestore-ios-sdk-frameworks.git', :tag => '12.6.0'";
+        "  pod 'FirebaseFirestore', :git => 'https://github.com/invertase/firestore-ios-sdk-frameworks.git', :tag => '12.8.0'";
 
       if (contents.includes("FirebaseFirestore") && contents.includes(":git")) {
         return config;
