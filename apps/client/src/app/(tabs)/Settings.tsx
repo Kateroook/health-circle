@@ -868,15 +868,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-    cancelButton: {
-        marginTop: 10,
-        padding: 15,
-        borderRadius: 25,
-        backgroundColor: '#f0f0f0',
-        alignItems: 'center',
-        marginHorizontal: 20,
-    },
-
   cancelButton: {
     marginTop: 10,
     padding: 15,
