@@ -4,7 +4,7 @@ import { assertResponse } from '../../core/api/helpers/response-checker';
 import { config } from '../helpers/config';
 
 test.describe.skip('Refactored API Clients Usage Examples', () => {
-  test('Example 1: Basic usage with flat structure', async ({ request }) => {
+  test.skip('Example 1: Basic usage with flat structure', async ({ request }) => {
     // Створюємо фабрику клієнтів з ізольованим контекстом
     const api = createApiClients(request);
 
@@ -63,7 +63,7 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     expect(api.getContext().accessToken).toBeUndefined();
   });
 
-  test('Example 2: Working with ApiResult structure', async ({ request }) => {
+  test.skip('Example 2: Working with ApiResult structure', async ({ request }) => {
     const api = createApiClients(request);
 
     // Метод повертає ApiResult<T>
@@ -85,7 +85,7 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     assertResponse.is200(response);
   });
 
-  test('Example 3: Flat structure methods', async ({ request }) => {
+  test.skip('Example 3: Flat structure methods', async ({ request }) => {
     const api = createApiClients(request);
 
     await api.auth.quickLogin(config.testUser.email, config.testUser.password);
@@ -142,7 +142,7 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     await api.contacts.deleteContact('target-id');
   });
 
-  test('Example 4: Error handling with safe JSON parsing', async ({ request }) => {
+  test.skip('Example 4: Error handling with safe JSON parsing', async ({ request }) => {
     const api = createApiClients(request);
 
     // Тест на помилку 401 (не авторизований)
@@ -167,7 +167,7 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     expect(notFoundResult.data).toBeNull();
   });
 
-  test('Example 5: Isolated contexts for multiple users', async ({ request }) => {
+  test.skip('Example 5: Isolated contexts for multiple users', async ({ request }) => {
     // Створюємо два окремі клієнти з ізольованими контекстами
     const user1Api = createApiClients(request);
     const user2Api = createApiClients(request);
@@ -191,7 +191,7 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     console.log('User2 Context:', user2Api.getContext());
   });
 
-  test('Example 6: Cloning factory for test isolation', async ({ request }) => {
+  test.skip('Example 6: Cloning factory for test isolation', async ({ request }) => {
     const originalApi = createApiClients(request);
 
     await originalApi.auth.quickLogin(config.testUser.email, config.testUser.password);
@@ -210,7 +210,7 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     expect(originalApi.getContext().accessToken).toBeDefined();
   });
 
-  test('Example 7: Password management with flat methods', async ({ request }) => {
+  test.skip('Example 7: Password management with flat methods', async ({ request }) => {
     const api = createApiClients(request);
     const newPassword = 'NewPassword123!';
 
@@ -244,7 +244,7 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     assertResponse.is201(cleanupResult.response);
   });
 
-  test('Example 8: Using built-in Playwright params', async ({ request }) => {
+  test.skip('Example 8: Using built-in Playwright params', async ({ request }) => {
     const api = createApiClients(request);
 
     await api.auth.quickLogin(config.testUser.email, config.testUser.password);
