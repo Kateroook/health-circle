@@ -10,10 +10,10 @@ import { AuthService } from '../auth.service';
 @Injectable()
 export class UserLocalStrategy extends PassportStrategy(Strategy, AuthStrategies.userLocal.toString()) {
   constructor(private readonly authService: AuthService) {
-    super({ usernameField: 'email', passwordField: 'password', passReqToCallback: true });
+    super({ usernameField: 'identifier', passwordField: 'password', passReqToCallback: true });
   }
 
-  async validate(req: AuthRequest, email: string, password: string): Promise<UserProfileDto> {
-    return await this.authService.validateUser(email, password, req.metadata);
+  async validate(req: AuthRequest, identifier: string, password: string): Promise<UserProfileDto> {
+    return await this.authService.validateUser(identifier, password, req.metadata);
   }
 }

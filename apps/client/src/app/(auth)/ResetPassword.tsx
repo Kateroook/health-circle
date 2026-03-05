@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
 import { apiFetch } from "../../api/api";
@@ -18,6 +19,7 @@ import { formatErrorMessage } from "../../utils/error.util";
 
 export default function ResetPassword() {
   const { email } = useLocalSearchParams<{ email: string }>();
+
   const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -34,8 +36,38 @@ export default function ResetPassword() {
     }
   }, [countdown]);
 
+  const validatePassword = (pass: string) => {
+    if (pass.length < 12) return false;
+    const upper = /[A-Z]/.test(pass) ? 1 : 0;
+    const lower = /[a-z]/.test(pass) ? 1 : 0;
+    const digit = /[0-9]/.test(pass) ? 1 : 0;
+    const special = /[;:!@#$%^&()_\-=+]/.test(pass) ? 1 : 0;
+    return upper + lower + digit + special >= 3;
+  };
+
   async function handleSubmit() {
     setFormError("");
+    if (!code || code.length < 6) {
+      setFormError("Введіть 6-значний код");
+      return;
+    }
+    if (!newPassword) {
+      setFormError("Новий пароль обовʼязковий");
+      return;
+    }
+    if (newPassword.length < 12) {
+      setFormError("Новий пароль має містити щонайменше 12 символів");
+      return;
+    }
+    if (!validatePassword(newPassword)) {
+      setFormError("Пароль має містити великі, малі літери, цифри та символи");
+      return;
+    }
+    if (newPassword !== confirm) {
+      setFormError("Паролі не співпадають");
+      return;
+    }
+
     setLoading(true);
     try {
       await apiFetch(
@@ -45,9 +77,13 @@ export default function ResetPassword() {
           body: JSON.stringify({ newPassword, confirmNewPassword: confirm }),
         },
       );
-      Alert.alert("Успіх", "Пароль успішно скинуто. Увійдіть з новим паролем.", [
-        { text: "OK", onPress: () => router.replace("/Login") },
-      ]);
+      showMessage({
+        message: "Успіх",
+        description: "Пароль успішно скинуто. Увійдіть з новим паролем.",
+        type: "success",
+        duration: 3000,
+      });
+      router.replace("/Login");
     } catch (e: any) {
       setFormError(formatErrorMessage(e));
     } finally {
@@ -88,9 +124,6 @@ export default function ResetPassword() {
 
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Icon name="key" size={36} color="#FF6B6B" />
-            </View>
             <Text style={styles.title}>Скидання паролю</Text>
             <Text style={styles.subtitle}>
               Введіть код із вашої електронної пошти та новий пароль
@@ -99,7 +132,7 @@ export default function ResetPassword() {
 
           {/* Email Badge */}
           <View style={styles.emailBadge}>
-            <Icon name="mail" size={16} color="#666" style={{ marginRight: 8 }} />
+            <Icon name="key" size={16} color="#666" style={{ marginRight: 8 }} />
             <Text style={styles.emailText}>{email}</Text>
           </View>
 
@@ -136,6 +169,9 @@ export default function ResetPassword() {
                   <Icon name={showPassword ? "eye-off" : "eye"} size={20} color="#999" />
                 </TouchableOpacity>
               </View>
+              <Text style={styles.hint}>
+                Мінімум 12 символів: великі, малі літери, цифри та символи
+              </Text>
             </View>
 
             <View style={styles.inputGroup}>
@@ -208,8 +244,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingTop: 10,
+    paddingBottom: 20,
   },
   backButton: {
     marginBottom: 10,
@@ -218,22 +254,23 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 12,
   },
   iconContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: "#FFF4E5",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#F0F0F0",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 8,
   },
   title: {
     fontSize: 28,
     fontWeight: "700",
     color: "#1A1A1A",
     marginBottom: 8,
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 15,
@@ -246,11 +283,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#E8F5FF",
-    paddingVertical: 12,
+    backgroundColor: "#F5F5F5",
+    paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 10,
-    marginBottom: 32,
+    marginBottom: 16,
   },
   emailText: {
     fontSize: 14,
@@ -258,10 +295,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   formContainer: {
-    marginBottom: 24,
+    marginBottom: 12,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   label: {
     fontSize: 14,
@@ -274,21 +311,21 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 10,
-    fontSize: 16,
+    fontSize: 18,
     color: "#1A1A1A",
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
+    borderWidth: 1.5,
+    borderColor: "#1A1A1A",
     textAlign: "center",
     letterSpacing: 4,
-    fontWeight: "600",
+    fontWeight: "700",
   },
   passwordContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
+    borderWidth: 1.5,
+    borderColor: "#1A1A1A",
   },
   passwordInput: {
     flex: 1,
@@ -299,6 +336,12 @@ const styles = StyleSheet.create({
   },
   eyeButton: {
     paddingHorizontal: 16,
+  },
+  hint: {
+    fontSize: 12,
+    color: "#999",
+    marginTop: 6,
+    marginLeft: 4,
   },
   errorContainer: {
     flexDirection: "row",
@@ -318,18 +361,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   primaryButton: {
-    backgroundColor: "#FF6B6B",
+    backgroundColor: "#000000",
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 25,
     alignItems: "center",
-    shadowColor: "#FF6B6B",
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   buttonDisabled: {
-    backgroundColor: "#FFB3B3",
+    backgroundColor: "#000000",
     opacity: 0.7,
   },
   primaryButtonText: {
@@ -343,11 +386,11 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: "#666",
+    color: "#000000",
     textAlign: "center",
   },
   footerLink: {
-    color: "#FF6B6B",
+    color: "#000000",
     fontWeight: "600",
   },
   linkDisabled: {

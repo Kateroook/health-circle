@@ -13,10 +13,11 @@ import {
 import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
+import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
 
 export default function Register() {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState({
     phone: "",
     email: "",
@@ -24,8 +25,6 @@ export default function Register() {
     middleName: "",
     lastName: "",
   });
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -67,35 +66,25 @@ export default function Register() {
       if (!form.lastName.trim()) {
         newErrors.lastName = "Поле прізвища є обовʼязковим";
       } else if (form.lastName.length < 2) {
-        newErrors.lastName = "Мінімум 2 символи";
+        newErrors.lastName = "Прізвище має містити не менше 2 символів";
+      } else if (form.lastName.length > 50) {
+        newErrors.lastName = "Прізвище має містити не більше 50 символів";
       }
 
       if (!form.firstName.trim()) {
         newErrors.firstName = "Поле імені є обовʼязковим";
       } else if (form.firstName.length < 2) {
-        newErrors.firstName = "Мінімум 2 символи";
+        newErrors.firstName = "Імʼя має містити не менше 2 символів";
+      } else if (form.firstName.length > 50) {
+        newErrors.firstName = "Імʼя має містити не більше 50 символів";
       }
 
       if (form.middleName.trim()) {
         if (form.middleName.length < 2) {
-          newErrors.middleName = "Мінімум 2 символи";
+          newErrors.middleName = "По-батькові має містити не менше 2 символів";
         } else if (form.middleName.length > 50) {
-          newErrors.middleName = "Максимум 50 символів";
+          newErrors.middleName = "По-батькові має містити не більше 50 символів";
         }
-      }
-    }
-
-    if (step === 3) {
-      if (!password) {
-        newErrors.password = "Введіть пароль";
-      } else if (password.length < 8) {
-        newErrors.password = "Мінімум 8 символів";
-      }
-
-      if (!confirmPassword) {
-        newErrors.confirmPassword = "Підтвердіть пароль";
-      } else if (password !== confirmPassword) {
-        newErrors.confirmPassword = "Паролі не співпадають";
       }
     }
 
@@ -103,47 +92,24 @@ export default function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Позначаємо, що цей крок вже валідувався
     setValidatedSteps((prev) => new Set([...prev, step]));
 
     const isValid = validateCurrentStep();
 
     if (isValid) {
-      setStep((prev) => (prev < 3 ? ((prev + 1) as 1 | 2 | 3) : prev));
+      if (step === 1) {
+        setStep(2);
+      } else {
+        await handleRegister();
+      }
     }
   };
 
   const handleBack = () => {
-    setStep((prev) => (prev > 1 ? ((prev - 1) as 1 | 2 | 3) : prev));
+    setStep((prev) => (prev > 1 ? ((prev - 1) as 1 | 2) : prev));
   };
-
-  async function handleRegister() {
-    setValidatedSteps((prev) => new Set([...prev, 3])); // позначаємо останній крок
-    if (!validateCurrentStep()) return;
-
-    setLoading(true);
-    try {
-      await apiFetch("/users", {
-        method: "POST",
-        body: JSON.stringify({
-          ...form,
-          phone: form.phone.replace(/\s/g, ""),
-          password,
-        }),
-      });
-      router.replace("/Login");
-    } catch (e: any) {
-      showMessage({
-        message: "Помилка реєстрації",
-        description: formatErrorMessage(e),
-        type: "danger",
-        duration: 5000,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const renderInput = (
     value: string,
@@ -196,6 +162,43 @@ export default function Register() {
     );
   };
 
+  async function handleRegister() {
+    setValidatedSteps((prev) => new Set([...prev, 2])); // позначаємо останній крок
+    if (!validateCurrentStep()) return;
+
+    setLoading(true);
+    try {
+      await apiFetch("/users", {
+        method: "POST",
+        body: JSON.stringify(
+          cleanObj({
+            ...form,
+            phone: form.phone.replace(/\s/g, ""),
+          }),
+        ),
+      });
+      router.replace({ pathname: "/PasswordSetup", params: { email: form.email } });
+    } catch (e: any) {
+      const errorMsg = formatErrorMessage(e);
+      const isConflict =
+        errorMsg.toLowerCase().includes("вже використовується") ||
+        errorMsg.toLowerCase().includes("already exists");
+
+      if (isConflict) {
+        setStep(1);
+      }
+
+      showMessage({
+        message: "Помилка реєстрації",
+        description: errorMsg,
+        type: "danger",
+        duration: 5000,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -211,11 +214,7 @@ export default function Register() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>
-              {step === 1
-                ? "Введи номер телефону та електронну пошту"
-                : step === 2
-                  ? "Як тебе звати?"
-                  : "Створюємо твій акаунт"}
+              {step === 1 ? "Введи номер телефону та електронну пошту" : "Як тебе звати?"}
             </Text>
           </View>
 
@@ -296,47 +295,17 @@ export default function Register() {
               </>
             )}
 
-            {step === 3 && (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Пароль</Text>
-                  {renderInput(
-                    password,
-                    errors.password,
-                    "Мінімум 8 символів",
-                    "default",
-                    true,
-                    setPassword,
-                  )}
-                  {errors.password && <Text style={styles.fieldError}>{errors.password}</Text>}
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Підтвердіть пароль</Text>
-                  {renderInput(
-                    confirmPassword,
-                    errors.confirmPassword,
-                    "Повторіть пароль",
-                    "default",
-                    true,
-                    setConfirmPassword,
-                  )}
-                  {errors.confirmPassword && (
-                    <Text style={styles.fieldError}>{errors.confirmPassword}</Text>
-                  )}
-                </View>
-              </>
-            )}
+            {/* Removed redundant step 3 password fields */}
 
             {/* Buttons */}
             <View style={styles.buttonsContainer}>
               <TouchableOpacity
                 style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={step < 3 ? handleNext : handleRegister}
+                onPress={handleNext}
                 disabled={loading}
               >
                 <Text style={styles.primaryButtonText}>
-                  {loading ? "Зачекайте..." : step < 3 ? "Далі" : "Зареєструватися"}
+                  {loading ? "Зачекайте..." : step < 2 ? "Далі" : "Зареєструватися"}
                 </Text>
               </TouchableOpacity>
 
