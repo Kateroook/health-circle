@@ -66,20 +66,24 @@ export default function Register() {
       if (!form.lastName.trim()) {
         newErrors.lastName = "Поле прізвища є обовʼязковим";
       } else if (form.lastName.length < 2) {
-        newErrors.lastName = "Мінімум 2 символи";
+        newErrors.lastName = "Прізвище має містити не менше 2 символів";
+      } else if (form.lastName.length > 50) {
+        newErrors.lastName = "Прізвище має містити не більше 50 символів";
       }
 
       if (!form.firstName.trim()) {
         newErrors.firstName = "Поле імені є обовʼязковим";
       } else if (form.firstName.length < 2) {
-        newErrors.firstName = "Мінімум 2 символи";
+        newErrors.firstName = "Імʼя має містити не менше 2 символів";
+      } else if (form.firstName.length > 50) {
+        newErrors.firstName = "Імʼя має містити не більше 50 символів";
       }
 
       if (form.middleName.trim()) {
         if (form.middleName.length < 2) {
-          newErrors.middleName = "Мінімум 2 символи";
+          newErrors.middleName = "По-батькові має містити не менше 2 символів";
         } else if (form.middleName.length > 50) {
-          newErrors.middleName = "Максимум 50 символів";
+          newErrors.middleName = "По-батькові має містити не більше 50 символів";
         }
       }
     }

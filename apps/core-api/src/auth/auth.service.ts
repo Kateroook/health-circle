@@ -87,13 +87,20 @@ export class AuthService {
     };
   }
 
-  async validateUser(email: string, password: string, metadata: RequestMetadata): Promise<UserProfileDto> {
-    // Find user by email
-    const user = await this.userRepository.findOne({ where: { email } });
+  async validateUser(identifier: string, password: string, metadata: RequestMetadata): Promise<UserProfileDto> {
+    // Find user by email or phone
+    const user = await this.userRepository.findOne({
+      where: [{ email: identifier }, { phone: identifier }],
+    });
 
     // Check if user exists and is active
     if (!user) throw new UnauthorizedException('Невірні облікові дані');
     if (user.lockedAt) throw new ForbiddenException('Користувача заблоковано');
+
+    // Check if registration is completed
+    if (!user.isRegistered) {
+      throw new BadRequestException('INCOMPLETE_REGISTRATION');
+    }
 
     // Validate password
     const userPassword = await this.userPasswordRepository.findOne({
@@ -240,6 +247,9 @@ export class AuthService {
     });
     // Consume the setup token
     await this.confirmationService.consumeToken(user.id);
+
+    // Mark as registered
+    await this.userRepository.update({ id: user.id }, { isRegistered: true });
   }
 
   async changePassword(user: UserProfileDto, data: UserChangePasswordDto): Promise<void> {

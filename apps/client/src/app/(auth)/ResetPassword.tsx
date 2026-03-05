@@ -36,14 +36,31 @@ export default function ResetPassword() {
     }
   }, [countdown]);
 
+  const validatePassword = (pass: string) => {
+    if (pass.length < 12) return false;
+    const upper = /[A-Z]/.test(pass) ? 1 : 0;
+    const lower = /[a-z]/.test(pass) ? 1 : 0;
+    const digit = /[0-9]/.test(pass) ? 1 : 0;
+    const special = /[;:!@#$%^&()_\-=+]/.test(pass) ? 1 : 0;
+    return upper + lower + digit + special >= 3;
+  };
+
   async function handleSubmit() {
     setFormError("");
     if (!code || code.length < 6) {
       setFormError("Введіть 6-значний код");
       return;
     }
-    if (!newPassword || newPassword.length < 12) {
-      setFormError("Новий пароль має бути не менше 12 символів");
+    if (!newPassword) {
+      setFormError("Новий пароль обовʼязковий");
+      return;
+    }
+    if (newPassword.length < 12) {
+      setFormError("Новий пароль має містити щонайменше 12 символів");
+      return;
+    }
+    if (!validatePassword(newPassword)) {
+      setFormError("Пароль має містити великі, малі літери, цифри та символи");
       return;
     }
     if (newPassword !== confirm) {
@@ -152,7 +169,9 @@ export default function ResetPassword() {
                   <Icon name={showPassword ? "eye-off" : "eye"} size={20} color="#999" />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.hint}>Мінімум 12 символів</Text>
+              <Text style={styles.hint}>
+                Мінімум 12 символів: великі, малі літери, цифри та символи
+              </Text>
             </View>
 
             <View style={styles.inputGroup}>

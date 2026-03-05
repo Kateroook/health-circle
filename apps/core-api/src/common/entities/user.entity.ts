@@ -85,5 +85,8 @@ export class UserEntity {
   @OneToMany(() => ContactEntity, (contact) => contact.owner)
   contacts: ContactEntity[];
 
+  @Column({ type: 'boolean', default: false })
+  isRegistered: boolean;
+
   isAlias?: boolean;
 }

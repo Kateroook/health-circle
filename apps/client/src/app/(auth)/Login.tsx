@@ -30,10 +30,17 @@ export default function Login() {
     setHasError(false);
     setLoading(true);
     try {
-      await login(email, password);
+      // Clean phone number if it looks like one (simple trim/format logic if needed)
+      const cleanIdentifier = email.trim();
+      await login(cleanIdentifier, password);
       router.replace("/Dashboard");
     } catch (e: any) {
-      setFormError(formatErrorMessage(e));
+      const errorMsg = formatErrorMessage(e);
+      if (errorMsg === "INCOMPLETE_REGISTRATION") {
+        router.push({ pathname: "/PasswordSetup", params: { email } });
+        return;
+      }
+      setFormError(errorMsg);
       setHasError(true);
       setHasFailedAttempt(true);
     } finally {
@@ -64,10 +71,10 @@ export default function Login() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Електронна пошта або телефон</Text>
               <TextInput
-                placeholder="example@mail.com"
+                placeholder="example@mail.com або +380..."
                 value={email}
                 onChangeText={setEmail}
-                keyboardType="email-address"
+                keyboardType="default"
                 autoCapitalize="none"
                 style={[styles.input, hasError && styles.inputError]}
                 placeholderTextColor="#999"

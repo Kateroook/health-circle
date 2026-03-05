@@ -36,14 +36,31 @@ export default function PasswordSetup() {
     }
   }, [countdown]);
 
+  const validatePassword = (pass: string) => {
+    if (pass.length < 12) return false;
+    const upper = /[A-Z]/.test(pass) ? 1 : 0;
+    const lower = /[a-z]/.test(pass) ? 1 : 0;
+    const digit = /[0-9]/.test(pass) ? 1 : 0;
+    const special = /[;:!@#$%^&()_\-=+]/.test(pass) ? 1 : 0;
+    return upper + lower + digit + special >= 3;
+  };
+
   async function handleSubmit() {
     setFormError("");
     if (!code || code.length < 6) {
       setFormError("Введіть 6-значний код");
       return;
     }
-    if (!password || password.length < 8) {
-      setFormError("Пароль має бути не менше 8 символів");
+    if (!password) {
+      setFormError("Новий пароль обовʼязковий");
+      return;
+    }
+    if (password.length < 12) {
+      setFormError("Новий пароль має містити щонайменше 12 символів");
+      return;
+    }
+    if (!validatePassword(password)) {
+      setFormError("Пароль має містити великі, малі літери, цифри та символи");
       return;
     }
     if (password !== confirmPassword) {
@@ -146,7 +163,9 @@ export default function PasswordSetup() {
                   <Icon name={showPassword ? "eye-off" : "eye"} size={20} color="#999" />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.hint}>Унікальна послідовність з 8 символів</Text>
+              <Text style={styles.hint}>
+                Мінімум 12 символів: великі, малі літери, цифри та символи
+              </Text>
             </View>
 
             <View style={styles.inputGroup}>

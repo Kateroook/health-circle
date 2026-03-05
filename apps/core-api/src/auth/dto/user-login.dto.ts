@@ -1,13 +1,12 @@
 import { Transform } from 'class-transformer';
-import { IsDefined, IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsDefined, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class UserLoginDto {
-  @IsEmail({}, { message: 'Некоректний формат електронної пошти' })
-  @IsNotEmpty({ message: 'Електронна пошта не може бути порожньою' })
-  @IsDefined({ message: 'Поле електронної пошти є обовʼязковим' })
-  @MaxLength(50, { message: 'Електронна пошта не може перевищувати 50 символів' })
+  @IsNotEmpty({ message: 'Електронна пошта або телефон не можуть бути порожніми' })
+  @IsDefined({ message: 'Поле електронної пошти або телефону є обовʼязковим' })
+  @MaxLength(50, { message: 'Електронна пошта або телефон не можуть перевищувати 50 символів' })
   @Transform(({ value }) => typeof value === 'string' && value.trim().toLowerCase())
-  email: string;
+  identifier: string;
 
   @IsString({ message: 'Пароль має бути рядком' })
   @IsNotEmpty({ message: 'Пароль не може бути порожнім' })
