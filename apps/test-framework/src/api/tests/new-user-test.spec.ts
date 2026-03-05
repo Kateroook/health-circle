@@ -5,8 +5,8 @@ import { UserFactory } from '../../core/data/factories/user-factory';
 import { assertResponse, checkResponse } from '../../core/api/helpers/response-checker';
 
 //FAIL
-test('post user with non-ukrainian phone number', async({api}) => {
-  let user = UserFactory.createUserForTest("PhoneTest");
+test('post user with non-ukrainian phone number', async ({ api }) => {
+  let user = UserFactory.createUserForTest('PhoneTest');
   const postUser = await api.users.createUser({
     email: user.email,
     phone: user.phone,
@@ -14,16 +14,15 @@ test('post user with non-ukrainian phone number', async({api}) => {
     middleName: user.middleName,
     lastName: user.lastName,
   });
-  
+
   console.log(postUser.response);
   console.log(await postUser.response.json());
-  
-  assertResponse.is2xx(postUser.response);
 
+  assertResponse.is2xx(postUser.response);
 });
 
 //FAIL
-test('post user with no middlename phone number', async({api}) => {
+test('post user with no middlename phone number', async ({ api }) => {
   let user = UserFactory.createRandomUser(); //no middlename as default
   const postUser = await api.users.createUser({
     email: user.email,
@@ -35,17 +34,16 @@ test('post user with no middlename phone number', async({api}) => {
 
   console.log(postUser.response);
   console.log(await postUser.response.json());
-  
-  assertResponse.is2xx(postUser.response);
 
+  assertResponse.is2xx(postUser.response);
 });
 
 //PASS
 test('Create new user and delete him', async ({ api, confirmationCodeRepository }) => {
-  let newUser = UserFactory.createUserForTest("middleNameTest");
+  let newUser = UserFactory.createUserForTest('middleNameTest');
   console.log(newUser);
 
-  newUser.phone = '+380691233014'
+  newUser.phone = '+380691233014';
 
   const postUser = await api.users.createUser({
     email: newUser.email,
@@ -56,11 +54,9 @@ test('Create new user and delete him', async ({ api, confirmationCodeRepository 
   });
   console.log(postUser.response);
   console.log(await postUser.response.json());
-  
+
   assertResponse.is2xx(postUser.response);
   newUser.id = postUser.data.id;
-
-
 
   const code = (await confirmationCodeRepository.findBy({ userId: newUser.id }))[0];
 
