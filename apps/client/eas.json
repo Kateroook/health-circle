@@ -7,7 +7,9 @@
       "distribution": "internal"
     },
     "simulator": {
-      "simulator": true
+      "ios": {
+        "simulator": true
+      }
     }
   }
 }
