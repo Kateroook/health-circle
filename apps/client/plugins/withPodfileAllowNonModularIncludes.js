@@ -33,10 +33,10 @@ function withPodfileAllowNonModularIncludes(config) {
           config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
           config.build_settings['HEADER_SEARCH_PATHS'] = [
             '$(inherited)',
-            '"${PODS_ROOT}/Headers/Public/RNFBApp"',
-            '"${PODS_CONFIGURATION_BUILD_DIR}/RNFBApp/RNFBApp.framework/Headers"',
-            '"${PODS_ROOT}/RNFBApp"',
-            '"$(SRCROOT)/../node_modules/@react-native-firebase/app/ios/RNFBApp"'
+            '"\\${PODS_ROOT}/Headers/Public/RNFBApp"',
+            '"\\${PODS_CONFIGURATION_BUILD_DIR}/RNFBApp/RNFBApp.framework/Headers"',
+            '"\\${PODS_ROOT}/RNFBApp"',
+            '"\\$(SRCROOT)/../node_modules/@react-native-firebase/app/ios/RNFBApp"'
           ].join(' ')
           config.build_settings['OTHER_LDFLAGS'] = '$(inherited) -framework "RNFBApp"'
         end
