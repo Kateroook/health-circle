@@ -94,15 +94,6 @@ export default function Login() {
               </View>
             </View>
 
-            {hasFailedAttempt && (
-              <TouchableOpacity
-                onPress={() => router.push("/ForgotPassword")}
-                style={styles.forgotPasswordButton}
-              >
-                <Text style={styles.forgotPasswordText}>Забув свій пароль?</Text>
-              </TouchableOpacity>
-            )}
-
             {formError && (
               <View style={styles.errorContainer}>
                 <Icon name="alert-circle" size={18} color="#D32F2F" style={{ marginRight: 8 }} />
@@ -124,6 +115,12 @@ export default function Login() {
 
           {/* Footer */}
           <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Забули пароль?{" "}
+              <Text style={styles.footerLink} onPress={() => router.push("/ForgotPassword")}>
+                Скинути
+              </Text>
+            </Text>
             <Text style={styles.footerText}>
               Ще немає акаунту?{" "}
               <Text style={styles.footerLink} onPress={() => router.push("/Register")}>
@@ -276,15 +273,11 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontWeight: "600",
   },
-  forgotPasswordButton: {
-    alignSelf: "flex-start",
-    marginBottom: 12,
-    marginTop: -8,
-  },
   forgotPasswordText: {
-    color: "#000000",
+    color: "#666",
     fontSize: 14,
     fontWeight: "500",
+    textDecorationLine: "underline",
   },
   skipButton: {
     paddingVertical: 8,

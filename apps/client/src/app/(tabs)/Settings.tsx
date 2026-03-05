@@ -353,7 +353,11 @@ export default function SettingsScreen() {
                 <View key={field.label} style={styles.block}>
                   <Text style={styles.label}>
                     {field.label}
-                    {field.required && <Text style={styles.requiredStar}> *</Text>}
+                    {field.required ? (
+                      <Text style={styles.requiredStar}> *</Text>
+                    ) : (
+                      <Text style={styles.optionalText}> (опціонально)</Text>
+                    )}
                   </Text>
                   <TextInput
                     style={styles.input}
@@ -732,7 +736,7 @@ const styles = StyleSheet.create({
     width: "100%", // на всю ширину, щоб центр працював
   },
   avatarButton: {
-      backgroundColor: "#5B8DEE",
+    backgroundColor: "#5B8DEE",
     padding: 10,
     borderRadius: 10,
     alignItems: "center",
@@ -1041,5 +1045,9 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  optionalText: {
+    fontSize: 14,
+    color: "#999",
   },
 });

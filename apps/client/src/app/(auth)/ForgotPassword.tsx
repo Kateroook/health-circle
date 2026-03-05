@@ -62,9 +62,6 @@ export default function ForgotPassword() {
 
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Icon name="mail" size={36} color="#FF6B6B" />
-            </View>
             <Text style={styles.title}>Забули пароль?</Text>
             <Text style={styles.subtitle}>
               Введіть email, який ви використовували при реєстрації. Ми надішлемо вам код для
@@ -133,8 +130,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingTop: 10,
+    paddingBottom: 20,
     justifyContent: "space-between",
   },
   backButton: {
@@ -147,13 +144,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   iconContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: "#FFF4E5",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#F0F0F0",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 8,
   },
   title: {
     fontSize: 28,
@@ -169,7 +166,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   formContainer: {
-    marginTop: 40,
+    marginTop: 20,
   },
   inputGroup: {
     marginBottom: 20,
@@ -208,18 +205,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   primaryButton: {
-    backgroundColor: "#FF6B6B",
+    backgroundColor: "#000000",
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 25,
     alignItems: "center",
-    shadowColor: "#FF6B6B",
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   buttonDisabled: {
-    backgroundColor: "#FFB3B3",
+    backgroundColor: "#000000",
     opacity: 0.7,
   },
   primaryButtonText: {
@@ -234,10 +231,10 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: "#666",
+    color: "#000000",
   },
   footerLink: {
-    color: "#FF6B6B",
+    color: "#000000",
     fontWeight: "600",
   },
 });
