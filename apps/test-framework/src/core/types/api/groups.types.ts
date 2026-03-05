@@ -1,13 +1,13 @@
 import { UUIdEntryDto } from './common.types';
-import { UserEntity } from './users.types';
+import { UserApiEntity } from './users.types';
 
 // ============ Entity Types ============
 
-export interface GroupEntity {
+export interface GroupApiEntity {
   id: string;
   name: string;
-  owner: UserEntity;
-  members: UserEntity[];
+  owner: UserApiEntity;
+  members: UserApiEntity[];
   inviteCode: string;
   createdAt: Date;
   updatedAt: Date;
@@ -71,15 +71,15 @@ export interface GetBlockedUsersRequest {
 
 // ============ Response Types ============
 
-export type GetAllGroupsResponse = GroupEntity[];
+export type GetAllGroupsResponse = GroupApiEntity[];
 
-export interface GetGroupResponse extends GroupEntity {}
+export interface GetGroupResponse extends GroupApiEntity {}
 
-export interface CreateGroupResponse extends GroupEntity {
+export interface CreateGroupResponse extends GroupApiEntity {
   inviteCode: string;
 }
 
-export interface UpdateGroupResponse extends GroupEntity {}
+export interface UpdateGroupResponse extends GroupApiEntity {}
 
 export type DeleteGroupResponse = void;
 
@@ -96,5 +96,5 @@ export type BlockUserResponse = void;
 export type UnblockUserResponse = void;
 
 export interface GetBlockedUsersResponse {
-  blockedUsers: UserEntity[];
+  blockedUsers: UserApiEntity[];
 }

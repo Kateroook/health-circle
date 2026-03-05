@@ -2,7 +2,7 @@ import { UserStatus } from './common.types';
 
 // ============ Entity Types ============
 
-export interface ExternalFilesEntity {
+export interface ExternalFilesApiEntity {
   id: string;
   fileName: string;
   externalId: string;
@@ -15,7 +15,7 @@ export interface ExternalFilesEntity {
   deletedAt?: Date;
 }
 
-export interface UserSessionEntity {
+export interface UserSessionApiEntity {
   id: string;
   userId: string;
   userAgent: string;
@@ -30,7 +30,7 @@ export interface UserSessionEntity {
   deviceInfo: Record<string, any>;
 }
 
-export interface UserEntity {
+export interface UserApiEntity {
   id: string;
   firstName: string;
   middleName?: string;
@@ -47,8 +47,8 @@ export interface UserEntity {
   updatedAt: Date;
   lockedAt?: Date;
   avatarUpdatedAt?: Date;
-  file?: ExternalFilesEntity;
-  sessions?: UserSessionEntity[];
+  file?: ExternalFilesApiEntity;
+  sessions?: UserSessionApiEntity[];
   isAlias?: boolean;
 }
 
@@ -112,7 +112,7 @@ export interface ResetUserPasswordRequest {
 
 // ============ Response Types ============
 
-export interface GetUserResponse extends UserEntity {}
+export interface GetUserResponse extends UserApiEntity {}
 
 export type GetUserAvatarResponse = Buffer;
 
@@ -129,14 +129,14 @@ export interface UploadUserAvatarResponse {
 
 export type DeleteUserAvatarResponse = void;
 
-export interface CreateUserResponse extends UserEntity {}
+export interface CreateUserResponse extends UserApiEntity {}
 
-export interface ModifyUserResponse extends UserEntity {}
+export interface ModifyUserResponse extends UserApiEntity {}
 
 export type DeleteUserResponse = void;
 
-export interface UpdateUserStatusResponse extends UserEntity {}
+export interface UpdateUserStatusResponse extends UserApiEntity {}
 
-export interface SaveFcmTokenResponse extends UserEntity {}
+export interface SaveFcmTokenResponse extends UserApiEntity {}
 
 export type ResetUserPasswordResponse = void;
