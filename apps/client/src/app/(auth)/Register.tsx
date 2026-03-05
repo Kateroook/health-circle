@@ -128,7 +128,7 @@ export default function Register() {
                     password,
                 }),
             });
-            router.replace("/Login");
+            router.replace({ pathname: "/PasswordSetup", params: { email: form.email } });
         } catch (e: any) {
             showMessage({
                 message: "Помилка реєстрації",

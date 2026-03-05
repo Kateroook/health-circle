@@ -678,7 +678,7 @@ const styles = StyleSheet.create({
         width: '100%',                     // на всю ширину, щоб центр працював
     },
   avatarButton: {
-    backgroundColor: "#2196F3",
+      backgroundColor: "#5B8DEE",
     padding: 10,
       borderRadius: 10,
       alignItems: "center",
@@ -710,9 +710,9 @@ const styles = StyleSheet.create({
 
   save: {
     marginTop: 10,
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#000000",
     padding: 15,
-    borderRadius: 12,
+    borderRadius: 25,
     alignItems: "center",
     marginHorizontal: 20,
   },
@@ -824,7 +824,7 @@ const styles = StyleSheet.create({
     cancelButton: {
         marginTop: 10,
         padding: 15,
-        borderRadius: 12,
+        borderRadius: 25,
         backgroundColor: '#f0f0f0',
         alignItems: 'center',
         marginHorizontal: 20,
