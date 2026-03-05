@@ -37,10 +37,11 @@ function withPodfileAllowNonModularIncludes(config) {
         return config;
       }
 
-      // Inject into the post_install block created natively by Expo
+      // Inject into the post_install block, handling variations of the block signature
       contents = contents.replace(
-        /post_install\s+do\s+\|installer\|/,
-        `post_install do |installer|${injectString}`,
+        /post_install\s+do\s+\|([^|]+)\|/,
+        (match, p1) =>
+          `post_install do |${p1}|${injectString.replace(/\|installer\|/g, `|${p1}|`).replace(/installer\./g, `${p1}.`)}`,
       );
 
       fs.writeFileSync(file, contents);

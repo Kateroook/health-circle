@@ -30,14 +30,35 @@ jobs:
 
       - name: Restore GoogleService-Info.plist
         run: |
-          # Decode the file directly to an absolute path in the workspace
-          echo "${{ secrets.FIREBASE_GOOGLE_SERVICE_INFO_PLIST }}" | base64 --decode > ${{ github.workspace }}/apps/client/GoogleService-Info.plist
+          echo "${{ secrets.FIREBASE_GOOGLE_SERVICE_INFO_PLIST }}" | base64 --decode > GoogleService-Info.plist
+          if [ -s "GoogleService-Info.plist" ]; then
+            echo "✅ GoogleService-Info.plist restored successfully"
+            ls -al GoogleService-Info.plist
+          else
+            echo "❌ Failed to restore GoogleService-Info.plist"
+            exit 1
+          fi
+
+      - name: Verify Environment and Dependencies
+        run: |
+          echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          echo "Xcode version: $(xcodebuild -version | head -n 1)"
+          echo "CocoaPods version: $(pod --version)"
+          echo "Current directory: $(pwd)"
+          ls -R . | grep -E "GoogleService|app\.config|package\.json"
+
+      - name: Prebuild iOS (Diagnostics)
+        run: npx expo prebuild --platform ios --no-install
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GOOGLE_SERVICE_INFO_PLIST: ./GoogleService-Info.plist
 
       - name: Build iOS Simulator App
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL || env.EXPO_PUBLIC_API_URL }}
-          GOOGLE_SERVICE_INFO_PLIST: ${{ github.workspace }}/apps/client/GoogleService-Info.plist
+          GOOGLE_SERVICE_INFO_PLIST: ./GoogleService-Info.plist
         run: eas build --platform ios --profile preview --local --non-interactive --output build.tar.gz --verbose-logs
 
       - name: Define Artifact Name
@@ -56,21 +77,21 @@ jobs:
           path: apps/client/${{ steps.artifact_name.outputs.NAME }}.tar.gz
           retention-days: 7
 
-      - name: Send Build Notification to Telegram
-        if: success()
-        run: |
-          curl -X POST \
-               -H 'Content-Type: application/json' \
-               -d '{"chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}", "text": "✅ *iOS Build Success*\n\n📦 *Artifact:* ${{ steps.artifact_name.outputs.NAME }}.tar.gz\n🔢 *Run:* ${{ github.run_number }}\n🔗 [Download Artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n_Note: The artifact is available for download at the bottom of the run page._", "parse_mode": "Markdown"}' \
-               https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
+      # - name: Send Build Notification to Telegram
+      #   if: success()
+      #   run: |
+      #     curl -X POST \
+      #          -H 'Content-Type: application/json' \
+      #          -d '{"chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}", "text": "✅ *iOS Build Success*\n\n📦 *Artifact:* ${{ steps.artifact_name.outputs.NAME }}.tar.gz\n🔢 *Run:* ${{ github.run_number }}\n🔗 [Download Artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n_Note: The artifact is available for download at the bottom of the run page._", "parse_mode": "Markdown"}' \
+      #          https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
 
-      - name: Notify Failure to Telegram
-        if: failure()
-        run: |
-          curl -X POST \
-               -H 'Content-Type: application/json' \
-               -d '{"chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}", "text": "❌ *iOS Build Failed*
-               
-               🔢 *Run:* ${{ github.run_number }}
-               🔗 [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "parse_mode": "Markdown"}' \
-               https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
+      # - name: Notify Failure to Telegram
+      #   if: failure()
+      #   run: |
+      #     curl -X POST \
+      #          -H 'Content-Type: application/json' \
+      #          -d '{"chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}", "text": "❌ *iOS Build Failed*
+      #          
+      #          🔢 *Run:* ${{ github.run_number }}
+      #          🔗 [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "parse_mode": "Markdown"}' \
+      #          https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
