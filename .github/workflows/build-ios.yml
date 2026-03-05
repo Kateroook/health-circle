@@ -55,14 +55,14 @@ jobs:
         run: npx expo prebuild --platform ios --no-install
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          GOOGLE_SERVICE_INFO_PLIST: ./GoogleService-Info.plist
+          GOOGLE_SERVICE_INFO_PLIST: ${{ github.workspace }}/apps/client/GoogleService-Info.plist
 
       - name: Build iOS Simulator App
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL || env.EXPO_PUBLIC_API_URL }}
-          GOOGLE_SERVICE_INFO_PLIST: ./GoogleService-Info.plist
-        run: eas build --platform ios --profile preview --local --non-interactive --output build.tar.gz --verbose-logs
+          GOOGLE_SERVICE_INFO_PLIST: ${{ github.workspace }}/apps/client/GoogleService-Info.plist
+        run: eas build --platform ios --profile simulator --local --non-interactive --output build.tar.gz --verbose-logs
 
       - name: Define Artifact Name
         id: artifact_name

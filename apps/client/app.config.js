@@ -13,6 +13,9 @@ export default {
       supportsTablet: true,
       bundleIdentifier: "com.vlad-risenhin.health-circle",
       googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST || "./GoogleService-Info.plist",
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+      },
     },
     android: {
       package: "com.vlad_risenhin.health_circle",
