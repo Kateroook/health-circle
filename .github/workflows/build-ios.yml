@@ -1,7 +1,7 @@
-name: Build iOS App (Simulator)
+name: Build iOS App v2
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
   push:
     branches:
       - feat/ios-build
@@ -79,22 +79,3 @@ jobs:
           name: ${{ steps.artifact_name.outputs.NAME }}
           path: apps/client/${{ steps.artifact_name.outputs.NAME }}.tar.gz
           retention-days: 7
-
-      # - name: Send Build Notification to Telegram
-      #   if: success()
-      #   run: |
-      #     curl -X POST \
-      #          -H 'Content-Type: application/json' \
-      #          -d '{"chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}", "text": "✅ *iOS Build Success*\n\n📦 *Artifact:* ${{ steps.artifact_name.outputs.NAME }}.tar.gz\n🔢 *Run:* ${{ github.run_number }}\n🔗 [Download Artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n_Note: The artifact is available for download at the bottom of the run page._", "parse_mode": "Markdown"}' \
-      #          https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
-
-      # - name: Notify Failure to Telegram
-      #   if: failure()
-      #   run: |
-      #     curl -X POST \
-      #          -H 'Content-Type: application/json' \
-      #          -d '{"chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}", "text": "❌ *iOS Build Failed*
-      #          
-      #          🔢 *Run:* ${{ github.run_number }}
-      #          🔗 [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "parse_mode": "Markdown"}' \
-      #          https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
