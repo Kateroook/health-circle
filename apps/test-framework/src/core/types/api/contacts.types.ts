@@ -1,13 +1,13 @@
 import { UUIdEntryDto } from './common.types';
-import { UserEntity } from './users.types';
+import { UserApiEntity } from './users.types';
 
 // ============ Entity Types ============
 
-export interface ContactEntity {
+export interface ContactApiEntity {
   id: string;
-  owner: UserEntity;
+  owner: UserApiEntity;
   ownerId: string;
-  target: UserEntity;
+  target: UserApiEntity;
   targetId: string;
   alias: string;
   createdAt: Date;
@@ -52,11 +52,11 @@ export interface SetContactAliasRequest {
 
 // ============ Response Types ============
 
-export type GetAllContactsResponse = ContactEntity[];
+export type GetAllContactsResponse = ContactApiEntity[];
 
-export interface CreateContactResponse extends ContactEntity {}
+export interface CreateContactResponse extends ContactApiEntity {}
 
-export interface UpdateContactResponse extends ContactEntity {}
+export interface UpdateContactResponse extends ContactApiEntity {}
 
 export type DeleteContactResponse = void;
 
