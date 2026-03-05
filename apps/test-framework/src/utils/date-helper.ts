@@ -1,3 +1,1 @@
-export class DateBuilder {
-
-};
+export class DateBuilder {}
