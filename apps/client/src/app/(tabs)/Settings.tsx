@@ -868,6 +868,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
+  editContainer: {
+    width: "100%",
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+
   cancelButton: {
     marginTop: 10,
     padding: 15,

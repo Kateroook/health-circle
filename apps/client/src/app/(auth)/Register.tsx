@@ -118,6 +118,57 @@ export default function Register() {
         setStep((prev) => (prev > 1 ? (prev - 1) as 1 | 2 | 3 : prev));
     };
 
+    const renderInput = (
+        value: string,
+        error: string | undefined,
+        placeholder: string,
+        keyboardType: "phone-pad" | "email-address" | "default" = "default",
+        secureTextEntry = false,
+        onChangeText: (text: string) => void,
+        autoCapitalize: "none" | "words" = "words"
+    ) => {
+        const hasBeenValidated = validatedSteps.has(step);
+        const isFilled = value.trim().length > 0;
+        const hasError = !!error;
+
+        let indicatorStyle = null;
+        let symbol = null;
+
+        if (hasBeenValidated) {
+            if (hasError) {
+                indicatorStyle = styles.statusError;
+                symbol = "!";
+            } else if (isFilled) {
+                indicatorStyle = styles.statusSuccess;
+                symbol = "✓";
+            }
+        }
+
+        return (
+            <View style={styles.inputWrapper}>
+                <TextInput
+                    placeholder={placeholder}
+                    value={value}
+                    onChangeText={onChangeText}
+                    keyboardType={keyboardType}
+                    secureTextEntry={secureTextEntry}
+                    autoCapitalize={autoCapitalize}
+                    style={[
+                        styles.input,
+                        hasError ? styles.inputError : isFilled && !hasError ? styles.inputValid : null,
+                    ]}
+                    placeholderTextColor="#999"
+                />
+
+                {indicatorStyle && (
+                    <View style={[styles.statusIndicator, indicatorStyle]}>
+                        <Text style={styles.statusSymbol}>{symbol}</Text>
+                    </View>
+                )}
+            </View>
+        );
+    };
+
     async function handleRegister() {
         setValidatedSteps((prev) => new Set([...prev, 3])); // позначаємо останній крок
         if (!validateCurrentStep()) return;
@@ -144,31 +195,6 @@ export default function Register() {
             setLoading(false);
         }
     }
-
-    return (
-      <View style={styles.inputWrapper}>
-        <TextInput
-          placeholder={placeholder}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          secureTextEntry={secureTextEntry}
-          autoCapitalize={autoCapitalize}
-          style={[
-            styles.input,
-            hasError ? styles.inputError : isFilled && !hasError ? styles.inputValid : null,
-          ]}
-          placeholderTextColor="#999"
-        />
-
-        {indicatorStyle && (
-          <View style={[styles.statusIndicator, indicatorStyle]}>
-            <Text style={styles.statusSymbol}>{symbol}</Text>
-          </View>
-        )}
-      </View>
-    );
-  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
