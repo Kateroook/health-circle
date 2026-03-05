@@ -6,6 +6,7 @@
 - **Core API**: бекенд на NestJS + TypeORM + PostgreSQL
 
 ### Triggering the Build
+
 1.  Go to the **Actions** tab in the GitHub repository.
 2.  Select **Build Android APK** from the workflows list.
 3.  Click **Run workflow**.

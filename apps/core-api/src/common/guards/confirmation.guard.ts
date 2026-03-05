@@ -6,9 +6,7 @@ import { AuthRequest } from '../types/auth-request';
 
 @Injectable()
 export class ConfirmationRegistrationGuard implements CanActivate {
-  constructor(
-    private readonly confirmationService: ConfirmationsService,
-  ) {}
+  constructor(private readonly confirmationService: ConfirmationsService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthRequest>();

@@ -10,7 +10,7 @@ export async function apiFetch(
     headers?: Record<string, string | number>;
     token?: string;
     _isRetry?: boolean;
-  } = {}
+  } = {},
 ) {
   const url = `${API_URL}${path}`;
 
@@ -20,9 +20,7 @@ export async function apiFetch(
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...Object.fromEntries(
-      Object.entries(options.headers || {}).map(([k, v]) => [k, String(v)])
-    ),
+    ...Object.fromEntries(Object.entries(options.headers || {}).map(([k, v]) => [k, String(v)])),
   };
 
   if (token) {
@@ -88,13 +86,9 @@ function previewJson(text: string, limit = 5000) {
   try {
     const obj = JSON.parse(text);
     const pretty = JSON.stringify(obj, null, 2);
-    return pretty.length > limit
-      ? pretty.slice(0, limit) + " ...[truncated]"
-      : pretty;
+    return pretty.length > limit ? pretty.slice(0, limit) + " ...[truncated]" : pretty;
   } catch {
-    return text.length > limit
-      ? text.slice(0, limit) + " ...[truncated]"
-      : text;
+    return text.length > limit ? text.slice(0, limit) + " ...[truncated]" : text;
   }
 }
 
@@ -108,7 +102,7 @@ function tryParse(str: unknown) {
 
 export async function apiUploadFile(
   path: string,
-  file: { uri: string; name: string; type: string }
+  file: { uri: string; name: string; type: string },
 ) {
   const formData = new FormData();
   formData.append("file", file as any);
@@ -132,10 +126,7 @@ export async function apiUploadFile(
   return res;
 }
 
-export function getAvatarUrl(
-  userId: string,
-  timestamp?: string | number | Date
-) {
+export function getAvatarUrl(userId: string, timestamp?: string | number | Date) {
   let url = `${API_URL}/users/${userId}/avatar`;
   if (timestamp) {
     url += `?t=${new Date(timestamp).getTime()}`;

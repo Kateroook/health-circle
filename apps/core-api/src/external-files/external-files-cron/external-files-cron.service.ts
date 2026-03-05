@@ -1,4 +1,3 @@
- 
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
@@ -64,10 +63,7 @@ export class ExternalFilesCronService {
       }
     } catch (e: unknown) {
       const error = e as Error;
-      this.logger.error(
-        { type, stack: getErrorStack(error) },
-        error.message || `Failed to process missing files.`,
-      );
+      this.logger.error({ type, stack: getErrorStack(error) }, error.message || `Failed to process missing files.`);
     }
   }
 
@@ -96,10 +92,7 @@ export class ExternalFilesCronService {
       }
     } catch (e: unknown) {
       const error = e as Error;
-      this.logger.error(
-        { type, stack: getErrorStack(error) },
-        error.message || `Failed to process unlink files.`,
-      );
+      this.logger.error({ type, stack: getErrorStack(error) }, error.message || `Failed to process unlink files.`);
     }
   }
 }

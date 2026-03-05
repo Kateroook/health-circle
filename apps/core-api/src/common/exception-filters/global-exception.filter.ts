@@ -31,9 +31,9 @@ export class GlobalExceptionFilter extends BaseExceptionFilter {
       const data: CustomLogsParams = {
         statusCode,
         type: (exception as { type?: LoggingTypes })?.type || LoggingTypes.other,
-         
+
         data: (exception as { data?: Record<string, unknown> })?.data || response?.data,
-         
+
         userId: (request as unknown as { user?: { id?: string } })?.user?.id,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         path: httpAdapter.getRequestUrl(request),
@@ -41,7 +41,7 @@ export class GlobalExceptionFilter extends BaseExceptionFilter {
       };
       // Extend logs with exception data
       console.error('Unhandled exception', { ...data, message });
-       
+
       this.logger.error(data, message);
       // Send modified response
       httpAdapter.reply(ctx.getResponse(), { statusCode, message }, statusCode);

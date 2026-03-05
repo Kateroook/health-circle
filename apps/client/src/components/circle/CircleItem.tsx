@@ -7,9 +7,13 @@ import MemberAvatar from "../MemberAvatar";
 export interface Member {
   id: string;
   firstName: string;
+  middleName?: string;
   lastName: string;
+  fullName?: string;
+  isAlias?: boolean;
   avatarUpdatedAt?: string;
   status: "SAFE" | "DANGER" | "UNKNOWN";
+  active?: boolean;
 }
 
 interface CircleItemProps {
@@ -17,6 +21,7 @@ interface CircleItemProps {
   members: Member[];
   extraCount?: number;
   onMenuPress?: () => void;
+  onPress?: () => void;
 }
 
 const CircleItem: React.FC<CircleItemProps> = ({
@@ -24,9 +29,10 @@ const CircleItem: React.FC<CircleItemProps> = ({
   members,
   extraCount,
   onMenuPress,
+  onPress,
 }) => {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.header}>
         <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
           {title}
@@ -35,11 +41,7 @@ const CircleItem: React.FC<CircleItemProps> = ({
           onPress={onMenuPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <MaterialCommunityIcons
-            name="dots-horizontal"
-            size={24}
-            color={COLORS.TEXT_GRAY}
-          />
+          <MaterialCommunityIcons name="dots-horizontal" size={24} color={COLORS.TEXT_GRAY} />
         </TouchableOpacity>
       </View>
 
@@ -50,13 +52,11 @@ const CircleItem: React.FC<CircleItemProps> = ({
 
         {(members.length > 5 || extraCount) && (
           <View style={[styles.avatarWrapper, styles.extra]}>
-            <Text style={styles.extraText}>
-              +{extraCount || members.length - 5}
-            </Text>
+            <Text style={styles.extraText}>+{extraCount || members.length - 5}</Text>
           </View>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 

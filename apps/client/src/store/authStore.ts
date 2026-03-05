@@ -6,17 +6,17 @@ import { apiFetch } from "../api/api";
 // Secure storage for Expo
 const secureStorage: StateStorage = {
   getItem: async (name: string) => SecureStore.getItemAsync(name),
-  setItem: async (name: string, value: string) =>
-    SecureStore.setItemAsync(name, value),
+  setItem: async (name: string, value: string) => SecureStore.setItemAsync(name, value),
   removeItem: async (name: string) => SecureStore.deleteItemAsync(name),
 };
 
 interface User {
   id: string;
-  email: string;
+  email: string | null;
   firstName: string;
-  middleName: string;
+  middleName?: string | null;
   lastName: string;
+  fullName?: string;
   phone: string;
   avatarUpdatedAt?: string;
   status: "SAFE" | "DANGER" | "UNKNOWN";
@@ -213,6 +213,6 @@ export const useAuthStore = create<AuthStoreState>()(
           state?.refreshProfile();
         };
       },
-    }
-  )
+    },
+  ),
 );

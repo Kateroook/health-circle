@@ -2,12 +2,14 @@
   "name": "health-circle-root",
   "private": true,
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "format": "prettier --write ."
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.1",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.7"
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1"
   }
 }

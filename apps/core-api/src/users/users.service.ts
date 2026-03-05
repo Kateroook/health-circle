@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as admin from 'firebase-admin';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
@@ -43,13 +44,23 @@ export class UsersService {
     user.lastStatusUpdate = new Date();
     await this.repository.save(user);
     const tokens = new Set<string>();
-    user.groups.forEach((group) => {
-      group.members.forEach((member) => {
-        if (member.id !== userId && member.fcmToken) {
+    const groupIds = user.groups.map((g) => g.id);
+
+    if (groupIds.length > 0) {
+      const membersWithTokens = await this.repository
+        .createQueryBuilder('user')
+        .select(['user.id', 'user.fcmToken'])
+        .innerJoin('user.groups', 'group')
+        .where('group.id IN (:...groupIds)', { groupIds })
+        .andWhere('user.fcmToken IS NOT NULL')
+        .getMany();
+
+      membersWithTokens.forEach((member) => {
+        if (member.id != userId && member.fcmToken) {
           tokens.add(member.fcmToken);
         }
       });
-    });
+    }
 
     let title = 'Оновлення статусу';
     let body = `${user.firstName} оновив статус`;
@@ -67,6 +78,25 @@ export class UsersService {
         userId: user.id,
         status: status,
       });
+    }
+
+    try {
+      const memberIdsToSync = new Set<string>();
+      user.groups.forEach((group) => {
+        group.members.forEach((member) => {
+          memberIdsToSync.add(member.id);
+        });
+      });
+      memberIdsToSync.add(userId);
+
+      const batch = admin.firestore().batch();
+      memberIdsToSync.forEach((id) => {
+        const ref = admin.firestore().collection('user_sync').doc(id);
+        batch.set(ref, { timestamp: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      });
+      await batch.commit();
+    } catch (e) {
+      console.error('Error updating firestore sync signals', e);
     }
 
     return { status: user.status, message: 'Status updated' };
@@ -138,6 +168,11 @@ export class UsersService {
       const exists = await this.repository.existsBy({ id: item.id });
       if (!exists) throw new NotFoundException(`Користувача з id = ${item.id} не знайдено`);
     }
+
+    if (!item.fullName && item.firstName && item.lastName) {
+      item.fullName = `${item.firstName} ${item.lastName}`.trim();
+    }
+
     const saved = await this.repository.save(item);
     const userActivityType = isNew ? UserActivityTypes.createUser : UserActivityTypes.modifyUser;
     if (isNew) await this.confirmationsService.setupPasswordCode(saved.email, saved.id, ConfirmationTypes.REGISTRATION);
@@ -162,7 +197,7 @@ export class UsersService {
     userToDelete.fcmToken = null;
     userToDelete.firstName = '';
     userToDelete.lastName = '';
-    userToDelete.middleName = '';
+    userToDelete.middleName = null;
 
     await this.repository.save(userToDelete);
     await this.userActivitiesService.logActivity(UserActivityTypes.deleteAccount, metadata, { userId: user.id });

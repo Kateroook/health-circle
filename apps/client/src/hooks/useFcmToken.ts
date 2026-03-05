@@ -1,8 +1,8 @@
 import { saveFcmTokenToBackend } from "@/src/api/api";
 import { useAuthStore } from "@/src/store/authStore";
+import notifee, { AndroidImportance } from "@notifee/react-native";
 import messaging from "@react-native-firebase/messaging";
 import { useEffect } from "react";
-import { showMessage } from "react-native-flash-message";
 
 export function useFcmToken() {
   const { user, accessToken } = useAuthStore();
@@ -24,6 +24,13 @@ export function useFcmToken() {
             await saveFcmTokenToBackend(fcmToken);
           }
         }
+
+        // Ensure channel exists for Android background messages
+        await notifee.createChannel({
+          id: "default",
+          name: "Default Channel",
+          importance: AndroidImportance.HIGH,
+        });
       } catch (error) {
         console.error("FCM Permission denied:", error);
       }
@@ -38,15 +45,19 @@ export function useFcmToken() {
 
     const unsubscribeOnMessage = messaging().onMessage(async (remoteMessage) => {
       console.log("A new FCM message arrived!", JSON.stringify(remoteMessage));
+
       if (remoteMessage.notification) {
-        showMessage({
-          message: remoteMessage.notification.title || "Нове сповіщення",
-          description: remoteMessage.notification.body,
-          type: "info",
-          duration: 3000,
-          onPress: () => {
-             // Handle notification press if needed (e.g., navigate)
-          }
+        // Display a notification
+        await notifee.displayNotification({
+          title: remoteMessage.notification.title,
+          body: remoteMessage.notification.body,
+          android: {
+            channelId: "default",
+            importance: AndroidImportance.HIGH,
+            pressAction: {
+              id: "default",
+            },
+          },
         });
       }
     });

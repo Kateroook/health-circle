@@ -1,20 +1,19 @@
 import * as ImagePicker from "expo-image-picker";
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    Switch,
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import ConfirmationModal from "../../components/ConfirmationModal";
 
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
@@ -31,6 +30,7 @@ export default function SettingsScreen() {
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [middleName, setMiddleName] = useState(user?.middleName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
+  const [fullName, setFullName] = useState(user?.fullName || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
@@ -49,20 +49,19 @@ export default function SettingsScreen() {
   const [isDeleteAccountVisible, setIsDeleteAccountVisible] = useState(false);
   const [isDeleteAvatarVisible, setIsDeleteAvatarVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-    const [isSecurityOpen, setIsSecurityOpen] = useState(false);
-    const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
+  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
+  const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
 
-    const [toggle1, setToggle1] = useState(false);
-    const [toggle2, setToggle2] = useState(false);
-    const [toggle3, setToggle3] = useState(false);
-    const [toggle4, setToggle4] = useState(false);
-    const [toggle5, setToggle5] = useState(false);
-    const [toggle6, setToggle6] = useState(false);
-    const [toggle7, setToggle7] = useState(false);
+  const [toggle1, setToggle1] = useState(false);
+  const [toggle2, setToggle2] = useState(false);
+  const [toggle3, setToggle3] = useState(false);
+  const [toggle4, setToggle4] = useState(false);
+  const [toggle5, setToggle5] = useState(false);
+  const [toggle6, setToggle6] = useState(false);
+  const [toggle7, setToggle7] = useState(false);
 
   useEffect(() => {
-    if (user?.id)
-      setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
+    if (user?.id) setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
   }, [user]);
 
   const validate = () => {
@@ -84,10 +83,18 @@ export default function SettingsScreen() {
       errors.push("Прізвище має містити не більше 50 символів");
     }
 
-    if (trimmedMiddle && trimmedMiddle.length < 2) {
-      errors.push("По-батькові має містити не менше 2 символів");
-    } else if (trimmedMiddle.length > 50) {
-      errors.push("По-батькові має містити не більше 50 символів");
+    if (trimmedMiddle) {
+      if (trimmedMiddle.length < 2) {
+        errors.push("По-батькові має містити не менше 2 символів");
+      } else if (trimmedMiddle.length > 50) {
+        errors.push("По-батькові має містити не більше 50 символів");
+      }
+    }
+
+    const trimmedFullName = fullName.trim();
+    if (!trimmedFullName) errors.push("Не можна зберегти порожнє повне імʼя");
+    else if (trimmedFullName.length > 255) {
+      errors.push("Повне імʼя має містити не більше 255 символів");
     }
 
     if (!trimmedPhone) {
@@ -97,34 +104,34 @@ export default function SettingsScreen() {
     return errors;
   };
 
-    const handleSave = async () => {
-        const errors = validate();
-        if (errors.length > 0) {
-            Alert.alert("Помилка", errors.join("\n"));
-            return;
-        }
+  const handleSave = async () => {
+    const errors = validate();
+    if (errors.length > 0) {
+      Alert.alert("Помилка", errors.join("\n"));
+      return;
+    }
 
-        try {
-            await apiFetch("/users", {
-                method: "PUT",
-                body: JSON.stringify(
-                    cleanObj({
-                        id: user?.id,
-                        firstName: firstName.trim(),
-                        middleName: middleName.trim(),
-                        lastName: lastName.trim(),
-                        phone: phone.trim(),
-                        email: user?.email,
-                    })
-                ),
-            });
-            Alert.alert("Успіх", "Дані оновлено");
-            await refreshProfile();
-            setIsEditMode(false);           // ← ховаємо форму після успіху
-        } catch (e: any) {
-            Alert.alert("Помилка", e?.message || "Не вдалося оновити дані");
-        }
-    };
+    try {
+      await apiFetch("/users", {
+        method: "PUT",
+        body: JSON.stringify(
+          cleanObj({
+            id: user?.id,
+            firstName: firstName.trim(),
+            middleName: middleName.trim(),
+            lastName: lastName.trim(),
+            phone: phone.trim(),
+            email: user?.email,
+          }),
+        ),
+      });
+      Alert.alert("Успіх", "Дані оновлено");
+      await refreshProfile();
+      setIsEditMode(false); // ← ховаємо форму після успіху
+    } catch (e: any) {
+      Alert.alert("Помилка", e?.message || "Не вдалося оновити дані");
+    }
+  };
 
   const handlePickAvatar = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -149,12 +156,12 @@ export default function SettingsScreen() {
 
         // Update local user state immediately with new avatarUpdatedAt
         if (response && response.avatarUpdatedAt && user?.id) {
-            updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
-            const freshUrl = `${getAvatarUrl(user.id, response.avatarUpdatedAt)}?_${Date.now()}`;
-            setAvatarUrl(freshUrl);
-            setImageError(false);
+          updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
+          const freshUrl = `${getAvatarUrl(user.id, response.avatarUpdatedAt)}?_${Date.now()}`;
+          setAvatarUrl(freshUrl);
+          setImageError(false);
         }
-        
+
         await refreshProfile();
         Alert.alert("Успіх", "Аватар оновлено");
       } catch (e: any) {
@@ -233,6 +240,14 @@ export default function SettingsScreen() {
       required: false,
     },
     {
+      label: "Відображаєме імʼя",
+      value: fullName,
+      setter: setFullName,
+      placeholder: "Введіть відображаєме імʼя",
+      maxLength: 255,
+      required: false,
+    },
+    {
       label: "Номер телефону",
       value: phone,
       setter: setPhone,
@@ -240,218 +255,229 @@ export default function SettingsScreen() {
       keyboardType: "phone-pad",
       required: true,
     },
-    ];
+  ];
 
-    const CustomToggle = ({ value, onValueChange }: { value: boolean; onValueChange: (newValue: boolean) => void }) => {
-        return (
-            <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => onValueChange(!value)}
-                style={{
-                    width: 54,
-                    height: 32,
-                    borderRadius: 16,
-                    backgroundColor: value ? '#5B8DEE' : '#E0E0E0',
-                    justifyContent: 'center',
-                    paddingHorizontal: 3,
-                }}
+  const CustomToggle = ({
+    value,
+    onValueChange,
+  }: {
+    value: boolean;
+    onValueChange: (newValue: boolean) => void;
+  }) => {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => onValueChange(!value)}
+        style={{
+          width: 54,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: value ? "#5B8DEE" : "#E0E0E0",
+          justifyContent: "center",
+          paddingHorizontal: 3,
+        }}
+      >
+        <View
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: 13,
+            backgroundColor: "#FFFFFF",
+            alignSelf: value ? "flex-end" : "flex-start",
+            justifyContent: "center",
+            alignItems: "center",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.22,
+            shadowRadius: 2.22,
+            elevation: 3,
+          }}
+        >
+          {value && (
+            <Text
+              style={{
+                color: "#2196F3",
+                fontSize: 18,
+                fontWeight: "bold",
+                lineHeight: 20,
+              }}
             >
-                <View
-                    style={{
-                        width: 26,
-                        height: 26,
-                        borderRadius: 13,
-                        backgroundColor: '#FFFFFF',
-                        alignSelf: value ? 'flex-end' : 'flex-start',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.22,
-                        shadowRadius: 2.22,
-                        elevation: 3,
-                    }}
-                >
-                    {value && (
-                        <Text
-                            style={{
-                                color: '#2196F3',
-                                fontSize: 18,
-                                fontWeight: 'bold',
-                                lineHeight: 20,
-                            }}
-                        >
-                            ✓
-                        </Text>
-                    )}
-                </View>
-            </TouchableOpacity>
-        );
-    };
+              ✓
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-              <View style={styles.headerContainer}>
+        <View style={styles.headerContainer}>
+          <Image
+            key={avatarUrl || "no-avatar"}
+            source={!imageError && avatarUrl ? { uri: avatarUrl } : defaultAvatar}
+            style={styles.avatar}
+            onError={() => setImageError(true)}
+          />
 
-                  <Image
-                      key={avatarUrl || 'no-avatar'}
-                      source={!imageError && avatarUrl ? { uri: avatarUrl } : defaultAvatar}
-                      style={styles.avatar}
-                      onError={() => setImageError(true)}
-                  />
+          <Text style={styles.profileName}>{user?.firstName}</Text>
 
-                  <Text style={styles.profileName}>
-                      {user?.firstName}
-                  </Text>
+          {/* Нова кнопка "Редагувати" */}
+          {!isEditMode && (
+            <TouchableOpacity style={styles.editButton} onPress={() => setIsEditMode(true)}>
+              <Icon name="edit-2" size={18} color="#ffffff" style={{ marginRight: 8 }} />
+              <Text style={styles.editButtonText}>Редагувати</Text>
+            </TouchableOpacity>
+          )}
 
-                  {/* Нова кнопка "Редагувати" */}
-                  {!isEditMode && (
-                      <TouchableOpacity
-                          style={styles.editButton}
-                          onPress={() => setIsEditMode(true)}
-                      >
-                          <Icon name="edit-2" size={18} color="#ffffff" style={{ marginRight: 8 }} />
-                          <Text style={styles.editButtonText}>Редагувати</Text>
-                      </TouchableOpacity>
-                  )}
+          {/* Блок редагування — показується тільки в режимі isEditMode */}
+          {isEditMode && (
+            <View style={styles.editContainer}>
+              <View style={styles.avatarButtons}>
+                <TouchableOpacity style={styles.avatarButton} onPress={handlePickAvatar}>
+                  <Text style={styles.avatarButtonText}>Змінити аватар</Text>
+                </TouchableOpacity>
 
-                  {/* Блок редагування — показується тільки в режимі isEditMode */}
-                  {isEditMode && (
-                      <View style={styles.editContainer}>
-                          <View style={styles.avatarButtons}>
-                              <TouchableOpacity style={styles.avatarButton} onPress={handlePickAvatar}>
-                                  <Text style={styles.avatarButtonText}>Змінити аватар</Text>
-                              </TouchableOpacity>
-
-                              {avatarUrl && !imageError && (
-                                  <TouchableOpacity
-                                      style={[styles.avatarButton, styles.removeButton]}
-                                      onPress={handleRemoveAvatar}
-                                  >
-                                      <Text style={styles.avatarButtonText}>Видалити аватар</Text>
-                                  </TouchableOpacity>
-                              )}
-                          </View>
-
-                          {fields.map((field) => (
-                              <View key={field.label} style={styles.block}>
-                                  <Text style={styles.label}>
-                                      {field.label}
-                                      {field.required && <Text style={styles.requiredStar}> *</Text>}
-                                  </Text>
-                                  <TextInput
-                                      style={styles.input}
-                                      value={field.value}
-                                      onChangeText={field.setter}
-                                      placeholder={field.placeholder}
-                                      placeholderTextColor="#999"
-                                      keyboardType={field.keyboardType as any}
-                                      maxLength={field.maxLength}
-                                  />
-                              </View>
-                          ))}
-
-                          <TouchableOpacity style={styles.save} onPress={handleSave}>
-                              <Text style={styles.saveText}>Зберегти</Text>
-                          </TouchableOpacity>
-
-                          {/* Опціонально: кнопка "Скасувати" */}
-                          <TouchableOpacity
-                              style={styles.cancelButton}
-                              onPress={() => {
-                                  setIsEditMode(false);
-                                  // Якщо потрібно — скинути поля до початкових значень з user
-                                  setFirstName(user?.firstName || "");
-                                  setMiddleName(user?.middleName || "");
-                                  setLastName(user?.lastName || "");
-                                  setPhone(user?.phone || "");
-                              }}
-                          >
-                              <Text style={styles.cancelButtonText}>Скасувати</Text>
-                          </TouchableOpacity>
-                      </View>
-                  )}
+                {avatarUrl && !imageError && (
+                  <TouchableOpacity
+                    style={[styles.avatarButton, styles.removeButton]}
+                    onPress={handleRemoveAvatar}
+                  >
+                    <Text style={styles.avatarButtonText}>Видалити аватар</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
-              <TouchableOpacity
-                  style={styles.notificationsHeader}
-                  onPress={() => setIsNotificationsModalVisible(true)}
-              >
-                  <MaterialCommunityIcons
-                      name="bell"
-                      size={24}
-                      color="#000000"
-                      style={{ marginRight: 12 }}
+              {fields.map((field) => (
+                <View key={field.label} style={styles.block}>
+                  <Text style={styles.label}>
+                    {field.label}
+                    {field.required && <Text style={styles.requiredStar}> *</Text>}
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    value={field.value}
+                    onChangeText={field.setter}
+                    placeholder={field.placeholder}
+                    placeholderTextColor="#999"
+                    keyboardType={field.keyboardType as any}
+                    maxLength={field.maxLength}
                   />
-                  <Text style={styles.notificationsHeaderText}>Сповіщення</Text>
-                  <MaterialCommunityIcons
-                      name="chevron-right"
-                      size={20}
-                      color="#000000"
-                      style={{ marginLeft: 'auto' }}
-                  />
+                </View>
+              ))}
+
+              <TouchableOpacity style={styles.save} onPress={handleSave}>
+                <Text style={styles.saveText}>Зберегти</Text>
               </TouchableOpacity>
 
-              {/* 2. Кнопка "Приватність та безпека" (нова, над "Вихід") */}
+              {/* Опціонально: кнопка "Скасувати" */}
               <TouchableOpacity
-                  style={styles.securityHeader}
-                  onPress={() => setIsSecurityOpen(!isSecurityOpen)}
+                style={styles.cancelButton}
+                onPress={() => {
+                  setIsEditMode(false);
+                  // Якщо потрібно — скинути поля до початкових значень з user
+                  setFirstName(user?.firstName || "");
+                  setMiddleName(user?.middleName || "");
+                  setLastName(user?.lastName || "");
+                  setPhone(user?.phone || "");
+                }}
               >
-                  <MaterialCommunityIcons
-                      name="shield-lock" // або "lock", "security", "shield-account"
-                      size={24}
-                      color="#000000"
-                      style={{ marginRight: 12 }}
-                  />
-                  <Text style={styles.securityHeaderText}>Приватність та безпека</Text>
-                  <MaterialCommunityIcons
-                      name={isSecurityOpen ? "chevron-up" : "chevron-down"}
-                      size={20}
-                      color="#000000"
-                      style={{ marginLeft: 'auto' }}
-                  />
+                <Text style={styles.cancelButtonText}>Скасувати</Text>
               </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
-              {isSecurityOpen && (
-                  <View style={styles.securityContent}>
-                      <TouchableOpacity
-                          style={styles.securityItem}
-                          onPress={() => setShowPasswordModal(true)}
-                      >
-                          <MaterialCommunityIcons name="key-variant" size={22} color="#000" style={{ marginRight: 12 }} />
-                          <Text style={styles.securityItemText}>Змінити пароль</Text>
-                          <MaterialCommunityIcons name="chevron-right" size={20} color="#888" style={{ marginLeft: 'auto' }} />
-                      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.notificationsHeader}
+          onPress={() => setIsNotificationsModalVisible(true)}
+        >
+          <MaterialCommunityIcons
+            name="bell"
+            size={24}
+            color="#000000"
+            style={{ marginRight: 12 }}
+          />
+          <Text style={styles.notificationsHeaderText}>Сповіщення</Text>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={20}
+            color="#000000"
+            style={{ marginLeft: "auto" }}
+          />
+        </TouchableOpacity>
 
-                      <View style={styles.separator} />
+        {/* 2. Кнопка "Приватність та безпека" (нова, над "Вихід") */}
+        <TouchableOpacity
+          style={styles.securityHeader}
+          onPress={() => setIsSecurityOpen(!isSecurityOpen)}
+        >
+          <MaterialCommunityIcons
+            name="shield-lock" // або "lock", "security", "shield-account"
+            size={24}
+            color="#000000"
+            style={{ marginRight: 12 }}
+          />
+          <Text style={styles.securityHeaderText}>Приватність та безпека</Text>
+          <MaterialCommunityIcons
+            name={isSecurityOpen ? "chevron-up" : "chevron-down"}
+            size={20}
+            color="#000000"
+            style={{ marginLeft: "auto" }}
+          />
+        </TouchableOpacity>
 
-                      <TouchableOpacity
-                          style={styles.securityItem}
-                          onPress={handleDeleteAccount}
-                      >
-                          <MaterialCommunityIcons name="delete-forever" size={22} color="#D32F2F" style={{ marginRight: 12 }} />
-                          <Text style={[styles.securityItemText, { color: '#D32F2F' }]}>Видалити акаунт</Text>
-                          <MaterialCommunityIcons name="chevron-right" size={20} color="#888" style={{ marginLeft: 'auto' }} />
-                      </TouchableOpacity>
-                  </View>
-              )}
+        {isSecurityOpen && (
+          <View style={styles.securityContent}>
+            <TouchableOpacity
+              style={styles.securityItem}
+              onPress={() => setShowPasswordModal(true)}
+            >
+              <MaterialCommunityIcons
+                name="key-variant"
+                size={22}
+                color="#000"
+                style={{ marginRight: 12 }}
+              />
+              <Text style={styles.securityItemText}>Змінити пароль</Text>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={20}
+                color="#888"
+                style={{ marginLeft: "auto" }}
+              />
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                  style={styles.logoutButton}
-                  onPress={logout}
-              >
-                  <MaterialCommunityIcons
-                      name="door-open"          // або "logout", "exit-to-app", "door-closed" — спробуй, що найкраще виглядає
-                      size={24}
-                      color="#000000"
-                      style={{ marginRight: 12 }}
-                  />
-                  <Text style={styles.logoutTextNew}>Вихід</Text>
-              </TouchableOpacity>
+            <View style={styles.separator} />
 
+            <TouchableOpacity style={styles.securityItem} onPress={handleDeleteAccount}>
+              <MaterialCommunityIcons
+                name="delete-forever"
+                size={22}
+                color="#D32F2F"
+                style={{ marginRight: 12 }}
+              />
+              <Text style={[styles.securityItemText, { color: "#D32F2F" }]}>Видалити акаунт</Text>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={20}
+                color="#888"
+                style={{ marginLeft: "auto" }}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
 
-
+        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+          <MaterialCommunityIcons
+            name="door-open" // або "logout", "exit-to-app", "door-closed" — спробуй, що найкраще виглядає
+            size={24}
+            color="#000000"
+            style={{ marginRight: 12 }}
+          />
+          <Text style={styles.logoutTextNew}>Вихід</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Change Password Modal */}
@@ -474,7 +500,10 @@ export default function SettingsScreen() {
                 value={oldPassword}
                 onChangeText={setOldPassword}
               />
-              <TouchableOpacity onPress={() => setShowOldPassword(!showOldPassword)} style={styles.eyeButton}>
+              <TouchableOpacity
+                onPress={() => setShowOldPassword(!showOldPassword)}
+                style={styles.eyeButton}
+              >
                 <Icon name={showOldPassword ? "eye-off" : "eye"} size={20} color="#999" />
               </TouchableOpacity>
             </View>
@@ -487,7 +516,10 @@ export default function SettingsScreen() {
                 value={newPassword}
                 onChangeText={setNewPassword}
               />
-              <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeButton}>
+              <TouchableOpacity
+                onPress={() => setShowNewPassword(!showNewPassword)}
+                style={styles.eyeButton}
+              >
                 <Icon name={showNewPassword ? "eye-off" : "eye"} size={20} color="#999" />
               </TouchableOpacity>
             </View>
@@ -500,20 +532,18 @@ export default function SettingsScreen() {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
               />
-              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeButton}
+              >
                 <Icon name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#999" />
               </TouchableOpacity>
             </View>
 
-            {passwordError ? (
-              <Text style={styles.modalError}>{passwordError}</Text>
-            ) : null}
+            {passwordError ? <Text style={styles.modalError}>{passwordError}</Text> : null}
 
             <TouchableOpacity
-              style={[
-                styles.modalSave,
-                passwordLoading && { opacity: 0.6 },
-              ]}
+              style={[styles.modalSave, passwordLoading && { opacity: 0.6 }]}
               onPress={handleChangePassword}
               disabled={passwordLoading}
             >
@@ -573,117 +603,140 @@ export default function SettingsScreen() {
         message="Ви впевнені, що хочете видалити фото профілю?"
         confirmText="Видалити"
         cancelText="Скасувати"
-          />
+      />
 
-          <Modal
-              visible={isNotificationsModalVisible}
-              animationType="slide"
-              transparent={false}
-              onRequestClose={() => setIsNotificationsModalVisible(false)}
+      <Modal
+        visible={isNotificationsModalVisible}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setIsNotificationsModalVisible(false)}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+          {/* Заголовок */}
+          <View
+            style={{
+              height: 56,
+              backgroundColor: "#fff",
+              borderBottomWidth: 1,
+              borderBottomColor: "#eee",
+              justifyContent: "center", // центр для заголовка
+            }}
           >
-              <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-                  {/* Заголовок */}
-                  <View style={{
-                      height: 56,
-                      backgroundColor: '#fff',
-                      borderBottomWidth: 1,
-                      borderBottomColor: '#eee',
-                      justifyContent: 'center',           // центр для заголовка
-                  }}>
-                      <Text style={{
-                          fontSize: 20,
-                          fontWeight: '600',
-                          color: '#000',
-                          textAlign: 'center',              // додатково для впевненості
-                      }}>
-                          Сповіщення
-                      </Text>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "600",
+                color: "#000",
+                textAlign: "center", // додатково для впевненості
+              }}
+            >
+              Сповіщення
+            </Text>
 
-                      <TouchableOpacity
-                          onPress={() => setIsNotificationsModalVisible(false)}
-                          style={{
-                              position: 'absolute',
-                              right: 16,
-                              top: 0,
-                              bottom: 0,
-                              justifyContent: 'center',
-                              paddingHorizontal: 8,
-                          }}
-                          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                      >
-                          <MaterialCommunityIcons name="close" size={28} color="#000" />
-                      </TouchableOpacity>
-                  </View>
+            <TouchableOpacity
+              onPress={() => setIsNotificationsModalVisible(false)}
+              style={{
+                position: "absolute",
+                right: 16,
+                top: 0,
+                bottom: 0,
+                justifyContent: "center",
+                paddingHorizontal: 8,
+              }}
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            >
+              <MaterialCommunityIcons name="close" size={28} color="#000" />
+            </TouchableOpacity>
+          </View>
 
-                  {/* Основний вміст */}
-                  <ScrollView
-                      style={{ flex: 1 }}
-                      contentContainerStyle={{
-                          paddingHorizontal: 20,
-                          paddingBottom: 40,           // додаємо запас знизу
-                      }}
-                  >
-                      {[
-                          { label: "Отримувати сповіщення, коли у вашому районі повітряна тривога", value: toggle1, setter: setToggle1 },
-                          { label: "Отримувати сповіщення про статус членів Кола", value: toggle2, setter: setToggle2 },
-                          { label: "Отримувати сповіщення, коли у когось стан залишається \"Невідомо\" під час тривоги", value: toggle3, setter: setToggle3 },
-                          { label: "Нагадувати оновити статус під час тривоги", value: toggle4, setter: setToggle4 },
-                          { label: "Нагадувати позначити настрій", value: toggle5, setter: setToggle5 },
-                          { label: "Отримувати SMS лише тоді, коли немає інтернету, але є важливе сповіщення", value: toggle6, setter: setToggle6 },
-                          { label: "SMS для статусу безпеки", value: toggle7, setter: setToggle7 },
-                      ].map((item, index) => (
-                          <View
-                              key={index}
-                              style={{
-                                  flexDirection: 'row',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  paddingVertical: 16,
-                                  borderBottomWidth: 1,
-                                  borderBottomColor: '#f0f0f0',
-                              }}
-                          >
-                              <Text style={{
-                                  fontSize: 16,
-                                  color: '#1A1A1A',
-                                  flex: 1,
-                                  paddingRight: 16,
-                              }}>
-                                  {item.label}
-                              </Text>
-                              <CustomToggle
-                                  value={item.value}
-                                  onValueChange={item.setter}
-                              />
-                          </View>
-                      ))}
-                  </ScrollView>
-              </SafeAreaView>
-          </Modal>
+          {/* Основний вміст */}
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              paddingBottom: 40, // додаємо запас знизу
+            }}
+          >
+            {[
+              {
+                label: "Отримувати сповіщення, коли у вашому районі повітряна тривога",
+                value: toggle1,
+                setter: setToggle1,
+              },
+              {
+                label: "Отримувати сповіщення про статус членів Кола",
+                value: toggle2,
+                setter: setToggle2,
+              },
+              {
+                label:
+                  'Отримувати сповіщення, коли у когось стан залишається "Невідомо" під час тривоги',
+                value: toggle3,
+                setter: setToggle3,
+              },
+              {
+                label: "Нагадувати оновити статус під час тривоги",
+                value: toggle4,
+                setter: setToggle4,
+              },
+              { label: "Нагадувати позначити настрій", value: toggle5, setter: setToggle5 },
+              {
+                label: "Отримувати SMS лише тоді, коли немає інтернету, але є важливе сповіщення",
+                value: toggle6,
+                setter: setToggle6,
+              },
+              { label: "SMS для статусу безпеки", value: toggle7, setter: setToggle7 },
+            ].map((item, index) => (
+              <View
+                key={index}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingVertical: 16,
+                  borderBottomWidth: 1,
+                  borderBottomColor: "#f0f0f0",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 16,
+                    color: "#1A1A1A",
+                    flex: 1,
+                    paddingRight: 16,
+                  }}
+                >
+                  {item.label}
+                </Text>
+                <CustomToggle value={item.value} onValueChange={item.setter} />
+              </View>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#F7F7F7" },
+  container: { flex: 1, backgroundColor: "#F7F7F7" },
   headerContainer: { alignItems: "center", marginBottom: 30, padding: 20 },
   header: { fontSize: 28, fontWeight: "600", marginBottom: 20 },
 
   avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
-    avatarButtons: {
-        flexDirection: "row",
-        justifyContent: "center",          // ← головна зміна: центруємо вміст
-        gap: 16,                           // замість gap: 10, щоб було гарніше
-        marginBottom: 16,
-        width: '100%',                     // на всю ширину, щоб центр працював
-    },
+  avatarButtons: {
+    flexDirection: "row",
+    justifyContent: "center", // ← головна зміна: центруємо вміст
+    gap: 16, // замість gap: 10, щоб було гарніше
+    marginBottom: 16,
+    width: "100%", // на всю ширину, щоб центр працював
+  },
   avatarButton: {
       backgroundColor: "#5B8DEE",
     padding: 10,
-      borderRadius: 10,
-      alignItems: "center",
-      marginHorizontal: 5,
-      
+    borderRadius: 10,
+    alignItems: "center",
+    marginHorizontal: 5,
   },
   removeButton: { backgroundColor: "#FF6B6B" },
   avatarButtonText: { color: "#fff", fontWeight: "600" },
@@ -697,16 +750,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 15,
     fontSize: 16,
-    },
+  },
 
-    profileName: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#000000',
-        marginTop: 12,
-        marginBottom: 8,
-        textAlign: 'center',
-    },
+  profileName: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#000000",
+    marginTop: 12,
+    marginBottom: 8,
+    textAlign: "center",
+  },
 
   save: {
     marginTop: 10,
@@ -716,57 +769,57 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 20,
   },
-    saveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  saveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
 
-    securityHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#ffffff',
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-        borderRadius: 12,
-        marginTop: 16,
-        marginHorizontal: 20,
-        //borderWidth: 1,
-        borderColor: '#e0e0e0',
-    },
+  securityHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 16,
+    marginHorizontal: 20,
+    //borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
 
-    securityHeaderText: {
-        color: '#000000',
-        fontSize: 16,
-        fontWeight: '500',
-        flex: 1,
-    },
+  securityHeaderText: {
+    color: "#000000",
+    fontSize: 16,
+    fontWeight: "500",
+    flex: 1,
+  },
 
-    securityContent: {
-        marginTop: 8,
-        marginHorizontal: 20,
-        backgroundColor: '#ffffff',
-        borderRadius: 12,
-        //borderWidth: 1,
-        borderColor: '#e0e0e0',
-        overflow: 'hidden', // щоб дочірні елементи не вилазили за кути
-    },
+  securityContent: {
+    marginTop: 8,
+    marginHorizontal: 20,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    //borderWidth: 1,
+    borderColor: "#e0e0e0",
+    overflow: "hidden", // щоб дочірні елементи не вилазили за кути
+  },
 
-    securityItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-    },
+  securityItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
 
-    securityItemText: {
-        color: '#000000',
-        fontSize: 16,
-        fontWeight: '400',
-        flex: 1,
-    },
+  securityItemText: {
+    color: "#000000",
+    fontSize: 16,
+    fontWeight: "400",
+    flex: 1,
+  },
 
-    separator: {
-        height: 1,
-        backgroundColor: '#e0e0e0',
-        marginHorizontal: 20,
-    },
+  separator: {
+    height: 1,
+    backgroundColor: "#e0e0e0",
+    marginHorizontal: 20,
+  },
 
   logout: {
     marginTop: 20,
@@ -776,50 +829,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 20,
   },
-    logoutText: { color: "#fff", fontSize: 16 },
+  logoutText: { color: "#fff", fontSize: 16 },
 
-    logoutButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-start',     // вміст зліва
-        backgroundColor: '#ffffff',       // білий фон
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-        borderRadius: 12,
-        marginTop: 20,
-        marginHorizontal: 20,
-    },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start", // вміст зліва
+    backgroundColor: "#ffffff", // білий фон
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 20,
+    marginHorizontal: 20,
+  },
 
-    logoutTextNew: {
-        color: '#000000',
-        fontSize: 16,
-        fontWeight: '500',              // або '600' якщо хочеш жирніший текст
-    },
+  logoutTextNew: {
+    color: "#000000",
+    fontSize: 16,
+    fontWeight: "500", // або '600' якщо хочеш жирніший текст
+  },
 
-    editButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-start',           // ← центр
-        backgroundColor: '#5B8DEE',
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-        borderRadius: 12,
-        marginTop: 16,
-        marginHorizontal: 20,               // те саме, що в logoutButton
-        marginBottom: 20,
-    },
+  editButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start", // ← центр
+    backgroundColor: "#5B8DEE",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 16,
+    marginHorizontal: 20, // те саме, що в logoutButton
+    marginBottom: 20,
+  },
 
-    editButtonText: {
-        color: '#ffffff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-
-    editContainer: {
-        width: '100%',
-        paddingHorizontal: 20,
-        marginTop: 10,
-    },
+  editButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
 
     cancelButton: {
         marginTop: 10,
@@ -830,11 +877,20 @@ const styles = StyleSheet.create({
         marginHorizontal: 20,
     },
 
-    cancelButtonText: {
-        color: '#666',
-        fontSize: 16,
-        fontWeight: '500',
-    },
+  cancelButton: {
+    marginTop: 10,
+    padding: 15,
+    borderRadius: 12,
+    backgroundColor: "#f0f0f0",
+    alignItems: "center",
+    marginHorizontal: 20,
+  },
+
+  cancelButtonText: {
+    color: "#666",
+    fontSize: 16,
+    fontWeight: "500",
+  },
 
   delete: {
     marginTop: 15,
@@ -926,67 +982,67 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
-    modalCancelText: { color: "#999", fontSize: 16, fontWeight: "500" },
-    notificationsHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#ffffff',
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-        borderRadius: 12,
-        marginTop: 16,
-        marginHorizontal: 20,
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-    },
+  modalCancelText: { color: "#999", fontSize: 16, fontWeight: "500" },
+  notificationsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 16,
+    marginHorizontal: 20,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
 
-    notificationsHeaderText: {
-        color: '#000000',
-        fontSize: 16,
-        fontWeight: '500',
-        flex: 1,
-    },
+  notificationsHeaderText: {
+    color: "#000000",
+    fontSize: 16,
+    fontWeight: "500",
+    flex: 1,
+  },
 
-    // ──────────────────────────────────────────────
-    // Стилі для модалки сповіщень
-    notificationsModalContent: {
-        width: '90%',
-        maxHeight: '80%',
-        backgroundColor: '#ffffff',
-        borderRadius: 20,
-        padding: 24,
-        alignSelf: 'center',
-        marginTop: 'auto',
-        marginBottom: 'auto',
-    },
+  // ──────────────────────────────────────────────
+  // Стилі для модалки сповіщень
+  notificationsModalContent: {
+    width: "90%",
+    maxHeight: "80%",
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    padding: 24,
+    alignSelf: "center",
+    marginTop: "auto",
+    marginBottom: "auto",
+  },
 
-    notificationRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f0f0f0',
-    },
+  notificationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
 
-    notificationLabel: {
-        fontSize: 16,
-        color: '#1A1A1A',
-        flex: 1,
-        paddingRight: 16,
-    },
+  notificationLabel: {
+    fontSize: 16,
+    color: "#1A1A1A",
+    flex: 1,
+    paddingRight: 16,
+  },
 
-    modalCloseButton: {
-        marginTop: 20,
-        backgroundColor: '#5B8DEE',
-        paddingVertical: 14,
-        borderRadius: 12,
-        alignItems: 'center',
-    },
+  modalCloseButton: {
+    marginTop: 20,
+    backgroundColor: "#5B8DEE",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
 
-    modalCloseText: {
-        color: '#ffffff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
+  modalCloseText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });

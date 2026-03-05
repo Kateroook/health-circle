@@ -63,42 +63,39 @@ describe('ConfirmationsService', () => {
 
       // 1. Should delete old codes
       expect(codesRepository.delete).toHaveBeenCalledWith({
-        user: {id: 'user-1'},
+        user: { id: 'user-1' },
         type: ConfirmationTypes.REGISTRATION,
       });
 
       // 2. Should save new code
       expect(codesRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
-          user: {id: 'user-1'},
+          user: { id: 'user-1' },
           code: '123456',
           type: ConfirmationTypes.REGISTRATION,
         }),
       );
 
       // 3. Should send email
-      expect(emailService.registration).toHaveBeenCalledWith(
-        'test@test.com',
-        expect.objectContaining({ code: '123456' }),
-      );
+      expect(emailService.registration).toHaveBeenCalledWith('test@test.com', expect.objectContaining({ code: '123456' }));
     });
   });
 
   describe('verifyCode', () => {
     it('should throw if user not found', async () => {
       usersRepository.findOne.mockResolvedValue(null);
-      await expect(
-        service.verifyCode(ConfirmationTypes.REGISTRATION, 'test@test.com', '123456'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifyCode(ConfirmationTypes.REGISTRATION, 'test@test.com', '123456')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw if code does not exist', async () => {
       usersRepository.findOne.mockResolvedValue({ id: 'user-1' });
       codesRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.verifyCode(ConfirmationTypes.REGISTRATION, 'test@test.com', '123456'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifyCode(ConfirmationTypes.REGISTRATION, 'test@test.com', '123456')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw if code expired', async () => {
@@ -108,9 +105,9 @@ describe('ConfirmationsService', () => {
         expiresAt: new Date(Date.now() - 10000), // Past
       });
 
-      await expect(
-        service.verifyCode(ConfirmationTypes.REGISTRATION, 'test@test.com', '123456'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifyCode(ConfirmationTypes.REGISTRATION, 'test@test.com', '123456')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should return user if code is valid', async () => {

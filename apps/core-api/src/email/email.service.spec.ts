@@ -30,7 +30,7 @@ describe('EmailService', () => {
     (handlebars.compile as jest.Mock).mockReturnValue(mockTemplateDelegate);
 
     const mockEmails = {
-        send: jest.fn().mockResolvedValue({ data: { id: 'msg_123' }, error: null }),
+      send: jest.fn().mockResolvedValue({ data: { id: 'msg_123' }, error: null }),
     };
 
     // Mock Resend constructor
@@ -46,9 +46,9 @@ describe('EmailService', () => {
       }),
     };
 
-    const mockLogger = { 
-        error: jest.fn(),
-        info: jest.fn(),
+    const mockLogger = {
+      error: jest.fn(),
+      info: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -61,8 +61,7 @@ describe('EmailService', () => {
 
     service = module.get<EmailService>(EmailService);
     logger = module.get(getLoggerToken(EmailService.name));
-    
-    
+
     // Access the mocked instance of Resend
     mockResend = (service as any).resend;
   });
@@ -111,7 +110,7 @@ describe('EmailService', () => {
       expect(logger.error).not.toHaveBeenCalled();
       expect(logger.info).toHaveBeenCalledWith(
         expect.objectContaining({ to, messageId: 'msg_123' }),
-        'Registration email sent successfully'
+        'Registration email sent successfully',
       );
     });
 
@@ -148,7 +147,7 @@ describe('EmailService', () => {
       });
       expect(logger.info).toHaveBeenCalledWith(
         expect.objectContaining({ to, messageId: 'msg_123' }),
-        'Password change email sent successfully'
+        'Password change email sent successfully',
       );
     });
 

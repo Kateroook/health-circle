@@ -37,10 +37,13 @@ export default function PasswordSetup() {
     setFormError("");
     setLoading(true);
     try {
-      await apiFetch(`/auth/password-setup?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`, {
-        method: "POST",
-        body: JSON.stringify({ newPassword, confirmNewPassword: confirm }),
-      });
+      await apiFetch(
+        `/auth/password-setup?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`,
+        {
+          method: "POST",
+          body: JSON.stringify({ newPassword, confirmNewPassword: confirm }),
+        },
+      );
       router.replace("/Login");
     } catch (e: any) {
       setFormError(formatErrorMessage(e));
@@ -88,12 +91,7 @@ export default function PasswordSetup() {
 
           {/* Email Badge */}
           <View style={styles.emailBadge}>
-            <Icon
-              name="mail"
-              size={16}
-              color="#666"
-              style={{ marginRight: 8 }}
-            />
+            <Icon name="mail" size={16} color="#666" style={{ marginRight: 8 }} />
             <Text style={styles.emailText}>{email}</Text>
           </View>
 
@@ -127,11 +125,7 @@ export default function PasswordSetup() {
                   onPress={() => setShowPassword(!showPassword)}
                   style={styles.eyeButton}
                 >
-                  <Icon
-                    name={showPassword ? "eye-off" : "eye"}
-                    size={20}
-                    color="#999"
-                  />
+                  <Icon name={showPassword ? "eye-off" : "eye"} size={20} color="#999" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -151,23 +145,14 @@ export default function PasswordSetup() {
                   onPress={() => setShowConfirm(!showConfirm)}
                   style={styles.eyeButton}
                 >
-                  <Icon
-                    name={showConfirm ? "eye-off" : "eye"}
-                    size={20}
-                    color="#999"
-                  />
+                  <Icon name={showConfirm ? "eye-off" : "eye"} size={20} color="#999" />
                 </TouchableOpacity>
               </View>
             </View>
 
             {formError && (
               <View style={styles.errorContainer}>
-                <Icon
-                  name="alert-circle"
-                  size={18}
-                  color="#D32F2F"
-                  style={{ marginRight: 8 }}
-                />
+                <Icon name="alert-circle" size={18} color="#D32F2F" style={{ marginRight: 8 }} />
                 <Text style={styles.errorText}>{formError}</Text>
               </View>
             )}
@@ -194,9 +179,7 @@ export default function PasswordSetup() {
                 style={[styles.footerLink, countdown > 0 && styles.linkDisabled]}
                 onPress={handleResendCode}
               >
-                {countdown > 0
-                  ? `Надіслати повторно (${countdown}с)`
-                  : "Надіслати повторно"}
+                {countdown > 0 ? `Надіслати повторно (${countdown}с)` : "Надіслати повторно"}
               </Text>
             </Text>
           </View>

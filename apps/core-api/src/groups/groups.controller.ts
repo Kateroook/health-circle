@@ -77,4 +77,25 @@ export class GroupController {
   async joinGroup(@Body() body: JoinGroupDto, @Req() req: AuthRequest) {
     return this.service.joinByInviteCode(req.user.id, body.code);
   }
+
+  @Post(':id/block/:userId')
+  @ApiOperation({ summary: 'Block a user from the group' })
+  @ApiOkResponse({ description: 'User blocked successfully' })
+  async blockUser(@Param('id') groupId: string, @Param('userId') userId: string, @Req() req: AuthRequest) {
+    return this.service.blockUser(groupId, userId, req.user.id);
+  }
+
+  @Delete(':id/block/:userId')
+  @ApiOperation({ summary: 'Unblock a user from the group' })
+  @ApiOkResponse({ description: 'User unblocked successfully' })
+  async unblockUser(@Param('id') groupId: string, @Param('userId') userId: string, @Req() req: AuthRequest) {
+    return this.service.unblockUser(groupId, userId, req.user.id);
+  }
+
+  @Get(':id/blocked-users')
+  @ApiOperation({ summary: 'Get all blocked users for the group' })
+  @ApiOkResponse({ description: 'List of blocked users' })
+  async getBlockedUsers(@Param('id') groupId: string, @Req() req: AuthRequest) {
+    return this.service.getBlockedUsers(groupId, req.user.id);
+  }
 }

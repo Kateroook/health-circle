@@ -1,17 +1,18 @@
 import {
-    Column,
-    CreateDateColumn,
-    Entity,
-    Index,
-    JoinColumn,
-    ManyToMany,
-    OneToMany,
-    OneToOne,
-    PrimaryGeneratedColumn,
-    UpdateDateColumn,
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToMany,
+  OneToMany,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 import { UserStatus } from '../enums/user-status';
+import { ContactEntity } from './contact.entity';
 import { ExternalFilesEntity } from './external-files.entity';
 import { GroupEntity } from './group.entity';
 import { UserSessionEntity } from './user-sessions.entity';
@@ -24,11 +25,14 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 100 })
   firstName: string;
 
-  @Column({ type: 'varchar', length: 100 })
-  middleName: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  middleName: string | null;
 
   @Column({ type: 'varchar', length: 100 })
   lastName: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  fullName: string | null;
 
   @Index({ unique: true, where: '"email" IS NOT NULL' })
   @Column({ type: 'varchar', nullable: true })
@@ -38,13 +42,13 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   phone: string | null;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: 'timestamptz', nullable: true, select: false })
   lastLoginDate: Date;
 
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.UNKNOWN })
   status: UserStatus;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, select: false })
   fcmToken: string | null;
 
   @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMPTZ' })
@@ -53,10 +57,10 @@ export class UserEntity {
   @Column({ type: 'int', default: 0 })
   failedLoginAttempts: number;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', select: false })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
+  @UpdateDateColumn({ type: 'timestamptz', select: false })
   updatedAt: Date;
 
   @Column({ type: 'timestamptz', nullable: true })
@@ -77,4 +81,9 @@ export class UserEntity {
 
   @ManyToMany(() => GroupEntity, (group) => group.members, { onDelete: 'CASCADE' })
   groups: GroupEntity[];
+
+  @OneToMany(() => ContactEntity, (contact) => contact.owner)
+  contacts: ContactEntity[];
+
+  isAlias?: boolean;
 }

@@ -22,7 +22,7 @@ export class EmailService {
     private readonly logger: PinoLogger,
   ) {
     this.resend = new Resend(this.configService.getOrThrow<string>('RESEND_API_KEY'));
-    
+
     this.fromEmail = this.configService.getOrThrow<string>('EMAIL_FROM');
 
     this.registrationTemplate = this.loadTemplate('registration.hbs');
@@ -33,7 +33,6 @@ export class EmailService {
     const templatePath = resolve(__dirname, '..', 'common', 'assets', 'templates', templateName);
 
     if (!existsSync(templatePath)) {
-       
       this.logger.error({ type: LoggingTypes.generateMail, templatePath }, 'Email template not found');
       throw new Error(`Template not found: ${templateName}`);
     }

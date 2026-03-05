@@ -10,7 +10,7 @@ export class UserPasswordEntity {
   @RelationId((row: UserPasswordEntity) => row.user)
   userId: string;
 
-  @ManyToOne(() => UserEntity, { nullable: false })
+  @ManyToOne(() => UserEntity, { nullable: false, onDelete: 'CASCADE' })
   @Index()
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;

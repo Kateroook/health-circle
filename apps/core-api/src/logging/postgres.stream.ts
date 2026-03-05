@@ -25,7 +25,7 @@ export class PostgresStream extends Stream.Writable {
         content.name,
         content.level,
         content.hostname,
-        content.msg,
+        content.msg || '',
         content.pid,
         new Date(content.time), // Convert epoch or ISO string to Date
         content.userId ?? null,

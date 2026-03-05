@@ -21,21 +21,21 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
-    const [hasFailedAttempt, setHasFailedAttempt] = useState(false);
-    const [hasError, setHasError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [hasFailedAttempt, setHasFailedAttempt] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   async function handleLogin() {
-      setFormError("");
-      setHasError(false);
+    setFormError("");
+    setHasError(false);
     setLoading(true);
     try {
       await login(email, password);
       router.replace("/Dashboard");
     } catch (e: any) {
-        setFormError(formatErrorMessage(e));
-        setHasError(true);
-        setHasFailedAttempt(true);
+      setFormError(formatErrorMessage(e));
+      setHasError(true);
+      setHasFailedAttempt(true);
     } finally {
       setLoading(false);
     }
@@ -55,11 +55,8 @@ export default function Login() {
         >
           {/* Header */}
           <View style={styles.header}>
-            
             <Text style={styles.title}>З поверненням!</Text>
-            <Text style={styles.subtitle}>
-              Ми раді бачити тебе знову в Колі!
-            </Text>
+            <Text style={styles.subtitle}>Ми раді бачити тебе знову в Колі!</Text>
           </View>
 
           {/* Form */}
@@ -79,7 +76,7 @@ export default function Login() {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Пароль</Text>
-                <View style={[styles.passwordContainer, hasError && styles.passwordContainerError]}>
+              <View style={[styles.passwordContainer, hasError && styles.passwordContainerError]}>
                 <TextInput
                   placeholder="Введіть пароль"
                   value={password}
@@ -92,32 +89,23 @@ export default function Login() {
                   onPress={() => setShowPassword(!showPassword)}
                   style={styles.eyeButton}
                 >
-                  <Icon
-                    name={showPassword ? "eye-off" : "eye"}
-                    size={20}
-                    color="#999"
-                  />
+                  <Icon name={showPassword ? "eye-off" : "eye"} size={20} color="#999" />
                 </TouchableOpacity>
               </View>
             </View>
 
-                      {hasFailedAttempt && (
-                          <TouchableOpacity
-                              onPress={() => router.push("/ForgotPassword")}
-                              style={styles.forgotPasswordButton}
-                          >
-                              <Text style={styles.forgotPasswordText}>Забув свій пароль?</Text>
-                          </TouchableOpacity>
-                      )}
+            {hasFailedAttempt && (
+              <TouchableOpacity
+                onPress={() => router.push("/ForgotPassword")}
+                style={styles.forgotPasswordButton}
+              >
+                <Text style={styles.forgotPasswordText}>Забув свій пароль?</Text>
+              </TouchableOpacity>
+            )}
 
             {formError && (
               <View style={styles.errorContainer}>
-                <Icon
-                  name="alert-circle"
-                  size={18}
-                  color="#D32F2F"
-                  style={{ marginRight: 8 }}
-                />
+                <Icon name="alert-circle" size={18} color="#D32F2F" style={{ marginRight: 8 }} />
                 <Text style={styles.errorText}>{formError}</Text>
               </View>
             )}
@@ -129,9 +117,7 @@ export default function Login() {
                 onPress={handleLogin}
                 disabled={loading}
               >
-                <Text style={styles.primaryButtonText}>
-                  {loading ? "Вхід..." : "Увійти"}
-                </Text>
+                <Text style={styles.primaryButtonText}>{loading ? "Вхід..." : "Увійти"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -140,10 +126,7 @@ export default function Login() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Ще немає акаунту?{" "}
-              <Text
-                style={styles.footerLink}
-                onPress={() => router.push("/Register")}
-              >
+              <Text style={styles.footerLink} onPress={() => router.push("/Register")}>
                 Зареєструватися
               </Text>
             </Text>
@@ -172,7 +155,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     marginTop: 10,
-
   },
   iconContainer: {
     width: 70,
@@ -216,11 +198,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#1A1A1A",
     borderWidth: 1,
-      borderColor: "#E5E5E5",
-    },
-    inputError: {                      // ← окремий стиль для помилки
-        borderColor: "#D32F2F",
-    },
+    borderColor: "#E5E5E5",
+  },
+  inputError: {
+    // ← окремий стиль для помилки
+    borderColor: "#D32F2F",
+  },
 
   passwordContainer: {
     flexDirection: "row",
@@ -229,10 +212,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E5E5E5",
-    },
-    passwordContainerError: {
-        borderColor: "#D32F2F",
-    },
+  },
+  passwordContainerError: {
+    borderColor: "#D32F2F",
+  },
   passwordInput: {
     flex: 1,
     paddingVertical: 14,
@@ -296,8 +279,7 @@ const styles = StyleSheet.create({
   forgotPasswordButton: {
     alignSelf: "flex-start",
     marginBottom: 12,
-      marginTop: -8,
-
+    marginTop: -8,
   },
   forgotPasswordText: {
     color: "#000000",

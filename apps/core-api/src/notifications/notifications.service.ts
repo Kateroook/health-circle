@@ -12,7 +12,23 @@ export class NotificationsService {
       const response = await admin.messaging().sendEachForMulticast({
         tokens,
         notification: { title, body },
-        data,
+        android: {
+          priority: 'high',
+          notification: {
+            title,
+            body,
+            channelId: 'default',
+            sound: 'default',
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'default',
+            },
+          },
+        },
+        data: data ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])) : undefined,
       });
 
       this.logger.log(`Notifications sent: ${response.successCount} success, ${response.failureCount} failed`);

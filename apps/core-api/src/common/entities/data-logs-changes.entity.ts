@@ -19,6 +19,6 @@ export class DataLogChangesEntity {
   @Column({ type: 'varchar', length: 64, nullable: true })
   valueType: string;
 
-  @ManyToOne(() => DataLogEntity, (entity) => entity.id, { nullable: false })
+  @ManyToOne(() => DataLogEntity, (entity) => entity.id, { nullable: false, onDelete: 'CASCADE' })
   log: DataLogEntity;
 }

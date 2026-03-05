@@ -21,7 +21,7 @@ export class UserSessionEntity {
   @RelationId((session: UserSessionEntity) => session.user)
   userId: string;
 
-  @ManyToOne(() => UserEntity, { nullable: false, cascade: ['update'] })
+  @ManyToOne(() => UserEntity, { nullable: false, onDelete: 'CASCADE' })
   @Index()
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;

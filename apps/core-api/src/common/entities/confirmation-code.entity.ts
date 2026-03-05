@@ -7,16 +7,16 @@ export class ConfirmationCodeEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({type: 'varchar', length: 255})
+  @Column({ type: 'varchar', length: 255 })
   code: string;
 
-  @Column({ type: 'enum', enum: ConfirmationTypes, })
+  @Column({ type: 'enum', enum: ConfirmationTypes })
   type: ConfirmationTypes;
 
   @Column()
   expiresAt: Date;
 
-  @CreateDateColumn({type: 'timestamptz'})
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })

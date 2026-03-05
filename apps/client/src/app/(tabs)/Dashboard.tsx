@@ -1,5 +1,6 @@
 import { apiFetch, updateMyStatus } from "@/src/api/api";
 import MemberAvatar from "@/src/components/MemberAvatar";
+import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";

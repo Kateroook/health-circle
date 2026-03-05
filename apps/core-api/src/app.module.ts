@@ -1,5 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import Joi from 'joi';
@@ -7,8 +8,10 @@ import { SecurityModule } from 'src/security/security.module';
 
 import { AuthModule } from './auth/auth.module';
 import { entities } from './common/entities';
+import { GlobalThrottlerGuard } from './common/guards/global-throttler.guard';
 import { migrations } from './common/migrations';
 import { subscribers } from './common/subscribers';
+import { ContactsModule } from './contacts/contacts.module';
 import { EmailModule } from './email/email.module';
 import { ExternalFilesModule } from './external-files/external-files.module';
 import { GroupsModule } from './groups/groups.module';
@@ -30,6 +33,7 @@ import { UsersModule } from './users/users.module';
         NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
         PORT: Joi.number().required(),
         API_DOCS_ENABLED: Joi.string().optional().default('false').allow('true', 'false'),
+        THROTTLER_ENABLED: Joi.string().optional().default('true').allow('true', 'false'),
         // PostgreSQL
         POSTGRES_HOST: Joi.string().required(),
         POSTGRES_PORT: Joi.number().required(),
@@ -55,6 +59,7 @@ import { UsersModule } from './users/users.module';
         ACCESS_TOKEN_TTL: Joi.number().required(),
         REFRESH_TOKEN_SECRET: Joi.string().required(),
         REFRESH_TOKEN_TTL: Joi.number().required(),
+        MAX_FAILED_LOGIN_ATTEMPTS: Joi.number().optional().default(5),
 
         // Confirmations
         RESET_PASSWORD_TOKEN_TTL: Joi.number().required(),
@@ -91,6 +96,7 @@ import { UsersModule } from './users/users.module';
     SecurityModule,
     GroupsModule,
     ExternalFilesModule,
+    ContactsModule,
     ScheduleModule.forRoot(),
     NotificationsModule,
     HealthModule,
@@ -111,6 +117,12 @@ import { UsersModule } from './users/users.module';
         limit: 100, // 100 requests per minute
       },
     ]),
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: GlobalThrottlerGuard,
+    },
   ],
 })
 export class AppModule implements NestModule {

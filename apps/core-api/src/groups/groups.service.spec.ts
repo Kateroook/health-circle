@@ -2,7 +2,9 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { GroupEntity } from 'src/common/entities/group.entity';
+import { GroupBlockListEntity } from 'src/common/entities/group-block-list.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
+import { ContactsService } from 'src/contacts/contacts.service';
 import { SecurityService } from 'src/security/security.service';
 import { In, Repository } from 'typeorm';
 
@@ -14,7 +16,9 @@ describe('GroupService', () => {
   let service: GroupService;
   let groupRepository: jest.Mocked<Repository<GroupEntity>>;
   let userRepository: jest.Mocked<Repository<UserEntity>>;
+  let blockListRepository: jest.Mocked<Repository<GroupBlockListEntity>>;
   let securityService: jest.Mocked<SecurityService>;
+  let contactsService: jest.Mocked<ContactsService>;
 
   // Variables are declared here but initialized in beforeEach
   let mockUser: UserEntity;
@@ -69,6 +73,21 @@ describe('GroupService', () => {
           },
         },
         {
+          provide: getRepositoryToken(GroupBlockListEntity),
+          useValue: {
+            findOne: jest.fn(),
+            upsert: jest.fn(),
+            delete: jest.fn(),
+            find: jest.fn(),
+          },
+        },
+        {
+          provide: ContactsService,
+          useValue: {
+            findAllForUser: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
           provide: SecurityService,
           useValue: {
             generateRandomToken: jest.fn(),
@@ -80,7 +99,9 @@ describe('GroupService', () => {
     service = module.get<GroupService>(GroupService);
     groupRepository = module.get(getRepositoryToken(GroupEntity));
     userRepository = module.get(getRepositoryToken(UserEntity));
+    blockListRepository = module.get(getRepositoryToken(GroupBlockListEntity));
     securityService = module.get(SecurityService);
+    contactsService = module.get(ContactsService);
   });
 
   afterEach(() => {
@@ -93,6 +114,8 @@ describe('GroupService', () => {
       const result = await service.findAllForUser('user-1');
 
       expect(groupRepository.createQueryBuilder).toHaveBeenCalledWith('group');
+      // logic maps members. Since we passed mockGroup with 2 members (owner, user-1),
+      // filtering user-1 should leave 1 member.
       expect(result[0].members).toHaveLength(1); // mockUser removed
       expect(result[0].members[0].id).toBe('owner-1');
     });
@@ -187,6 +210,7 @@ describe('GroupService', () => {
 
       groupRepository.findOne.mockResolvedValue(groupWithOneMember);
       userRepository.findOneBy.mockResolvedValue(mockUser);
+      blockListRepository.findOne.mockResolvedValue(null); // Not blocked
       groupRepository.save.mockResolvedValue({} as GroupEntity);
 
       const result = await service.joinByInviteCode('user-1', 'ABC');
@@ -196,6 +220,13 @@ describe('GroupService', () => {
       expect(result.message).toContain('приєдналися');
     });
 
+    it('should throw ForbiddenException if user is blocked', async () => {
+      groupRepository.findOne.mockResolvedValue(mockGroup);
+      blockListRepository.findOne.mockResolvedValue({} as GroupBlockListEntity); // Blocked
+
+      await expect(service.joinByInviteCode('user-1', 'ABC')).rejects.toThrow(ForbiddenException);
+    });
+
     it('should throw NotFoundException if code invalid', async () => {
       groupRepository.findOne.mockResolvedValue(null);
       await expect(service.joinByInviteCode('u1', 'BAD')).rejects.toThrow(NotFoundException);
@@ -203,6 +234,7 @@ describe('GroupService', () => {
 
     it('should throw BadRequestException if already member', async () => {
       groupRepository.findOne.mockResolvedValue(mockGroup); // mockUser is already in members
+      blockListRepository.findOne.mockResolvedValue(null);
       userRepository.findOneBy.mockResolvedValue(mockUser);
 
       await expect(service.joinByInviteCode('user-1', 'ABC')).rejects.toThrow(BadRequestException);
@@ -268,6 +300,38 @@ describe('GroupService', () => {
     it('should throw ForbiddenException if not owner', async () => {
       groupRepository.findOne.mockResolvedValue(mockGroup);
       await expect(service.deleteGroup('user-1', 'group-1')).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('blockUser', () => {
+    it('should block user and remove from members', async () => {
+      groupRepository.findOne.mockResolvedValue(mockGroup);
+      // mockGroup has mockUser as member
+      groupRepository.save.mockResolvedValue(mockGroup);
+      blockListRepository.upsert.mockResolvedValue({} as any);
+
+      await service.blockUser('group-1', 'user-1', 'owner-1');
+
+      // Members should be filtered
+      expect(mockGroup.members).not.toContain(mockUser);
+      expect(groupRepository.save).toHaveBeenCalled();
+      expect(blockListRepository.upsert).toHaveBeenCalled();
+    });
+
+    it('should throw Forbidden if not owner', async () => {
+      groupRepository.findOne.mockResolvedValue(mockGroup);
+      await expect(service.blockUser('group-1', 'user-1', 'user-1')).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('unblockUser', () => {
+    it('should unblock user', async () => {
+      groupRepository.findOne.mockResolvedValue(mockGroup);
+      blockListRepository.delete.mockResolvedValue({} as any);
+
+      await service.unblockUser('group-1', 'user-1', 'owner-1');
+
+      expect(blockListRepository.delete).toHaveBeenCalled();
     });
   });
 });
