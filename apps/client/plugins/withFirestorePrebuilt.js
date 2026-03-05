@@ -34,9 +34,10 @@ function withFirestorePrebuilt(config) {
         contents = contents.replace(/pod 'FirebaseFirestore'/, firestorePod);
       } else {
         // Inject near other Firebase pods or before use_native_modules!
+        // We use a regex that matches the entire line to avoid breaking assignments like 'config = use_native_modules!'
         contents = contents.replace(
-          /use_native_modules!/,
-          `${firestorePod}\n  use_native_modules!`,
+          /^(\s*).*use_native_modules!.*$/m,
+          (match) => `${firestorePod}\n${match}`,
         );
       }
 
