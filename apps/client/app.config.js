@@ -39,6 +39,7 @@ export default {
       "@react-native-firebase/messaging",
       "./plugins/withNotifeeProjectGradle.js",
       "./plugins/withPodfileAllowNonModularIncludes.js",
+      "./plugins/withFirestorePrebuilt.js",
       "expo-router",
       [
         "expo-splash-screen",
