@@ -32,6 +32,7 @@ describe('AuthService', () => {
     id: 'user-123',
     email: 'test@example.com',
     lockedAt: null,
+    isRegistered: true,
   } as unknown as UserEntity;
 
   const mockMetadata = {
@@ -72,6 +73,7 @@ describe('AuthService', () => {
           useValue: {
             findOne: jest.fn(),
             save: jest.fn(),
+            update: jest.fn(),
           },
         },
         {

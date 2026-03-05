@@ -249,7 +249,7 @@ export class AuthService {
     await this.confirmationService.consumeToken(user.id);
 
     // Mark as registered
-    await this.userRepository.update({ id: user.id }, { isRegistered: true });
+    await this.userRepository.save({ id: user.id, isRegistered: true });
   }
 
   async changePassword(user: UserProfileDto, data: UserChangePasswordDto): Promise<void> {
