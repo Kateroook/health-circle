@@ -30,7 +30,8 @@ function withPodfileAllowNonModularIncludes(config) {
           config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
           config.build_settings['DEFINES_MODULE'] = 'YES'
           config.build_settings['GCC_C_LANGUAGE_STANDARD'] = 'gnu99'
-          config.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "\${PODS_ROOT}/Headers/Public/RNFBApp"'
+          config.build_settings['HEADER_SEARCH_PATHS'] = '$(inherited) "\${PODS_ROOT}/Headers/Public/RNFBApp" "\${PODS_CONFIGURATION_BUILD_DIR}/RNFBApp/RNFBApp.framework/Headers"'
+          config.build_settings['OTHER_LDFLAGS'] = '$(inherited) -framework "RNFBApp"'
         end
       end
     end
