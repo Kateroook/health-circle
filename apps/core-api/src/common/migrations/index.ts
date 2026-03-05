@@ -18,6 +18,7 @@ import { RemoveAvatars1771168550000 } from './1771168550000-remove-avatars';
 import { AddContactsAndFullName1771181633191 } from './1771181633191-add-contacts-and-full-name';
 import { AddGroupBlockList1771186507666 } from './1771186507666-add-group-block-list';
 import { CascadeDeleteAndRelaxLogConstraints1772048762122 } from './1772048762122-CascadeDeleteAndRelaxLogConstraints';
+import { MakeMiddleNameOptional1772561853196 } from './1772561853196-MakeMiddleNameOptional';
 
 export const migrations = [
   CreateEntities1762501994652,
@@ -40,4 +41,5 @@ export const migrations = [
   AddContactsAndFullName1771181633191,
   AddGroupBlockList1771186507666,
   CascadeDeleteAndRelaxLogConstraints1772048762122,
+  MakeMiddleNameOptional1772561853196,
 ];
