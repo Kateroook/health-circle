@@ -30,10 +30,17 @@ export default function Login() {
     setHasError(false);
     setLoading(true);
     try {
-      await login(email, password);
+      // Clean phone number if it looks like one (simple trim/format logic if needed)
+      const cleanIdentifier = email.trim();
+      await login(cleanIdentifier, password);
       router.replace("/Dashboard");
     } catch (e: any) {
-      setFormError(formatErrorMessage(e));
+      const errorMsg = formatErrorMessage(e);
+      if (errorMsg === "INCOMPLETE_REGISTRATION") {
+        router.push({ pathname: "/PasswordSetup", params: { email } });
+        return;
+      }
+      setFormError(errorMsg);
       setHasError(true);
       setHasFailedAttempt(true);
     } finally {
@@ -64,10 +71,10 @@ export default function Login() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Електронна пошта або телефон</Text>
               <TextInput
-                placeholder="example@mail.com"
+                placeholder="example@mail.com або +380..."
                 value={email}
                 onChangeText={setEmail}
-                keyboardType="email-address"
+                keyboardType="default"
                 autoCapitalize="none"
                 style={[styles.input, hasError && styles.inputError]}
                 placeholderTextColor="#999"
@@ -94,15 +101,6 @@ export default function Login() {
               </View>
             </View>
 
-            {hasFailedAttempt && (
-              <TouchableOpacity
-                onPress={() => router.push("/ForgotPassword")}
-                style={styles.forgotPasswordButton}
-              >
-                <Text style={styles.forgotPasswordText}>Забув свій пароль?</Text>
-              </TouchableOpacity>
-            )}
-
             {formError && (
               <View style={styles.errorContainer}>
                 <Icon name="alert-circle" size={18} color="#D32F2F" style={{ marginRight: 8 }} />
@@ -124,6 +122,12 @@ export default function Login() {
 
           {/* Footer */}
           <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Забули пароль?{" "}
+              <Text style={styles.footerLink} onPress={() => router.push("/ForgotPassword")}>
+                Скинути
+              </Text>
+            </Text>
             <Text style={styles.footerText}>
               Ще немає акаунту?{" "}
               <Text style={styles.footerLink} onPress={() => router.push("/Register")}>
@@ -276,15 +280,11 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontWeight: "600",
   },
-  forgotPasswordButton: {
-    alignSelf: "flex-start",
-    marginBottom: 12,
-    marginTop: -8,
-  },
   forgotPasswordText: {
-    color: "#000000",
+    color: "#666",
     fontSize: 14,
     fontWeight: "500",
+    textDecorationLine: "underline",
   },
   skipButton: {
     paddingVertical: 8,

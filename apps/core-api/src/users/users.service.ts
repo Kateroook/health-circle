@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as admin from 'firebase-admin';
@@ -163,6 +163,29 @@ export class UsersService {
     isNew = false,
     user: UserProfileDto,
   ): Promise<UserEntity> {
+    if (isNew) {
+      const existingUser = await this.repository.findOne({
+        where: [{ email: (item as CreateUserDto).email }, { phone: (item as CreateUserDto).phone }],
+      });
+
+      if (existingUser) {
+        if (existingUser.isRegistered) {
+          throw new BadRequestException('Користувач з таким email або номером телефону вже існує');
+        }
+        // If not registered, we update the existing one
+        const updated = await this.repository.save({
+          ...existingUser,
+          ...item,
+          id: existingUser.id,
+        });
+        if (updated.email) {
+          await this.confirmationsService.setupPasswordCode(updated.email, updated.id, ConfirmationTypes.REGISTRATION);
+        }
+        await this.userActivitiesService.logActivity(UserActivityTypes.createUser, metadata, { userId: updated.id });
+        return updated;
+      }
+    }
+
     if (!isNew && 'id' in item) {
       ensureSameUser(item.id, user.id);
       const exists = await this.repository.existsBy({ id: item.id });

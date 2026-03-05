@@ -35,7 +35,7 @@ interface AuthStoreState {
   isLoggedIn: boolean;
 
   // actions
-  login: (email: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   refreshSession: () => Promise<boolean>;
@@ -137,11 +137,11 @@ export const useAuthStore = create<AuthStoreState>()(
       },
 
       // Login
-      login: async (email, password) => {
+      login: async (identifier, password) => {
         try {
           const res = await apiFetch("/auth/login", {
             method: "POST",
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ identifier, password }),
             headers: { "Content-Type": "application/json" },
           });
 

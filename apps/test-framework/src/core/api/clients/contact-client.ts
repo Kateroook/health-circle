@@ -7,7 +7,7 @@ import {
   UpdateContactResponse,
   SetContactAliasRequest,
   SetContactAliasResponse,
-  ContactEntity,
+  ContactApiEntity,
 } from '../../types/api';
 
 /**
@@ -74,7 +74,7 @@ export class ContactClient extends BaseClient {
   /**
    * Хелпер: знайти контакт за targetId
    */
-  public async findContactByTargetId(targetId: string): Promise<ContactEntity | null> {
+  public async findContactByTargetId(targetId: string): Promise<ContactApiEntity | null> {
     const result = await this.getAllContacts();
     if (!result.data) return null;
     return result.data.find((c) => c.targetId === targetId) || null;
