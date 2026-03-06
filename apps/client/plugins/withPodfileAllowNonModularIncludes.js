@@ -36,24 +36,31 @@ function withPodfileAllowNonModularIncludes(config) {
         "            '\"${PODS_ROOT}/Headers/Public/RNFBApp\"',",
         "            '\"${PODS_CONFIGURATION_BUILD_DIR}/RNFBApp/RNFBApp.framework/Headers\"',",
         "            '\"${PODS_ROOT}/RNFBApp\"',",
-        "            '\"$(SRCROOT)/../node_modules/@react-native-firebase/app/ios/RNFBApp\"'",
+        "            '\"${PODS_ROOT}/Headers/Public/React-Core\"',",
+        "            '\"${PODS_ROOT}/Headers/Public/Firebase\"',",
+        "            '\"$(SRCROOT)/../node_modules/@react-native-firebase/app/ios/RNFBApp\"',",
+        "            '\"$(SRCROOT)/../../node_modules/@react-native-firebase/app/ios/RNFBApp\"',",
+        "            '\"$(SRCROOT)/../../../node_modules/@react-native-firebase/app/ios/RNFBApp\"'",
         "          ].join(' ')",
-        "          config.build_settings['OTHER_LDFLAGS'] = '$(inherited) -framework \"RNFBApp\"'",
+        "          config.build_settings['OTHER_LDFLAGS'] = '$(inherited) -framework \"RNFBApp\" -framework \"React\"'",
         "        end",
         "      end",
         "    end",
       ].join("\n");
 
-      if (contents.includes("CLANG_ALLOW_NON_MODULAR_INCLUDES")) {
-        return config;
-      }
+      const marker = "# RNFB_BUILD_SETTINGS_FIX_START";
+      const endMarker = "# RNFB_BUILD_SETTINGS_FIX_END";
+      const fullInject = `\n${marker}\n${injectString}\n${endMarker}\n`;
 
-      // Inject into the post_install block, handling variations of the block signature
-      contents = contents.replace(
-        /post_install\s+do\s+\|([^|]+)\|/,
-        (match, p1) =>
-          `post_install do |${p1}|${injectString.replace(/\|installer\|/g, `|${p1}|`).replace(/installer\./g, `${p1}.`)}`,
-      );
+      if (contents.includes(marker)) {
+        const regex = new RegExp(`${marker}[\\s\\S]*?${endMarker}`, "g");
+        contents = contents.replace(regex, fullInject);
+      } else {
+        contents = contents.replace(
+          /post_install\s+do\s+\|([^|]+)\|/,
+          (match, p1) => `${match}${fullInject.replace(/installer/g, p1)}`,
+        );
+      }
 
       fs.writeFileSync(file, contents);
       return config;

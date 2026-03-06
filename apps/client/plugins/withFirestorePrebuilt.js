@@ -24,8 +24,15 @@ function withFirestorePrebuilt(config) {
       const firestorePod =
         "  pod 'FirebaseFirestore', :git => 'https://github.com/invertase/firestore-ios-sdk-frameworks.git', :tag => '12.8.0'";
 
+      const globalStaticFlag = "$RNFirebaseAsStaticFramework = true";
+
       if (contents.includes("FirebaseFirestore") && contents.includes(":git")) {
         return config;
+      }
+
+      // Add the global flag at the top if not present
+      if (!contents.includes(globalStaticFlag)) {
+        contents = globalStaticFlag + "\n" + contents;
       }
 
       // Inject after use_native_modules! or at the end of the main target block

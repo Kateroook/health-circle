@@ -61,6 +61,7 @@ export default {
           },
           ios: {
             useFrameworks: "static",
+            forceStaticLinking: ["RNFBApp", "RNFBMessaging", "RNFBFirestore", "FirebaseFirestore"],
           },
         },
       ],
