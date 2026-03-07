@@ -4,10 +4,7 @@
   },
   "build": {
     "preview": {
-      "distribution": "internal",
-      "ios": {
-        "provisioningProfile": "latest"
-      }
+      "distribution": "internal"
     },
     "simulator": {
       "ios": {
