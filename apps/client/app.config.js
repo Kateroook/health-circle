@@ -11,10 +11,10 @@ export default {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.vlad-risenhin.healthcircle",
+      bundleIdentifier: "com.vlad-risenhin.health-circle",
     },
     android: {
-      package: "com.vlad_risenhin.healthcircle",
+      package: "com.vlad_risenhin.health_circle",
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
