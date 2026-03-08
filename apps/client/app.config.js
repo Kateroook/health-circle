@@ -33,7 +33,6 @@ export default {
     plugins: [
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
-      "./plugins/withNotifeeProjectGradle.js",
       "expo-router",
       [
         "expo-splash-screen",
@@ -51,7 +50,8 @@ export default {
         "expo-build-properties",
         {
           android: {
-            usesCleartextTraffic: true,
+            usesCleartextTraffic: false,
+            extraMavenRepos: ["$rootDir/../node_modules/@notifee/react-native/android/libs"],
           },
           ios: {},
         },
