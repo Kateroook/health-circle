@@ -35,16 +35,16 @@ jobs:
         run: npm ci
 
       - name: Restore google-services.json
-        shell: bash
         run: |
-          if [ -n "${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}" ]; then
-            echo "${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}" | base64 --decode > ${{ github.workspace }}/apps/client/google-services.json
-          else
-            echo "Google Services JSON secret not found, creating a placeholder"
-            echo "{}" > ${{ github.workspace }}/apps/client/google-services.json
-          fi
+          if ("${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}" -ne "") {
+            [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}")) | Out-File -FilePath google-services.json -Encoding utf8
+          } else {
+            Write-Host "Google Services JSON secret not found, creating a placeholder"
+            "{}" | Out-File -FilePath google-services.json -Encoding utf8
+          }
+        shell: pwsh
 
       - name: Build Android Debug
         run: ./gradlew.bat :app:assembleDebug --no-daemon
         env:
-          GOOGLE_SERVICES_JSON: ${{ github.workspace }}/apps/client/google-services.json
+          GOOGLE_SERVICES_JSON: google-services.json
