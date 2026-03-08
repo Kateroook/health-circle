@@ -57,12 +57,12 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           GOOGLE_SERVICE_INFO_PLIST: ${{ github.workspace }}/apps/client/GoogleService-Info.plist
 
-      - name: Build iOS IPA
+      - name: Build iOS Simulator App
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL || env.EXPO_PUBLIC_API_URL }}
           GOOGLE_SERVICE_INFO_PLIST: ${{ github.workspace }}/apps/client/GoogleService-Info.plist
-        run: eas build --platform ios --profile preview --local --non-interactive --output build.ipa --verbose-logs
+        run: eas build --platform ios --profile simulator --local --non-interactive --output build.tar.gz --verbose-logs
 
       - name: Define Artifact Name
         id: artifact_name
@@ -71,11 +71,11 @@ jobs:
         shell: bash
 
       - name: Rename Build Archive
-        run: mv build.ipa ${{ steps.artifact_name.outputs.NAME }}.ipa
+        run: mv build.tar.gz ${{ steps.artifact_name.outputs.NAME }}.tar.gz
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.artifact_name.outputs.NAME }}
-          path: apps/client/${{ steps.artifact_name.outputs.NAME }}.ipa
+          path: apps/client/${{ steps.artifact_name.outputs.NAME }}.tar.gz
           retention-days: 7
