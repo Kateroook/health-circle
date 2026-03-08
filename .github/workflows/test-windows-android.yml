@@ -10,9 +10,6 @@ jobs:
   test-windows:
     name: Build Android (Windows Runner)
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: apps/client
 
     steps:
       - name: Checkout repository
@@ -32,9 +29,12 @@ jobs:
           java-version: "17"
 
       - name: Install dependencies
+        working-directory: apps/client
         run: npm ci
 
       - name: Restore google-services.json
+        working-directory: apps/client
+        shell: pwsh
         run: |
           if ("${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}" -ne "") {
             [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}")) | Out-File -FilePath google-services.json -Encoding utf8
@@ -42,10 +42,10 @@ jobs:
             Write-Host "Google Services JSON secret not found, creating a placeholder"
             "{}" | Out-File -FilePath google-services.json -Encoding utf8
           }
-        shell: pwsh
 
       - name: Build Android Debug
         working-directory: apps/client/android
-        run: ./gradlew.bat :app:assembleDebug --no-daemon
+        shell: bash
+        run: ./gradlew :app:assembleDebug --no-daemon
         env:
           GOOGLE_SERVICES_JSON: ../google-services.json
