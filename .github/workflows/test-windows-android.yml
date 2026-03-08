@@ -29,11 +29,11 @@ jobs:
           java-version: "17"
 
       - name: Install dependencies
-        working-directory: apps/client
+        working-directory: apps\client
         run: npm ci
 
       - name: Restore google-services.json
-        working-directory: apps/client
+        working-directory: apps\client
         shell: pwsh
         run: |
           if ("${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}" -ne "") {
@@ -44,8 +44,7 @@ jobs:
           }
 
       - name: Build Android Debug
-        working-directory: apps/client/android
-        shell: bash
-        run: ./gradlew :app:assembleDebug --no-daemon
+        working-directory: apps\client\android
+        run: .\gradlew.bat :app:assembleDebug --no-daemon
         env:
-          GOOGLE_SERVICES_JSON: ../google-services.json
+          GOOGLE_SERVICES_JSON: ..\google-services.json
