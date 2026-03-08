@@ -72,6 +72,12 @@ export class UsersService {
     } else if (status === UserStatus.SAFE) {
       title = '✅ У безпеці';
       body = `${user.firstName} ${user.lastName} зараз у безпеці.`;
+    } else if (status === UserStatus.WAS_SAFE) {
+      title = '💡 Був у безпеці';
+      body = `Статус ${user.firstName} ${user.lastName} змінено на "Був у безпеці".`;
+    } else if (status === UserStatus.UNKNOWN) {
+      title = '❓ Невідомо';
+      body = `Статус ${user.firstName} ${user.lastName} тепер "Невідомо".`;
     }
 
     if (tokens.size > 0) {
@@ -225,5 +231,22 @@ export class UsersService {
     await this.userActivitiesService.logActivity(UserActivityTypes.deleteAccount, metadata, { userId: user.id });
 
     return { success: true };
+  }
+
+  async handleAirAlert(region: string) {
+    const usersToUpdate = await this.repository.find({
+      where: {
+        region,
+        status: UserStatus.SAFE,
+      },
+      relations: ['groups', 'groups.members'],
+    });
+
+    for (const user of usersToUpdate) {
+      await this.updateStatus(user.id, UserStatus.WAS_SAFE);
+      // Notifications are already handled inside updateStatus
+    }
+
+    return { updatedCount: usersToUpdate.length };
   }
 }

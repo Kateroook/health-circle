@@ -57,6 +57,9 @@ export class UserEntity {
   @Column({ type: 'int', default: 0 })
   failedLoginAttempts: number;
 
+  @Column({ type: 'varchar', nullable: true })
+  region: string | null;
+
   @CreateDateColumn({ type: 'timestamptz', select: false })
   createdAt: Date;
 

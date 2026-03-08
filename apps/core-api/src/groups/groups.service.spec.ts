@@ -6,6 +6,7 @@ import { GroupBlockListEntity } from 'src/common/entities/group-block-list.entit
 import { UserEntity } from 'src/common/entities/user.entity';
 import { ContactsService } from 'src/contacts/contacts.service';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 import { SecurityService } from 'src/security/security.service';
 import { In, Repository } from 'typeorm';
 
@@ -20,6 +21,7 @@ describe('GroupService', () => {
   let blockListRepository: jest.Mocked<Repository<GroupBlockListEntity>>;
   let securityService: jest.Mocked<SecurityService>;
   let contactsService: jest.Mocked<ContactsService>;
+  let notificationsService: jest.Mocked<NotificationsService>;
 
   // Variables are declared here but initialized in beforeEach
   let mockUser: UserEntity;
@@ -100,6 +102,12 @@ describe('GroupService', () => {
             sendSyncSignal: jest.fn(),
           },
         },
+        {
+          provide: NotificationsService,
+          useValue: {
+            sendMulticast: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -109,6 +117,7 @@ describe('GroupService', () => {
     blockListRepository = module.get(getRepositoryToken(GroupBlockListEntity));
     securityService = module.get(SecurityService);
     contactsService = module.get(ContactsService);
+    notificationsService = module.get(NotificationsService);
   });
 
   afterEach(() => {
@@ -339,6 +348,36 @@ describe('GroupService', () => {
       await service.unblockUser('group-1', 'user-1', 'owner-1');
 
       expect(blockListRepository.delete).toHaveBeenCalled();
+    });
+  });
+
+  describe('initiateRollCall', () => {
+    it('should set lastRollCallAt and send notifications', async () => {
+      mockGroup.members[1].fcmToken = 'token-1';
+      groupRepository.findOne.mockResolvedValue(mockGroup);
+      groupRepository.save.mockResolvedValue(mockGroup);
+
+      const result = await service.initiateRollCall('group-1', 'owner-1');
+
+      expect(groupRepository.save).toHaveBeenCalled();
+      expect(mockGroup.lastRollCallAt).toBeInstanceOf(Date);
+      expect(notificationsService.sendMulticast).toHaveBeenCalledWith(
+        ['token-1'],
+        expect.stringContaining('Перекличка'),
+        expect.stringContaining('Test Group'),
+        expect.objectContaining({ type: 'ROLL_CALL' }),
+      );
+      expect(result.message).toContain('розпочато');
+    });
+
+    it('should throw Forbidden if not owner', async () => {
+      groupRepository.findOne.mockResolvedValue(mockGroup);
+      await expect(service.initiateRollCall('group-1', 'user-1')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw NotFound if group missing', async () => {
+      groupRepository.findOne.mockResolvedValue(null);
+      await expect(service.initiateRollCall('x', 'u1')).rejects.toThrow(NotFoundException);
     });
   });
 });

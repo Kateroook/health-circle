@@ -98,4 +98,11 @@ export class GroupController {
   async getBlockedUsers(@Param('id') groupId: string, @Req() req: AuthRequest) {
     return this.service.getBlockedUsers(groupId, req.user.id);
   }
+
+  @Post(':id/roll-call')
+  @ApiOperation({ summary: 'Initiate a roll call in the group' })
+  @ApiOkResponse({ description: 'Roll call initiated successfully' })
+  async initiateRollCall(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
+    return this.service.initiateRollCall(params.id, req.user.id);
+  }
 }

@@ -37,6 +37,9 @@ export class GroupEntity {
   @Column({ type: 'varchar', length: 32, nullable: true, unique: true })
   inviteCode: string;
 
+  @Column({ type: 'timestamptz', nullable: true })
+  lastRollCallAt: Date | null;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 

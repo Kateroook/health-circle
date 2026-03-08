@@ -5,6 +5,7 @@ import { GroupBlockListEntity } from 'src/common/entities/group-block-list.entit
 import { UserEntity } from 'src/common/entities/user.entity';
 import { ContactsService } from 'src/contacts/contacts.service';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 import { SecurityService } from 'src/security/security.service';
 import { In, Repository } from 'typeorm';
 
@@ -23,6 +24,7 @@ export class GroupService {
     private readonly securityService: SecurityService,
     private readonly contactsService: ContactsService,
     private readonly firestoreSyncService: FirestoreSyncService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private async syncGroupMembers(group: GroupEntity) {
@@ -234,5 +236,33 @@ export class GroupService {
       where: { group: { id: groupId } },
       relations: ['user'],
     });
+  }
+
+  async initiateRollCall(groupId: string, userId: string) {
+    const group = await this.repository.findOne({
+      where: { id: groupId },
+      relations: ['owner', 'members'],
+    });
+    if (!group) throw new NotFoundException('Коло не знайдено');
+    if (group.owner.id !== userId) throw new ForbiddenException('Тільки власник може ініціювати перекличку');
+
+    group.lastRollCallAt = new Date();
+    await this.repository.save(group);
+
+    const tokens = group.members.filter((m) => m.id !== userId && m.fcmToken).map((m) => m.fcmToken as string);
+
+    if (tokens.length > 0) {
+      await this.notificationsService.sendMulticast(
+        tokens,
+        'Перекличка! 📢',
+        `Адміністратор кола "${group.name}" просить підтвердити ваш статус безпеки.`,
+        {
+          groupId: group.id,
+          type: 'ROLL_CALL',
+        },
+      );
+    }
+
+    return { message: 'Перекличку розпочато' };
   }
 }

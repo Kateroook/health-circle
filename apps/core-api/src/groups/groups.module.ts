@@ -9,6 +9,7 @@ import { SecurityModule } from 'src/security/security.module';
 
 import { GroupController } from './groups.controller';
 import { GroupService } from './groups.service';
+import { StatusSchedulerService } from './status-scheduler.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { GroupService } from './groups.service';
     ContactsModule,
     NotificationsModule,
   ],
-  providers: [GroupService],
+  providers: [GroupService, StatusSchedulerService],
   controllers: [GroupController],
 })
 export class GroupsModule {}
