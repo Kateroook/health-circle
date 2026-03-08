@@ -1,4 +1,5 @@
 import { apiFetch, updateMyStatus } from "@/src/api/api";
+import { initiatePersonalRollCall } from "@/src/api/groups";
 import { Avatar } from "@/src/components/Avatar";
 import { Button } from "@/src/components/Button";
 import { ListItem } from "@/src/components/ListItem";
@@ -25,6 +26,7 @@ interface Member {
 interface Group {
   id: string;
   name: string;
+  owner?: { id: string };
   members: Member[];
 }
 
@@ -46,6 +48,8 @@ const MainStatusIndicator = ({
         return theme.colors.state.safe;
       case "DANGER":
         return theme.colors.state.emergency;
+      case "WAS_SAFE":
+        return theme.colors.state.safe; // Or a variation if we have a specific color for WAS_SAFE
       default:
         return PRIMARY_COLOR;
     }
@@ -94,7 +98,9 @@ const MainStatusIndicator = ({
             ? "В безпеці"
             : currentStatus === "DANGER"
               ? "Потрібна допомога!"
-              : "Невідомо"}
+              : currentStatus === "WAS_SAFE"
+                ? "Був у безпеці"
+                : "Невідомо"}
         </Typography>
       </Pressable>
       <Typography variant="caption" tone="secondary" style={styles.mainStatusHelperText}>
@@ -110,10 +116,14 @@ const MemberProfileModal = ({
   member,
   visible,
   onClose,
+  onRollCall,
+  canRollCall,
 }: {
   member: Member | null;
   visible: boolean;
   onClose: () => void;
+  onRollCall: () => void;
+  canRollCall: boolean;
 }) => {
   if (!member) return null;
 
@@ -150,13 +160,15 @@ const MemberProfileModal = ({
               size="medium"
               onPress={() => {}}
             />
-            <Button
-              label="Перекличка"
-              hierarchy="secondary"
-              shape="rectangle"
-              size="medium"
-              onPress={() => {}}
-            />
+            {canRollCall && (
+              <Button
+                label="Перекличка"
+                hierarchy="secondary"
+                shape="rectangle"
+                size="medium"
+                onPress={onRollCall}
+              />
+            )}
           </View>
         </Pressable>
       </Pressable>
@@ -194,10 +206,33 @@ export default function DashboardScreen() {
       await updateMyStatus(newStatus);
       useAuthStore.setState((state) => {
         if (!state.user) return state;
-        return { user: { ...state.user, status: newStatus } };
+        return { user: { ...state.user, status: newStatus as any } };
       });
     } catch (e) {
       Alert.alert("Помилка", "Не вдалося оновити статус. Перевірте інтернет.");
+    }
+  };
+
+  const { canRollCall, rollCallGroupId } = useMemo(() => {
+    if (!selectedMember || !user) return { canRollCall: false, rollCallGroupId: null };
+    // Find a group where current user is owner AND selectedMember is a member
+    const ownedGroup = groups.find(
+      (g) => g.owner?.id === user.id && g.members.some((m) => m.id === selectedMember.id),
+    );
+    return {
+      canRollCall: !!ownedGroup,
+      rollCallGroupId: ownedGroup?.id || null,
+    };
+  }, [selectedMember, groups, user]);
+
+  const handleRollCall = async () => {
+    if (!selectedMember || !rollCallGroupId) return;
+    try {
+      await initiatePersonalRollCall(rollCallGroupId, selectedMember.id);
+      Alert.alert("Успіх", "Запит на перекличку надіслано");
+      handleCloseModal();
+    } catch (e) {
+      Alert.alert("Помилка", "Не вдалося надіслати запит");
     }
   };
 
@@ -306,6 +341,8 @@ export default function DashboardScreen() {
         member={selectedMember}
         visible={modalVisible}
         onClose={handleCloseModal}
+        onRollCall={handleRollCall}
+        canRollCall={canRollCall}
       />
     </SafeAreaView>
   );

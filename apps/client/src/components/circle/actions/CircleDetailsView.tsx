@@ -102,7 +102,7 @@ export default function CircleDetailsView({
                   <Text style={styles.memberStatusTime}>
                     {member.status === "SAFE"
                       ? "19:05"
-                      : (member.status as any) === "WAS_SAFE"
+                      : member.status === "WAS_SAFE"
                         ? "У безпеці о 18:56"
                         : "19:05"}
                   </Text>
@@ -120,21 +120,19 @@ export default function CircleDetailsView({
                   name={
                     member.status === "SAFE"
                       ? "check-circle"
-                      : (member.status as any) === "WAS_SAFE"
+                      : member.status === "WAS_SAFE"
                         ? "sync"
                         : "question-circle"
                   }
                   size={
-                    member.status === "SAFE" ||
-                    (member.status as any) === "UNKNOWN" ||
-                    !member.status
+                    member.status === "SAFE" || member.status === "UNKNOWN" || !member.status
                       ? 26
                       : 18
                   }
                   color={
                     member.status === "SAFE"
                       ? COLORS.STATE_SAFE
-                      : (member.status as any) === "WAS_SAFE"
+                      : member.status === "WAS_SAFE"
                         ? COLORS.PRIMARY_BLUE
                         : "#FF9500"
                   }
