@@ -17,6 +17,7 @@ export const semanticColors = {
    */
   background: {
     primary: colors.grey[100], // "#f5f7fa" – Primary app background
+    secondary: colors.white, // "#ffffff" – Cards, modals, secondary surfaces
     tertiary: colors.grey[200], // "#e8ecf2" – Secondary-level backgrounds
     positive: colors.green[400], // "#06c167" – Success/positive sections
     negative: colors.red[500], // "#f83446" – Error/negative sections
