@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GroupEntity } from 'src/common/entities/group.entity';
 import { GroupBlockListEntity } from 'src/common/entities/group-block-list.entity';
@@ -25,6 +26,7 @@ export class GroupService {
     private readonly contactsService: ContactsService,
     private readonly firestoreSyncService: FirestoreSyncService,
     private readonly notificationsService: NotificationsService,
+    private readonly configService: ConfigService,
   ) {}
 
   private async syncGroupMembers(group: GroupEntity) {
@@ -278,10 +280,11 @@ export class GroupService {
     const targetUser = group.members.find((m) => m.id === targetUserId);
     if (!targetUser) throw new NotFoundException('Користувач не є учасником цього кола');
 
-    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const graceMinutes = this.configService.get<number>('PERSONAL_ROLL_CALL_GRACE_MINUTES', 15);
+    const graceThreshold = new Date(Date.now() - graceMinutes * 60 * 1000);
 
-    // If user updated status in last 15 min, we consider them "responding" already
-    if (targetUser.lastStatusUpdate > fifteenMinutesAgo) {
+    // If user updated status in last grace period, we consider them "responding" already
+    if (targetUser.lastStatusUpdate > graceThreshold) {
       return { message: 'Користувач нещодавно оновив статус, додатковий запит не потрібен' };
     }
 

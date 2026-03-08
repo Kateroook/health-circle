@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as admin from 'firebase-admin';
@@ -18,6 +19,7 @@ export class StatusSchedulerService {
     @InjectRepository(GroupEntity)
     private readonly groupRepository: Repository<GroupEntity>,
     private readonly notificationsService: NotificationsService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Cron(CronExpression.EVERY_5_MINUTES)
@@ -28,13 +30,14 @@ export class StatusSchedulerService {
   }
 
   private async handleRollCallTimeouts() {
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const timeoutMinutes = this.configService.get<number>('ROLL_CALL_TIMEOUT_MINUTES', 60);
+    const timeoutThreshold = new Date(Date.now() - timeoutMinutes * 60 * 1000);
 
     // Find groups that had a roll call in the last hour or so, but we care about those > 1h ago
     // Actually, we want groups where lastRollCallAt < oneHourAgo
     const groupsWithRecentRollCall = await this.groupRepository.find({
       where: {
-        lastRollCallAt: LessThan(oneHourAgo),
+        lastRollCallAt: LessThan(timeoutThreshold),
       },
       relations: ['members'],
     });
@@ -60,7 +63,7 @@ export class StatusSchedulerService {
     const personalTimedOutUsers = await this.userRepository.find({
       where: {
         status: In([UserStatus.SAFE, UserStatus.WAS_SAFE]),
-        lastPersonalRollCallAt: LessThan(oneHourAgo),
+        lastPersonalRollCallAt: LessThan(timeoutThreshold),
       },
     });
 
@@ -76,12 +79,13 @@ export class StatusSchedulerService {
   }
 
   private async handleStatusExpiry() {
-    const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
+    const expiryHours = this.configService.get<number>('STATUS_EXPIRY_HOURS', 8);
+    const expiryThreshold = new Date(Date.now() - expiryHours * 60 * 60 * 1000);
 
     const expiredUsers = await this.userRepository.find({
       where: {
         status: UserStatus.SAFE,
-        lastStatusUpdate: LessThan(eightHoursAgo),
+        lastStatusUpdate: LessThan(expiryThreshold),
       },
     });
 

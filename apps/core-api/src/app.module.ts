@@ -85,6 +85,11 @@ import { UsersModule } from './users/users.module';
         FIREBASE_PROJECT_ID: Joi.string().required(),
         FIREBASE_CLIENT_EMAIL: Joi.string().required(),
         FIREBASE_PRIVATE_KEY: Joi.string().required(),
+
+        // Status & Roll-call
+        STATUS_EXPIRY_HOURS: Joi.number().default(8),
+        ROLL_CALL_TIMEOUT_MINUTES: Joi.number().default(60),
+        PERSONAL_ROLL_CALL_GRACE_MINUTES: Joi.number().default(15),
       }),
     }),
     PostgresModule.register(entities, migrations, subscribers),
