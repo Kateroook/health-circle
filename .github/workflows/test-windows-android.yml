@@ -45,6 +45,7 @@ jobs:
         shell: pwsh
 
       - name: Build Android Debug
+        working-directory: ./apps/client/android
         run: ./gradlew.bat :app:assembleDebug --no-daemon
         env:
-          GOOGLE_SERVICES_JSON: google-services.json
+          GOOGLE_SERVICES_JSON: ../google-services.json
