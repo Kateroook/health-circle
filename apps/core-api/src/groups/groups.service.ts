@@ -265,4 +265,41 @@ export class GroupService {
 
     return { message: 'Перекличку розпочато' };
   }
+
+  async initiatePersonalRollCall(groupId: string, targetUserId: string, requesterId: string) {
+    const group = await this.repository.findOne({
+      where: { id: groupId },
+      relations: ['members', 'owner'],
+    });
+
+    if (!group) throw new NotFoundException('Коло не знайдено');
+    if (group.owner.id !== requesterId) throw new ForbiddenException('Тільки власник може ініціювати перекличку');
+
+    const targetUser = group.members.find((m) => m.id === targetUserId);
+    if (!targetUser) throw new NotFoundException('Користувач не є учасником цього кола');
+
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+
+    // If user updated status in last 15 min, we consider them "responding" already
+    if (targetUser.lastStatusUpdate > fifteenMinutesAgo) {
+      return { message: 'Користувач нещодавно оновив статус, додатковий запит не потрібен' };
+    }
+
+    // Update lastPersonalRollCallAt
+    await this.userRepository.update({ id: targetUserId }, { lastPersonalRollCallAt: new Date() });
+
+    if (targetUser.fcmToken) {
+      await this.notificationsService.sendMulticast(
+        [targetUser.fcmToken],
+        'Особиста перекличка! 📢',
+        `Адміністратор кола "${group.name}" просить особисто підтвердити ваш статус.`,
+        {
+          groupId: group.id,
+          type: 'PERSONAL_ROLL_CALL',
+        },
+      );
+    }
+
+    return { message: 'Вимогу оновлення статусу надіслано' };
+  }
 }

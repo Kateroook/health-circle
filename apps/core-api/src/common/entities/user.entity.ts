@@ -60,6 +60,9 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   region: string | null;
 
+  @Column({ type: 'timestamptz', nullable: true })
+  lastPersonalRollCallAt: Date | null;
+
   @CreateDateColumn({ type: 'timestamptz', select: false })
   createdAt: Date;
 

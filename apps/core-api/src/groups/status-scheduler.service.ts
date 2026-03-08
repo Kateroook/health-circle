@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as admin from 'firebase-admin';
 import { GroupEntity } from 'src/common/entities/group.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { UserStatus } from 'src/common/enums/user-status';
@@ -51,9 +52,26 @@ export class StatusSchedulerService {
         const userIds = usersToUpdate.map((u) => u.id);
         await this.userRepository.update({ id: In(userIds) }, { status: UserStatus.UNKNOWN, lastStatusUpdate: new Date() });
 
-        // Notify them? Requirement doesn't explicitly say so, but usually helpful.
-        // For now, just logging.
+        await this.syncUsers(userIds);
       }
+    }
+
+    // Handle personal roll calls from individual users
+    const personalTimedOutUsers = await this.userRepository.find({
+      where: {
+        status: In([UserStatus.SAFE, UserStatus.WAS_SAFE]),
+        lastPersonalRollCallAt: LessThan(oneHourAgo),
+      },
+    });
+
+    const personalUserIds = personalTimedOutUsers
+      .filter((u) => u.lastPersonalRollCallAt && u.lastStatusUpdate < u.lastPersonalRollCallAt)
+      .map((u) => u.id);
+
+    if (personalUserIds.length > 0) {
+      this.logger.log(`Timed out ${personalUserIds.length} users due to personal roll call`);
+      await this.userRepository.update({ id: In(personalUserIds) }, { status: UserStatus.UNKNOWN, lastStatusUpdate: new Date() });
+      await this.syncUsers(personalUserIds);
     }
   }
 
@@ -71,6 +89,20 @@ export class StatusSchedulerService {
       this.logger.log(`Expiring status for ${expiredUsers.length} users (SAFE -> WAS_SAFE)`);
       const userIds = expiredUsers.map((u) => u.id);
       await this.userRepository.update({ id: In(userIds) }, { status: UserStatus.WAS_SAFE, lastStatusUpdate: new Date() });
+      await this.syncUsers(userIds);
+    }
+  }
+
+  private async syncUsers(userIds: string[]) {
+    try {
+      const batch = admin.firestore().batch();
+      userIds.forEach((id) => {
+        const ref = admin.firestore().collection('user_sync').doc(id);
+        batch.set(ref, { timestamp: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      });
+      await batch.commit();
+    } catch (e) {
+      this.logger.error('Error updating firestore sync signals', e);
     }
   }
 }

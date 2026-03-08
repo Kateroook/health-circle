@@ -105,4 +105,11 @@ export class GroupController {
   async initiateRollCall(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
     return this.service.initiateRollCall(params.id, req.user.id);
   }
+
+  @Post(':id/members/:userId/roll-call')
+  @ApiOperation({ summary: 'Initiate a personal roll call for a member' })
+  @ApiOkResponse({ description: 'Personal roll call initiated successfully' })
+  async initiatePersonalRollCall(@Param('id') groupId: string, @Param('userId') userId: string, @Req() req: AuthRequest) {
+    return this.service.initiatePersonalRollCall(groupId, userId, req.user.id);
+  }
 }

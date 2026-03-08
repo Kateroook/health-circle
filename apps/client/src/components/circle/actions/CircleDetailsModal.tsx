@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { setContactAlias } from "@/src/api/contacts";
-import { blockUser } from "@/src/api/groups";
+import { blockUser, initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
 import { BottomSheetContainer, ModalActions } from "@/src/components/modal";
 import { theme } from "@/src/theme/theme";
@@ -22,11 +22,12 @@ interface Props {
   ownerId: string;
   onClose: () => void;
   onSaveMembers: (updated: { id: string }[]) => void;
-  onDelete: () => void; // Used for "Delete Circle" from details
-  onLeave: () => void; // Used for "Leave Circle" from details
+  onDelete: () => void;
+  onLeave: () => void;
   onRegenerateInvite: () => Promise<void>;
   onMemberUpdated: () => void;
   onEdit: () => void;
+  onRollCall: () => void;
 }
 
 export default function CircleDetailsModal({
@@ -43,6 +44,7 @@ export default function CircleDetailsModal({
   onRegenerateInvite,
   onMemberUpdated,
   onEdit,
+  onRollCall,
 }: Props) {
   const [view, setView] = useState<"details" | "member">("details");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -85,7 +87,6 @@ export default function CircleDetailsModal({
         setView("details");
       } catch (error) {
         console.error("Failed to rename member:", error);
-        // Optionally show an alert
       }
     }
   };
@@ -99,6 +100,26 @@ export default function CircleDetailsModal({
         setIsBlockConfirmVisible(false);
       } catch (error) {
         console.error("Failed to block user:", error);
+      }
+    }
+  };
+
+  const handleRollCall = async () => {
+    try {
+      await initiateRollCall(circleId);
+      onRollCall();
+    } catch (error) {
+      console.error("Failed to initiate roll call:", error);
+    }
+  };
+
+  const handlePersonalRollCall = async () => {
+    if (selectedMember && circleId) {
+      try {
+        await initiatePersonalRollCall(circleId, selectedMember.id);
+        onRollCall();
+      } catch (error) {
+        console.error("Failed to initiate personal roll call:", error);
       }
     }
   };
@@ -132,6 +153,8 @@ export default function CircleDetailsModal({
             onClose={() => setView("details")}
             onRemoveMember={handleRemoveMember}
             onBlock={isOwner ? () => setIsBlockConfirmVisible(true) : undefined}
+            onRollCall={handlePersonalRollCall}
+            isOwner={isOwner}
           />
         </View>
       )}
@@ -148,6 +171,7 @@ export default function CircleDetailsModal({
             onRenamePress={onEdit}
             onUnsubscribePress={() => setIsLeaveVisible(true)}
             onMemberPress={handleMemberPress}
+            onRollCallPress={handleRollCall}
           />
 
           {/* Footer Actions (Delete/Leave) */}

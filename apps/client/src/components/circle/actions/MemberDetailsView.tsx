@@ -12,6 +12,8 @@ interface MemberDetailsViewProps {
   onClose: () => void;
   onRemoveMember: () => void;
   onBlock?: () => void;
+  onRollCall?: () => void;
+  isOwner?: boolean;
 }
 
 export default function MemberDetailsView({
@@ -20,6 +22,8 @@ export default function MemberDetailsView({
   onClose,
   onRemoveMember,
   onBlock,
+  onRollCall,
+  isOwner,
 }: MemberDetailsViewProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(member.fullName || member.firstName);
@@ -51,7 +55,7 @@ export default function MemberDetailsView({
             </Text>
           </View>
 
-          <View style={styles.actionsList}>
+          <View style={styles.actionsCard}>
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => {
@@ -62,15 +66,18 @@ export default function MemberDetailsView({
               <Text style={styles.actionButtonText}>Редагувати імʼя</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionButton} onPress={onRemoveMember}>
-              <Text style={[styles.actionButtonText, styles.dangerText]}>Видалити з кола</Text>
-            </TouchableOpacity>
-
-            {onBlock && (
-              <TouchableOpacity style={styles.actionButton} onPress={onBlock}>
-                <Text style={[styles.actionButtonText, styles.dangerText]}>Заблокувати</Text>
+            {isOwner && onRollCall && (
+              <TouchableOpacity style={styles.actionButton} onPress={onRollCall}>
+                <Text style={styles.actionButtonText}>Перекличка</Text>
               </TouchableOpacity>
             )}
+
+            <TouchableOpacity
+              style={[styles.actionButton, { borderBottomWidth: 0 }]}
+              onPress={onRemoveMember}
+            >
+              <Text style={[styles.actionButtonText, styles.dangerText]}>Видалити з кола</Text>
+            </TouchableOpacity>
           </View>
         </>
       ) : (
@@ -117,41 +124,47 @@ export default function MemberDetailsView({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 40,
-    alignItems: "center",
-    width: "100%",
+    backgroundColor: "#F7F8FA",
   },
-  // Removed header/dragHandle styles
   profileSection: {
     alignItems: "center",
+    marginTop: 20,
     marginBottom: 30,
   },
   avatarContainer: {
-    transform: [{ scale: 2 }], // Make avatar bigger
+    transform: [{ scale: 2 }],
     marginBottom: 20,
   },
   memberName: {
     fontSize: 24,
-    fontWeight: "bold",
-    marginTop: 10,
+    fontWeight: "800",
+    marginTop: 20,
     color: COLORS.TEXT_DARK,
     textAlign: "center",
   },
-  actionsList: {
-    width: "100%",
-    gap: 12,
+  actionsCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
   actionButton: {
-    backgroundColor: "#Eef2F6",
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 18,
     alignItems: "center",
     width: "100%",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F7",
   },
   actionButtonText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
     color: COLORS.TEXT_DARK,
   },
   dangerText: {

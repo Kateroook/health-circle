@@ -258,6 +258,7 @@ export default function CirclesScreen() {
           setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
         }}
         onMemberUpdated={fetchCircles}
+        onRollCall={fetchCircles}
       />
     </SafeAreaView>
   );

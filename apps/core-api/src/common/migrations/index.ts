@@ -22,6 +22,7 @@ import { MakeMiddleNameOptional1772561853196 } from './1772561853196-MakeMiddleN
 import { AlterUserEntity1772743614997 } from './1772743614997-alter-user-entity';
 import { LowercaseExistingEmails1772743615000 } from './1772743615000-LowercaseExistingEmails';
 import { AlterUserEntity1772969940227 } from './1772969940227-alter-user-entity';
+import { AlterUserEntity1772972111363 } from './1772972111363-alter-user-entity';
 
 export const migrations = [
   CreateEntities1762501994652,
@@ -48,4 +49,5 @@ export const migrations = [
   AlterUserEntity1772743614997,
   LowercaseExistingEmails1772743615000,
   AlterUserEntity1772969940227,
+  AlterUserEntity1772972111363,
 ];
