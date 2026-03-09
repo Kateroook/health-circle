@@ -1,35 +1,20 @@
 import { useAuthStore } from "@/src/store/authStore";
-import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
 import Feather from "@expo/vector-icons/Feather";
 import * as Clipboard from "expo-clipboard";
 import React, { useEffect, useState } from "react";
-import {
-  Keyboard,
-  LayoutAnimation,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  UIManager,
-  View,
-} from "react-native";
-import Modal from "react-native-modal";
-import { SafeAreaView } from "react-native-safe-area-context";
-import ConfirmationModal from "../../ConfirmationModal";
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import { theme } from "@/src/theme/theme";
+import ConfirmationModal from "../../ConfirmationModal";
+import { BottomSheetContainer } from "../../modal/BottomSheetContainer";
 
 interface Member {
   id: string;
   firstName: string;
   middleName?: string;
   lastName: string;
-  active: boolean;
+  active?: boolean;
 }
 
 interface Props {
@@ -63,31 +48,11 @@ export default function CircleActionsModal({
   const [isEditingMembers, setIsEditingMembers] = useState(false);
   const [newName, setNewName] = useState("");
   const [localMembers, setLocalMembers] = useState<Member[]>([]);
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [isDeleteVisible, setIsDeleteVisible] = useState(false);
   const [isLeaveVisible, setIsLeaveVisible] = useState(false);
 
   const user = useAuthStore().user;
   const isOwner = user?.id === ownerId;
-
-  useEffect(() => {
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-
-    const showSub = Keyboard.addListener(showEvent, () => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setIsKeyboardVisible(true);
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setIsKeyboardVisible(false);
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -124,153 +89,8 @@ export default function CircleActionsModal({
   };
 
   return (
-    <>
-      {/* Головна bottom sheet модалка */}
-      <Modal
-        isVisible={visible}
-        onBackdropPress={onClose}
-        onBackButtonPress={onClose}
-        onSwipeComplete={onClose}
-        swipeDirection="down"
-        style={styles.sheetWrapper}
-        backdropOpacity={0.2}
-        animationIn="slideInUp"
-        animationOut="slideOutDown"
-        propagateSwipe
-      >
-        <SafeAreaView
-          style={[styles.sheet, isKeyboardVisible && styles.sheetExpanded]}
-          edges={isKeyboardVisible ? ["top", "bottom"] : ["bottom"]}
-        >
-          <View style={styles.handle} />
-
-          {/* ===== RENAME MODE (Owner Only) ===== */}
-          {isRenaming && isOwner && (
-            <View style={{ padding: 20 }}>
-              <TouchableOpacity onPress={() => setIsRenaming(false)} style={styles.backButton}>
-                <AntDesign name="arrow-left" size={16} color={"#000000"} />
-                <Text style={styles.backButtonText}>Назад</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.renameTitle}>Редагуй назву Кола</Text>
-
-              <TextInput
-                style={styles.input}
-                placeholder="Введи нову назву"
-                placeholderTextColor={COLORS.TEXT_GRAY}
-                value={newName}
-                onChangeText={setNewName}
-                autoFocus
-              />
-
-              <Text style={styles.renameHint}>Назва зміниться для всіх членів Кола</Text>
-
-              <TouchableOpacity
-                style={[styles.doneButton, newName.trim() === "" && styles.doneButtonDisabled]}
-                onPress={handleDoneRename}
-                disabled={newName.trim() === ""}
-              >
-                <Text style={styles.doneButtonText}>Зберегти</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* ===== EDIT MEMBERS MODE (Owner Only) ===== */}
-          {!isRenaming && isEditingMembers && isOwner && (
-            <View style={{ paddingHorizontal: 20, paddingBottom: 20 }}>
-              <TouchableOpacity
-                onPress={() => setIsEditingMembers(false)}
-                style={styles.backButton}
-              >
-                <AntDesign name="arrow-left" size={16} color={"#000000"} />
-                <Text style={styles.backButtonText}>Назад</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.editMembersTitle}>Редагуй склад кола</Text>
-              <Text style={styles.editMembersSubtitle}>
-                Видали учасників, яких більше не потрібно відстежувати
-              </Text>
-
-              <ScrollView style={{ maxHeight: 380, marginTop: 16 }}>
-                {localMembers.map((m) => (
-                  <TouchableOpacity
-                    key={m.id}
-                    style={styles.memberItem}
-                    onPress={() => toggleMember(m.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.memberName} numberOfLines={1} ellipsizeMode="tail">
-                      {`${m.lastName} ${m.firstName}`}
-                    </Text>
-
-                    <View style={styles.statusCircleContainer}>
-                      {m.active ? (
-                        <View style={[styles.statusCircle, styles.statusCircleActive]}>
-                          <AntDesign name="check" size={14} color="#FFFFFF" />
-                        </View>
-                      ) : (
-                        <View style={[styles.statusCircle, styles.statusCircleInactive]} />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <TouchableOpacity style={styles.doneButton} onPress={handleSaveMembers}>
-                <Text style={styles.doneButtonText}>Зберегти</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* ===== MAIN MENU ===== */}
-          {!isRenaming && !isEditingMembers && (
-            <>
-              <Text style={styles.modalTitle} numberOfLines={1} ellipsizeMode="tail">
-                {currentName}
-              </Text>
-
-              {/* Show Invite Code only to Owner */}
-              {isOwner && (
-                <View style={styles.inviteContainer}>
-                  <Text style={styles.inviteText}>Код: {inviteCode}</Text>
-                  <TouchableOpacity onPress={onRegenerateInvite} style={styles.inviteButton}>
-                    <Feather name="refresh-cw" size={16} color="#fff" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleCopy}
-                    style={[styles.inviteButton, { marginLeft: 8 }]}
-                  >
-                    <Feather name="copy" size={16} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {/* Owner Actions */}
-              {isOwner ? (
-                <>
-                  <TouchableOpacity style={styles.item} onPress={handleRenamePress}>
-                    <Text style={styles.text}>Перейменувати</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.item} onPress={() => setIsEditingMembers(true)}>
-                    <Text style={styles.text}>Редагувати склад</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.delete} onPress={() => setIsDeleteVisible(true)}>
-                    <Text style={styles.deleteText}>Видалити</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <>
-                  <TouchableOpacity style={styles.delete} onPress={() => setIsLeaveVisible(true)}>
-                    <Text style={styles.deleteText}>Покинути коло</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </>
-          )}
-        </SafeAreaView>
-      </Modal>
-
-      {/* Confirmation modals */}
+    <BottomSheetContainer isVisible={visible} onClose={onClose}>
+      {/* Confirmation modals - nested inside so they appear on top of the sheet */}
       <ConfirmationModal
         isVisible={isDeleteVisible}
         onCancel={() => setIsDeleteVisible(false)}
@@ -296,184 +116,301 @@ export default function CircleActionsModal({
         confirmText="Покинути"
         cancelText="Назад"
       />
-    </>
+
+      {/* ===== RENAME MODE (Owner Only) ===== */}
+      {isRenaming && isOwner && (
+          <View style={styles.section}>
+            <TouchableOpacity onPress={() => setIsRenaming(false)} style={styles.backButton}>
+              <AntDesign name="arrow-left" size={16} color={theme.colors.content.primary} />
+              <Text style={styles.backButtonText}>Назад</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.renameTitle}>Редагуй назву Кола</Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Введи нову назву"
+              placeholderTextColor={theme.colors.content.secondary}
+              value={newName}
+              onChangeText={setNewName}
+              autoFocus
+            />
+
+            <Text style={styles.renameHint}>Назва зміниться для всіх членів Кола</Text>
+
+            <TouchableOpacity
+              style={[styles.doneButton, newName.trim() === "" && styles.doneButtonDisabled]}
+              onPress={handleDoneRename}
+              disabled={newName.trim() === ""}
+            >
+              <Text style={styles.doneButtonText}>Зберегти</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ===== EDIT MEMBERS MODE (Owner Only) ===== */}
+        {!isRenaming && isEditingMembers && isOwner && (
+          <View style={styles.section}>
+            <TouchableOpacity onPress={() => setIsEditingMembers(false)} style={styles.backButton}>
+              <AntDesign name="arrow-left" size={16} color={theme.colors.content.primary} />
+              <Text style={styles.backButtonText}>Назад</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.editMembersTitle}>Редагуй склад кола</Text>
+            <Text style={styles.editMembersSubtitle}>
+              Видали учасників, яких більше не потрібно відстежувати
+            </Text>
+
+            <ScrollView style={styles.memberScroll}>
+              {localMembers.map((m) => (
+                <TouchableOpacity
+                  key={m.id}
+                  style={styles.memberItem}
+                  onPress={() => toggleMember(m.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.memberName} numberOfLines={1} ellipsizeMode="tail">
+                    {`${m.lastName} ${m.firstName}`}
+                  </Text>
+
+                  <View style={styles.statusCircleContainer}>
+                    {m.active ? (
+                      <View style={[styles.statusCircle, styles.statusCircleActive]}>
+                        <AntDesign name="check" size={14} color={theme.colors.content.onColor} />
+                      </View>
+                    ) : (
+                      <View style={[styles.statusCircle, styles.statusCircleInactive]} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity style={styles.doneButton} onPress={handleSaveMembers}>
+              <Text style={styles.doneButtonText}>Зберегти</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ===== MAIN MENU ===== */}
+        {!isRenaming && !isEditingMembers && (
+          <View style={styles.section}>
+            <Text style={styles.modalTitle} numberOfLines={1} ellipsizeMode="tail">
+              {currentName}
+            </Text>
+
+            {/* Show Invite Code only to Owner */}
+            {isOwner && (
+              <View style={styles.inviteContainer}>
+                <Text style={styles.inviteText}>Код: {inviteCode}</Text>
+                <TouchableOpacity onPress={onRegenerateInvite} style={styles.inviteButton}>
+                  <Feather name="refresh-cw" size={16} color={theme.colors.content.onColor} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleCopy} style={styles.inviteButton}>
+                  <Feather name="copy" size={16} color={theme.colors.content.onColor} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Owner Actions */}
+            {isOwner ? (
+              <>
+                <TouchableOpacity style={styles.item} onPress={handleRenamePress}>
+                  <Text style={styles.text}>Перейменувати</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.item} onPress={() => setIsEditingMembers(true)}>
+                  <Text style={styles.text}>Редагувати склад</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.delete} onPress={() => setIsDeleteVisible(true)}>
+                  <Text style={styles.deleteText}>Видалити</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity style={styles.delete} onPress={() => setIsLeaveVisible(true)}>
+                <Text style={styles.deleteText}>Покинути коло</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+    </BottomSheetContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  sheetWrapper: { justifyContent: "flex-end", margin: 0 },
-  sheet: {
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    maxHeight: "92%",
-  },
-  sheetExpanded: {
-    maxHeight: "80%",
-    flex: 1,
-  },
-  handle: {
-    alignSelf: "center",
-    width: 48,
-    height: 5,
-    backgroundColor: "#D1D1D6",
-    borderRadius: 3,
-    marginVertical: 12,
+  section: {
+    paddingHorizontal: theme.spacing[16],
+    paddingBottom: theme.spacing[8],
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: COLORS.TEXT_DARK,
+    fontSize: theme.typography.fontSize.h3,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.content.primary,
     textAlign: "center",
-    marginBottom: 20,
-    paddingHorizontal: 24,
+    marginBottom: theme.spacing[20],
+    paddingHorizontal: theme.spacing[8],
   },
   item: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: COLORS.BACKGROUND_CARD,
-    borderRadius: 25,
-    marginBottom: 14,
+    paddingVertical: theme.spacing[12],
+    paddingHorizontal: theme.spacing[20],
+    backgroundColor: theme.colors.background.tertiary,
+    borderRadius: theme.radius.lg,
+    marginBottom: theme.spacing[12],
   },
   text: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: COLORS.TEXT_DARK,
+    fontSize: theme.typography.fontSize.subtitle1,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.content.primary,
     textAlign: "center",
   },
   inviteContainer: {
     alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EEF2F6",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-    marginBottom: 32,
+    backgroundColor: theme.colors.background.tertiary,
+    paddingHorizontal: theme.spacing[14],
+    paddingVertical: theme.spacing[8],
+    borderRadius: theme.radius.lg,
+    marginBottom: theme.spacing[24],
   },
-  inviteText: { fontSize: 16, fontWeight: "600", marginRight: 8 },
+  inviteText: {
+    fontSize: theme.typography.fontSize.subtitle1,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.content.primary,
+    marginRight: theme.spacing[8],
+  },
   inviteButton: {
-    padding: 6,
-    borderRadius: 6,
-    backgroundColor: "#5D6470",
+    padding: theme.spacing[4],
+    borderRadius: theme.radius.sm,
+    backgroundColor: theme.colors.content.secondary,
     justifyContent: "center",
     alignItems: "center",
   },
-  delete: { backgroundColor: "transparent", marginTop: 24, marginBottom: 20 },
+  delete: {
+    backgroundColor: "transparent",
+    marginTop: theme.spacing[20],
+    marginBottom: theme.spacing[16],
+  },
   deleteText: {
-    color: COLORS.STATE_DANGER,
-    fontSize: 16,
-    fontWeight: "600",
+    color: theme.colors.negative,
+    fontSize: theme.typography.fontSize.subtitle1,
+    fontWeight: theme.typography.fontWeight.semibold,
     textAlign: "center",
   },
 
   // ── Редагування назви ──
   renameTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.TEXT_DARK,
+    fontSize: theme.typography.fontSize.h3,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.content.primary,
     textAlign: "center",
-    marginBottom: 20,
+    marginBottom: theme.spacing[20],
   },
   renameHint: {
-    fontSize: 13,
-    color: COLORS.TEXT_GRAY,
+    fontSize: theme.typography.fontSize.caption,
+    color: theme.colors.content.secondary,
     textAlign: "center",
-    marginTop: 8,
-    marginBottom: 24,
+    marginTop: theme.spacing[8],
+    marginBottom: theme.spacing[16],
   },
   input: {
-    backgroundColor: COLORS.BACKGROUND_CARD,
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.TEXT_DARK,
+    backgroundColor: theme.colors.background.tertiary,
+    borderRadius: theme.radius.lg,
+    paddingVertical: theme.spacing[16],
+    paddingHorizontal: theme.spacing[20],
+    fontSize: theme.typography.fontSize.subtitle1,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.content.primary,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: theme.spacing[8],
   },
-  backButton: { flexDirection: "row", alignItems: "center", marginBottom: 18, borderRadius: 25 },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: theme.spacing[16],
+    borderRadius: theme.radius.lg,
+  },
   backButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#000000",
-    marginLeft: 8,
+    fontSize: theme.typography.fontSize.subtitle1,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.content.primary,
+    marginLeft: theme.spacing[8],
   },
   doneButton: {
-    backgroundColor: COLORS.BLACK_BTN,
-    borderRadius: 28,
-    paddingVertical: 15,
+    backgroundColor: theme.colors.accent,
+    borderRadius: theme.radius.pill,
+    paddingVertical: theme.spacing[14],
     alignItems: "center",
-    marginTop: 16,
+    marginTop: theme.spacing[16],
   },
   doneButtonDisabled: {
     opacity: 0.5,
   },
   doneButtonText: {
-    color: COLORS.BACKGROUND_LIGHT,
-    fontSize: 17,
-    fontWeight: "700",
+    color: theme.colors.content.onColor,
+    fontSize: theme.typography.fontSize.subtitle1,
+    fontWeight: theme.typography.fontWeight.bold,
   },
 
   editMembersTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.TEXT_DARK,
+    fontSize: theme.typography.fontSize.h3,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.content.primary,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: theme.spacing[8],
   },
 
   editMembersSubtitle: {
-    fontSize: 13,
-    color: COLORS.TEXT_GRAY,
+    fontSize: theme.typography.fontSize.caption,
+    color: theme.colors.content.secondary,
     textAlign: "center",
-    marginBottom: 16,
-    paddingHorizontal: 20,
+    marginBottom: theme.spacing[16],
+    paddingHorizontal: theme.spacing[20],
   },
 
+  memberScroll: {
+    maxHeight: theme.spacing[96] * 4,
+    marginTop: theme.spacing[16],
+  },
   memberItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.BACKGROUND_CARD,
+    paddingVertical: theme.spacing[16],
+    borderBottomWidth: theme.borderWidth.sm,
+    borderBottomColor: theme.colors.border.opaque,
   },
 
   memberName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.TEXT_DARK,
+    fontSize: theme.typography.fontSize.subtitle1,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.content.primary,
     flex: 1,
-    marginRight: 16,
+    marginRight: theme.spacing[16],
   },
 
   statusCircleContainer: {
-    width: 28,
-    height: 28,
+    width: theme.spacing[28],
+    height: theme.spacing[28],
     justifyContent: "center",
     alignItems: "center",
   },
 
   statusCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: theme.spacing[24],
+    height: theme.spacing[24],
+    borderRadius: theme.radius.lg,
     justifyContent: "center",
     alignItems: "center",
   },
 
   statusCircleActive: {
-    backgroundColor: COLORS.PRIMARY_BLUE,
+    backgroundColor: theme.colors.accent,
     borderWidth: 0,
   },
 
   statusCircleInactive: {
     backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: COLORS.PRIMARY_BLUE,
+    borderWidth: theme.borderWidth.md,
+    borderColor: theme.colors.accent,
   },
 });

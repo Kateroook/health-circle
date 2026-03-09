@@ -10,8 +10,6 @@ import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   BackHandler,
-  Keyboard,
-  LayoutAnimation,
   Platform,
   ScrollView,
   StyleSheet,
@@ -20,8 +18,9 @@ import {
   UIManager,
   View,
 } from "react-native";
-import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { useAuthStore } from "@/src/store/authStore";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -35,32 +34,12 @@ interface Circle {
   members: Member[];
 }
 
-import { useAuthStore } from "@/src/store/authStore";
-
 export default function CirclesScreen() {
   const user = useAuthStore().user;
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  useEffect(() => {
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-
-    const showSub = Keyboard.addListener(showEvent, () => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setIsKeyboardVisible(true);
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setIsKeyboardVisible(false);
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
   const [activeCircle, setActiveCircle] = useState<Circle | null>(null);
   const [circles, setCircles] = useState<Circle[]>([]);
 
@@ -163,38 +142,16 @@ export default function CirclesScreen() {
       </ScrollView>
 
       {/* Add Circle Modal */}
-      <Modal
-        isVisible={isAddModalVisible}
-        onSwipeComplete={() => setIsAddModalVisible(false)}
-        onBackdropPress={() => setIsAddModalVisible(false)}
-        onBackButtonPress={() => setIsAddModalVisible(false)}
-        swipeDirection="down"
-        style={styles.bottomModal}
-        backdropOpacity={0.25}
-        useNativeDriver
-        useNativeDriverForBackdrop
-        animationIn="slideInUp"
-        animationOut="slideOutDown"
-        propagateSwipe
-      >
-        <View style={[styles.modalWrapper, isKeyboardVisible && styles.modalWrapperExpanded]}>
-          <SafeAreaView
-            edges={isKeyboardVisible ? ["top", "bottom"] : ["bottom"]}
-            style={isKeyboardVisible ? { flex: 1 } : undefined}
-          >
-            <AddCircleModal
-              onClose={() => setIsAddModalVisible(false)}
-              onUpdated={fetchCircles} // refresh after adding
-            />
-          </SafeAreaView>
-        </View>
-      </Modal>
+      <AddCircleModal
+        visible={isAddModalVisible}
+        onClose={() => setIsAddModalVisible(false)}
+        onUpdated={fetchCircles}
+      />
 
       {/* Circle Actions Modal */}
       <CircleActionsModal
         visible={isActionsVisible}
         onClose={() => setIsActionsVisible(false)}
-        circleId={activeCircle ? activeCircle.id : ""}
         ownerId={activeCircle?.owner.id || ""}
         currentName={activeCircle?.name || ""}
         inviteCode={activeCircle?.inviteCode || ""}
@@ -322,19 +279,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.PRIMARY_BLUE,
     justifyContent: "center",
     alignItems: "center",
-  },
-
-  bottomModal: { justifyContent: "flex-end", margin: 0 },
-
-  modalWrapper: {
-    backgroundColor: "white",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: "92%",
-    paddingBottom: 10,
-  },
-  modalWrapperExpanded: {
-    maxHeight: "80%",
-    flex: 1,
   },
 });
