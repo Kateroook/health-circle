@@ -24,6 +24,8 @@ export const ModalContent: React.FC<ModalContentProps> = ({
 const styles = StyleSheet.create({
   content: {
     width: "100%",
+    flexGrow: 1,
+    flexShrink: 1,
     marginBottom: theme.spacing[16],
   },
   contentNoMargin: {

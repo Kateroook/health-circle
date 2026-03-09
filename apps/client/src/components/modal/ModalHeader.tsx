@@ -12,9 +12,11 @@ export interface ModalHeaderProps {
 export const ModalHeader: React.FC<ModalHeaderProps> = ({ title, description, style }) => {
   return (
     <View style={[styles.container, style]}>
-      <Typography variant="h2">{title}</Typography>
+      <Typography variant="h2" style={{ textAlign: "center" }}>
+        {title}
+      </Typography>
       {description && (
-        <Typography variant="body2" tone="secondary">
+        <Typography variant="body2" tone="secondary" style={{ textAlign: "center" }}>
           {description}
         </Typography>
       )}

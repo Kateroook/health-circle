@@ -1,30 +1,17 @@
 import { useAuthStore } from "@/src/store/authStore";
-import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import {
-  Keyboard,
-  LayoutAnimation,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  UIManager,
-  View,
-} from "react-native";
-import Modal from "react-native-modal";
-import { SafeAreaView } from "react-native-safe-area-context";
-import ConfirmationModal from "../../ConfirmationModal";
-import CircleDetailsView from "./CircleDetailsView";
-import MemberDetailsView from "./MemberDetailsView";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 
 import { setContactAlias } from "@/src/api/contacts";
 import { blockUser } from "@/src/api/groups";
+import { BottomSheetContainer, ModalActions } from "@/src/components/modal";
+import { Typography } from "@/src/components/typography";
+import { theme } from "@/src/theme/theme";
+import ConfirmationModal from "../../ConfirmationModal";
 import { Member } from "../CircleItem";
-
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import CircleDetailsView from "./CircleDetailsView";
+import MemberDetailsView from "./MemberDetailsView";
 
 interface Props {
   visible: boolean;
@@ -60,7 +47,6 @@ export default function CircleDetailsModal({
   const [view, setView] = useState<"details" | "member">("details");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [isDeleteVisible, setIsDeleteVisible] = useState(false);
   const [isLeaveVisible, setIsLeaveVisible] = useState(false);
   const [isBlockConfirmVisible, setIsBlockConfirmVisible] = useState(false);
@@ -75,24 +61,6 @@ export default function CircleDetailsModal({
       setSelectedMember(null);
     }
   }, [visible]);
-
-  useEffect(() => {
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-
-    const showSub = Keyboard.addListener(showEvent, () => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setIsKeyboardVisible(true);
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setIsKeyboardVisible(false);
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
 
   const handleMemberPress = (member: Member) => {
     setSelectedMember(member);
@@ -136,80 +104,66 @@ export default function CircleDetailsModal({
   };
 
   return (
-    <Modal
+    <BottomSheetContainer
       isVisible={visible}
-      onBackdropPress={onClose}
-      onBackButtonPress={() => {
+      onClose={() => {
         if (view !== "details") {
           setView("details");
         } else {
           onClose();
         }
       }}
-      onSwipeComplete={onClose}
-      swipeDirection={view === "details" ? "down" : undefined}
-      style={styles.sheetWrapper}
-      backdropOpacity={0.2}
-      animationIn="slideInUp"
-      animationOut="slideOutDown"
-      propagateSwipe
     >
-      <SafeAreaView
-        style={[styles.sheet, isKeyboardVisible && styles.sheetExpanded]}
-        edges={isKeyboardVisible ? ["top", "bottom"] : ["bottom"]}
-      >
-        <View style={styles.handle} />
+      {/* ===== MEMBER DETAILS MODE ===== */}
+      {view === "member" && selectedMember && (
+        <View style={styles.section}>
+          <TouchableOpacity onPress={() => setView("details")} style={styles.backButton}>
+            <AntDesign name="arrow-left" size={16} color={theme.colors.accent} />
+            <Typography variant="subtitle1"> Назад</Typography>
+          </TouchableOpacity>
 
-        {/* ===== MEMBER DETAILS MODE ===== */}
-        {view === "member" && selectedMember && (
-          <View style={{ flex: 1 }}>
-            <TouchableOpacity
-              onPress={() => setView("details")}
-              style={[styles.backButton, { paddingHorizontal: 20 }]}
-            >
-              <AntDesign name="arrow-left" size={16} color={COLORS.PRIMARY_BLUE} />
-              <Text style={styles.backButtonText}>Назад</Text>
-            </TouchableOpacity>
+          <MemberDetailsView
+            member={selectedMember}
+            onInternalRename={handleInternalMemberRename}
+            onClose={() => setView("details")}
+            onRemoveMember={handleRemoveMember}
+            onBlock={isOwner ? () => setIsBlockConfirmVisible(true) : undefined}
+          />
+        </View>
+      )}
 
-            <MemberDetailsView
-              member={selectedMember}
-              onInternalRename={handleInternalMemberRename}
-              onClose={() => setView("details")}
-              onRemoveMember={handleRemoveMember}
-              onBlock={isOwner ? () => setIsBlockConfirmVisible(true) : undefined}
-            />
-          </View>
-        )}
+      {/* ===== DETAILS VIEW (Main) ===== */}
+      {view === "details" && (
+        <View style={styles.section}>
+          <CircleDetailsView
+            name={currentName}
+            inviteCode={inviteCode}
+            members={members}
+            isOwner={isOwner || false}
+            onClose={onClose}
+            onRenamePress={onEdit}
+            onUnsubscribePress={() => setIsLeaveVisible(true)}
+            onMemberPress={handleMemberPress}
+          />
 
-        {/* ===== DETAILS VIEW (Main) ===== */}
-        {view === "details" && (
-          <>
-            <CircleDetailsView
-              name={currentName}
-              inviteCode={inviteCode}
-              members={members}
-              isOwner={isOwner || false}
-              onClose={onClose}
-              onRenamePress={onEdit}
-              onUnsubscribePress={() => setIsLeaveVisible(true)}
-              onMemberPress={handleMemberPress}
-            />
-
-            {/* Footer Actions (Delete/Leave) */}
-            <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
-              {isOwner ? (
-                <TouchableOpacity style={styles.delete} onPress={() => setIsDeleteVisible(true)}>
-                  <Text style={styles.deleteText}>Видалити коло</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity style={styles.delete} onPress={() => setIsLeaveVisible(true)}>
-                  <Text style={styles.deleteText}>Покинути коло</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </>
-        )}
-      </SafeAreaView>
+          {/* Footer Actions (Delete/Leave) */}
+          <ModalActions direction="column" style={styles.footer}>
+            {isOwner ? (
+              <TouchableOpacity style={styles.delete} onPress={() => setIsDeleteVisible(true)}>
+                <Typography variant="subtitle1" weight="semibold" tone="negative">
+                  Видалити коло
+                </Typography>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.delete} onPress={() => setIsLeaveVisible(true)}>
+                <Typography variant="subtitle1" weight="semibold" tone="negative">
+                  Покинути коло
+                </Typography>
+              </TouchableOpacity>
+            )}
+          </ModalActions>
+        </View>
+      )}
 
       <ConfirmationModal
         isVisible={isDeleteVisible}
@@ -246,67 +200,57 @@ export default function CircleDetailsModal({
         confirmText="Заблокувати"
         cancelText="Скасувати"
       />
-    </Modal>
+    </BottomSheetContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  sheetWrapper: { justifyContent: "flex-end", margin: 0 },
-  sheet: {
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    maxHeight: "92%",
-    flex: 1,
+  section: {
+    paddingHorizontal: theme.spacing[16],
+    paddingBottom: theme.spacing[8],
   },
-  sheetExpanded: {
-    maxHeight: "80%",
-    flex: 1,
+  footer: {
+    paddingHorizontal: theme.spacing[16],
+    paddingBottom: theme.spacing[10],
   },
-  handle: {
-    alignSelf: "center",
-    width: 48,
-    height: 5,
-    backgroundColor: "#D1D1D6",
-    borderRadius: 3,
-    marginVertical: 12,
-  },
-  delete: { backgroundColor: "transparent", marginTop: 10, marginBottom: 20 },
-  deleteText: {
-    color: COLORS.STATE_DANGER,
-    fontSize: 16,
-    fontWeight: "600",
-    textAlign: "center",
+  delete: {
+    backgroundColor: "transparent",
+    paddingVertical: theme.spacing[12],
+    alignItems: "center",
   },
   input: {
-    backgroundColor: COLORS.BACKGROUND_CARD,
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    fontSize: 26,
-    fontWeight: "700",
-    color: COLORS.TEXT_DARK,
+    backgroundColor: theme.colors.background.tertiary,
+    borderRadius: theme.radius.lg,
+    paddingVertical: theme.spacing[16],
+    paddingHorizontal: theme.spacing[20],
+    fontSize: theme.typography.fontSize.h2,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.content.primary,
     textAlign: "center",
-    marginTop: 10,
-    marginBottom: 26,
+    marginTop: theme.spacing[8],
+    marginBottom: theme.spacing[24],
   },
-  backButton: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: theme.spacing[16],
+  },
   backButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.PRIMARY_BLUE,
-    marginLeft: 8,
+    fontSize: theme.typography.fontSize.subtitle1,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.accent,
+    marginLeft: theme.spacing[8],
   },
   doneButton: {
-    backgroundColor: COLORS.BLACK_BTN,
-    borderRadius: 28,
-    paddingVertical: 15,
+    backgroundColor: theme.colors.accent,
+    borderRadius: theme.radius.pill,
+    paddingVertical: theme.spacing[14],
     alignItems: "center",
-    marginTop: 24,
+    marginTop: theme.spacing[20],
   },
   doneButtonText: {
-    color: COLORS.BACKGROUND_LIGHT,
-    fontSize: 17,
-    fontWeight: "700",
+    color: theme.colors.content.onColor,
+    fontSize: theme.typography.fontSize.subtitle1,
+    fontWeight: theme.typography.fontWeight.bold,
   },
 });
