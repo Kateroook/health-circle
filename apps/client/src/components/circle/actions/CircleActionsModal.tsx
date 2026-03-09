@@ -3,10 +3,11 @@ import { AntDesign } from "@expo/vector-icons";
 import Feather from "@expo/vector-icons/Feather";
 import * as Clipboard from "expo-clipboard";
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { theme } from "@/src/theme/theme";
 import ConfirmationModal from "../../ConfirmationModal";
+import { TextField } from "../../fields/TextField";
 import { BottomSheetContainer } from "../../modal/BottomSheetContainer";
 
 interface Member {
@@ -127,16 +128,15 @@ export default function CircleActionsModal({
 
             <Text style={styles.renameTitle}>Редагуй назву Кола</Text>
 
-            <TextInput
-              style={styles.input}
+            <TextField
+              label=""
               placeholder="Введи нову назву"
-              placeholderTextColor={theme.colors.content.secondary}
               value={newName}
               onChangeText={setNewName}
               autoFocus
+              required
+              caption="Назва зміниться для всіх членів Кола"
             />
-
-            <Text style={styles.renameHint}>Назва зміниться для всіх членів Кола</Text>
 
             <TouchableOpacity
               style={[styles.doneButton, newName.trim() === "" && styles.doneButtonDisabled]}

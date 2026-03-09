@@ -146,7 +146,9 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                   {/* STEP 1 */}
                   {createStep === 1 && (
                     <>
-                      <Text style={[styles.nameInput, styles.centeredText]}>Назви своє Коло</Text>
+                      <Typography variant="subtitle1" style={styles.centeredText}>
+                        Назви своє Коло
+                      </Typography>
                       <TextInput
                         style={styles.nameInput}
                         placeholder="Супер коло"
@@ -156,44 +158,12 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                         maxLength={100}
                         textAlign="center"
                       />
-
-                      <TouchableOpacity
-                        style={[
-                          styles.btn,
-                          styles.blueBtn,
-                          (circleName.trim().length < 3 || isCreating) && styles.grayDisabledBtn,
-                        ]}
-                        disabled={circleName.trim().length < 3 || isCreating}
-                        onPress={handleCreateCircle}
-                      >
-                        <Text
-                          style={[
-                            styles.btnText,
-                            circleName.trim().length >= 3 && !isCreating
-                              ? styles.btnText // білий
-                              : styles.btnTextDisabled, // чорний / темний
-                          ]}
-                        >
-                          {isCreating ? "Створюємо..." : "Створити"}
-                        </Text>
-                      </TouchableOpacity>
                     </>
                   )}
 
                   {/* STEP 2 */}
                   {createStep === 2 && (
                     <>
-                      <Text style={styles.sectionLabel}>Назвіть ваше Коло</Text>
-
-                      {/* Велике світло-сіре коло з назвою */}
-                      <View style={styles.circleContainer}>
-                        <View style={styles.circle}>
-                          <Text style={styles.circleText} numberOfLines={2} ellipsizeMode="tail">
-                            {circleName}
-                          </Text>
-                        </View>
-                      </View>
-
                       <View style={styles.codeHeader}>
                         <Text style={styles.sectionLabel}>Код кола</Text>
                         <TouchableOpacity onPress={handleCopy}>
@@ -203,6 +173,38 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
 
                       <View style={styles.codeContainer}>
                         <OtpInput value={generatedCode} editable={false} onChange={() => {}} />
+                      </View>
+                      <TouchableOpacity
+                        style={styles.shareBtn}
+                        onPress={async () => {
+                          try {
+                            const code = generatedCode.join("");
+                            await Share.share({
+                              message: `Приєднуйся до мого Кола в Health Circle! Код: ${code}`,
+                            });
+                          } catch (error) {
+                            console.error(error);
+                          }
+                        }}
+                      >
+                        <Typography variant="subtitle1" tone="onColor">
+                          Надіслати запрошення
+                        </Typography>
+                        <Feather name="send" size={20} color={theme.colors.content.onColor} />
+                      </TouchableOpacity>
+
+                      {/* Велике світло-сіре коло з назвою */}
+                      <View style={styles.circleContainer}>
+                        <View style={styles.circle}>
+                          <Typography
+                            variant="h3"
+                            tone="secondary"
+                            numberOfLines={2}
+                            ellipsizeMode="tail"
+                          >
+                            {circleName}
+                          </Typography>
+                        </View>
                       </View>
                     </>
                   )}
@@ -219,16 +221,17 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                   disabled={joinCode.join("").length !== 6 || isJoining}
                   onPress={handleJoinCircle}
                 >
-                  <Text
+                  <Typography
+                    variant="subtitle1"
+                    tone="onColor"
                     style={[
-                      styles.btnText,
                       joinCode.join("").length === 6 && !isJoining
                         ? styles.btnText
                         : styles.btnTextDisabled,
                     ]}
                   >
                     {isJoining ? "Підключення..." : "Приєднатися"}
-                  </Text>
+                  </Typography>
                 </TouchableOpacity>
               )}
 
@@ -242,40 +245,26 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                   disabled={circleName.trim().length < 3 || isCreating}
                   onPress={handleCreateCircle}
                 >
-                  <Text
+                  <Typography
+                    variant="subtitle1"
+                    tone="onColor"
                     style={[
-                      styles.btnText,
                       circleName.trim().length >= 3 && !isCreating
                         ? styles.btnText
                         : styles.btnTextDisabled,
                     ]}
                   >
                     {isCreating ? "Створюємо..." : "Створити"}
-                  </Text>
+                  </Typography>
                 </TouchableOpacity>
               )}
 
               {activeTab === "create" && createStep === 2 && (
                 <>
-                  <TouchableOpacity
-                    style={styles.shareBtn}
-                    onPress={async () => {
-                      try {
-                        const code = generatedCode.join("");
-                        await Share.share({
-                          message: `Приєднуйся до мого Кола в Health Circle! Код: ${code}`,
-                        });
-                      } catch (error) {
-                        console.error(error);
-                      }
-                    }}
-                  >
-                    <Text style={styles.shareBtnText}>Надіслати запрошення</Text>
-                    <Feather name="send" size={20} color={theme.colors.content.onColor} />
-                  </TouchableOpacity>
-
                   <TouchableOpacity style={[styles.btn, styles.blackBtn]} onPress={onClose}>
-                    <Text style={styles.btnText}>Готово</Text>
+                    <Typography variant="subtitle1" tone="onColor">
+                      Готово
+                    </Typography>
                   </TouchableOpacity>
                 </>
               )}
@@ -332,10 +321,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   nameInput: {
-    fontSize: theme.typography.fontSize.subtitle1,
+    fontSize: theme.typography.fontSize.h1,
     fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.content.primary,
-    marginBottom: theme.spacing[16],
+    marginBottom: theme.spacing[32],
   },
 
   codeHeader: {
@@ -368,7 +357,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: theme.colors.accent,
     paddingVertical: theme.spacing[14],
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.pill,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 0,
@@ -377,22 +366,17 @@ const styles = StyleSheet.create({
   },
   centeredText: {
     textAlign: "center",
+    paddingBottom: theme.spacing[88],
     color: theme.colors.content.primary,
   },
-  shareBtnText: {
-    color: theme.colors.content.onColor,
-    fontSize: theme.typography.fontSize.subtitle1,
-    fontWeight: theme.typography.fontWeight.semibold,
-    fontVariant: ["small-caps"],
-    marginRight: theme.spacing[8],
-  },
+
   btnTextDisabled: {
     color: theme.colors.content.primary,
   },
   circleContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: theme.spacing[24],
+    marginVertical: theme.spacing[32],
   },
 
   circle: {
