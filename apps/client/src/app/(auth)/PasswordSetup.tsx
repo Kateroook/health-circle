@@ -1,4 +1,4 @@
-import { PasswordField, TextField } from "@/src/components/fields/TextField";
+import { PasswordField, PinCodeField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -119,14 +119,13 @@ export default function PasswordSetup() {
           {/* Form */}
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
-              <TextField
+              <PinCodeField
                 label="Код підтвердження"
-                placeholder="000 000"
                 value={code}
                 onChangeText={setCode}
-                keyboardType="number-pad"
-                maxLength={6}
                 required
+                variant="pin"
+                errorMessage={formError === "Введіть 6-значний код" ? formError : undefined}
               />
             </View>
 

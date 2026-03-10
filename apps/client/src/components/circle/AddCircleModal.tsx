@@ -2,14 +2,14 @@ import { apiFetch } from "@/src/api/api";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
-import { Alert, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Share, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BottomSheetContainer, ModalContent, ModalHeader } from "@/src/components/modal";
 import { theme } from "@/src/theme/theme";
 import { formatErrorMessage } from "../../utils/error.util";
-import OtpInput from "../OtpInput";
+import { PinCodeField } from "../fields/TextField";
 import { Typography } from "../typography";
 
 interface AddCircleModalProps {
@@ -22,17 +22,17 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
   const [activeTab, setActiveTab] = useState<"join" | "create">("join");
 
   // Join tab
-  const [joinCode, setJoinCode] = useState<string[]>(["", "", "", "", "", ""]);
+  const [joinCode, setJoinCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
 
   // Create tab
   const [createStep, setCreateStep] = useState<1 | 2 | 3>(1);
   const [circleName, setCircleName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState<string[]>(["", "", "", "", "", ""]);
+  const [generatedCode, setGeneratedCode] = useState("");
 
   const handleCopy = async () => {
-    await Clipboard.setStringAsync(generatedCode.join(""));
+    await Clipboard.setStringAsync(generatedCode);
   };
 
   // --- CREATE CIRCLE ---
@@ -44,7 +44,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
         body: JSON.stringify({ name: circleName.trim() }),
       });
       const code = response.inviteCode || "";
-      setGeneratedCode(code.split(""));
+      setGeneratedCode(code);
       setCreateStep(2);
 
       if (onUpdated) onUpdated();
@@ -59,11 +59,11 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
 
   // --- JOIN CIRCLE ---
   const handleJoinCircle = async () => {
-    const code = joinCode.join("");
-    if (code.length !== 6) {
+    if (joinCode.length !== 6) {
       Alert.alert("Помилка", "Будь ласка, введіть повний код");
       return;
     }
+    const code = joinCode;
     setIsJoining(true);
     try {
       const response = await apiFetch("/groups/join", {
@@ -136,7 +136,13 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                   <Typography variant="subtitle1" style={{ marginBottom: theme.spacing[8] }}>
                     Введи код, щоб приєднатися до Кола.
                   </Typography>
-                  <OtpInput value={joinCode} onChange={setJoinCode} />
+                  <PinCodeField
+                    label=""
+                    value={joinCode}
+                    onChangeText={setJoinCode}
+                    required
+                    variant="code"
+                  />
                 </View>
               )}
 
@@ -164,23 +170,28 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                   {/* STEP 2 */}
                   {createStep === 2 && (
                     <>
-                      <View style={styles.codeHeader}>
-                        <Text style={styles.sectionLabel}>Код кола</Text>
-                        <TouchableOpacity onPress={handleCopy}>
-                          <AntDesign name="copy" size={16} color={theme.colors.content.secondary} />
-                        </TouchableOpacity>
-                      </View>
-
                       <View style={styles.codeContainer}>
-                        <OtpInput value={generatedCode} editable={false} onChange={() => {}} />
+                        <PinCodeField
+                          label="Код кола"
+                          value={generatedCode}
+                          variant="code"
+                          labelTrailing={
+                            <TouchableOpacity onPress={handleCopy} hitSlop={8}>
+                              <AntDesign
+                                name="copy"
+                                size={theme.typography.lineHeight.subtitle1}
+                                color={theme.colors.content.secondary}
+                              />
+                            </TouchableOpacity>
+                          }
+                        />
                       </View>
                       <TouchableOpacity
                         style={styles.shareBtn}
                         onPress={async () => {
                           try {
-                            const code = generatedCode.join("");
                             await Share.share({
-                              message: `Приєднуйся до мого Кола в Health Circle! Код: ${code}`,
+                              message: `Приєднуйся до мого Кола в Health Circle! Код: ${generatedCode}`,
                             });
                           } catch (error) {
                             console.error(error);
@@ -214,20 +225,16 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                 <TouchableOpacity
                   style={[
                     styles.btn,
-                    joinCode.join("").length === 6 && !isJoining
-                      ? styles.blueBtn
-                      : styles.grayDisabledBtn,
+                    joinCode.length === 6 && !isJoining ? styles.blueBtn : styles.grayDisabledBtn,
                   ]}
-                  disabled={joinCode.join("").length !== 6 || isJoining}
+                  disabled={joinCode.length !== 6 || isJoining}
                   onPress={handleJoinCircle}
                 >
                   <Typography
                     variant="subtitle1"
                     tone="onColor"
                     style={[
-                      joinCode.join("").length === 6 && !isJoining
-                        ? styles.btnText
-                        : styles.btnTextDisabled,
+                      joinCode.length === 6 && !isJoining ? styles.btnText : styles.btnTextDisabled,
                     ]}
                   >
                     {isJoining ? "Підключення..." : "Приєднатися"}
@@ -351,7 +358,7 @@ const styles = StyleSheet.create({
   },
   disabled: { opacity: 0.4 },
   codeContainer: {
-    marginBottom: 0,
+    marginBottom: theme.spacing[8],
   },
   shareBtn: {
     flexDirection: "row",

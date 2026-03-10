@@ -1,4 +1,4 @@
-import { PasswordField, TextField } from "@/src/components/fields/TextField";
+import { PasswordField, PinCodeField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { router, useLocalSearchParams } from "expo-router";
@@ -128,14 +128,13 @@ export default function ResetPassword() {
           {/* Form */}
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
-              <TextField
+              <PinCodeField
                 label="Код підтвердження"
-                placeholder="Введіть 6-значний код"
                 value={code}
                 onChangeText={setCode}
-                keyboardType="number-pad"
-                maxLength={6}
                 required
+                variant="code"
+                errorMessage={formError === "Введіть 6-значний код" ? formError : undefined}
               />
             </View>
 
@@ -232,24 +231,24 @@ const styles = StyleSheet.create({
     gap: theme.spacing[8],
     marginBottom: theme.spacing[32],
   },
-
   emailBadge: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: theme.colors.background.secondary,
     paddingVertical: theme.spacing[8],
     paddingHorizontal: theme.spacing[16],
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
+    borderWidth: theme.borderWidth.md,
+    borderColor: theme.colors.border.opaque,
     marginBottom: theme.spacing[16],
   },
   formContainer: {
     marginBottom: theme.spacing[12],
   },
   inputGroup: {
-    marginBottom: theme.spacing[12],
+    marginBottom: theme.spacing[16],
   },
-
   errorContainer: {
     flexDirection: "row",
     alignItems: "center",
