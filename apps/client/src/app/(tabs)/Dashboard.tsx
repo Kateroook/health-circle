@@ -327,11 +327,11 @@ export default function DashboardScreen() {
     }
   };
 
+  useSyncSignal(fetchGroups);
+
   useFocusEffect(
     useCallback(() => {
       fetchGroups();
-      const interval = setInterval(fetchGroups, 5000);
-      return () => clearInterval(interval);
     }, []),
   );
 
