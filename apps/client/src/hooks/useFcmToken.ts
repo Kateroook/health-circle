@@ -1,8 +1,19 @@
 import { saveFcmTokenToBackend } from "@/src/api/api";
 import { useAuthStore } from "@/src/store/authStore";
-import notifee, { AndroidImportance } from "@notifee/react-native";
 import messaging from "@react-native-firebase/messaging";
+import * as Notifications from "expo-notifications";
 import { useEffect } from "react";
+
+// Configure how notifications are handled when the app is in the foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 export function useFcmToken() {
   const { user, accessToken } = useAuthStore();
@@ -25,11 +36,10 @@ export function useFcmToken() {
           }
         }
 
-        // Ensure channel exists for Android background messages
-        await notifee.createChannel({
-          id: "default",
+        // Ensure channel exists for Android
+        await Notifications.setNotificationChannelAsync("default", {
           name: "Default Channel",
-          importance: AndroidImportance.HIGH,
+          importance: Notifications.AndroidImportance.HIGH,
         });
       } catch (error) {
         console.error("FCM Permission denied:", error);
@@ -47,17 +57,13 @@ export function useFcmToken() {
       console.log("A new FCM message arrived!", JSON.stringify(remoteMessage));
 
       if (remoteMessage.notification) {
-        // Display a notification
-        await notifee.displayNotification({
-          title: remoteMessage.notification.title,
-          body: remoteMessage.notification.body,
-          android: {
-            channelId: "default",
-            importance: AndroidImportance.HIGH,
-            pressAction: {
-              id: "default",
-            },
+        // Display a notification manually for foreground
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: remoteMessage.notification.title,
+            body: remoteMessage.notification.body,
           },
+          trigger: null, // show immediately
         });
       }
     });
