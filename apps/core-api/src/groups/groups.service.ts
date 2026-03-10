@@ -4,6 +4,7 @@ import { GroupEntity } from 'src/common/entities/group.entity';
 import { GroupBlockListEntity } from 'src/common/entities/group-block-list.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { ContactsService } from 'src/contacts/contacts.service';
+import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { SecurityService } from 'src/security/security.service';
 import { In, Repository } from 'typeorm';
 
@@ -21,7 +22,14 @@ export class GroupService {
     private readonly blockListRepository: Repository<GroupBlockListEntity>,
     private readonly securityService: SecurityService,
     private readonly contactsService: ContactsService,
+    private readonly firestoreSyncService: FirestoreSyncService,
   ) {}
+
+  private async syncGroupMembers(group: GroupEntity) {
+    if (!group.members) return;
+    const memberIds = group.members.map((m) => m.id);
+    await this.firestoreSyncService.sendSyncSignal(memberIds);
+  }
 
   async findAllForUser(userId: string) {
     const groups = await this.repository
@@ -94,12 +102,14 @@ export class GroupService {
   async createGroup(ownerId: string, dto: CreateGroupDto) {
     const owner = { id: ownerId } as UserEntity;
     const code = await this.generateUniqueInviteCode();
-    return await this.repository.save({
+    const saved = await this.repository.save({
       owner,
       name: dto.name,
       members: [owner],
       inviteCode: code,
     });
+    await this.syncGroupMembers(saved);
+    return saved;
   }
 
   async generateUniqueInviteCode(maxAttempts = 10): Promise<string> {
@@ -138,8 +148,9 @@ export class GroupService {
     if (!user) throw new NotFoundException('Користувач не знайдено');
     if (group.members.some((m) => m.id === userId)) throw new BadRequestException('Ви вже приєднались до цього кола');
     group.members.push(user);
-    await this.repository.save(group);
-    return { message: 'Ви приєдналися до кола', group };
+    const saved = await this.repository.save(group);
+    await this.syncGroupMembers(saved);
+    return { message: 'Ви приєдналися до кола', group: saved };
   }
 
   async updateGroup(userId: string, dto: UpdateGroupDto) {
@@ -150,7 +161,9 @@ export class GroupService {
       const members = await this.userRepository.find({ where: { id: In(dto.members.map((m) => m.id)) } });
       group.members = [group.owner, ...members.filter((m) => m.id !== group.owner.id)];
     }
-    return this.repository.save(group);
+    const saved = await this.repository.save(group);
+    await this.syncGroupMembers(saved);
+    return saved;
   }
 
   async leaveGroup(userId: string, groupId: string) {
@@ -162,15 +175,19 @@ export class GroupService {
     if (group.owner.id === userId) {
       throw new ForbiddenException('Власник не може покинути коло. Видаліть коло натомість');
     }
+    const leavingUserId = userId;
     group.members = group.members.filter((m) => m.id !== userId);
-    await this.repository.save(group);
+    const saved = await this.repository.save(group);
+    await this.firestoreSyncService.sendSyncSignal([...saved.members.map((m) => m.id), leavingUserId]);
     return { message: 'Ви покинули коло' };
   }
 
   async deleteGroup(userId: string, groupId: string) {
     const group = await this.findOne(groupId, userId);
     if (group.owner.id !== userId) throw new ForbiddenException('Тільки власник може видалити коло');
+    const memberIds = group.members.map((m) => m.id);
     await this.repository.remove(group);
+    await this.firestoreSyncService.sendSyncSignal(memberIds);
     return { message: 'Коло успішно видалено' };
   }
 
@@ -183,6 +200,7 @@ export class GroupService {
     if (group.members.some((m) => m.id === userId)) {
       group.members = group.members.filter((m) => m.id !== userId);
       await this.repository.save(group);
+      await this.firestoreSyncService.sendSyncSignal([...group.members.map((m) => m.id), userId]);
     }
 
     // Add to block list
