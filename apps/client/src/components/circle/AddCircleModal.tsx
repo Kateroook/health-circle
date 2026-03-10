@@ -2,7 +2,7 @@ import { apiFetch } from "@/src/api/api";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
-import { Alert, Share, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -10,6 +10,7 @@ import { BottomSheetContainer, ModalContent, ModalHeader } from "@/src/component
 import { theme } from "@/src/theme/theme";
 import { formatErrorMessage } from "../../utils/error.util";
 import { PinCodeField } from "../fields/TextField";
+import OtpInput from "../OtpInput";
 import { Typography } from "../typography";
 
 interface AddCircleModalProps {

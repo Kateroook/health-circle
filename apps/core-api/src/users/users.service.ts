@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as admin from 'firebase-admin';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
@@ -12,6 +11,7 @@ import { RequestMetadata } from 'src/common/types/request-metadata';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { EntityManager, QueryRunner, Repository } from 'typeorm';
@@ -31,6 +31,7 @@ export class UsersService {
     protected readonly configService: ConfigService,
     protected readonly externalFilesService: ExternalFilesService,
     private notificationsService: NotificationsService,
+    private firestoreSyncService: FirestoreSyncService,
   ) {}
 
   async updateStatus(userId: string, status: UserStatus) {
@@ -80,24 +81,16 @@ export class UsersService {
       });
     }
 
-    try {
-      const memberIdsToSync = new Set<string>();
-      user.groups.forEach((group) => {
-        group.members.forEach((member) => {
-          memberIdsToSync.add(member.id);
-        });
+    // Send sync signals to all group members
+    const memberIdsToSync = new Set<string>();
+    user.groups.forEach((group) => {
+      group.members.forEach((member) => {
+        memberIdsToSync.add(member.id);
       });
-      memberIdsToSync.add(userId);
+    });
+    memberIdsToSync.add(userId);
 
-      const batch = admin.firestore().batch();
-      memberIdsToSync.forEach((id) => {
-        const ref = admin.firestore().collection('user_sync').doc(id);
-        batch.set(ref, { timestamp: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-      });
-      await batch.commit();
-    } catch (e) {
-      console.error('Error updating firestore sync signals', e);
-    }
+    await this.firestoreSyncService.sendSyncSignal(Array.from(memberIdsToSync));
 
     return { status: user.status, message: 'Status updated' };
   }

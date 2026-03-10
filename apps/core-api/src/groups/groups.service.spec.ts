@@ -5,6 +5,7 @@ import { GroupEntity } from 'src/common/entities/group.entity';
 import { GroupBlockListEntity } from 'src/common/entities/group-block-list.entity';
 import { UserEntity } from 'src/common/entities/user.entity';
 import { ContactsService } from 'src/contacts/contacts.service';
+import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { SecurityService } from 'src/security/security.service';
 import { In, Repository } from 'typeorm';
 
@@ -93,6 +94,12 @@ describe('GroupService', () => {
             generateRandomToken: jest.fn(),
           },
         },
+        {
+          provide: FirestoreSyncService,
+          useValue: {
+            sendSyncSignal: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -150,7 +157,7 @@ describe('GroupService', () => {
       securityService.generateRandomToken.mockReturnValue('NEW');
       securityService.generateRandomToken.mockReturnValue('NEW');
       groupRepository.findOneBy.mockResolvedValue(null); // Code is unique
-      groupRepository.save.mockResolvedValue({ id: 'g1', inviteCode: 'NEW' } as GroupEntity);
+      groupRepository.save.mockResolvedValue({ id: 'g1', inviteCode: 'NEW', members: [{ id: 'owner-1' }] } as GroupEntity);
 
       const dto = { name: 'New Group', members: [] } as CreateGroupDto;
       const result = await service.createGroup('owner-1', dto);
@@ -171,7 +178,7 @@ describe('GroupService', () => {
         .mockResolvedValueOnce({ id: 'existing' } as GroupEntity) // First check: Taken
         .mockResolvedValueOnce(null); // Second check: Free
 
-      groupRepository.save.mockResolvedValue({} as GroupEntity);
+      groupRepository.save.mockImplementation((g) => Promise.resolve(g as GroupEntity));
 
       await service.createGroup('owner-1', { name: 'G' } as CreateGroupDto);
 
@@ -211,7 +218,7 @@ describe('GroupService', () => {
       groupRepository.findOne.mockResolvedValue(groupWithOneMember);
       userRepository.findOneBy.mockResolvedValue(mockUser);
       blockListRepository.findOne.mockResolvedValue(null); // Not blocked
-      groupRepository.save.mockResolvedValue({} as GroupEntity);
+      groupRepository.save.mockImplementation((g) => Promise.resolve(g as GroupEntity));
 
       const result = await service.joinByInviteCode('user-1', 'ABC');
 
@@ -272,7 +279,7 @@ describe('GroupService', () => {
       // Explicitly define group state for this test
       const group = { ...mockGroup, members: [mockOwner, mockUser] } as GroupEntity;
       groupRepository.findOne.mockResolvedValue(group);
-      groupRepository.save.mockResolvedValue({} as GroupEntity);
+      groupRepository.save.mockImplementation((g) => Promise.resolve(g as GroupEntity));
 
       await service.leaveGroup('user-1', 'group-1');
 
