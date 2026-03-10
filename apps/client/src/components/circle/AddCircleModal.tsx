@@ -1,20 +1,24 @@
 import { apiFetch } from "@/src/api/api";
-import { COLORS } from "@/src/theme/colors";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
 import { Alert, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-// 1. Import the library
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { BottomSheetContainer, ModalContent, ModalHeader } from "@/src/components/modal";
+import { theme } from "@/src/theme/theme";
 import { formatErrorMessage } from "../../utils/error.util";
 import OtpInput from "../OtpInput";
+import { Typography } from "../typography";
 
 interface AddCircleModalProps {
+  visible: boolean;
   onClose: () => void;
   onUpdated?: () => void;
 }
 
-const AddCircleModal: React.FC<AddCircleModalProps> = ({ onClose, onUpdated }) => {
+const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpdated }) => {
   const [activeTab, setActiveTab] = useState<"join" | "create">("join");
 
   // Join tab
@@ -81,91 +85,154 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onClose, onUpdated }) =
 
   // --- RENDER ---
   return (
-    // 2. Use KeyboardAwareScrollView as the main wrapper
-    // enableOnAndroid: crucial for Android support
-    // extraScrollHeight: adds padding above the keyboard so the input isn't glued to it
-    <KeyboardAwareScrollView
-      enableOnAndroid={true}
-      extraScrollHeight={40}
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={[styles.scrollContent, { minHeight: "90%" }]}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.modalInner}>
-        <View style={styles.handle} />
-        <Text style={styles.title}>Додайте нове коло</Text>
-        <Text style={styles.subtitle}>Створіть своє коло або приєднайся до існуючого</Text>
+    <BottomSheetContainer isVisible={visible} onClose={onClose}>
+      <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
+        <KeyboardAwareScrollView
+          enableOnAndroid={true}
+          extraScrollHeight={theme.spacing[40]}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.scrollContent, { minHeight: "90%" }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.modalInner}>
+            <ModalHeader
+              title="Додайте нове коло"
+              description="Створіть своє коло або приєднайся до існуючного"
+            />
+            <ModalContent noMarginBottom style={styles.modalContentInner}>
+              {/* Tabs */}
+              <View style={styles.segment}>
+                <TouchableOpacity
+                  style={[styles.segmentBtn, activeTab === "join" && styles.segmentActive]}
+                  onPress={() => setActiveTab("join")}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    style={[activeTab === "join" && styles.segmentTextActive]}
+                  >
+                    Приєднатися
+                  </Typography>
+                </TouchableOpacity>
 
-        {/* Tabs */}
-        <View style={styles.segment}>
-          <TouchableOpacity
-            style={[styles.segmentBtn, activeTab === "join" && styles.segmentActive]}
-            onPress={() => setActiveTab("join")}
-          >
-            <Text style={[styles.segmentText, activeTab === "join" && styles.segmentTextActive]}>
-              Приєднатися
-            </Text>
-          </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.segmentBtn, activeTab === "create" && styles.segmentActive]}
+                  onPress={() => {
+                    setActiveTab("create");
+                    setCreateStep(1);
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    style={[activeTab === "create" && styles.segmentTextActive]}
+                  >
+                    Створити
+                  </Typography>
+                </TouchableOpacity>
+              </View>
 
-          <TouchableOpacity
-            style={[styles.segmentBtn, activeTab === "create" && styles.segmentActive]}
-            onPress={() => {
-              setActiveTab("create");
-              setCreateStep(1);
-            }}
-          >
-            <Text style={[styles.segmentText, activeTab === "create" && styles.segmentTextActive]}>
-              Створити
-            </Text>
-          </TouchableOpacity>
-        </View>
+              {/* JOIN Content */}
+              {activeTab === "join" && (
+                <View style={styles.tabContent}>
+                  <Typography variant="subtitle1" style={{ marginBottom: theme.spacing[8] }}>
+                    Введи код, щоб приєднатися до Кола.
+                  </Typography>
+                  <OtpInput value={joinCode} onChange={setJoinCode} />
+                </View>
+              )}
 
-        {/* JOIN Content */}
-        {activeTab === "join" && (
-          <View style={styles.tabContent}>
-            <Text style={styles.sectionLabel}>Введи код, щоб приєднатися до Кола.</Text>
-            <OtpInput value={joinCode} onChange={setJoinCode} />
-            <TouchableOpacity
-              style={[
-                styles.btn,
-                joinCode.join("").length === 6 && !isJoining
-                  ? styles.blueBtn
-                  : styles.grayDisabledBtn,
-              ]}
-              disabled={joinCode.join("").length !== 6 || isJoining}
-              onPress={handleJoinCircle}
-            >
-              <Text
-                style={[
-                  styles.btnText,
-                  joinCode.join("").length === 6 && !isJoining
-                    ? styles.btnText // білий для активної
-                    : styles.btnTextDisabled, // чорний/темний для неактивної
-                ]}
-              >
-                {isJoining ? "Підключення..." : "Приєднатися"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+              {/* CREATE Content */}
+              {activeTab === "create" && (
+                <View style={styles.tabContent}>
+                  {/* STEP 1 */}
+                  {createStep === 1 && (
+                    <>
+                      <Text style={[styles.nameInput, styles.centeredText]}>Назви своє Коло</Text>
+                      <TextInput
+                        style={styles.nameInput}
+                        placeholder="Супер коло"
+                        placeholderTextColor={theme.colors.content.tertiary}
+                        value={circleName}
+                        onChangeText={setCircleName}
+                        maxLength={100}
+                        textAlign="center"
+                      />
 
-        {/* CREATE Content */}
-        {activeTab === "create" && (
-          <View style={styles.tabContent}>
-            {/* STEP 1 */}
-            {createStep === 1 && (
-              <>
-                <Text style={[styles.nameInput, styles.centeredText]}>Назви своє Коло</Text>
-                <TextInput
-                  style={styles.nameInput}
-                  placeholder="Супер коло"
-                  placeholderTextColor="#C7C7CC"
-                  value={circleName}
-                  onChangeText={setCircleName}
-                  maxLength={100}
-                  textAlign="center"
-                />
+                      <TouchableOpacity
+                        style={[
+                          styles.btn,
+                          styles.blueBtn,
+                          (circleName.trim().length < 3 || isCreating) && styles.grayDisabledBtn,
+                        ]}
+                        disabled={circleName.trim().length < 3 || isCreating}
+                        onPress={handleCreateCircle}
+                      >
+                        <Text
+                          style={[
+                            styles.btnText,
+                            circleName.trim().length >= 3 && !isCreating
+                              ? styles.btnText // білий
+                              : styles.btnTextDisabled, // чорний / темний
+                          ]}
+                        >
+                          {isCreating ? "Створюємо..." : "Створити"}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
 
+                  {/* STEP 2 */}
+                  {createStep === 2 && (
+                    <>
+                      <Text style={styles.sectionLabel}>Назвіть ваше Коло</Text>
+
+                      {/* Велике світло-сіре коло з назвою */}
+                      <View style={styles.circleContainer}>
+                        <View style={styles.circle}>
+                          <Text style={styles.circleText} numberOfLines={2} ellipsizeMode="tail">
+                            {circleName}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.codeHeader}>
+                        <Text style={styles.sectionLabel}>Код кола</Text>
+                        <TouchableOpacity onPress={handleCopy}>
+                          <AntDesign name="copy" size={16} color={theme.colors.content.secondary} />
+                        </TouchableOpacity>
+                      </View>
+
+                      <View style={styles.codeContainer}>
+                        <OtpInput value={generatedCode} editable={false} onChange={() => {}} />
+                      </View>
+                    </>
+                  )}
+                </View>
+              )}
+              {activeTab === "join" && (
+                <TouchableOpacity
+                  style={[
+                    styles.btn,
+                    joinCode.join("").length === 6 && !isJoining
+                      ? styles.blueBtn
+                      : styles.grayDisabledBtn,
+                  ]}
+                  disabled={joinCode.join("").length !== 6 || isJoining}
+                  onPress={handleJoinCircle}
+                >
+                  <Text
+                    style={[
+                      styles.btnText,
+                      joinCode.join("").length === 6 && !isJoining
+                        ? styles.btnText
+                        : styles.btnTextDisabled,
+                    ]}
+                  >
+                    {isJoining ? "Підключення..." : "Приєднатися"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {activeTab === "create" && createStep === 1 && (
                 <TouchableOpacity
                   style={[
                     styles.btn,
@@ -179,192 +246,170 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onClose, onUpdated }) =
                     style={[
                       styles.btnText,
                       circleName.trim().length >= 3 && !isCreating
-                        ? styles.btnText // білий
-                        : styles.btnTextDisabled, // чорний / темний
+                        ? styles.btnText
+                        : styles.btnTextDisabled,
                     ]}
                   >
                     {isCreating ? "Створюємо..." : "Створити"}
                   </Text>
                 </TouchableOpacity>
-              </>
-            )}
+              )}
 
-            {/* STEP 2 */}
-            {createStep === 2 && (
-              <>
-                <Text style={styles.sectionLabel}>Назвіть ваше Коло</Text>
-
-                {/* Велике світло-сіре коло з назвою */}
-                <View style={styles.circleContainer}>
-                  <View style={styles.circle}>
-                    <Text style={styles.circleText} numberOfLines={2} ellipsizeMode="tail">
-                      {circleName}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.codeHeader}>
-                  <Text style={styles.sectionLabel}>Код кола</Text>
-                  <TouchableOpacity onPress={handleCopy}>
-                    <AntDesign name="copy" size={16} color={COLORS.TEXT_GRAY} />
+              {activeTab === "create" && createStep === 2 && (
+                <>
+                  <TouchableOpacity
+                    style={styles.shareBtn}
+                    onPress={async () => {
+                      try {
+                        const code = generatedCode.join("");
+                        await Share.share({
+                          message: `Приєднуйся до мого Кола в Health Circle! Код: ${code}`,
+                        });
+                      } catch (error) {
+                        console.error(error);
+                      }
+                    }}
+                  >
+                    <Text style={styles.shareBtnText}>Надіслати запрошення</Text>
+                    <Feather name="send" size={20} color={theme.colors.content.onColor} />
                   </TouchableOpacity>
-                </View>
 
-                <View style={styles.codeContainer}>
-                  <OtpInput value={generatedCode} editable={false} onChange={() => {}} />
-                </View>
-
-                {/* Кнопка "Надіслати запрошення" / "Запросити" */}
-                <TouchableOpacity
-                  style={styles.shareBtn}
-                  onPress={async () => {
-                    try {
-                      const code = generatedCode.join("");
-                      await Share.share({
-                        message: `Приєднуйся до мого Кола в Health Circle! Код: ${code}`,
-                      });
-                    } catch (error) {
-                      console.error(error);
-                    }
-                  }}
-                >
-                  <Text style={styles.shareBtnText}>Надіслати запрошення</Text>
-                  <Feather name="send" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-
-                {/* Кнопка "Готово" */}
-                <TouchableOpacity style={[styles.btn, styles.blackBtn]} onPress={onClose}>
-                  <Text style={styles.btnText}>Готово</Text>
-                </TouchableOpacity>
-              </>
-            )}
+                  <TouchableOpacity style={[styles.btn, styles.blackBtn]} onPress={onClose}>
+                    <Text style={styles.btnText}>Готово</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </ModalContent>
           </View>
-        )}
-      </View>
-    </KeyboardAwareScrollView>
+        </KeyboardAwareScrollView>
+      </SafeAreaView>
+    </BottomSheetContainer>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {},
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: theme.spacing[8],
   },
-  modalInner: {
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    backgroundColor: "#D1D1D6",
-    borderRadius: 2,
-    alignSelf: "center",
-    marginVertical: 12,
-  },
-  title: { fontSize: 20, fontWeight: "700", textAlign: "center" },
-  subtitle: {
-    fontSize: 13,
-    color: COLORS.TEXT_GRAY,
-    textAlign: "center",
-    marginBottom: 20,
+  modalInner: {},
+  modalContentInner: {
+    marginTop: 0,
   },
   segment: {
     flexDirection: "row",
-    backgroundColor: "#7676801F",
-    padding: 2,
-    borderRadius: 15,
-    height: 36,
-    marginBottom: 24,
+    backgroundColor: theme.colors.background.tertiary,
+    padding: theme.spacing[4],
+    borderRadius: theme.radius.pill,
+    height: theme.spacing[56],
+    marginBottom: theme.spacing[16],
+    marginTop: theme.spacing[16],
   },
   segmentBtn: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 15,
+    borderRadius: theme.radius.pill,
   },
   grayDisabledBtn: {
-    backgroundColor: "#C7C7CC", // світло-сірий, як у iOS
-    opacity: 0.6, // або 1, якщо хочеш чистий колір без затемнення
+    backgroundColor: theme.colors.background.tertiary,
   },
-  segmentActive: { backgroundColor: "white" },
-  segmentText: { fontSize: 13, fontWeight: "500" },
-  segmentTextActive: { fontWeight: "700" },
-  tabContent: { paddingVertical: 10 },
-  sectionLabel: { fontSize: 13, color: COLORS.TEXT_GRAY, marginBottom: 8 },
+  segmentActive: { backgroundColor: theme.colors.background.secondary },
+  segmentText: {
+    fontSize: theme.typography.fontSize.caption,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.content.secondary,
+  },
+  segmentTextActive: {
+    color: theme.colors.content.primary,
+  },
+  tabContent: { paddingVertical: theme.spacing[8] },
+  sectionLabel: {
+    fontSize: theme.typography.fontSize.caption,
+    color: theme.colors.content.secondary,
+    marginBottom: theme.spacing[8],
+    textAlign: "center",
+  },
   nameInput: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#000000",
-    marginBottom: 20,
+    fontSize: theme.typography.fontSize.subtitle1,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.content.primary,
+    marginBottom: theme.spacing[16],
   },
 
   codeHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: theme.spacing[8],
   },
-  finalName: { fontSize: 22, fontWeight: "700", marginBottom: 20 },
+  finalName: {
+    fontSize: theme.typography.fontSize.h3,
+    fontWeight: theme.typography.fontWeight.bold,
+    marginBottom: theme.spacing[20],
+  },
   btn: {
-    paddingVertical: 14,
-    borderRadius: 25,
+    paddingVertical: theme.spacing[14],
+    borderRadius: theme.radius.pill,
     alignItems: "center",
-    marginTop: 10,
   },
-  blueBtn: { backgroundColor: COLORS.BLACK_BTN },
-  blackBtn: { backgroundColor: COLORS.BLACK_BTN },
-  btnText: { color: "white", fontSize: 16, fontWeight: "600" },
+  blueBtn: { backgroundColor: theme.colors.accent },
+  blackBtn: { backgroundColor: theme.colors.primaryB },
+  btnText: {
+    color: theme.colors.content.onColor,
+    fontSize: theme.typography.fontSize.subtitle1,
+    fontWeight: theme.typography.fontWeight.semibold,
+  },
   disabled: { opacity: 0.4 },
   codeContainer: {
     marginBottom: 0,
   },
   shareBtn: {
     flexDirection: "row",
-    backgroundColor: "#5A8DEE",
-    paddingVertical: 14,
-    borderRadius: 20,
+    backgroundColor: theme.colors.accent,
+    paddingVertical: theme.spacing[14],
+    borderRadius: theme.radius.lg,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 0,
-    marginBottom: 20,
-    gap: 8,
+    marginBottom: theme.spacing[20],
+    columnGap: theme.spacing[8],
   },
   centeredText: {
     textAlign: "center",
-    color: "#000000",
+    color: theme.colors.content.primary,
   },
   shareBtnText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+    color: theme.colors.content.onColor,
+    fontSize: theme.typography.fontSize.subtitle1,
+    fontWeight: theme.typography.fontWeight.semibold,
     fontVariant: ["small-caps"],
-    marginRight: 8,
+    marginRight: theme.spacing[8],
   },
   btnTextDisabled: {
-    color: "#000000",
+    color: theme.colors.content.primary,
   },
   circleContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 24, // простір зверху і знизу
+    marginVertical: theme.spacing[24],
   },
 
   circle: {
-    width: 180, // або 200–220, якщо хочеш ще більше
-    height: 180,
-    borderRadius: 90, // половина від ширини/висоти → ідеальне коло
-    backgroundColor: "#E5E5EA", // світло-сірий (systemGray5 або подібний)
+    width: 224,
+    height: 224,
+    borderRadius: theme.radius.circle,
+    backgroundColor: theme.colors.background.tertiary,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 16, // внутрішні відступи, щоб текст не торкався країв
+    paddingHorizontal: theme.spacing[16],
   },
 
   circleText: {
-    fontSize: 24, // великий текст
-    fontWeight: "700",
-    color: "#000000", // або '#1C1C1E' для м'якшого чорного
+    fontSize: theme.typography.fontSize.h3,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.content.primary,
     textAlign: "center",
-    // lineHeight: 32,            // опціонально — для кращого вертикального центрування
   },
 });
 

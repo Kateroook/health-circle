@@ -1,8 +1,10 @@
+import { ModalProvider } from "@/src/components/modal";
+import { Typography } from "@/src/components/typography";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import FlashMessage from "react-native-flash-message";
 import { useFcmToken } from "../hooks/useFcmToken";
 import { useAuthStore } from "../store/authStore";
@@ -14,6 +16,9 @@ const useAppFonts = () => {
     "Montserrat-Bold": require("../assets/fonts/Montserrat-Bold.ttf"),
     "Montserrat-SemiBold": require("../assets/fonts/Montserrat-SemiBold.ttf"),
     "Montserrat-Regular": require("../assets/fonts/Montserrat-Regular.ttf"),
+    "Karla-Regular": require("../assets/fonts/Karla-Regular.ttf"),
+    "Karla-SemiBold": require("../assets/fonts/Karla-SemiBold.ttf"),
+    "Karla-Bold": require("../assets/fonts/Karla-Bold.ttf"),
   });
 };
 
@@ -39,25 +44,29 @@ export default function RootLayout() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Завантаження...</Text>
+        <Typography variant="body2" tone="secondary" style={styles.loadingText}>
+          Завантаження...
+        </Typography>
       </View>
     );
   }
 
   return (
-    <React.Fragment>
-      <StatusBar style="auto"></StatusBar>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Protected guard={isLoggedIn}>
-          <Stack.Screen name="(tabs)" />
-        </Stack.Protected>
-        <Stack.Protected guard={!isLoggedIn && !hasCompletedOnboarding}>
-          <Stack.Screen name="(onboarding)/index" />
-        </Stack.Protected>
-        <Stack.Screen name="(auth)" />
-      </Stack>
-      <FlashMessage position="top" />
-    </React.Fragment>
+    <ModalProvider>
+      <React.Fragment>
+        <StatusBar style="auto"></StatusBar>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Protected guard={isLoggedIn}>
+            <Stack.Screen name="(tabs)" />
+          </Stack.Protected>
+          <Stack.Protected guard={!isLoggedIn && !hasCompletedOnboarding}>
+            <Stack.Screen name="(onboarding)/index" />
+          </Stack.Protected>
+          <Stack.Screen name="(auth)" />
+        </Stack>
+        <FlashMessage position="top" />
+      </React.Fragment>
+    </ModalProvider>
   );
 }
 
@@ -70,7 +79,5 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    fontSize: 16,
-    color: "#666",
   },
 });
