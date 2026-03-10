@@ -11,6 +11,7 @@ import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { EntityManager, Repository, SelectQueryBuilder, UpdateResult } from 'typeorm';
@@ -121,6 +122,10 @@ describe('UsersService', () => {
     sendMulticast: jest.fn(),
   });
 
+  const mockFirestoreSyncService = () => ({
+    sendSyncSignal: jest.fn(),
+  });
+
   //
   // BEFORE EACH
   //
@@ -134,6 +139,7 @@ describe('UsersService', () => {
         { provide: UserActivitiesService, useValue: mockUserActivitiesService() },
         { provide: ExternalFilesService, useValue: mockExternalFilesService() },
         { provide: NotificationsService, useValue: mockNotificationsService() },
+        { provide: FirestoreSyncService, useValue: mockFirestoreSyncService() },
         { provide: ConfigService, useValue: {} },
       ],
     }).compile();
