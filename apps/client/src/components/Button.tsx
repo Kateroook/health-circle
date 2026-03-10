@@ -50,6 +50,7 @@ export const Button: React.FC<ButtonProps> = ({
     styles[`size_${size}`],
     styles[`shape_${shape}`],
     isRound && styles.roundBase,
+    isRound && styles[`roundSize_${size}`],
     disabled && (hierarchy === "tertiary" ? styles.disabled_tertiary : styles.disabled),
     style,
   ];
@@ -184,6 +185,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing[12],
     minHeight: 28,
   },
+  // Round size overrides:
+  roundSize_large: { width: 56, height: 56 },
+  roundSize_medium: { width: 48, height: 48 },
+  roundSize_small: { width: 36, height: 36 },
+  roundSize_xsmall: { width: 28, height: 28 },
   // Shape
   shape_rectangle: {
     borderRadius: theme.radius.lg,

@@ -1,15 +1,15 @@
 import { apiFetch } from "@/src/api/api";
+import { PinCodeField } from "@/src/components/fields/TextField";
+import { BottomSheetContainer, ModalContent, ModalHeader } from "@/src/components/modal";
+import { theme } from "@/src/theme/theme";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
 import { Alert, Share, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-import { BottomSheetContainer, ModalContent, ModalHeader } from "@/src/components/modal";
-import { theme } from "@/src/theme/theme";
 import { formatErrorMessage } from "../../utils/error.util";
-import { PinCodeField } from "../fields/TextField";
+import { Button } from "../Button";
 import { Typography } from "../typography";
 
 interface AddCircleModalProps {
@@ -176,18 +176,30 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                           value={generatedCode}
                           variant="code"
                           labelTrailing={
-                            <TouchableOpacity onPress={handleCopy} hitSlop={8}>
-                              <AntDesign
-                                name="copy"
-                                size={theme.typography.lineHeight.subtitle1}
-                                color={theme.colors.content.secondary}
-                              />
-                            </TouchableOpacity>
+                            <Button
+                              shape="round"
+                              hierarchy="tertiary"
+                              size="xsmall"
+                              leadingIcon={
+                                <AntDesign
+                                  name="copy"
+                                  size={theme.typography.lineHeight.subtitle1}
+                                  color={theme.colors.content.secondary}
+                                />
+                              }
+                              onPress={handleCopy}
+                            />
                           }
                         />
                       </View>
-                      <TouchableOpacity
-                        style={styles.shareBtn}
+                      <Button
+                        label="Надіслати запрошення"
+                        hierarchy="accent"
+                        shape="rectangle"
+                        size="medium"
+                        trailingIcon={
+                          <Feather name="send" size={20} color={theme.colors.content.onColor} />
+                        }
                         onPress={async () => {
                           try {
                             await Share.share({
@@ -197,12 +209,8 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                             console.error(error);
                           }
                         }}
-                      >
-                        <Typography variant="subtitle1" tone="onColor">
-                          Надіслати запрошення
-                        </Typography>
-                        <Feather name="send" size={20} color={theme.colors.content.onColor} />
-                      </TouchableOpacity>
+                        style={{ width: "100%" }}
+                      />
 
                       {/* Велике світло-сіре коло з назвою */}
                       <View style={styles.circleContainer}>
@@ -222,57 +230,41 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                 </View>
               )}
               {activeTab === "join" && (
-                <TouchableOpacity
-                  style={[
-                    styles.btn,
-                    joinCode.length === 6 && !isJoining ? styles.blueBtn : styles.grayDisabledBtn,
-                  ]}
+                <Button
+                  label={isJoining ? "Підключення..." : "Приєднатися"}
+                  hierarchy="primary"
+                  shape="rectangle"
+                  size="medium"
+                  loading={isJoining}
                   disabled={joinCode.length !== 6 || isJoining}
                   onPress={handleJoinCircle}
-                >
-                  <Typography
-                    variant="subtitle1"
-                    tone="onColor"
-                    style={[
-                      joinCode.length === 6 && !isJoining ? styles.btnText : styles.btnTextDisabled,
-                    ]}
-                  >
-                    {isJoining ? "Підключення..." : "Приєднатися"}
-                  </Typography>
-                </TouchableOpacity>
+                  style={{ width: "100%" }}
+                />
               )}
 
               {activeTab === "create" && createStep === 1 && (
-                <TouchableOpacity
-                  style={[
-                    styles.btn,
-                    styles.blueBtn,
-                    (circleName.trim().length < 3 || isCreating) && styles.grayDisabledBtn,
-                  ]}
+                <Button
+                  label={isCreating ? "Створюємо..." : "Створити"}
+                  hierarchy="primary"
+                  shape="rectangle"
+                  size="medium"
+                  loading={isCreating}
                   disabled={circleName.trim().length < 3 || isCreating}
                   onPress={handleCreateCircle}
-                >
-                  <Typography
-                    variant="subtitle1"
-                    tone="onColor"
-                    style={[
-                      circleName.trim().length >= 3 && !isCreating
-                        ? styles.btnText
-                        : styles.btnTextDisabled,
-                    ]}
-                  >
-                    {isCreating ? "Створюємо..." : "Створити"}
-                  </Typography>
-                </TouchableOpacity>
+                  style={{ width: "100%" }}
+                />
               )}
 
               {activeTab === "create" && createStep === 2 && (
                 <>
-                  <TouchableOpacity style={[styles.btn, styles.blackBtn]} onPress={onClose}>
-                    <Typography variant="subtitle1" tone="onColor">
-                      Готово
-                    </Typography>
-                  </TouchableOpacity>
+                  <Button
+                    label="Готово"
+                    hierarchy="primary"
+                    shape="rectangle"
+                    size="medium"
+                    onPress={onClose}
+                    style={{ width: "100%" }}
+                  />
                 </>
               )}
             </ModalContent>
@@ -308,76 +300,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: theme.radius.pill,
   },
-  grayDisabledBtn: {
-    backgroundColor: theme.colors.background.tertiary,
-  },
   segmentActive: { backgroundColor: theme.colors.background.secondary },
-  segmentText: {
-    fontSize: theme.typography.fontSize.caption,
-    fontWeight: theme.typography.fontWeight.semibold,
-    color: theme.colors.content.secondary,
-  },
   segmentTextActive: {
     color: theme.colors.content.primary,
   },
   tabContent: { paddingVertical: theme.spacing[8] },
-  sectionLabel: {
-    fontSize: theme.typography.fontSize.caption,
-    color: theme.colors.content.secondary,
-    marginBottom: theme.spacing[8],
-    textAlign: "center",
-  },
   nameInput: {
     fontSize: theme.typography.fontSize.h1,
     fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.content.primary,
     marginBottom: theme.spacing[32],
   },
-
-  codeHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: theme.spacing[8],
-  },
-  finalName: {
-    fontSize: theme.typography.fontSize.h3,
-    fontWeight: theme.typography.fontWeight.bold,
-    marginBottom: theme.spacing[20],
-  },
-  btn: {
-    paddingVertical: theme.spacing[14],
-    borderRadius: theme.radius.pill,
-    alignItems: "center",
-  },
-  blueBtn: { backgroundColor: theme.colors.accent },
-  blackBtn: { backgroundColor: theme.colors.primaryB },
-  btnText: {
-    color: theme.colors.content.onColor,
-    fontSize: theme.typography.fontSize.subtitle1,
-    fontWeight: theme.typography.fontWeight.semibold,
-  },
-  disabled: { opacity: 0.4 },
   codeContainer: {
     marginBottom: theme.spacing[8],
-  },
-  shareBtn: {
-    flexDirection: "row",
-    backgroundColor: theme.colors.accent,
-    paddingVertical: theme.spacing[14],
-    borderRadius: theme.radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 0,
-    marginBottom: theme.spacing[20],
-    columnGap: theme.spacing[8],
   },
   centeredText: {
     textAlign: "center",
     paddingBottom: theme.spacing[88],
-    color: theme.colors.content.primary,
-  },
-
-  btnTextDisabled: {
     color: theme.colors.content.primary,
   },
   circleContainer: {
@@ -385,7 +324,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginVertical: theme.spacing[32],
   },
-
   circle: {
     width: 224,
     height: 224,
@@ -394,13 +332,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: theme.spacing[16],
-  },
-
-  circleText: {
-    fontSize: theme.typography.fontSize.h3,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.content.primary,
-    textAlign: "center",
   },
 });
 

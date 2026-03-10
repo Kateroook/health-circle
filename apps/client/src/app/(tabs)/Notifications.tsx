@@ -1,30 +1,34 @@
-import { ScrollView, StyleSheet, Text } from "react-native";
+import { Typography } from "@/src/components/typography";
+import { theme } from "@/src/theme/theme";
+import { ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.header}>Сповіщення</Text>
+        <Typography variant="h2" tone="primary" style={styles.header}>
+          Сповіщення
+        </Typography>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  scrollContent: { padding: 20, paddingBottom: 120 },
-  header: { fontSize: 28, fontWeight: "600", marginBottom: 25 },
+  container: { flex: 1, backgroundColor: theme.colors.background.primary },
+  scrollContent: { padding: theme.spacing[16], paddingBottom: theme.spacing[104] },
+  header: { marginBottom: theme.spacing[24] },
   notification: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 15,
-    marginBottom: 25,
+    gap: theme.spacing[16],
+    marginBottom: theme.spacing[24],
   },
   avatar: {
     width: 45,
     height: 45,
-    borderRadius: 22,
-    backgroundColor: "#eee",
+    borderRadius: theme.radius.xl,
+    backgroundColor: theme.colors.background.tertiary,
   },
 });

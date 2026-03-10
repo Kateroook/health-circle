@@ -1,7 +1,9 @@
 import { apiFetch, updateMyStatus } from "@/src/api/api";
+import { Button } from "@/src/components/Button";
 import MemberAvatar from "@/src/components/MemberAvatar";
-import { useSyncSignal } from "@/src/hooks/useSyncSignal";
+import { Typography } from "@/src/components/typography";
 import { useAuthStore } from "@/src/store/authStore";
+import { theme } from "@/src/theme/theme";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
@@ -34,9 +36,9 @@ interface Group {
   members: Member[];
 }
 
-const PRIMARY_COLOR = "#007AFF";
-const TEXT_COLOR = "#1C1C1E";
-const LIGHT_GRAY = "#F2F2F7";
+const PRIMARY_COLOR = theme.colors.accent;
+const TEXT_COLOR = theme.colors.content.primary;
+const LIGHT_GRAY = theme.colors.background.secondary;
 const BORDER_RADIUS = 12;
 
 // --- MainStatusIndicator ---
@@ -52,9 +54,9 @@ const MainStatusIndicator = ({
   const getBackgroundColor = () => {
     switch (currentStatus) {
       case "SAFE":
-        return "#34C759";
+        return theme.colors.state.safe;
       case "DANGER":
-        return "#FF3B30";
+        return theme.colors.state.emergency;
       default:
         return PRIMARY_COLOR;
     }
@@ -98,18 +100,18 @@ const MainStatusIndicator = ({
           pressed && { transform: [{ scale: 0.96 }] },
         ]}
       >
-        <Text style={styles.mainStatusText}>
+        <Typography variant="h2" tone="onColor" style={styles.mainStatusText}>
           {currentStatus === "SAFE"
             ? "В безпеці"
             : currentStatus === "DANGER"
               ? "Потрібна допомога!"
               : "Невідомо"}
-        </Text>
+        </Typography>
       </Pressable>
-      <Text style={styles.mainStatusHelperText}>
+      <Typography variant="caption" tone="secondary" style={styles.mainStatusHelperText}>
         Натисніть — якщо в безпеці{"\n"}
         Затисніть — якщо потрібна допомога
-      </Text>
+      </Typography>
     </View>
   );
 };
@@ -122,23 +124,23 @@ const StatusBadge = ({ status }: { status: UserStatus }) => {
 
   switch (status) {
     case "SAFE":
-      bgColor = "#E8F5E9";
-      circleColor = "#4CAF50";
+      bgColor = theme.colors.stateBackground.safe;
+      circleColor = theme.colors.state.safe;
       symbol = "✓";
       break;
     case "UNKNOWN":
-      bgColor = "#FFF3E0";
-      circleColor = "#FF9800";
+      bgColor = theme.colors.stateBackground.unknown;
+      circleColor = theme.colors.state.unknown;
       symbol = "?";
       break;
     case "DANGER":
-      bgColor = "#FFEBEE";
-      circleColor = "#F44336";
+      bgColor = theme.colors.stateBackground.emergency;
+      circleColor = theme.colors.state.emergency;
       symbol = "!";
       break;
     default:
-      bgColor = "#F5F5F5";
-      circleColor = "#9E9E9E";
+      bgColor = theme.colors.stateBackground.calm;
+      circleColor = theme.colors.state.calm;
       symbol = "?";
   }
 
@@ -163,17 +165,9 @@ const StatusBadge = ({ status }: { status: UserStatus }) => {
           alignItems: "center",
         }}
       >
-        <Text
-          style={{
-            color: "#FFFFFF",
-            fontSize: 14,
-            fontWeight: "bold",
-            includeFontPadding: false,
-            lineHeight: 20,
-          }}
-        >
+        <Typography variant="subtitle1" tone="onColor" weight="bold">
           {symbol}
-        </Text>
+        </Typography>
       </View>
     </View>
   );
@@ -199,20 +193,20 @@ const MemberProfileModal = ({
   switch (member.status) {
     case "SAFE":
       statusText = "В безпеці";
-      statusColor = "#4CAF50";
-      circleColor = "#4CAF50";
+      statusColor = theme.colors.state.safe;
+      circleColor = theme.colors.state.safe;
       symbol = "✓";
       break;
     case "DANGER":
       statusText = "Потрібна допомога!";
-      statusColor = "#F44336";
-      circleColor = "#F44336";
+      statusColor = theme.colors.state.emergency;
+      circleColor = theme.colors.state.emergency;
       symbol = "!";
       break;
     default:
       statusText = "Невідомо";
-      statusColor = "#FF9800";
-      circleColor = "#FF9800";
+      statusColor = theme.colors.state.unknown;
+      circleColor = theme.colors.state.unknown;
       symbol = "?";
   }
 
@@ -221,10 +215,14 @@ const MemberProfileModal = ({
       <Pressable style={modalStyles.overlay} onPress={onClose}>
         <Pressable style={modalStyles.card} onPress={(e) => e.stopPropagation()}>
           {/* Close button */}
-          <TouchableOpacity style={modalStyles.closeButton} onPress={onClose}>
-            <Text style={modalStyles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-
+          <Button
+            shape="round"
+            hierarchy="tertiary"
+            size="medium"
+            leadingIcon="✕"
+            onPress={onClose}
+            style={{ alignSelf: "flex-start" }}
+          />
           {/* Avatar */}
           <View style={modalStyles.avatarWrapper}>
             <MemberAvatar member={member} />
@@ -380,9 +378,9 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.greeting} numberOfLines={1}>
+        <Typography variant="h2" tone="primary" style={styles.greeting} numberOfLines={1}>
           Привіт, {user?.firstName || "Користувач"}!
-        </Text>
+        </Typography>
 
         <MainStatusIndicator
           currentStatus={user?.status || "UNKNOWN"}
@@ -390,7 +388,9 @@ export default function DashboardScreen() {
         />
 
         <View style={styles.statusCircleSection}>
-          <Text style={styles.sectionHeader}>СТАТУС КОЛА</Text>
+          <Typography variant="subtitle2" tone="secondary" style={styles.sectionHeader}>
+            СТАТУС КОЛА
+          </Typography>
 
           <ScrollView
             horizontal
@@ -398,49 +398,34 @@ export default function DashboardScreen() {
             style={styles.statusFilters}
             contentContainerStyle={{ paddingRight: 20 }}
           >
-            <TouchableOpacity
-              style={selectedGroupId === "ALL" ? styles.statusFilterActive : styles.statusFilter}
+            <Button
+              label="Усі"
+              hierarchy={selectedGroupId === "ALL" ? "primary" : "secondary"}
+              shape="pill"
+              size="small"
               onPress={() => setSelectedGroupId("ALL")}
-            >
-              <Text
-                style={
-                  selectedGroupId === "ALL"
-                    ? styles.statusFilterTextActive
-                    : styles.statusFilterText
-                }
-              >
-                Усі
-              </Text>
-            </TouchableOpacity>
+              style={{ marginRight: theme.spacing[8] }}
+            />
 
             {groups.map((group) => (
-              <TouchableOpacity
+              <Button
                 key={group.id}
-                style={
-                  selectedGroupId === group.id ? styles.statusFilterActive : styles.statusFilter
-                }
+                label={group.name}
+                hierarchy={selectedGroupId === group.id ? "primary" : "secondary"}
+                shape="pill"
+                size="small"
                 onPress={() => setSelectedGroupId(group.id)}
-              >
-                <Text
-                  numberOfLines={1}
-                  style={
-                    selectedGroupId === group.id
-                      ? styles.statusFilterTextActive
-                      : styles.statusFilterText
-                  }
-                >
-                  {group.name}
-                </Text>
-              </TouchableOpacity>
+                style={{ marginRight: theme.spacing[8] }}
+              />
             ))}
           </ScrollView>
 
           <View style={styles.contactList}>
             {displayedMembers.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>
+                <Typography variant="body2" tone="secondary" style={styles.emptyStateText}>
                   {groups.length === 0 ? "У вас ще немає кіл" : "Немає контактів у цьому колі"}
-                </Text>
+                </Typography>
               </View>
             ) : (
               displayedMembers.map((member) => (
@@ -464,18 +449,18 @@ export default function DashboardScreen() {
 const modalStyles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: theme.colors.background.overlay,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 32,
+    paddingHorizontal: theme.spacing[16],
   },
   card: {
     width: "100%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    paddingTop: 36,
-    paddingBottom: 28,
-    paddingHorizontal: 24,
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.xl,
+    paddingTop: theme.spacing[24],
+    paddingBottom: theme.spacing[28],
+    paddingHorizontal: theme.spacing[24],
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
@@ -489,43 +474,39 @@ const modalStyles = StyleSheet.create({
     right: 16,
     width: 30,
     height: 30,
-    borderRadius: 15,
-    backgroundColor: "#F2F2F7",
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.background.tertiary,
     justifyContent: "center",
     alignItems: "center",
   },
-  closeButtonText: {
-    fontSize: 13,
-    color: "#8E8E93",
-    fontWeight: "600",
-  },
+
   avatarWrapper: {
-    marginBottom: 14,
+    marginBottom: theme.spacing[14],
     transform: [{ scale: 1.6 }],
   },
   name: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1C1C1E",
-    marginBottom: 10,
+    color: theme.colors.content.primary,
+    marginBottom: theme.spacing[10],
     textAlign: "center",
   },
   // Status: circle icon + text side by side
   statusRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 24,
-    gap: 8,
+    marginBottom: theme.spacing[24],
+    gap: theme.spacing[8],
   },
   statusCircle: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: theme.radius.lg,
     justifyContent: "center",
     alignItems: "center",
   },
   statusCircleSymbol: {
-    color: "#FFFFFF",
+    color: theme.colors.content.onColor,
     fontSize: 13,
     fontWeight: "bold",
     includeFontPadding: false,
@@ -538,18 +519,18 @@ const modalStyles = StyleSheet.create({
   // Buttons stacked vertically
   buttonsColumn: {
     width: "100%",
-    gap: 10,
+    gap: theme.spacing[12],
   },
   actionButton: {
     width: "100%",
     paddingVertical: 14,
     borderRadius: 50,
-    backgroundColor: "#F2F2F7",
+    backgroundColor: theme.colors.background.tertiary,
     alignItems: "center",
     justifyContent: "center",
   },
   actionButtonText: {
-    color: "#1C1C1E",
+    color: theme.colors.content.primary,
     fontSize: 15,
     fontWeight: "600",
   },
@@ -558,7 +539,7 @@ const modalStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.colors.background.primary,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -566,9 +547,7 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   greeting: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: TEXT_COLOR,
+    marginTop: 16,
     marginBottom: 40,
   },
   mainStatusContainer: {
@@ -589,46 +568,44 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   mainStatusText: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#FFFFFF",
     textAlign: "center",
   },
   mainStatusHelperText: {
-    marginTop: 20,
+    marginTop: theme.spacing[20],
     fontSize: 14,
-    color: "#8E8E93",
+    color: theme.colors.content.secondary,
     textAlign: "center",
     lineHeight: 20,
   },
+
   statusCircleSection: {
-    marginBottom: 30,
-  },
-  sectionHeader: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#8E8E93",
-    marginBottom: 12,
-    letterSpacing: 0.5,
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing[16],
   },
   statusFilters: {
     flexDirection: "row",
-    marginBottom: 16,
+    gap: theme.spacing[8], // won't work on ScrollView directly
   },
+  sectionHeader: {
+    marginBottom: theme.spacing[8],
+    letterSpacing: 0.5,
+  },
+
   statusFilter: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: theme.spacing[8],
+    paddingHorizontal: theme.spacing[16],
     backgroundColor: LIGHT_GRAY,
-    borderRadius: 20,
-    marginRight: 10,
+    borderRadius: theme.radius.lg,
+    marginRight: theme.spacing[10],
     maxWidth: 150,
   },
   statusFilterActive: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: theme.spacing[8],
+    paddingHorizontal: theme.spacing[16],
     backgroundColor: TEXT_COLOR,
-    borderRadius: 20,
-    marginRight: 10,
+    borderRadius: theme.radius.lg,
+    marginRight: theme.spacing[10],
     maxWidth: 150,
   },
   statusFilterText: {
@@ -638,11 +615,11 @@ const styles = StyleSheet.create({
   },
   statusFilterTextActive: {
     fontSize: 14,
-    color: "#FFFFFF",
+    color: theme.colors.primaryA,
     fontWeight: "600",
   },
   contactList: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme.colors.background.secondary,
     minHeight: 50,
   },
   contactRow: {
@@ -650,10 +627,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E5E5EA",
+    borderBottomColor: theme.colors.border.opaque,
   },
   avatarContainer: {
-    marginRight: 12,
+    marginRight: theme.spacing[12],
   },
   contactInfo: {
     flex: 1,
@@ -663,23 +640,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: TEXT_COLOR,
-    marginBottom: 2,
+    marginBottom: theme.spacing[2],
   },
   contactStatusText: {
     fontSize: 14,
     fontWeight: "500",
   },
   contactStatusIcon: {
-    marginLeft: 12,
+    marginLeft: theme.spacing[12],
     width: 44,
     alignItems: "flex-end",
   },
   emptyState: {
-    padding: 20,
+    padding: theme.spacing[20],
     alignItems: "center",
   },
   emptyStateText: {
-    color: "#8E8E93",
+    color: theme.colors.content.secondary,
     fontStyle: "italic",
   },
 });
