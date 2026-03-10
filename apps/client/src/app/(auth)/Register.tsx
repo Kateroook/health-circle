@@ -1,3 +1,5 @@
+import { COLORS } from "@/src/theme/colors";
+import { AntDesign } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -11,13 +13,23 @@ import {
   View,
 } from "react-native";
 import { showMessage } from "react-native-flash-message";
+import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
-import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
 
+export const COUNTRY_PREFIXES = [
+  { code: "+380", label: "🇺🇦 Україна (+380)" },
+  { code: "+48", label: "🇵🇱 Польща (+48)" },
+  { code: "+49", label: "🇩🇪 Німеччина (+49)" },
+  { code: "+44", label: "🇬🇧 Велика Британія (+44)" },
+  { code: "+1", label: "🇺🇸 США/Канада (+1)" },
+  { code: "+420", label: "🇨🇿 Чехія (+420)" },
+  { code: "+421", label: "🇸🇰 Словаччина (+421)" },
+  { code: "+40", label: "🇷🇴 Румунія (+40)" },
+];
+
 export default function Register() {
-  const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState({
     phone: "",
     email: "",
@@ -25,179 +37,162 @@ export default function Register() {
     middleName: "",
     lastName: "",
   });
+  const [phonePrefix, setPhonePrefix] = useState("+380");
+  const [isPrefixModalVisible, setIsPrefixModalVisible] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Відстежуємо, які кроки вже пройшли валідацію (щоб показувати індикатори помилок)
-  const [validatedSteps, setValidatedSteps] = useState<Set<number>>(new Set());
-
   const handleChange = (key: string, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm({ ...form, [key]: value });
     if (errors[key]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[key];
-        return newErrors;
-      });
+      const newErrors = { ...errors };
+      delete newErrors[key];
+      setErrors(newErrors);
     }
   };
 
-  const validateCurrentStep = (): boolean => {
+  const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (step === 1) {
-      const cleanPhone = form.phone.replace(/\s/g, "");
-      const phoneRegex = /^\+380\d{9}$/;
-      if (!cleanPhone) {
-        newErrors.phone = "Поле номера телефону є обовʼязковим";
-      } else if (!phoneRegex.test(cleanPhone)) {
-        newErrors.phone = "Формат: +380XXXXXXXXX";
-      }
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!form.email.trim()) {
-        newErrors.email = "Поле електронної пошти є обовʼязковим";
-      } else if (!emailRegex.test(form.email)) {
-        newErrors.email = "Некоректний формат електронної пошти";
-      }
+    // Прізвище
+    if (!form.lastName.trim()) {
+      newErrors.lastName = "Поле прізвища є обовʼязковим";
+    } else if (form.lastName.length < 2) {
+      newErrors.lastName = "Прізвище має містити не менше 2 символів";
+    } else if (form.lastName.length > 50) {
+      newErrors.lastName = "Прізвище має містити не більше 50 символів";
     }
 
-    if (step === 2) {
-      if (!form.lastName.trim()) {
-        newErrors.lastName = "Поле прізвища є обовʼязковим";
-      } else if (form.lastName.length < 2) {
-        newErrors.lastName = "Прізвище має містити не менше 2 символів";
-      } else if (form.lastName.length > 50) {
-        newErrors.lastName = "Прізвище має містити не більше 50 символів";
-      }
+    // Ім'я
+    if (!form.firstName.trim()) {
+      newErrors.firstName = "Поле імені є обовʼязковим";
+    } else if (form.firstName.length < 2) {
+      newErrors.firstName = "Імʼя має містити не менше 2 символів";
+    } else if (form.firstName.length > 50) {
+      newErrors.firstName = "Імʼя має містити не більше 50 символів";
+    }
 
-      if (!form.firstName.trim()) {
-        newErrors.firstName = "Поле імені є обовʼязковим";
-      } else if (form.firstName.length < 2) {
-        newErrors.firstName = "Імʼя має містити не менше 2 символів";
-      } else if (form.firstName.length > 50) {
-        newErrors.firstName = "Імʼя має містити не більше 50 символів";
-      }
+    // По батькові — обов'язкове
+    if (!form.middleName.trim()) {
+      newErrors.middleName = "Поле по батькові є обовʼязковим";
+    } else if (form.middleName.length < 2) {
+      newErrors.middleName = "По-батькові має містити не менше 2 символів";
+    } else if (form.middleName.length > 50) {
+      newErrors.middleName = "По-батькові має містити не більше 50 символів";
+    }
 
-      if (form.middleName.trim()) {
-        if (form.middleName.length < 2) {
-          newErrors.middleName = "По-батькові має містити не менше 2 символів";
-        } else if (form.middleName.length > 50) {
-          newErrors.middleName = "По-батькові має містити не більше 50 символів";
-        }
-      }
+    // Email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!form.email.trim()) {
+      newErrors.email = "Поле електронної пошти є обовʼязковим";
+    } else if (!emailRegex.test(form.email)) {
+      newErrors.email = "Некоректний формат електронної пошти";
+    }
+
+    // Телефон (просто від 7 до 15 цифр після префікса)
+    const phoneBodyRegex = /^\d{7,15}$/;
+    const cleanPhone = form.phone.replace(/\s/g, "").replace(/\D/g, "");
+    if (!cleanPhone) {
+      newErrors.phone = "Поле номера телефону є обовʼязковим";
+    } else if (!phoneBodyRegex.test(cleanPhone)) {
+      newErrors.phone = "Некоректний формат номера телефону";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = async () => {
-    // Позначаємо, що цей крок вже валідувався
-    setValidatedSteps((prev) => new Set([...prev, step]));
-
-    const isValid = validateCurrentStep();
-
-    if (isValid) {
-      if (step === 1) {
-        setStep(2);
-      } else {
-        await handleRegister();
-      }
-    }
-  };
-
-  const handleBack = () => {
-    setStep((prev) => (prev > 1 ? ((prev - 1) as 1 | 2) : prev));
-  };
-
-  const renderInput = (
-    value: string,
-    error: string | undefined,
-    placeholder: string,
-    keyboardType: "phone-pad" | "email-address" | "default" = "default",
-    secureTextEntry = false,
-    onChangeText: (text: string) => void,
-    autoCapitalize: "none" | "words" = "words",
-  ) => {
-    const hasBeenValidated = validatedSteps.has(step);
-    const isFilled = value.trim().length > 0;
-    const hasError = !!error;
-
-    let indicatorStyle = null;
-    let symbol = null;
-
-    if (hasBeenValidated) {
-      if (hasError) {
-        indicatorStyle = styles.statusError;
-        symbol = "!";
-      } else if (isFilled) {
-        indicatorStyle = styles.statusSuccess;
-        symbol = "✓";
-      }
-    }
-
-    return (
-      <View style={styles.inputWrapper}>
-        <TextInput
-          placeholder={placeholder}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          secureTextEntry={secureTextEntry}
-          autoCapitalize={autoCapitalize}
-          style={[
-            styles.input,
-            hasError ? styles.inputError : isFilled && !hasError ? styles.inputValid : null,
-          ]}
-          placeholderTextColor="#999"
-        />
-
-        {indicatorStyle && (
-          <View style={[styles.statusIndicator, indicatorStyle]}>
-            <Text style={styles.statusSymbol}>{symbol}</Text>
-          </View>
-        )}
-      </View>
-    );
-  };
-
   async function handleRegister() {
-    setValidatedSteps((prev) => new Set([...prev, 2])); // позначаємо останній крок
-    if (!validateCurrentStep()) return;
+    setGeneralError(null);
+    if (!validateForm()) return;
 
     setLoading(true);
+    setErrors({});
+
+    const fullPhoneNumber = phonePrefix + form.phone.replace(/\D/g, "");
+
     try {
       await apiFetch("/users", {
         method: "POST",
-        body: JSON.stringify(
-          cleanObj({
-            ...form,
-            phone: form.phone.replace(/\s/g, ""),
-          }),
-        ),
+        body: JSON.stringify({
+          ...form,
+          phone: fullPhoneNumber,
+        }),
       });
-      router.replace({ pathname: "/PasswordSetup", params: { email: form.email } });
-    } catch (e: any) {
-      const errorMsg = formatErrorMessage(e);
-      const isConflict =
-        errorMsg.toLowerCase().includes("вже використовується") ||
-        errorMsg.toLowerCase().includes("already exists");
 
-      if (isConflict) {
-        setStep(1);
+      router.push({
+        pathname: "/PasswordSetup",
+        params: { email: form.email },
+      });
+    } catch (e: any) {
+      console.log("SERVER ERROR DEBUG:", e);
+
+      const newServerErrors: Record<string, string> = {};
+      let errorData: any = null;
+
+      if (typeof e.message === "string") {
+        try {
+          errorData = JSON.parse(e.message);
+        } catch {}
+      }
+
+      if (!errorData && e?.response?.data) {
+        errorData = e.response.data;
+      }
+
+      if (errorData && typeof errorData === "object" && Array.isArray(errorData.message)) {
+        const messages = errorData.message;
+
+        messages.forEach((msg: string) => {
+          const lowerMsg = msg.toLowerCase();
+
+          if (
+            lowerMsg.includes("електрон") ||
+            lowerMsg.includes("пошт") ||
+            lowerMsg.includes("email")
+          ) {
+            newServerErrors.email = msg;
+          } else if (
+            lowerMsg.includes("телефон") ||
+            lowerMsg.includes("номер") ||
+            lowerMsg.includes("phone")
+          ) {
+            newServerErrors.phone = msg;
+          } else {
+            newServerErrors.general = (newServerErrors.general || "") + msg + "\n";
+          }
+        });
+
+        if (Object.keys(newServerErrors).length > 0) {
+          setErrors((prev) => ({ ...prev, ...newServerErrors }));
+          return;
+        }
       }
 
       showMessage({
         message: "Помилка реєстрації",
-        description: errorMsg,
+        description: formatErrorMessage(e) || "Щось пішло не так",
         type: "danger",
-        duration: 5000,
+        duration: 6000,
       });
     } finally {
       setLoading(false);
     }
   }
+
+  const fields = [
+    { key: "lastName", label: "Прізвище", placeholder: "Введіть прізвище", required: true },
+    { key: "firstName", label: "Ім'я", placeholder: "Введіть ім'я", required: true },
+    { key: "middleName", label: "По батькові", placeholder: "Введіть по батькові", required: true },
+    {
+      key: "email",
+      label: "Email",
+      placeholder: "example@mail.com",
+      keyboardType: "email-address",
+      required: true,
+    },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -213,111 +208,79 @@ export default function Register() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>
-              {step === 1 ? "Введи номер телефону та електронну пошту" : "Як тебе звати?"}
-            </Text>
+            <View style={styles.iconContainer}>
+              <Text style={styles.icon}>👤</Text>
+            </View>
+            <Text style={styles.title}>Створення акаунту</Text>
+            <Text style={styles.subtitle}>Заповніть дані, щоб приєднатися до кола турботи</Text>
           </View>
+
+          {generalError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorIcon}>!</Text>
+              <Text style={styles.errorText}>{generalError}</Text>
+            </View>
+          )}
 
           {/* Form */}
           <View style={styles.formContainer}>
-            {step === 1 && (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Номер телефону</Text>
-                  {renderInput(
-                    form.phone,
-                    errors.phone,
-                    "+380 XX XXX XX XX",
-                    "phone-pad",
-                    false,
-                    (v) => handleChange("phone", v),
-                    "words",
-                  )}
-                  {errors.phone && <Text style={styles.fieldError}>{errors.phone}</Text>}
-                </View>
+            {fields.map(({ key, label, placeholder, keyboardType, required }) => (
+              <View key={key} style={styles.inputGroup}>
+                <Text style={styles.label}>
+                  {label}
+                  {required && <Text style={styles.requiredStar}> *</Text>}
+                </Text>
+                <TextInput
+                  placeholder={placeholder}
+                  value={(form as any)[key]}
+                  onChangeText={(v) => handleChange(key, v)}
+                  keyboardType={keyboardType as any}
+                  style={[styles.input, errors[key] && styles.inputError]}
+                  placeholderTextColor="#999"
+                />
+                {errors[key] && <Text style={styles.fieldError}>{errors[key]}</Text>}
+              </View>
+            ))}
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Електронна пошта</Text>
-                  {renderInput(
-                    form.email,
-                    errors.email,
-                    "example@mail.com",
-                    "email-address",
-                    false,
-                    (v) => handleChange("email", v),
-                    "none",
-                  )}
-                  {errors.email && <Text style={styles.fieldError}>{errors.email}</Text>}
-                </View>
-              </>
-            )}
-
-            {step === 2 && (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Прізвище</Text>
-                  {renderInput(
-                    form.lastName,
-                    errors.lastName,
-                    "Введіть прізвище",
-                    "default",
-                    false,
-                    (v) => handleChange("lastName", v),
-                  )}
-                  {errors.lastName && <Text style={styles.fieldError}>{errors.lastName}</Text>}
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{"Ім'я"}</Text>
-                  {renderInput(
-                    form.firstName,
-                    errors.firstName,
-                    "Введіть ім'я",
-                    "default",
-                    false,
-                    (v) => handleChange("firstName", v),
-                  )}
-                  {errors.firstName && <Text style={styles.fieldError}>{errors.firstName}</Text>}
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>По батькові</Text>
-                  {renderInput(
-                    form.middleName,
-                    errors.middleName,
-                    "Введіть по батькові (опціонально)",
-                    "default",
-                    false,
-                    (v) => handleChange("middleName", v),
-                  )}
-                  {errors.middleName && <Text style={styles.fieldError}>{errors.middleName}</Text>}
-                </View>
-              </>
-            )}
-
-            {/* Removed redundant step 3 password fields */}
+            {/* Phone Input with Prefix Selector */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Телефон <Text style={styles.requiredStar}>*</Text>
+              </Text>
+              <View style={[styles.phoneWrapper, errors.phone && styles.inputError]}>
+                <TouchableOpacity
+                  style={styles.prefixButton}
+                  onPress={() => setIsPrefixModalVisible(true)}
+                >
+                  <Text style={styles.prefixText}>{phonePrefix}</Text>
+                  <AntDesign name="down" size={12} color="#666" style={{ marginLeft: 4 }} />
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.phoneInput}
+                  placeholder="XX XXX XX XX"
+                  value={form.phone}
+                  onChangeText={(v) => handleChange("phone", v)}
+                  keyboardType="phone-pad"
+                  placeholderTextColor="#999"
+                />
+              </View>
+              {errors.phone && <Text style={styles.fieldError}>{errors.phone}</Text>}
+            </View>
 
             {/* Buttons */}
             <View style={styles.buttonsContainer}>
               <TouchableOpacity
                 style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleNext}
+                onPress={handleRegister}
                 disabled={loading}
               >
                 <Text style={styles.primaryButtonText}>
-                  {loading ? "Зачекайте..." : step < 2 ? "Далі" : "Зареєструватися"}
+                  {loading ? "Зачекайте..." : "Зареєструватися"}
                 </Text>
               </TouchableOpacity>
-
-              {step > 1 && (
-                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                  <Text style={styles.backButtonText}>Назад</Text>
-                </TouchableOpacity>
-              )}
             </View>
           </View>
 
-          {/* Footer */}
           <Text style={styles.footer}>
             Вже є акаунт?{" "}
             <Text style={styles.footerLink} onPress={() => router.push("/Login")}>
@@ -326,155 +289,178 @@ export default function Register() {
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Prefix Selection Modal */}
+      <Modal
+        isVisible={isPrefixModalVisible}
+        onBackdropPress={() => setIsPrefixModalVisible(false)}
+        onBackButtonPress={() => setIsPrefixModalVisible(false)}
+        swipeDirection="down"
+        onSwipeComplete={() => setIsPrefixModalVisible(false)}
+        style={styles.bottomModal}
+      >
+        <View style={styles.modalContent}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>Виберіть код країни</Text>
+          <ScrollView style={styles.prefixList}>
+            {COUNTRY_PREFIXES.map((item) => (
+              <TouchableOpacity
+                key={item.code}
+                style={styles.prefixListItem}
+                onPress={() => {
+                  setPhonePrefix(item.code);
+                  setIsPrefixModalVisible(false);
+                }}
+              >
+                <Text style={styles.prefixListLabel}>{item.label}</Text>
+                {phonePrefix === item.code && (
+                  <AntDesign name="check" size={20} color={COLORS.PRIMARY_BLUE} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#FAFAFA",
-  },
-  keyboardView: {
-    flex: 1,
-  },
+  safeArea: { flex: 1, backgroundColor: "#FAFAFA" },
+  keyboardView: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 40,
   },
-  header: {
+  header: { alignItems: "center", marginBottom: 32 },
+  iconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "#E8F5FF",
+    justifyContent: "center",
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 16,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginBottom: 8,
+  icon: { fontSize: 36 },
+  title: { fontSize: 28, fontWeight: "700", color: "#1A1A1A", marginBottom: 8 },
+  subtitle: {
+    fontSize: 15,
+    color: "#666",
     textAlign: "center",
+    paddingHorizontal: 20,
+    lineHeight: 22,
   },
-  formContainer: {
-    marginBottom: 24,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
-  },
-
-  inputWrapper: {
-    position: "relative",
-  },
-
+  formContainer: { marginBottom: 24 },
+  inputGroup: { marginBottom: 20 },
+  label: { fontSize: 14, fontWeight: "600", color: "#333", marginBottom: 8 },
   input: {
     backgroundColor: "#FFFFFF",
     paddingVertical: 14,
     paddingHorizontal: 16,
-    paddingRight: 48,
     borderRadius: 10,
     fontSize: 16,
     color: "#1A1A1A",
     borderWidth: 1,
     borderColor: "#E5E5E5",
   },
-
-  inputError: {
-    borderColor: "#FF6B6B",
-  },
-
-  inputValid: {
-    borderColor: "#4CAF50",
-  },
-
-  statusIndicator: {
-    position: "absolute",
-    right: 16,
-    top: "50%",
-    marginTop: -10,
-    width: 20,
-    height: 20,
+  phoneWrapper: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
     borderRadius: 10,
-    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+    overflow: "hidden",
+  },
+  prefixButton: {
+    flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    paddingHorizontal: 12,
+    borderRightWidth: 1,
+    borderRightColor: "#E5E5E5",
   },
-
-  statusSuccess: {
-    backgroundColor: "#4CAF50",
+  prefixText: { fontSize: 16, fontWeight: "600", color: "#1A1A1A" },
+  phoneInput: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: "#1A1A1A",
   },
-
-  statusError: {
-    backgroundColor: "#FF6B6B",
+  inputError: { borderColor: "#FF6B6B" },
+  requiredStar: { color: "#FF6B6B" },
+  fieldError: { color: "#FF6B6B", fontSize: 12, marginTop: 4, marginLeft: 4 },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFE5E5",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderLeftWidth: 4,
+    borderLeftColor: "#FF6B6B",
   },
-
-  statusSymbol: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "bold",
-    lineHeight: 20,
-  },
-
-  fieldError: {
-    color: "#FF6B6B",
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-
-  buttonsContainer: {
-    marginTop: 16,
-    gap: 12,
-  },
-
+  errorIcon: { fontSize: 24, color: "#D32F2F", marginRight: 12 },
+  errorText: { color: "#D32F2F", fontSize: 15, lineHeight: 22, flex: 1 },
+  buttonsContainer: { marginTop: 8, gap: 12 },
   primaryButton: {
-    backgroundColor: "#000000",
+    backgroundColor: "#FF6B6B",
     paddingVertical: 16,
-    borderRadius: 25,
+    borderRadius: 12,
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: "#FF6B6B",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
-
-  buttonDisabled: {
-    backgroundColor: "#000000",
-    opacity: 0.7,
-  },
-
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
-  },
-
-  backButton: {
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-
-  backButtonText: {
-    color: "#000000",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-
+  buttonDisabled: { backgroundColor: "#FFB3B3", opacity: 0.7 },
+  primaryButtonText: { color: "#FFFFFF", fontSize: 17, fontWeight: "700" },
   footer: {
     textAlign: "center",
     fontSize: 14,
     color: "#666",
-    marginTop: 24,
+    marginTop: 16,
     marginBottom: 20,
   },
+  footerLink: { color: "#FF6B6B", fontWeight: "600" },
 
-  footerLink: {
-    color: "#000000",
-    fontWeight: "600",
+  // Modal styles
+  bottomModal: { justifyContent: "flex-end", margin: 0 },
+  modalContent: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    maxHeight: "60%",
   },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#DDD",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginVertical: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1A1A1A",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  prefixList: { flexGrow: 0 },
+  prefixListItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  prefixListLabel: { fontSize: 16, color: "#1A1A1A" },
 });
