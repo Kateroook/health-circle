@@ -91,6 +91,8 @@ export interface PhoneFieldProps extends BaseTextFieldProps {
   countryCode?: string;
 }
 
+export { PinCodeField } from "./PinCodeField";
+
 const ICON_SIZE = 20;
 
 /**
