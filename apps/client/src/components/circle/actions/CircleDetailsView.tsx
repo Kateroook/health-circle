@@ -3,7 +3,7 @@ import { AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import MemberAvatar from "../../MemberAvatar";
+import { MemberAvatar } from "../../MemberAvatar";
 
 import { Member } from "../CircleItem";
 

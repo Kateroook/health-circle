@@ -1,8 +1,9 @@
 import { COLORS } from "@/src/theme/colors";
+import { theme } from "@/src/theme/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import MemberAvatar from "../MemberAvatar";
+import { MemberAvatar } from "../MemberAvatar";
 
 export interface Member {
   id: string;
@@ -23,7 +24,7 @@ interface CircleItemProps {
   onMenuPress?: () => void;
   onPress?: () => void;
 }
-
+const MAX_VISIBLE = 5;
 const CircleItem: React.FC<CircleItemProps> = ({
   title,
   members,
@@ -31,6 +32,9 @@ const CircleItem: React.FC<CircleItemProps> = ({
   onMenuPress,
   onPress,
 }) => {
+  const visibleMembers = members.slice(0, MAX_VISIBLE);
+  const overflow = extraCount ?? (members.length > MAX_VISIBLE ? members.length - MAX_VISIBLE : 0);
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.header}>
@@ -46,13 +50,18 @@ const CircleItem: React.FC<CircleItemProps> = ({
       </View>
 
       <View style={styles.members}>
-        {members.slice(0, 5).map((member) => (
-          <MemberAvatar key={member.id} member={member} />
+        {visibleMembers.map((member, index) => (
+          <MemberAvatar
+            key={member.id}
+            member={member}
+            size="md"
+            style={[styles.avatarOverlap, { zIndex: MAX_VISIBLE - index }]}
+          />
         ))}
 
-        {(members.length > 5 || extraCount) && (
-          <View style={[styles.avatarWrapper, styles.extra]}>
-            <Text style={styles.extraText}>+{extraCount || members.length - 5}</Text>
+        {overflow > 0 && (
+          <View style={[styles.avatarWrapper, styles.extraBubble, { zIndex: 0 }]}>
+            <Text style={styles.extraText}>+{overflow}</Text>
           </View>
         )}
       </View>
@@ -62,8 +71,8 @@ const CircleItem: React.FC<CircleItemProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.md,
     padding: 16,
     marginBottom: 14,
   },
@@ -120,6 +129,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: COLORS.TEXT_DARK,
+  },
+  avatarOverlap: {
+    marginRight: -12,
+  },
+  extraBubble: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#E5E5EA",
+    borderWidth: 3,
+    borderColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
