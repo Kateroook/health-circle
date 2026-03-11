@@ -1,7 +1,7 @@
 // test-framework/src/utils/api-helper.ts
 import { APIRequestContext, APIResponse } from '@playwright/test';
 import { config } from '../api/helpers/config';
-import { LoginResponse } from '../core/types/api-types';
+import { LoginResponse } from '../core/types/api/auth.types';
 
 export async function login({
   request,
@@ -49,5 +49,5 @@ export async function getAccessToken({
   const res = await login({ request, email, password });
 
   const body: LoginResponse = await res.json();
-  return body.accessToken;
+  return body.accessToken!;
 }

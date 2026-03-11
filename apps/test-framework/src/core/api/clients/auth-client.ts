@@ -8,7 +8,6 @@ import {
   ForgotPasswordRequest,
   ProfileResponse,
 } from '../../types/api';
-import { extractTokenFromCookies } from '../../../api/helpers/config';
 import { assertResponse, checkResponse } from '../helpers/response-checker';
 
 /**
@@ -50,7 +49,7 @@ export class AuthClient extends BaseClient {
    * POST /api/auth/refresh
    * Оновити access token
    */
-  public async refreshToken(): Promise<ApiResult<void>> {
+  public async refreshToken(): Promise<ApiResult<LoginResponse>> {
     // Використовуємо refresh token для оновлення
     const oldAccessToken = this.context.accessToken;
 
@@ -59,19 +58,13 @@ export class AuthClient extends BaseClient {
       this.setAccessToken(this.context.refreshToken);
     }
 
-    const result = await this.post<void>('/api/auth/refresh');
+    const result = await this.post<LoginResponse>('/api/auth/refresh');
 
     // Відновлюємо або оновлюємо токени
     const setCookieHeaders = result.response.headers()['set-cookie'];
     if (setCookieHeaders && result.response.ok()) {
-      const accessToken = extractTokenFromCookies(
-        Array.isArray(setCookieHeaders) ? setCookieHeaders : [setCookieHeaders],
-        'accessToken',
-      );
-      const refreshToken = extractTokenFromCookies(
-        Array.isArray(setCookieHeaders) ? setCookieHeaders : [setCookieHeaders],
-        'refreshToken',
-      );
+      const accessToken = result.data.accessToken;
+      const refreshToken = result.data.refreshToken;
 
       if (accessToken) this.setAccessToken(accessToken);
       if (refreshToken) this.setRefreshToken(refreshToken);
