@@ -2,6 +2,7 @@ import { apiFetch, updateMyStatus } from "@/src/api/api";
 import { Button } from "@/src/components/Button";
 import MemberAvatar from "@/src/components/MemberAvatar";
 import { Typography } from "@/src/components/typography";
+import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { useFocusEffect } from "expo-router";

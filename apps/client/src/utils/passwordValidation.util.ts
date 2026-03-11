@@ -18,4 +18,3 @@ export const validatePasswordComplexity = (pass: string): string | null => {
 
   return null;
 };
-
