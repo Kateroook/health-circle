@@ -1,6 +1,5 @@
 import { APIRequestContext, APIResponse } from '@playwright/test';
 import { TestContext } from '../helpers/test-context';
-import { config } from '../../../api/helpers/config';
 import { DbCleaner } from '../../db/db-cleaner';
 
 /**
@@ -24,7 +23,7 @@ export abstract class BaseClient {
   constructor(request: APIRequestContext, context: TestContext, dbCleaner?: DbCleaner) {
     this.request = request;
     this.context = context;
-    this.baseURL = config.baseApiUrl;
+    this.baseURL = process.env.API_BASE_URL!
     this.dbCleaner = dbCleaner;
   }
 
