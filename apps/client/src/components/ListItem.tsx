@@ -20,6 +20,7 @@ import { theme } from "@/src/theme/theme";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Image, ImageSourcePropType, Pressable, StyleSheet, Switch, View } from "react-native";
+import { StatusBadge, UserStatus } from "./StatusBadge";
 import { Typography } from "./typography/Typography";
 
 export type ListItemLayout = "compact" | "simple" | "stateBadge" | "check" | "switch";
@@ -54,6 +55,7 @@ export interface ListItemProps {
   onSwitchChange?: (value: boolean) => void;
   /** Whether the checkmark is shown as selected (check layout). */
   checked?: boolean;
+  status?: UserStatus;
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -71,13 +73,6 @@ const AvatarImage = ({ source }: { source?: ImageSourcePropType }) => (
 /** Arrow icon for compact / navigational rows. */
 const ArrowRight = () => (
   <Ionicons name="chevron-forward" size={20} color={theme.colors.content.primary} />
-);
-
-/** Circular warning badge for the stateBadge layout tail. */
-const WarningBadge = () => (
-  <View style={styles.warningBadge}>
-    <Ionicons name="warning" size={16} color={theme.colors.negative} />
-  </View>
 );
 
 /** Blue filled checkmark for the check layout tail. */
@@ -110,6 +105,7 @@ export const ListItem: React.FC<ListItemProps> = ({
   switchValue = false,
   onSwitchChange,
   checked = false,
+  status,
 }) => {
   const isCompact = layout === "compact";
 
@@ -160,7 +156,7 @@ export const ListItem: React.FC<ListItemProps> = ({
       case "stateBadge":
         return (
           <View style={styles.tailBadgeFrame}>
-            <WarningBadge />
+            {status ? <StatusBadge status={status} variant="round" /> : null}
           </View>
         );
       case "check":
