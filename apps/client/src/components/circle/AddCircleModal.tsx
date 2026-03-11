@@ -9,6 +9,7 @@ import { Alert, Share, StyleSheet, TextInput, TouchableOpacity, View } from "rea
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { formatErrorMessage } from "../../utils/error.util";
+import { PinCodeField } from "../fields/TextField";
 import OtpInput from "../OtpInput";
 import { Button } from "../Button";
 import { Typography } from "../typography";
