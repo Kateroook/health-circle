@@ -1,6 +1,6 @@
 export default {
   expo: {
-    name: "health-circle",
+    name: "Health Circle",
     slug: "health-circle",
     version: "1.0.0",
     orientation: "portrait",
@@ -17,10 +17,8 @@ export default {
       package: "com.vlad_risenhin.health_circle",
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
       adaptiveIcon: {
-        backgroundColor: "#E6F4FE",
-        foregroundImage: "./src/assets/images/android-icon-foreground.png",
-        backgroundImage: "./src/assets/images/android-icon-background.png",
-        monochromeImage: "./src/assets/images/android-icon-monochrome.png",
+        backgroundColor: "#f5f7fa",
+        foregroundImage: "./src/assets/images/icon.png",
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
