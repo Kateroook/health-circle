@@ -45,6 +45,7 @@ export interface ListItemProps {
   leadingIcon?: React.ReactNode;
   /** Avatar image source for simple / stateBadge / check layouts. */
   avatarSource?: ImageSourcePropType;
+  renderAvatar?: () => React.ReactNode;
   /** Show the 1 px opaque divider at the bottom. Defaults to true. */
   showDivider?: boolean;
   /** Called when the row is pressed. */
@@ -99,8 +100,9 @@ export const ListItem: React.FC<ListItemProps> = ({
   subLabel,
   supportCaption,
   leadingIcon,
+  renderAvatar,
   avatarSource,
-  showDivider = true,
+  showDivider = false,
   onPress,
   switchValue = false,
   onSwitchChange,
@@ -139,7 +141,7 @@ export const ListItem: React.FC<ListItemProps> = ({
 
     return (
       <View style={styles.avatarFrame}>
-        <AvatarImage source={avatarSource} />
+        {renderAvatar ? renderAvatar() : <AvatarImage source={avatarSource} />}
       </View>
     );
   };
@@ -194,7 +196,7 @@ export const ListItem: React.FC<ListItemProps> = ({
         {label}
       </Typography>
       {subLabel !== undefined && (
-        <Typography variant="body1" tone="secondary" style={styles.subLabel}>
+        <Typography variant="subtitle1" tone="secondary" style={styles.subLabel}>
           {subLabel}
         </Typography>
       )}
@@ -232,6 +234,7 @@ export const ListItem: React.FC<ListItemProps> = ({
 const styles = StyleSheet.create({
   root: {
     backgroundColor: theme.colors.background.secondary,
+    flex: 1,
   },
   rootPressed: {
     backgroundColor: theme.colors.background.tertiary,
@@ -271,6 +274,8 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.circle,
     overflow: "hidden",
     backgroundColor: theme.colors.background.tertiary,
+    alignItems: "center",
+    justifyContent: "center",
   },
   avatar: {
     width: 48,
@@ -283,7 +288,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "column",
     gap: theme.spacing[4],
-    alignItems: "flex-start",
+    alignItems: "center",
   },
   textContentCompact: {
     paddingVertical: theme.spacing[12],
