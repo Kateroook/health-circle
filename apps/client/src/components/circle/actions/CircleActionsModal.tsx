@@ -1,11 +1,12 @@
 import { Button } from "@/src/components/Button";
+import { ListItem } from "@/src/components/ListItem";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { AntDesign } from "@expo/vector-icons";
 import Feather from "@expo/vector-icons/Feather";
 import * as Clipboard from "expo-clipboard";
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import ConfirmationModal from "../../ConfirmationModal";
 import { TextField } from "../../fields/TextField";
@@ -169,29 +170,21 @@ export default function CircleActionsModal({
           <Text style={styles.sectionSubtitle}>
             Видали учасників, яких більше не потрібно відстежувати
           </Text>
+
           <ScrollView style={styles.memberScroll} showsVerticalScrollIndicator={false}>
-            {localMembers.map((m) => (
-              <TouchableOpacity
+            {localMembers.map((m, index) => (
+              <ListItem
                 key={m.id}
-                style={styles.memberItem}
+                layout="check"
+                artworkSize="none"
+                label={`${m.lastName} ${m.firstName}`}
+                checked={m.active}
                 onPress={() => toggleMember(m.id)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.memberName} numberOfLines={1} ellipsizeMode="tail">
-                  {`${m.lastName} ${m.firstName}`}
-                </Text>
-                <View style={styles.statusCircleContainer}>
-                  {m.active ? (
-                    <View style={[styles.statusCircle, styles.statusCircleActive]}>
-                      <AntDesign name="check" size={14} color={theme.colors.content.onColor} />
-                    </View>
-                  ) : (
-                    <View style={[styles.statusCircle, styles.statusCircleInactive]} />
-                  )}
-                </View>
-              </TouchableOpacity>
+                showDivider={index < localMembers.length - 1}
+              />
             ))}
           </ScrollView>
+
           <Button
             label="Зберегти"
             hierarchy="primary"
