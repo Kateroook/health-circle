@@ -1,27 +1,19 @@
 import { apiFetch } from "@/src/api/api";
+import { Button } from "@/src/components/Button";
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem, { Member } from "@/src/components/circle/CircleItem";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import CircleDetailsModal from "@/src/components/circle/actions/CircleDetailsModal";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
-import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  BackHandler,
-  Keyboard,
-  LayoutAnimation,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  UIManager,
-  View,
-} from "react-native";
-import Modal from "react-native-modal";
+import { BackHandler, Platform, ScrollView, StyleSheet, Text, UIManager, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { Typography } from "@/src/components/typography/Typography";
+import { useAuthStore } from "@/src/store/authStore";
+import { theme } from "@/src/theme/theme";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -35,32 +27,12 @@ interface Circle {
   members: Member[];
 }
 
-import { useAuthStore } from "@/src/store/authStore";
-
 export default function CirclesScreen() {
   const user = useAuthStore().user;
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
   const [isDetailsVisible, setIsDetailsVisible] = useState(false);
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  useEffect(() => {
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-
-    const showSub = Keyboard.addListener(showEvent, () => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setIsKeyboardVisible(true);
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setIsKeyboardVisible(false);
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
   const [activeCircle, setActiveCircle] = useState<Circle | null>(null);
   const [circles, setCircles] = useState<Circle[]>([]);
 
@@ -133,10 +105,16 @@ export default function CirclesScreen() {
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Кола</Text>
-          <TouchableOpacity style={styles.addButton} onPress={() => setIsAddModalVisible(true)}>
-            <AntDesign name="plus" size={24} color="#FFF" />
-          </TouchableOpacity>
+          <Typography variant="h1" tone="primary">
+            Кола
+          </Typography>
+          <Button
+            shape="round"
+            hierarchy="accent"
+            size="medium"
+            leadingIcon={<AntDesign name="plus" size={24} color={theme.colors.content.onColor} />}
+            onPress={() => setIsAddModalVisible(true)}
+          />
         </View>
 
         {circles.length === 0 ? (
@@ -163,38 +141,16 @@ export default function CirclesScreen() {
       </ScrollView>
 
       {/* Add Circle Modal */}
-      <Modal
-        isVisible={isAddModalVisible}
-        onSwipeComplete={() => setIsAddModalVisible(false)}
-        onBackdropPress={() => setIsAddModalVisible(false)}
-        onBackButtonPress={() => setIsAddModalVisible(false)}
-        swipeDirection="down"
-        style={styles.bottomModal}
-        backdropOpacity={0.25}
-        useNativeDriver
-        useNativeDriverForBackdrop
-        animationIn="slideInUp"
-        animationOut="slideOutDown"
-        propagateSwipe
-      >
-        <View style={[styles.modalWrapper, isKeyboardVisible && styles.modalWrapperExpanded]}>
-          <SafeAreaView
-            edges={isKeyboardVisible ? ["top", "bottom"] : ["bottom"]}
-            style={isKeyboardVisible ? { flex: 1 } : undefined}
-          >
-            <AddCircleModal
-              onClose={() => setIsAddModalVisible(false)}
-              onUpdated={fetchCircles} // refresh after adding
-            />
-          </SafeAreaView>
-        </View>
-      </Modal>
+      <AddCircleModal
+        visible={isAddModalVisible}
+        onClose={() => setIsAddModalVisible(false)}
+        onUpdated={fetchCircles}
+      />
 
       {/* Circle Actions Modal */}
       <CircleActionsModal
         visible={isActionsVisible}
         onClose={() => setIsActionsVisible(false)}
-        circleId={activeCircle ? activeCircle.id : ""}
         ownerId={activeCircle?.owner.id || ""}
         currentName={activeCircle?.name || ""}
         inviteCode={activeCircle?.inviteCode || ""}
@@ -307,34 +263,11 @@ export default function CirclesScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F7F7F7" },
+  screen: { flex: 1, backgroundColor: theme.colors.background.primary },
   content: { padding: 20, paddingBottom: 120 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  title: { fontSize: 28, fontWeight: "700" },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.PRIMARY_BLUE,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  bottomModal: { justifyContent: "flex-end", margin: 0 },
-
-  modalWrapper: {
-    backgroundColor: "white",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: "92%",
-    paddingBottom: 10,
-  },
-  modalWrapperExpanded: {
-    maxHeight: "80%",
-    flex: 1,
+    marginBottom: theme.spacing[40],
   },
 });

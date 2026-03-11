@@ -16,7 +16,9 @@ export type { BorderWidthKey, BorderWidthValue } from "./borderWidth";
 
 export { typography } from "./typography";
 export type {
-    TypographyFontFamilyKey, TypographyFontSizeKey, TypographyFontWeightKey, TypographyLineHeightKey,
-    TypographyParagraphSpacingKey
+  TypographyFontFamilyKey,
+  TypographyFontSizeKey,
+  TypographyFontWeightKey,
+  TypographyLineHeightKey,
+  TypographyParagraphSpacingKey,
 } from "./typography";
-
