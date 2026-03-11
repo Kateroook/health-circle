@@ -1,3 +1,4 @@
+import { Button } from "@/src/components/Button";
 import { TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
@@ -57,9 +58,18 @@ export default function ForgotPassword() {
           showsVerticalScrollIndicator={false}
         >
           {/* Back button */}
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          {/* <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Icon name="arrow-left" size={24} color="#1A1A1A" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+
+          <Button
+            shape="round"
+            hierarchy="tertiary"
+            size="medium"
+            leadingIcon={<Icon name="arrow-left" size={24} color={theme.colors.content.primary} />}
+            onPress={() => router.back()}
+            style={{ alignSelf: "flex-start" }}
+          />
 
           {/* Header */}
           <View style={styles.header}>
@@ -92,15 +102,16 @@ export default function ForgotPassword() {
             </View>
 
             <View>
-              <TouchableOpacity
-                style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleSubmit}
+              <Button
+                label={loading ? "Надсилання..." : "Надіслати код"}
+                hierarchy="primary"
+                shape="rectangle"
+                size="medium"
+                loading={loading}
                 disabled={loading}
-              >
-                <Typography variant="subtitle1" weight="semibold" tone="onColor">
-                  {loading ? "Надсилання..." : "Надіслати код"}
-                </Typography>
-              </TouchableOpacity>
+                onPress={handleSubmit}
+                style={{ width: "100%" }}
+              />
             </View>
           </View>
 
@@ -152,37 +163,6 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: theme.spacing[16],
   },
-
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: theme.colors.background.lightNegative,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: theme.colors.negative,
-    fontSize: 14,
-    flex: 1,
-  },
-
-  primaryButton: {
-    backgroundColor: theme.colors.primaryB,
-    paddingVertical: theme.spacing[16],
-    borderRadius: theme.radius.pill,
-    alignItems: "center",
-    shadowColor: theme.colors.primitives.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: theme.radius.md,
-    elevation: theme.spacing[4],
-  },
-  buttonDisabled: {
-    backgroundColor: theme.colors.primaryB,
-    opacity: 0.7,
-  },
-
   footer: {
     alignItems: "center",
     gap: theme.spacing[16],

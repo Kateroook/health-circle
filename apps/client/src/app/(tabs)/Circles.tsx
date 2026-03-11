@@ -1,26 +1,19 @@
 import { apiFetch } from "@/src/api/api";
+import { Button } from "@/src/components/Button";
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem, { Member } from "@/src/components/circle/CircleItem";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import CircleDetailsModal from "@/src/components/circle/actions/CircleDetailsModal";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
-import { COLORS } from "@/src/theme/colors";
 import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  BackHandler,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  UIManager,
-  View,
-} from "react-native";
+import { BackHandler, Platform, ScrollView, StyleSheet, Text, UIManager, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Typography } from "@/src/components/typography/Typography";
 import { useAuthStore } from "@/src/store/authStore";
+import { theme } from "@/src/theme/theme";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -112,10 +105,16 @@ export default function CirclesScreen() {
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Кола</Text>
-          <TouchableOpacity style={styles.addButton} onPress={() => setIsAddModalVisible(true)}>
-            <AntDesign name="plus" size={24} color="#FFF" />
-          </TouchableOpacity>
+          <Typography variant="h1" tone="primary">
+            Кола
+          </Typography>
+          <Button
+            shape="round"
+            hierarchy="accent"
+            size="medium"
+            leadingIcon={<AntDesign name="plus" size={24} color={theme.colors.content.onColor} />}
+            onPress={() => setIsAddModalVisible(true)}
+          />
         </View>
 
         {circles.length === 0 ? (
@@ -264,20 +263,11 @@ export default function CirclesScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F7F7F7" },
+  screen: { flex: 1, backgroundColor: theme.colors.background.primary },
   content: { padding: 20, paddingBottom: 120 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  title: { fontSize: 28, fontWeight: "700" },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.PRIMARY_BLUE,
-    justifyContent: "center",
-    alignItems: "center",
+    marginBottom: theme.spacing[40],
   },
 });

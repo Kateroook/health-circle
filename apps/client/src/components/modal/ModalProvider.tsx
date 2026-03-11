@@ -1,5 +1,4 @@
 import React, { createContext, useCallback, useMemo, useState, type ReactNode } from "react";
-
 import { BottomSheetContainer } from "./BottomSheetContainer";
 import { ModalContainer } from "./ModalContainer";
 
@@ -9,9 +8,10 @@ type OpenModalOptions = {
   type?: ModalType;
 };
 
-type ModalState = {
-  node: ReactNode | null;
+type ModalEntry = {
+  node: ReactNode;
   type: ModalType;
+  id: number;
 };
 
 type ModalContextValue = {
@@ -25,46 +25,45 @@ type ModalProviderProps = {
   children: ReactNode;
 };
 
-export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
-  const [modalState, setModalState] = useState<ModalState>({ node: null, type: "center" });
-  const [isVisible, setIsVisible] = useState(false);
+let nextId = 0;
 
-  const closeModal = useCallback(() => {
-    setIsVisible(false);
-    // Let exit animations play before clearing content
-    setTimeout(() => {
-      setModalState((prev) => (prev.node ? { ...prev, node: null } : prev));
-    }, 250);
-  }, []);
+export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
+  const [stack, setStack] = useState<ModalEntry[]>([]);
 
   const openModal = useCallback<ModalContextValue["openModal"]>((node, options) => {
     const type: ModalType = options?.type ?? "center";
-    setModalState({ node, type });
-    setIsVisible(true);
+    setStack((prev) => [...prev, { node, type, id: nextId++ }]);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    // Mark top modal as closing by removing it after animation
+    setStack((prev) => {
+      if (prev.length === 0) return prev;
+      return prev.slice(0, -1);
+    });
   }, []);
 
   const value = useMemo<ModalContextValue>(
-    () => ({
-      openModal,
-      closeModal,
-    }),
+    () => ({ openModal, closeModal }),
     [openModal, closeModal],
   );
-
-  const shouldShowCenter = isVisible && modalState.node && modalState.type === "center";
-  const shouldShowBottomSheet = isVisible && modalState.node && modalState.type === "bottomSheet";
 
   return (
     <ModalContext.Provider value={value}>
       {children}
 
-      <ModalContainer isVisible={!!shouldShowCenter} onClose={closeModal}>
-        {shouldShowCenter ? modalState.node : null}
-      </ModalContainer>
-
-      <BottomSheetContainer isVisible={!!shouldShowBottomSheet} onClose={closeModal}>
-        {shouldShowBottomSheet ? modalState.node : null}
-      </BottomSheetContainer>
+      {/* Render each modal in the stack */}
+      {stack.map((entry, index) =>
+        entry.type === "center" ? (
+          <ModalContainer key={entry.id} isVisible={true} onClose={closeModal}>
+            {entry.node}
+          </ModalContainer>
+        ) : (
+          <BottomSheetContainer key={entry.id} isVisible={true} onClose={closeModal}>
+            {entry.node}
+          </BottomSheetContainer>
+        ),
+      )}
     </ModalContext.Provider>
   );
 };

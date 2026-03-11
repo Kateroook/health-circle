@@ -1,3 +1,6 @@
+import { Button } from "@/src/components/Button";
+import { Typography } from "@/src/components/typography";
+import { theme } from "@/src/theme/theme";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import {
@@ -321,44 +324,62 @@ export default function SettingsScreen() {
             onError={() => setImageError(true)}
           />
 
-          <Text style={styles.profileName}>{user?.firstName}</Text>
+          <Typography variant="h2" tone="primary" style={styles.profileName}>
+            {user?.firstName}
+          </Typography>
 
           {/* Нова кнопка "Редагувати" */}
           {!isEditMode && (
-            <TouchableOpacity style={styles.editButton} onPress={() => setIsEditMode(true)}>
-              <Icon name="edit-2" size={18} color="#ffffff" style={{ marginRight: 8 }} />
-              <Text style={styles.editButtonText}>Редагувати</Text>
-            </TouchableOpacity>
+            <Button
+              label="Редагувати"
+              hierarchy="accent"
+              size="medium"
+              shape="rectangle"
+              leadingIcon={<Icon name="edit-2" size={18} color={theme.colors.content.onColor} />}
+              onPress={() => setIsEditMode(true)}
+              style={{ width: "100%" }}
+            />
           )}
 
           {/* Блок редагування — показується тільки в режимі isEditMode */}
           {isEditMode && (
             <View style={styles.editContainer}>
               <View style={styles.avatarButtons}>
-                <TouchableOpacity style={styles.avatarButton} onPress={handlePickAvatar}>
-                  <Text style={styles.avatarButtonText}>Змінити аватар</Text>
-                </TouchableOpacity>
+                <Button
+                  label="Змінити аватар"
+                  hierarchy="secondary"
+                  size="small"
+                  shape="rectangle"
+                  onPress={handlePickAvatar}
+                />
 
                 {avatarUrl && !imageError && (
-                  <TouchableOpacity
-                    style={[styles.avatarButton, styles.removeButton]}
+                  <Button
+                    label="Видалити аватар"
+                    hierarchy="secondary"
+                    size="small"
+                    shape="rectangle"
                     onPress={handleRemoveAvatar}
-                  >
-                    <Text style={styles.avatarButtonText}>Видалити аватар</Text>
-                  </TouchableOpacity>
+                  />
                 )}
               </View>
 
               {fields.map((field) => (
                 <View key={field.label} style={styles.block}>
-                  <Text style={styles.label}>
+                  <Typography variant="body2" tone="primary" style={styles.label}>
                     {field.label}
                     {field.required ? (
-                      <Text style={styles.requiredStar}> *</Text>
+                      <Typography variant="body2" tone="negative" style={styles.requiredStar}>
+                        {" "}
+                        *
+                      </Typography>
                     ) : (
-                      <Text style={styles.optionalText}> (опціонально)</Text>
+                      <Typography variant="caption" tone="secondary" style={styles.optionalText}>
+                        {" "}
+                        (опціонально)
+                      </Typography>
                     )}
-                  </Text>
+                  </Typography>
                   <TextInput
                     style={styles.input}
                     value={field.value}
@@ -371,24 +392,30 @@ export default function SettingsScreen() {
                 </View>
               ))}
 
-              <TouchableOpacity style={styles.save} onPress={handleSave}>
-                <Text style={styles.saveText}>Зберегти</Text>
-              </TouchableOpacity>
+              <Button
+                label="Зберегти"
+                hierarchy="primary"
+                size="medium"
+                shape="rectangle"
+                onPress={handleSave}
+                style={styles.save}
+              />
 
               {/* Опціонально: кнопка "Скасувати" */}
-              <TouchableOpacity
-                style={styles.cancelButton}
+              <Button
+                label="Скасувати"
+                hierarchy="tertiary"
+                size="medium"
+                shape="rectangle"
                 onPress={() => {
                   setIsEditMode(false);
-                  // Якщо потрібно — скинути поля до початкових значень з user
                   setFirstName(user?.firstName || "");
                   setMiddleName(user?.middleName || "");
                   setLastName(user?.lastName || "");
                   setPhone(user?.phone || "");
                 }}
-              >
-                <Text style={styles.cancelButtonText}>Скасувати</Text>
-              </TouchableOpacity>
+                style={styles.cancelButton}
+              />
             </View>
           )}
         </View>
@@ -400,10 +427,12 @@ export default function SettingsScreen() {
           <MaterialCommunityIcons
             name="bell"
             size={24}
-            color="#000000"
+            color={theme.colors.content.primary}
             style={{ marginRight: 12 }}
           />
-          <Text style={styles.notificationsHeaderText}>Сповіщення</Text>
+          <Typography variant="subtitle1" tone="primary">
+            Сповіщення
+          </Typography>
           <MaterialCommunityIcons
             name="chevron-right"
             size={20}
@@ -418,12 +447,14 @@ export default function SettingsScreen() {
           onPress={() => setIsSecurityOpen(!isSecurityOpen)}
         >
           <MaterialCommunityIcons
-            name="shield-lock" // або "lock", "security", "shield-account"
+            name="shield-lock"
             size={24}
-            color="#000000"
+            color={theme.colors.content.primary}
             style={{ marginRight: 12 }}
           />
-          <Text style={styles.securityHeaderText}>Приватність та безпека</Text>
+          <Typography variant="subtitle1" tone="primary" style={styles.securityHeaderText}>
+            Приватність та безпека
+          </Typography>
           <MaterialCommunityIcons
             name={isSecurityOpen ? "chevron-up" : "chevron-down"}
             size={20}
@@ -441,10 +472,12 @@ export default function SettingsScreen() {
               <MaterialCommunityIcons
                 name="key-variant"
                 size={22}
-                color="#000"
+                color={theme.colors.content.primary}
                 style={{ marginRight: 12 }}
               />
-              <Text style={styles.securityItemText}>Змінити пароль</Text>
+              <Typography variant="subtitle1" tone="primary">
+                Змінити пароль
+              </Typography>
               <MaterialCommunityIcons
                 name="chevron-right"
                 size={20}
@@ -459,10 +492,12 @@ export default function SettingsScreen() {
               <MaterialCommunityIcons
                 name="delete-forever"
                 size={22}
-                color="#D32F2F"
+                color={theme.colors.negative}
                 style={{ marginRight: 12 }}
               />
-              <Text style={[styles.securityItemText, { color: "#D32F2F" }]}>Видалити акаунт</Text>
+              <Typography variant="subtitle1" tone="negative" style={styles.securityItemText}>
+                Видалити акаунт
+              </Typography>
               <MaterialCommunityIcons
                 name="chevron-right"
                 size={20}
@@ -473,15 +508,22 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-          <MaterialCommunityIcons
-            name="door-open" // або "logout", "exit-to-app", "door-closed" — спробуй, що найкраще виглядає
-            size={24}
-            color="#000000"
-            style={{ marginRight: 12 }}
-          />
-          <Text style={styles.logoutTextNew}>Вихід</Text>
-        </TouchableOpacity>
+        <Button
+          label="Вихід"
+          hierarchy="tertiary"
+          size="medium"
+          shape="rectangle"
+          leadingIcon={
+            <MaterialCommunityIcons
+              name="door-open"
+              size={24}
+              color={theme.colors.content.primary}
+              style={{ marginRight: 12 }}
+            />
+          }
+          onPress={logout}
+          style={styles.logoutButton}
+        />
       </ScrollView>
 
       {/* Change Password Modal */}
@@ -493,7 +535,9 @@ export default function SettingsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Змінити пароль</Text>
+            <Typography variant="h3" tone="primary" style={styles.modalTitle}>
+              Змінити пароль
+            </Typography>
 
             <View style={styles.modalPasswordContainer}>
               <TextInput
@@ -544,20 +588,28 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             </View>
 
-            {passwordError ? <Text style={styles.modalError}>{passwordError}</Text> : null}
+            {passwordError ? (
+              <Typography variant="caption" tone="negative" style={styles.modalError}>
+                {passwordError}
+              </Typography>
+            ) : null}
 
-            <TouchableOpacity
-              style={[styles.modalSave, passwordLoading && { opacity: 0.6 }]}
+            <Button
+              label={passwordLoading ? "Збереження..." : "Змінити пароль"}
+              hierarchy="primary"
+              size="medium"
+              shape="rectangle"
               onPress={handleChangePassword}
               disabled={passwordLoading}
-            >
-              <Text style={styles.modalSaveText}>
-                {passwordLoading ? "Збереження..." : "Змінити пароль"}
-              </Text>
-            </TouchableOpacity>
+              loading={passwordLoading}
+              style={styles.modalSave}
+            />
 
-            <TouchableOpacity
-              style={styles.modalCancel}
+            <Button
+              label="Скасувати"
+              hierarchy="tertiary"
+              size="medium"
+              shape="rectangle"
               onPress={() => {
                 setShowPasswordModal(false);
                 setPasswordError("");
@@ -565,9 +617,8 @@ export default function SettingsScreen() {
                 setNewPassword("");
                 setConfirmPassword("");
               }}
-            >
-              <Text style={styles.modalCancelText}>Скасувати</Text>
-            </TouchableOpacity>
+              style={styles.modalCancel}
+            />
           </View>
         </View>
       </Modal>
@@ -615,7 +666,7 @@ export default function SettingsScreen() {
         transparent={false}
         onRequestClose={() => setIsNotificationsModalVisible(false)}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background.primary }}>
           {/* Заголовок */}
           <View
             style={{
@@ -626,16 +677,15 @@ export default function SettingsScreen() {
               justifyContent: "center", // центр для заголовка
             }}
           >
-            <Text
+            <Typography
+              variant="h3"
+              tone="primary"
               style={{
-                fontSize: 20,
-                fontWeight: "600",
-                color: "#000",
-                textAlign: "center", // додатково для впевненості
+                textAlign: "center",
               }}
             >
               Сповіщення
-            </Text>
+            </Typography>
 
             <TouchableOpacity
               onPress={() => setIsNotificationsModalVisible(false)}
@@ -702,16 +752,16 @@ export default function SettingsScreen() {
                   borderBottomColor: "#f0f0f0",
                 }}
               >
-                <Text
+                <Typography
+                  variant="body1"
+                  tone="primary"
                   style={{
-                    fontSize: 16,
-                    color: "#1A1A1A",
                     flex: 1,
                     paddingRight: 16,
                   }}
                 >
                   {item.label}
-                </Text>
+                </Typography>
                 <CustomToggle value={item.value} onValueChange={item.setter} />
               </View>
             ))}
@@ -723,10 +773,16 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F7F7F7" },
-  headerContainer: { alignItems: "center", marginBottom: 30, padding: 20 },
-  header: { fontSize: 28, fontWeight: "600", marginBottom: 20 },
-
+  container: {
+    flex: 1,
+    paddingHorizontal: theme.spacing[16],
+    backgroundColor: theme.colors.background.primary,
+  },
+  headerContainer: {
+    alignItems: "center",
+    paddingTop: theme.spacing[72],
+    paddingBottom: theme.spacing[32],
+  },
   avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
   avatarButtons: {
     flexDirection: "row",
@@ -735,17 +791,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     width: "100%", // на всю ширину, щоб центр працював
   },
-  avatarButton: {
-    backgroundColor: "#5B8DEE",
-    padding: 10,
-    borderRadius: 10,
-    alignItems: "center",
-    marginHorizontal: 5,
-  },
+
   removeButton: { backgroundColor: "#FF6B6B" },
   avatarButtonText: { color: "#fff", fontWeight: "600" },
 
-  block: { marginBottom: 20, paddingHorizontal: 20 },
+  block: { marginBottom: 20 },
   label: { fontSize: 18, marginBottom: 8 },
   requiredStar: { color: "#D9534F", fontSize: 18 },
   input: {
@@ -757,11 +807,8 @@ const styles = StyleSheet.create({
   },
 
   profileName: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#000000",
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: theme.spacing[8],
+    marginBottom: theme.spacing[32],
     textAlign: "center",
   },
 
@@ -798,10 +845,10 @@ const styles = StyleSheet.create({
   securityContent: {
     marginTop: 8,
     marginHorizontal: 20,
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.background.secondary,
     borderRadius: 12,
     //borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: theme.colors.border.opaque,
     overflow: "hidden", // щоб дочірні елементи не вилазили за кути
   },
 
@@ -809,7 +856,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 16,
-    paddingHorizontal: 20,
+    marginHorizontal: 20,
   },
 
   securityItemText: {
@@ -822,7 +869,6 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     backgroundColor: "#e0e0e0",
-    marginHorizontal: 20,
   },
 
   logout: {
@@ -851,25 +897,6 @@ const styles = StyleSheet.create({
     color: "#000000",
     fontSize: 16,
     fontWeight: "500", // або '600' якщо хочеш жирніший текст
-  },
-
-  editButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-start", // ← центр
-    backgroundColor: "#5B8DEE",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 16,
-    marginHorizontal: 20, // те саме, що в logoutButton
-    marginBottom: 20,
-  },
-
-  editButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600",
   },
 
   editContainer: {

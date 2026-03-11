@@ -1,18 +1,11 @@
+import { Button } from "@/src/components/Button";
 import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { router } from "expo-router";
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
 import { formatErrorMessage } from "../../utils/error.util";
@@ -102,15 +95,16 @@ export default function Login() {
 
             {/* Buttons */}
             <View style={styles.buttonsContainer}>
-              <TouchableOpacity
-                style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleLogin}
+              <Button
+                label={loading ? "Вхід..." : "Увійти"}
+                hierarchy="primary"
+                shape="rectangle"
+                size="medium"
+                loading={loading}
                 disabled={loading}
-              >
-                <Typography variant="subtitle1" tone="onColor">
-                  {loading ? "Вхід..." : "Увійти"}
-                </Typography>
-              </TouchableOpacity>
+                onPress={handleLogin}
+                style={{ width: "100%" }}
+              />
             </View>
           </View>
 
@@ -189,21 +183,6 @@ const styles = StyleSheet.create({
   buttonsContainer: {
     marginTop: theme.spacing[8],
     gap: theme.spacing[16],
-  },
-  primaryButton: {
-    backgroundColor: theme.colors.primaryB,
-    paddingVertical: theme.spacing[16],
-    borderRadius: theme.radius.pill,
-    alignItems: "center",
-    shadowColor: theme.colors.primitives.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: theme.spacing[8],
-    elevation: theme.spacing[4],
-  },
-  buttonDisabled: {
-    backgroundColor: theme.colors.primitives.black,
-    opacity: 0.7,
   },
 
   footer: {

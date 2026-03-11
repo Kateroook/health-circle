@@ -1,18 +1,13 @@
+import { Button } from "@/src/components/Button";
 import { TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { router } from "expo-router";
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { apiFetch } from "../../api/api";
 import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
@@ -201,6 +196,19 @@ export default function Register() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Back button */}
+          {step > 1 && (
+            <Button
+              shape="round"
+              hierarchy="tertiary"
+              size="medium"
+              leadingIcon={
+                <Icon name="arrow-left" size={24} color={theme.colors.content.primary} />
+              }
+              onPress={handleBack}
+              style={{ alignSelf: "flex-start" }}
+            />
+          )}
           {/* Header */}
           <View style={styles.header}>
             <Typography variant="h2" tone="primary" style={styles.title}>
@@ -297,23 +305,16 @@ export default function Register() {
 
             {/* Buttons */}
             <View style={styles.buttonsContainer}>
-              <TouchableOpacity
-                style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleNext}
+              <Button
+                label={loading ? "Зачекайте..." : step < 2 ? "Далі" : "Зареєструватися"}
+                hierarchy="primary"
+                shape="rectangle"
+                size="medium"
+                loading={loading}
                 disabled={loading}
-              >
-                <Typography variant="subtitle1" tone="onColor">
-                  {loading ? "Зачекайте..." : step < 2 ? "Далі" : "Зареєструватися"}
-                </Typography>
-              </TouchableOpacity>
-
-              {step > 1 && (
-                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                  <Typography variant="subtitle1" tone="primary">
-                    Назад
-                  </Typography>
-                </TouchableOpacity>
-              )}
+                onPress={handleNext}
+                style={{ width: "100%" }}
+              />
             </View>
           </View>
 

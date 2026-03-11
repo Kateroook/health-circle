@@ -1,3 +1,4 @@
+import { Button } from "@/src/components/Button";
 import { PasswordField, PinCodeField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
@@ -10,7 +11,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { showMessage } from "react-native-flash-message";
@@ -103,9 +103,14 @@ export default function ResetPassword() {
           showsVerticalScrollIndicator={false}
         >
           {/* Back button */}
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Icon name="arrow-left" size={24} color="#1A1A1A" />
-          </TouchableOpacity>
+          <Button
+            shape="round"
+            hierarchy="tertiary"
+            size="medium"
+            leadingIcon={<Icon name="arrow-left" size={24} color={theme.colors.content.primary} />}
+            onPress={() => router.back()}
+            style={{ alignSelf: "flex-start" }}
+          />
 
           {/* Header */}
           <View style={styles.header}>
@@ -174,15 +179,16 @@ export default function ResetPassword() {
 
             {/* Buttons */}
             <View style={styles.buttonsContainer}>
-              <TouchableOpacity
-                style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleSubmit}
+              <Button
+                label={loading ? "Збереження..." : "Скинути пароль"}
+                hierarchy="primary"
+                shape="rectangle"
+                size="medium"
+                loading={loading}
                 disabled={loading}
-              >
-                <Typography variant="subtitle1" tone="onColor">
-                  {loading ? "Збереження..." : "Скинути пароль"}
-                </Typography>
-              </TouchableOpacity>
+                onPress={handleSubmit}
+                style={{ width: "100%" }}
+              />
             </View>
           </View>
 

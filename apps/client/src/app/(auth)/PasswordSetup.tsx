@@ -1,5 +1,7 @@
+import { Button } from "@/src/components/Button";
 import { PasswordField, PinCodeField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
+import { theme } from "@/src/theme/theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -9,7 +11,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { showMessage } from "react-native-flash-message";
@@ -101,10 +102,14 @@ export default function PasswordSetup() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Back button */}
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Icon name="arrow-left" size={24} color="#1A1A1A" />
-          </TouchableOpacity>
+          <Button
+            shape="round"
+            hierarchy="tertiary"
+            size="medium"
+            leadingIcon={<Icon name="arrow-left" size={24} color={theme.colors.content.primary} />}
+            onPress={() => router.back()}
+            style={{ alignSelf: "flex-start" }}
+          />
 
           {/* Header */}
           <View style={styles.header}>
@@ -162,21 +167,21 @@ export default function PasswordSetup() {
                 <Text style={styles.errorText}>{formError}</Text>
               </View>
             )}
-
-            <TouchableOpacity
-              style={[styles.primaryButton, loading && styles.buttonDisabled]}
-              onPress={handleSubmit}
+            <Button
+              label={loading ? "Зачекайте..." : "Підтвердити"}
+              hierarchy="primary"
+              shape="rectangle"
+              size="medium"
+              loading={loading}
               disabled={loading}
-            >
-              <Text style={styles.primaryButtonText}>
-                {loading ? "Зачекайте..." : "Підтвердити"}
-              </Text>
-            </TouchableOpacity>
+              onPress={handleSubmit}
+              style={{ width: "100%" }}
+            />
           </View>
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Typography variant="body2" tone="primary" style={styles.footerText}>
+            <Typography variant="body2" tone="primary">
               Не отримали код?{" "}
               <Typography
                 variant="body2"
@@ -198,144 +203,47 @@ export default function PasswordSetup() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: theme.colors.background.primary,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 10,
-    paddingBottom: 20,
-  },
-  backButton: {
-    marginBottom: 10,
-    padding: 4,
-    alignSelf: "flex-start",
+    paddingHorizontal: theme.spacing[16],
+    paddingTop: theme.spacing[10],
+    paddingBottom: theme.spacing[40],
   },
   header: {
     alignItems: "center",
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#F0F0F0",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#666",
-    textAlign: "center",
-    paddingHorizontal: 20,
-    lineHeight: 22,
+    marginBottom: theme.spacing[32],
   },
   formContainer: {
-    marginBottom: 12,
+    marginBottom: theme.spacing[16],
   },
   inputGroup: {
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
-  },
-  codeInput: {
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    fontSize: 18,
-    color: "#1A1A1A",
-    borderWidth: 1.5,
-    borderColor: "#1A1A1A",
-    textAlign: "center",
-    letterSpacing: 4,
-    fontWeight: "700",
-  },
-  passwordContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: "#1A1A1A",
-  },
-  passwordInput: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: "#1A1A1A",
-  },
-  eyeButton: {
-    paddingHorizontal: 16,
-  },
-  hint: {
-    fontSize: 12,
-    color: "#999",
-    marginTop: 6,
-    marginLeft: 4,
+    marginBottom: theme.spacing[16],
   },
   errorContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFE5E5",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    backgroundColor: theme.colors.background.lightNegative,
+    padding: theme.spacing[12],
+    borderRadius: theme.radius.md,
+    marginBottom: theme.spacing[16],
   },
   errorText: {
-    color: "#D32F2F",
+    color: theme.colors.negative,
     fontSize: 14,
     flex: 1,
   },
-  primaryButton: {
-    backgroundColor: "#000000",
-    paddingVertical: 16,
-    borderRadius: 25,
-    alignItems: "center",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
-  },
-  buttonDisabled: {
-    backgroundColor: "#000000",
-    opacity: 0.7,
-  },
+
   footer: {
     alignItems: "center",
-    marginTop: 10,
+    marginTop: theme.spacing[10],
   },
-  footerText: {
-    fontSize: 14,
-    color: "#000000",
-  },
-  footerLink: {
-    color: "#000000",
-    fontWeight: "600",
-  },
+
   linkDisabled: {
-    color: "#999",
+    color: theme.colors.content.tertiary,
   },
 });

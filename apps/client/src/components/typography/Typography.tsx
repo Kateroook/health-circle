@@ -27,7 +27,8 @@ export type TextTone =
   | "accent"
   | "negative"
   | "positive"
-  | "warning";
+  | "warning"
+  | "stateDisable";
 
 type TextWeight = "regular" | "semibold" | "bold";
 
@@ -129,6 +130,8 @@ const resolveToneColor = (tone: TextTone | undefined): string => {
       return theme.colors.positive;
     case "warning":
       return theme.colors.warning;
+    case "stateDisable":
+      return theme.colors.content.stateDisable;
     case "primary":
     default:
       return theme.colors.content.primary;
