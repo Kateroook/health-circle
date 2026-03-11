@@ -2,8 +2,9 @@ import { COLORS } from "@/src/theme/colors";
 import { theme } from "@/src/theme/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { MemberAvatar } from "../MemberAvatar";
+import { Typography } from "../typography";
 
 export interface Member {
   id: string;
@@ -38,9 +39,9 @@ const CircleItem: React.FC<CircleItemProps> = ({
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.header}>
-        <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+        <Typography variant="h3" weight="bold" numberOfLines={1} ellipsizeMode="tail">
           {title}
-        </Text>
+        </Typography>
         <TouchableOpacity
           onPress={onMenuPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -54,14 +55,16 @@ const CircleItem: React.FC<CircleItemProps> = ({
           <MemberAvatar
             key={member.id}
             member={member}
-            size="md"
+            size="lg"
             style={[styles.avatarOverlap, { zIndex: MAX_VISIBLE - index }]}
           />
         ))}
 
         {overflow > 0 && (
           <View style={[styles.avatarWrapper, styles.extraBubble, { zIndex: 0 }]}>
-            <Text style={styles.extraText}>+{overflow}</Text>
+            <Typography variant="subtitle1" tone="secondary">
+              +{overflow}
+            </Typography>
           </View>
         )}
       </View>
@@ -72,63 +75,24 @@ const CircleItem: React.FC<CircleItemProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: theme.colors.background.secondary,
-    borderRadius: theme.radius.md,
-    padding: 16,
-    marginBottom: 14,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing[16],
+    marginBottom: theme.spacing[8],
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 14,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.TEXT_DARK,
-    flex: 1,
-    maxWidth: "82%",
-    marginRight: 20,
+    marginBottom: theme.spacing[8],
   },
   members: {
     flexDirection: "row",
   },
   avatarWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "white",
-    borderWidth: 3,
-    marginRight: -10,
+    marginRight: -12,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1,
-  },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#EEE",
-  },
-  initialsContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#D1D5DB",
-  },
-  initialsText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#4B5563",
-  },
-  extra: {
-    backgroundColor: "#E5E5EA",
-    borderColor: "white",
-    zIndex: 0,
-  },
-  extraText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.TEXT_DARK,
   },
   avatarOverlap: {
     marginRight: -12,
@@ -136,9 +100,9 @@ const styles = StyleSheet.create({
   extraBubble: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: "#E5E5EA",
-    borderWidth: 3,
+    borderRadius: theme.radius.circle,
+    backgroundColor: theme.colors.background.tertiary,
+    borderWidth: theme.borderWidth.md,
     borderColor: "white",
     justifyContent: "center",
     alignItems: "center",

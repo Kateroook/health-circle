@@ -274,8 +274,6 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.circle,
     overflow: "hidden",
     backgroundColor: theme.colors.background.tertiary,
-    alignItems: "center",
-    justifyContent: "center",
   },
   avatar: {
     width: 48,

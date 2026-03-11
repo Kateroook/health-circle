@@ -155,6 +155,7 @@ export default function CirclesScreen() {
         currentName={activeCircle?.name || ""}
         inviteCode={activeCircle?.inviteCode || ""}
         members={activeCircle?.members || []}
+        circleId={activeCircle ? activeCircle.id : ""}
         onSaveMembers={async (updatedMembers) => {
           if (!activeCircle) return;
           await apiFetch("/groups", {
@@ -264,10 +265,11 @@ export default function CirclesScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.background.primary },
-  content: { padding: 20, paddingBottom: 120 },
+  content: { paddingHorizontal: theme.spacing[16], paddingBottom: 140 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: theme.spacing[40],
+    marginTop: theme.spacing[20],
+    marginBottom: theme.spacing[28],
   },
 });
