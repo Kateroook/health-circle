@@ -1,7 +1,8 @@
 import { COLORS } from "@/src/theme/colors";
 import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import MemberAvatar from "../../MemberAvatar";
+import { TextField } from "../../fields/TextField";
 
 import { Member } from "../CircleItem";
 
@@ -75,13 +76,14 @@ export default function MemberDetailsView({
       ) : (
         <View style={styles.renameContainer}>
           <Text style={styles.renameTitle}>Редагування імʼя</Text>
-          <TextInput
-            style={styles.input}
+          <TextField
+            label=""
+            placeholder="Введіть нове імʼя"
             value={newName}
             onChangeText={setNewName}
-            placeholder="Введіть нове імʼя"
+            required
+            caption="Це імʼя буде відображатися у вашому колі"
           />
-          <Text style={styles.hintText}>Це імʼя буде відображатися у вашому колі</Text>
 
           <View style={{ width: "100%", gap: 10 }}>
             <TouchableOpacity style={styles.saveButton} onPress={handleSaveRename}>

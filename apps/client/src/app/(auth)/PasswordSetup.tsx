@@ -1,3 +1,5 @@
+import { PasswordField, PinCodeField } from "@/src/components/fields/TextField";
+import { Typography } from "@/src/components/typography";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -7,7 +9,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -16,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
 import { apiFetch } from "../../api/api";
 import { formatErrorMessage } from "../../utils/error.util";
+import { validatePasswordComplexity } from "../../utils/passwordValidation.util";
 
 export default function PasswordSetup() {
   const { email } = useLocalSearchParams<{ email: string }>();
@@ -25,8 +27,6 @@ export default function PasswordSetup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [countdown, setCountdown] = useState(60);
 
   useEffect(() => {
@@ -36,31 +36,15 @@ export default function PasswordSetup() {
     }
   }, [countdown]);
 
-  const validatePassword = (pass: string) => {
-    if (pass.length < 12) return false;
-    const upper = /[A-Z]/.test(pass) ? 1 : 0;
-    const lower = /[a-z]/.test(pass) ? 1 : 0;
-    const digit = /[0-9]/.test(pass) ? 1 : 0;
-    const special = /[;:!@#$%^&()_\-=+]/.test(pass) ? 1 : 0;
-    return upper + lower + digit + special >= 3;
-  };
-
   async function handleSubmit() {
     setFormError("");
     if (!code || code.length < 6) {
       setFormError("Введіть 6-значний код");
       return;
     }
-    if (!password) {
-      setFormError("Новий пароль обовʼязковий");
-      return;
-    }
-    if (password.length < 12) {
-      setFormError("Новий пароль має містити щонайменше 12 символів");
-      return;
-    }
-    if (!validatePassword(password)) {
-      setFormError("Пароль має містити великі, малі літери, цифри та символи");
+    const passwordError = validatePasswordComplexity(password);
+    if (passwordError) {
+      setFormError(passwordError);
       return;
     }
     if (password !== confirmPassword) {
@@ -124,68 +108,52 @@ export default function PasswordSetup() {
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Створюємо твій акаунт</Text>
-            <Text style={styles.subtitle}>
+            <Typography variant="h2" tone="primary">
+              Створюємо твій акаунт
+            </Typography>
+            <Typography variant="body1" tone="secondary">
               Ми надіслали код підтвердження на {email}. Будь ласка, введіть його нижче.
-            </Text>
+            </Typography>
           </View>
 
           {/* Form */}
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Код підтвердження</Text>
-              <TextInput
-                placeholder="000 000"
+              <PinCodeField
+                label="Код підтвердження"
                 value={code}
                 onChangeText={setCode}
-                keyboardType="number-pad"
-                maxLength={6}
-                style={styles.codeInput}
-                placeholderTextColor="#999"
+                required
+                variant="pin"
+                errorMessage={formError === "Введіть 6-значний код" ? formError : undefined}
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Пароль</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  placeholder="Введіть пароль"
-                  value={password}
-                  secureTextEntry={!showPassword}
-                  onChangeText={setPassword}
-                  style={styles.passwordInput}
-                  placeholderTextColor="#999"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeButton}
-                >
-                  <Icon name={showPassword ? "eye-off" : "eye"} size={20} color="#999" />
-                </TouchableOpacity>
-              </View>
-              <Text style={styles.hint}>
-                Мінімум 12 символів: великі, малі літери, цифри та символи
-              </Text>
+              <PasswordField
+                label="Пароль"
+                placeholder="Введіть пароль"
+                value={password}
+                onChangeText={setPassword}
+                required
+                caption="Мінімум 12 символів: великі, малі літери, цифри та символи"
+                errorMessage={
+                  formError &&
+                  (formError.includes("Новий пароль") || formError.includes("Пароль має"))
+                    ? formError
+                    : undefined
+                }
+              />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Підтвердьте пароль</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  placeholder="Повторіть пароль"
-                  value={confirmPassword}
-                  secureTextEntry={!showConfirm}
-                  onChangeText={setConfirmPassword}
-                  style={styles.passwordInput}
-                  placeholderTextColor="#999"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowConfirm(!showConfirm)}
-                  style={styles.eyeButton}
-                >
-                  <Icon name={showConfirm ? "eye-off" : "eye"} size={20} color="#999" />
-                </TouchableOpacity>
-              </View>
+              <PasswordField
+                label="Підтвердьте пароль"
+                placeholder="Повторіть пароль"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                required
+              />
             </View>
 
             {formError && (
@@ -208,15 +176,18 @@ export default function PasswordSetup() {
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>
+            <Typography variant="body2" tone="primary" style={styles.footerText}>
               Не отримали код?{" "}
-              <Text
-                style={[styles.footerLink, countdown > 0 && styles.linkDisabled]}
+              <Typography
+                variant="body2"
+                tone="primary"
+                weight="bold"
+                style={[countdown > 0 && styles.linkDisabled]}
                 onPress={handleResendCode}
               >
                 {countdown > 0 ? `Надіслати повторно (${countdown}с)` : "Надіслати повторно"}
-              </Text>
-            </Text>
+              </Typography>
+            </Typography>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
