@@ -15,11 +15,17 @@
  *   "large" – 36 px icon  (compact) / 48 px avatar (others)
  *   "none"  – no left artwork, 16 px left padding
  */
-
 import { theme } from "@/src/theme/theme";
-import { AntDesign, Ionicons } from "@expo/vector-icons";
+import { AntDesign, FontAwesome6, Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Image, ImageSourcePropType, Pressable, StyleSheet, Switch, View } from "react-native";
+import {
+  Image,
+  ImageSourcePropType,
+  Pressable,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { StatusBadge, UserStatus } from "./StatusBadge";
 import { Typography } from "./typography/Typography";
 
@@ -170,15 +176,7 @@ export const ListItem: React.FC<ListItemProps> = ({
       case "switch":
         return (
           <View style={styles.tailSwitchFrame}>
-            <Switch
-              value={switchValue}
-              onValueChange={onSwitchChange}
-              trackColor={{
-                false: theme.colors.border.opaque,
-                true: theme.colors.accent,
-              }}
-              thumbColor={theme.colors.content.onColor}
-            />
+            <CustomToggle value={switchValue} onValueChange={onSwitchChange ?? (() => {})} />
           </View>
         );
       case "simple":
@@ -365,3 +363,50 @@ const styles = StyleSheet.create({
 });
 
 export default ListItem;
+
+const CustomToggle = ({
+  value,
+  onValueChange,
+}: {
+  value: boolean;
+  onValueChange: (newValue: boolean) => void;
+}) => {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() => onValueChange(!value)}
+      style={{
+        width: 54,
+        height: 32,
+        borderRadius: theme.radius.pill,
+        backgroundColor: value ? theme.colors.accent : theme.colors.background.tertiary,
+        justifyContent: "center",
+        paddingHorizontal: theme.spacing[4],
+        paddingVertical: theme.spacing[4],
+      }}
+    >
+      <View
+        style={{
+          width: 26,
+          height: 26,
+          borderRadius: theme.radius.pill,
+          backgroundColor: theme.colors.primaryA,
+          alignSelf: value ? "flex-end" : "flex-start",
+          justifyContent: "center",
+          alignItems: "center",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.22,
+          shadowRadius: 2.22,
+          elevation: 3,
+        }}
+      >
+        {value ? (
+          <FontAwesome6 name="check" color={theme.colors.accent} size={16} />
+        ) : (
+          <FontAwesome6 name="xmark" color={theme.colors.primitives.grey[300]} size={16} />
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+};
