@@ -10,6 +10,7 @@ import { Kysely } from 'kysely';
 import { Database } from '../../core/db/schema';
 import { UserEntity } from '../../core/types/entites/user-interface';
 import { UserFactory } from '../../core/data/factories/user-factory';
+import { assertResponse } from '../../core/api/helpers/response-checker';
 
 export type ApiFixture = {
   db: Kysely<Database>;
@@ -94,6 +95,13 @@ export const test = workerTest.extend<MyFixture>({
         middleName: user.middleName,
         lastName: user.lastName,
       });
+
+      // if (!postUser.response.ok()) {
+      //   const body = await postUser.response.text();
+      //   console.log(`createUser failed ${postUser.response.status()}:`, body);
+      // }
+
+      // assertResponse.is2xx(postUser.response);
   
       user.id = postUser.data.id;
   
