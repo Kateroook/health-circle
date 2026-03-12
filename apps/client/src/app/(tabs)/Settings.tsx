@@ -4,12 +4,13 @@ import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import { Alert, Image, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Alert, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import ConfirmationModal from "../../components/ConfirmationModal";
 
+import { Avatar } from "@/src/components/Avatar";
 import { ListItem } from "@/src/components/ListItem";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import { useAuthStore } from "../../store/authStore";
@@ -53,6 +54,12 @@ export default function SettingsScreen() {
   const [toggle7, setToggle7] = useState(false);
 
   useEffect(() => {
+    // Ensure text fields stay in sync when the user object changes (e.g., after refreshProfile)
+    setFirstName(user?.firstName || "");
+    setMiddleName(user?.middleName || "");
+    setLastName(user?.lastName || "");
+    setFullName(user?.fullName || "");
+    setPhone(user?.phone || "");
     if (user?.id) setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
   }, [user]);
 
@@ -145,15 +152,9 @@ export default function SettingsScreen() {
           name: filename,
           type,
         });
-
-        // Update local user state immediately with new avatarUpdatedAt
-        if (response && response.avatarUpdatedAt && user?.id) {
+        if (response?.avatarUpdatedAt) {
           updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
-          const freshUrl = `${getAvatarUrl(user.id, response.avatarUpdatedAt)}?_${Date.now()}`;
-          setAvatarUrl(freshUrl);
-          setImageError(false);
         }
-
         await refreshProfile();
         Alert.alert("Успіх", "Аватар оновлено");
       } catch (e: any) {
@@ -254,11 +255,11 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <View style={styles.headerContainer}>
-          <Image
-            key={avatarUrl || "no-avatar"}
-            source={!imageError && avatarUrl ? { uri: avatarUrl } : defaultAvatar}
-            style={styles.avatar}
-            onError={() => setImageError(true)}
+          <Avatar
+            userId={user?.id ?? ""}
+            avatarUpdatedAt={user?.avatarUpdatedAt}
+            size="xl"
+            border={true}
           />
 
           <Typography variant="h2" tone="primary" style={styles.profileName}>
@@ -631,10 +632,9 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     alignItems: "center",
-    paddingTop: theme.spacing[72],
+    paddingTop: theme.spacing[20],
     paddingBottom: theme.spacing[32],
   },
-  avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
   avatarButtons: {
     flexDirection: "row",
     justifyContent: "center",
