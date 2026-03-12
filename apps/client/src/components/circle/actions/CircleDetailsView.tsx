@@ -133,7 +133,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   membersList: {
-    flex: 1,
+    // Let content define height so it displays correctly inside bottom sheet
+    // rather than trying to flex into potentially zero height.
   },
   memberCard: {
     borderRadius: 16,
