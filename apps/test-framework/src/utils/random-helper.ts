@@ -6,6 +6,10 @@ export class RandomHelper {
     return nanoid(length);
   }
 
+  password(length = 12) {
+    return nanoid(length);
+  }
+
   firstName() {
     return faker.person.firstName();
   }

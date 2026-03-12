@@ -1,9 +1,10 @@
 import { expect } from "@playwright/test";
 import { assertResponse, checkResponse } from "../../../core/api/helpers/response-checker";
 import { test } from "../../fixtures/api-fixture";
+import { utils } from "../../../utils/utils";
 
 test.describe.only("api/auth/login tests", async () => {
-    test("Successfull login via email", async ({api, spawnUser}) => {
+    test("[AUTH-001] Successfull login via email", async ({api, spawnUser}) => {
         const user = await spawnUser();
 
         const login = await api.auth.login({
@@ -18,11 +19,97 @@ test.describe.only("api/auth/login tests", async () => {
         expect(api.getContext().refreshToken).not.toBeUndefined();
     });
 
-    test("Successfull login via phone", async ({api, spawnUser}) => {
+    test("[AUTH-002] Successfull login via phone", async ({api, spawnUser}) => {
         const user = await spawnUser();
 
         const login = await api.auth.login({
             identifier: user.phone,
+            password: user.password,
+        });
+
+        assertResponse.is2xx(login.response);
+        expect(api.getContext().accessToken).not.toBeNull();
+        expect(api.getContext().accessToken).not.toBeUndefined();
+        expect(api.getContext().refreshToken).not.toBeNull();
+        expect(api.getContext().refreshToken).not.toBeUndefined();
+    });
+
+    // AUTH-003	Неіснуючий email	nonexistent@test.com + будь-який пароль	401
+    test("[AUTH-003] Log in with non existent emain", async ({api}) => {
+
+        const login = await api.auth.login({
+            identifier: 'non.existent.email@test.com',
+            password: utils.random.password(),
+        });
+
+        assertResponse.is401(login.response);
+    });
+
+    // AUTH-004	Невірний пароль для існуючого акаунту	Валідний email + неправильний пароль	401
+    test("[AUTH-004] Log in with wrong password", async ({api, spawnUser}) => {
+        const user = await spawnUser();
+
+        const login = await api.auth.login({
+            identifier: user.phone,
+            password: user.password+'1',
+        });
+
+        assertResponse.is401(login.response);
+    });
+
+    // AUTH-005	Порожній пароль	Валідний email + ""	400
+    test("[AUTH-005] Log in with empty password", async ({api, spawnUser}) => {
+        const user = await spawnUser();
+
+        const login = await api.auth.login({
+            identifier: user.email,
+            password: '',
+        });
+
+        assertResponse.is401(login.response);
+    });
+
+    // TODO
+
+    // AUTH-006	Порожній identifier	"" + валідний пароль	400
+    test("[AUTH-006] Log in with empty identifier and valid password", async ({api, spawnUser}) => {
+        const user = await spawnUser();
+
+        const login = await api.auth.login({
+            identifier: '',
+            password: user.password,
+        });
+
+        assertResponse.is401(login.response);
+    });
+    // AUTH-007	Пароль коротший за 12 символів	Валідний email + "Short1A"	400
+    test("[AUTH-007] Log in with short password", async ({api, spawnUser}) => {
+        const user = await spawnUser();
+
+        const login = await api.auth.login({
+            identifier: user.email,
+            password: user.password.substring(0, 10),
+        });
+
+        assertResponse.is401(login.response);
+    });
+    // AUTH-008	Пароль довший за 20 символів	Валідний email + 21-символьний рядок	400
+    test("[AUTH-008] Successfull login via phone", async ({api, spawnUser}) => {
+        const user = await spawnUser();
+
+        const login = await api.auth.login({
+            identifier: user.email,
+            password: user.password+user.password,
+        });
+
+        assertResponse.is401(login.response);
+    });
+    // AUTH-009	Логін з email у верхньому регістрі	USER@GMAIL.COM — email зареєстрований як user@gmail.com	200 (email нечутливий до регістру)
+    test("[AUTH-009] Log in with email in upper case", async ({api, spawnUser}) => {
+        const user = await spawnUser();
+
+        const login = await api.auth.login({
+            identifier: user.email.toUpperCase(),
             password: user.password,
         });
 
