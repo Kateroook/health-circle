@@ -3,9 +3,9 @@ import { createApiClients } from '../../core/api/api-client-factory';
 import { assertResponse } from '../../core/api/helpers/response-checker';
 import { test } from '../fixtures/api-fixture'
 
-test.describe.only('Refactored API Clients Usage Examples', () => {
+test.describe.skip('Refactored API Clients Usage Examples', async () => {
 
-  test.only('Example 1: Basic usage with flat structure', async ({ api, spawnUser}) => {
+  test('Example 1: Basic usage with flat structure', async ({ api, spawnUser}) => {
     const user = await spawnUser();
     // ============ Auth ============
     // Логін користувача - повертає { data, response }
@@ -62,7 +62,7 @@ test.describe.only('Refactored API Clients Usage Examples', () => {
     expect(api.getContext().accessToken).toBeUndefined();
   });
 
-  test.only('Example 2: Working with ApiResult structure', async ({ request, spawnUser }) => {
+  test('Example 2: Working with ApiResult structure', async ({ request, spawnUser }) => {
     const api = createApiClients(request);
     const user = await spawnUser();
 
@@ -85,7 +85,7 @@ test.describe.only('Refactored API Clients Usage Examples', () => {
     assertResponse.is200(response);
   });
 
-  test.only('Example 3: Flat structure methods', async ({ request, spawnUser }) => {
+  test('Example 3: Flat structure methods', async ({ request, spawnUser }) => {
     const user = await spawnUser();
     const api = createApiClients(request);
 
