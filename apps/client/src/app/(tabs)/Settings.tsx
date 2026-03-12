@@ -1,4 +1,5 @@
 import { Button } from "@/src/components/Button";
+import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import * as ImagePicker from "expo-image-picker";
@@ -46,9 +47,6 @@ export default function SettingsScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [showOldPassword, setShowOldPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isDeleteAccountVisible, setIsDeleteAccountVisible] = useState(false);
   const [isDeleteAvatarVisible, setIsDeleteAvatarVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -366,26 +364,12 @@ export default function SettingsScreen() {
 
               {fields.map((field) => (
                 <View key={field.label} style={styles.block}>
-                  <Typography variant="body2" tone="primary" style={styles.label}>
-                    {field.label}
-                    {field.required ? (
-                      <Typography variant="body2" tone="negative" style={styles.requiredStar}>
-                        {" "}
-                        *
-                      </Typography>
-                    ) : (
-                      <Typography variant="caption" tone="secondary" style={styles.optionalText}>
-                        {" "}
-                        (опціонально)
-                      </Typography>
-                    )}
-                  </Typography>
-                  <TextInput
-                    style={styles.input}
+                  <TextField
+                    label={field.label}
+                    required={field.required}
                     value={field.value}
                     onChangeText={field.setter}
                     placeholder={field.placeholder}
-                    placeholderTextColor="#999"
                     keyboardType={field.keyboardType as any}
                     maxLength={field.maxLength}
                   />
@@ -539,60 +523,31 @@ export default function SettingsScreen() {
               Змінити пароль
             </Typography>
 
-            <View style={styles.modalPasswordContainer}>
-              <TextInput
-                style={styles.modalPasswordInput}
-                placeholder="Поточний пароль"
-                placeholderTextColor="#999"
-                secureTextEntry={!showOldPassword}
+            <View style={{ gap: 12 }}>
+              <PasswordField
+                label="Поточний пароль"
+                required
+                placeholder="Введіть поточний пароль"
                 value={oldPassword}
                 onChangeText={setOldPassword}
               />
-              <TouchableOpacity
-                onPress={() => setShowOldPassword(!showOldPassword)}
-                style={styles.eyeButton}
-              >
-                <Icon name={showOldPassword ? "eye-off" : "eye"} size={20} color="#999" />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalPasswordContainer}>
-              <TextInput
-                style={styles.modalPasswordInput}
+              <PasswordField
+                label="Новий пароль"
+                required
                 placeholder="Новий пароль (мін. 12 символів)"
-                placeholderTextColor="#999"
-                secureTextEntry={!showNewPassword}
                 value={newPassword}
                 onChangeText={setNewPassword}
+                caption="Має містити щонайменше 12 символів"
               />
-              <TouchableOpacity
-                onPress={() => setShowNewPassword(!showNewPassword)}
-                style={styles.eyeButton}
-              >
-                <Icon name={showNewPassword ? "eye-off" : "eye"} size={20} color="#999" />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalPasswordContainer}>
-              <TextInput
-                style={styles.modalPasswordInput}
-                placeholder="Підтвердити новий пароль"
-                placeholderTextColor="#999"
-                secureTextEntry={!showConfirmPassword}
+              <PasswordField
+                label="Підтвердіть новий пароль"
+                required
+                placeholder="Повторно введіть новий пароль"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
+                errorMessage={passwordError || undefined}
               />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeButton}
-              >
-                <Icon name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#999" />
-              </TouchableOpacity>
             </View>
-
-            {passwordError ? (
-              <Typography variant="caption" tone="negative" style={styles.modalError}>
-                {passwordError}
-              </Typography>
-            ) : null}
 
             <Button
               label={passwordLoading ? "Збереження..." : "Змінити пароль"}
@@ -985,16 +940,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     fontSize: 16,
     color: "#1A1A1A",
-  },
-  eyeButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-  modalError: {
-    color: "#D32F2F",
-    fontSize: 14,
-    marginBottom: 12,
-    textAlign: "center",
   },
   modalSave: {
     backgroundColor: "#4CAF50",
