@@ -1,7 +1,7 @@
-import { expect } from '@playwright/test';
-import { createApiClients } from '../../core/api/api-client-factory';
-import { assertResponse } from '../../core/api/helpers/response-checker';
+import { expect } from '../fixtures/api-fixture';
 import { test } from '../fixtures/api-fixture'
+import { profile } from 'console';
+import { GroupRepository } from '../../core/db/repositories/group-repository';
 
 test.describe.only('Refactored API Clients Usage Examples', async () => {
 
@@ -15,7 +15,7 @@ test.describe.only('Refactored API Clients Usage Examples', async () => {
     });
     console.log(loginResult.response);
     // Перевіряємо відповідь
-    assertResponse.is201(loginResult.response);
+    expect(loginResult.response).toHaveStatus(201);
     console.log('Login Data:', loginResult.data);
 
     // Токени автоматично збережені в контексті
@@ -24,39 +24,39 @@ test.describe.only('Refactored API Clients Usage Examples', async () => {
     // ============ Profile ============
     // Отримуємо профіль (використовується збережений токен)
     const profileResult = await api.auth.getProfile();
-    assertResponse.is200(profileResult.response);
+    expect(profileResult.response).toHaveStatus(200);
     console.log('User Profile:', profileResult.data);
 
     // ============ Users ============
     // Отримуємо користувача за ID - плаский метод
     const userResult = await api.users.getUser(profileResult.data!.id);
-    assertResponse.is200(userResult.response);
+    expect(userResult.response).toHaveStatus(200);
 
     // Оновлюємо статус користувача
     const statusResult = await api.users.updateUserStatus({ status: 'SAFE' });
-    assertResponse.is200(statusResult.response);
+    expect(statusResult.response).toHaveStatus(200);
 
     // ============ Groups ============
     // Створюємо групу
     const createGroupResult = await api.groups.createGroup({
       name: 'Test Group',
     });
-    assertResponse.is201(createGroupResult.response);
+    expect(createGroupResult.response).toHaveStatus(201);
     console.log('Created Group:', createGroupResult.data);
 
     // Отримуємо всі групи
     const groupsResult = await api.groups.getAllGroups();
-    assertResponse.is200(groupsResult.response);
+    expect(groupsResult.response).toHaveStatus(200);
     console.log('All Groups:', groupsResult.data);
 
     // Згенеруємо новий код запрошення
     const inviteResult = await api.groups.regenerateInviteCode(createGroupResult.data!.id);
-    assertResponse.is201(inviteResult.response);
+    expect(inviteResult.response).toHaveStatus(201);
     console.log('Invite Code:', inviteResult.data);
 
     // ============ Logout ============
     const logoutResult = await api.auth.logout();
-    assertResponse.is201(logoutResult.response);
+    expect(logoutResult.response).toHaveStatus(201);
 
     // Токени автоматично очищені
     expect(api.getContext().accessToken).toBeUndefined();
@@ -81,7 +81,7 @@ test.describe.only('Refactored API Clients Usage Examples', async () => {
 
     // Якщо потрібні тільки response
     const { response } = await api.users.updateUserStatus({ status: 'SAFE' });
-    assertResponse.is200(response);
+    expect(response).toHaveStatus(200);
   });
 
   test('Example 3: Flat structure methods', async ({ api, spawnUser }) => {
@@ -146,7 +146,7 @@ test.describe.only('Refactored API Clients Usage Examples', async () => {
 
     // Тест на помилку 401 (не авторизований)
     const unauthorizedResult = await api.auth.getProfile();
-    assertResponse.is4xx(unauthorizedResult.response);
+    expect(unauthorizedResult.response).toHaveStatus4xx();
     // data буде null для некоректних відповідей
     expect(unauthorizedResult.data).toBeNull();
 
@@ -155,14 +155,14 @@ test.describe.only('Refactored API Clients Usage Examples', async () => {
       identifier: 'wrong@email.com',
       password: 'wrongpassword',
     });
-    assertResponse.is4xx(failedLoginResult.response);
+    expect(failedLoginResult.response).toHaveStatus4xx();
     expect(failedLoginResult.data).toBeNull();
 
     // Тест на помилку 404 (не знайдено)
     await api.auth.quickLogin(user.email, user.password);
 
     const notFoundResult = await api.users.getUser('non-existent-id');
-    assertResponse.is401(notFoundResult.response);
+    expect(notFoundResult.response).toHaveStatus(401);
     expect(notFoundResult.data).toBeNull();
   });
 
@@ -221,7 +221,7 @@ test.describe.only('Refactored API Clients Usage Examples', async () => {
     const forgotResult = await api.auth.forgotPassword({
       email: user.email,
     });
-    assertResponse.is201(forgotResult.response);
+    expect(forgotResult.response).toHaveStatus(201);
 
     // Встановлення пароля (потрібен email і code)
     // await api.auth.setupPassword('user@example.com', 'verification-code', {
@@ -237,14 +237,14 @@ test.describe.only('Refactored API Clients Usage Examples', async () => {
       newPassword: newPassword,
       confirmNewPassword: newPassword,
     });
-    assertResponse.is201(changeResult.response);
+    expect(changeResult.response).toHaveStatus(201);
 
     const cleanupResult = await api.auth.changePassword({
       oldPassword: newPassword,
       newPassword: user.password,
       confirmNewPassword: user.password,
     });
-    assertResponse.is201(cleanupResult.response);
+    expect(cleanupResult.response).toHaveStatus(201);
   });
 
   test('Example 8: Using built-in Playwright params', async ({ api, spawnUser }) => {

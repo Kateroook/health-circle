@@ -1,10 +1,8 @@
-import { expect } from '@playwright/test';
+import { expect } from '../fixtures/api-fixture';
 import { test } from '../fixtures/api-fixture';
 import { UserFactory } from '../../core/data/factories/user-factory';
-import { assertResponse, checkResponse } from '../../core/api/helpers/response-checker';
 import { utils } from '../../utils/utils';
 
-//PASS
 test('post user with non-ukrainian phone number', async ({ api }) => {
   let user = UserFactory.createUserForTest({testId: 'PhoneTest', overrides: {
     phone: utils.random.phone('us'),
@@ -20,10 +18,9 @@ test('post user with non-ukrainian phone number', async ({ api }) => {
   console.log(postUser.response);
   console.log(await postUser.response.json());
 
-  assertResponse.is2xx(postUser.response);
+  expect(postUser.response).toHaveStatus2xx();
 });
 
-//PASS
 test('post user with no middlename phone number', async ({ api }) => {
   let user = UserFactory.createRandomUser({
     phone: utils.random.phone('ua'),
@@ -39,7 +36,7 @@ test('post user with no middlename phone number', async ({ api }) => {
   console.log(postUser.response);
   console.log(await postUser.response.json());
 
-  assertResponse.is2xx(postUser.response);
+  expect(postUser.response).toHaveStatus2xx();
 });
 
 //PASS
@@ -59,7 +56,7 @@ test('Create new user and delete him', async ({ api, confirmationCodeRepository 
   console.log(postUser.response);
   console.log(await postUser.response.json());
 
-  assertResponse.is2xx(postUser.response);
+  expect(postUser.response).toHaveStatus2xx();
   newUser.id = postUser.data.id;
 
   const code = (await confirmationCodeRepository.findBy({ userId: newUser.id }))[0];

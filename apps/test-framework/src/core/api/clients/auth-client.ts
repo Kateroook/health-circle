@@ -8,7 +8,7 @@ import {
   ForgotPasswordRequest,
   ProfileResponse,
 } from '../../types/api';
-import { assertResponse, checkResponse } from '../helpers/response-checker';
+import { checkResponse } from '../helpers/response-checker';
 
 /**
  * AuthClient - клієнт для роботи з Auth API

@@ -1,6 +1,4 @@
-import { expect } from "@playwright/test";
-import { assertResponse, checkResponse } from "../../../core/api/helpers/response-checker";
-import { test } from "../../fixtures/api-fixture";
+import { test, expect } from "../../fixtures/api-fixture";
 import { utils } from "../../../utils/utils";
 
 test.describe.only("api/auth/login tests", async () => {
@@ -12,7 +10,7 @@ test.describe.only("api/auth/login tests", async () => {
             password: user.password,
         });
 
-        assertResponse.is2xx(login.response);
+        expect(login.response).toHaveStatus2xx();
         expect(api.getContext().accessToken).not.toBeNull();
         expect(api.getContext().accessToken).not.toBeUndefined();
         expect(api.getContext().refreshToken).not.toBeNull();
@@ -27,7 +25,7 @@ test.describe.only("api/auth/login tests", async () => {
             password: user.password,
         });
 
-        assertResponse.is2xx(login.response);
+        expect(login.response).toHaveStatus2xx();
         expect(api.getContext().accessToken).not.toBeNull();
         expect(api.getContext().accessToken).not.toBeUndefined();
         expect(api.getContext().refreshToken).not.toBeNull();
@@ -42,7 +40,7 @@ test.describe.only("api/auth/login tests", async () => {
             password: utils.random.password(),
         });
 
-        assertResponse.is401(login.response);
+        expect(login.response).toHaveStatus(401);
     });
 
     // AUTH-004	Невірний пароль для існуючого акаунту	Валідний email + неправильний пароль	401
@@ -54,7 +52,7 @@ test.describe.only("api/auth/login tests", async () => {
             password: user.password+'1',
         });
 
-        assertResponse.is401(login.response);
+        expect(login.response).toHaveStatus(401);
     });
 
     // AUTH-005	Порожній пароль	Валідний email + ""	400
@@ -66,7 +64,7 @@ test.describe.only("api/auth/login tests", async () => {
             password: '',
         });
 
-        assertResponse.is401(login.response);
+        expect(login.response).toHaveStatus(401);
     });
 
     // TODO
@@ -80,7 +78,7 @@ test.describe.only("api/auth/login tests", async () => {
             password: user.password,
         });
 
-        assertResponse.is401(login.response);
+        expect(login.response).toHaveStatus(401);
     });
     // AUTH-007	Пароль коротший за 12 символів	Валідний email + "Short1A"	400
     test("[AUTH-007] Log in with short password", async ({api, spawnUser}) => {
@@ -91,7 +89,7 @@ test.describe.only("api/auth/login tests", async () => {
             password: user.password.substring(0, 10),
         });
 
-        assertResponse.is401(login.response);
+        expect(login.response).toHaveStatus(401);
     });
     // AUTH-008	Пароль довший за 20 символів	Валідний email + 21-символьний рядок	400
     test("[AUTH-008] Successfull login via phone", async ({api, spawnUser}) => {
@@ -102,7 +100,7 @@ test.describe.only("api/auth/login tests", async () => {
             password: user.password+user.password,
         });
 
-        assertResponse.is401(login.response);
+        expect(login.response).toHaveStatus(401);
     });
     // AUTH-009	Логін з email у верхньому регістрі	USER@GMAIL.COM — email зареєстрований як user@gmail.com	200 (email нечутливий до регістру)
     test("[AUTH-009] Log in with email in upper case", async ({api, spawnUser}) => {
@@ -113,7 +111,7 @@ test.describe.only("api/auth/login tests", async () => {
             password: user.password,
         });
 
-        assertResponse.is2xx(login.response);
+        expect(login.response).toHaveStatus2xx();
         expect(api.getContext().accessToken).not.toBeNull();
         expect(api.getContext().accessToken).not.toBeUndefined();
         expect(api.getContext().refreshToken).not.toBeNull();

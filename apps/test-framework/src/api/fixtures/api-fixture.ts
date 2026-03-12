@@ -1,4 +1,4 @@
-import { APIRequestContext, test as base } from '@playwright/test';
+import { APIRequestContext, test as base, expect as baseExpect, mergeExpects } from '@playwright/test';
 import { DbManager } from '../../core/db/db-manager';
 import { UserRepository } from '../../core/db/repositories/user-repository';
 import { GroupRepository } from '../../core/db/repositories/group-repository';
@@ -10,8 +10,7 @@ import { Kysely } from 'kysely';
 import { Database } from '../../core/db/schema';
 import { UserEntity } from '../../core/types/entites/user-interface';
 import { UserFactory } from '../../core/data/factories/user-factory';
-import { assertResponse } from '../../core/api/helpers/response-checker';
-
+import {expect as statusExpect } from '../../core/api/helpers/response-checker'
 export type ApiFixture = {
   db: Kysely<Database>;
 };
@@ -95,13 +94,6 @@ export const test = workerTest.extend<MyFixture>({
         middleName: user.middleName,
         lastName: user.lastName,
       });
-
-      // if (!postUser.response.ok()) {
-      //   const body = await postUser.response.text();
-      //   console.log(`createUser failed ${postUser.response.status()}:`, body);
-      // }
-
-      // assertResponse.is2xx(postUser.response);
   
       user.id = postUser.data.id;
   
@@ -118,3 +110,5 @@ export const test = workerTest.extend<MyFixture>({
     await use(factory);
   },
 });
+
+export const expect = mergeExpects(statusExpect);
