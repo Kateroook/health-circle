@@ -2,10 +2,13 @@ import { expect } from '@playwright/test';
 import { test } from '../fixtures/api-fixture';
 import { UserFactory } from '../../core/data/factories/user-factory';
 import { assertResponse, checkResponse } from '../../core/api/helpers/response-checker';
+import { utils } from '../../utils/utils';
 
 //PASS
 test('post user with non-ukrainian phone number', async ({ api }) => {
-  let user = UserFactory.createUserForTest({testId: 'PhoneTest'});
+  let user = UserFactory.createUserForTest({testId: 'PhoneTest', overrides: {
+    phone: utils.random.phone('us'),
+  }});
   const postUser = await api.users.createUser({
     email: user.email,
     phone: user.phone,
@@ -22,10 +25,12 @@ test('post user with non-ukrainian phone number', async ({ api }) => {
 
 //PASS
 test('post user with no middlename phone number', async ({ api }) => {
-  let user = UserFactory.createRandomUser(); //no middlename as default
+  let user = UserFactory.createRandomUser({
+    phone: utils.random.phone('ua'),
+  }); //no middlename as default
   const postUser = await api.users.createUser({
     email: user.email,
-    phone: '+380691033014',
+    phone: user.phone,
     firstName: user.firstName,
     middleName: user.middleName,
     lastName: user.lastName,
@@ -39,10 +44,10 @@ test('post user with no middlename phone number', async ({ api }) => {
 
 //PASS
 test('Create new user and delete him', async ({ api, confirmationCodeRepository }) => {
-  let newUser = UserFactory.createUserForTest({testId: 'middleNameTest'});
+  let newUser = UserFactory.createUserForTest({testId: 'middleNameTest', overrides: {
+    phone: utils.random.phone('ua'),
+  }});
   console.log(newUser);
-
-  newUser.phone = '+380691233014';
 
   const postUser = await api.users.createUser({
     email: newUser.email,
