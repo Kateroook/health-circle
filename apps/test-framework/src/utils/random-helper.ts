@@ -25,7 +25,7 @@ export class RandomHelper {
     prefix?: string;
     domain?: string;
   } = {}) {
-    return `${prefix}${nanoid(5)}@${domain}`;
+    return `${prefix}${nanoid(10)}@${domain}`;
   }
 
   phone() {

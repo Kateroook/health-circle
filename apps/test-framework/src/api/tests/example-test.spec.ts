@@ -1,20 +1,19 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { createApiClients } from '../../core/api/api-client-factory';
 import { assertResponse } from '../../core/api/helpers/response-checker';
-import { config } from '../helpers/config';
+import { test } from '../fixtures/api-fixture'
 
-test.describe.skip('Refactored API Clients Usage Examples', () => {
-  test.skip('Example 1: Basic usage with flat structure', async ({ request }) => {
-    // Створюємо фабрику клієнтів з ізольованим контекстом
-    const api = createApiClients(request);
+test.describe.only('Refactored API Clients Usage Examples', () => {
 
+  test.only('Example 1: Basic usage with flat structure', async ({ api, spawnUser}) => {
+    const user = await spawnUser();
     // ============ Auth ============
     // Логін користувача - повертає { data, response }
     const loginResult = await api.auth.login({
-      email: config.testUser.email,
-      password: config.testUser.password,
+      identifier: user.email,
+      password: user.password,
     });
-
+    console.log(loginResult.response);
     // Перевіряємо відповідь
     assertResponse.is201(loginResult.response);
     console.log('Login Data:', loginResult.data);
@@ -63,11 +62,12 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     expect(api.getContext().accessToken).toBeUndefined();
   });
 
-  test.skip('Example 2: Working with ApiResult structure', async ({ request }) => {
+  test.only('Example 2: Working with ApiResult structure', async ({ request, spawnUser }) => {
     const api = createApiClients(request);
+    const user = await spawnUser();
 
     // Метод повертає ApiResult<T>
-    const result = await api.auth.quickLogin(config.testUser.email, config.testUser.password);
+    const result = await api.auth.quickLogin(user.email, user.password);
 
     // Доступ до даних
     console.log('Data:', result.data);
@@ -78,17 +78,18 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
 
     // Якщо потрібні тільки дані
     const { data } = await api.auth.getProfile();
-    expect(data?.email).toBe(config.testUser.email);
+    expect(data?.email).toBe(user.email);
 
     // Якщо потрібні тільки response
     const { response } = await api.users.updateUserStatus({ status: 'SAFE' });
     assertResponse.is200(response);
   });
 
-  test.skip('Example 3: Flat structure methods', async ({ request }) => {
+  test.only('Example 3: Flat structure methods', async ({ request, spawnUser }) => {
+    const user = await spawnUser();
     const api = createApiClients(request);
 
-    await api.auth.quickLogin(config.testUser.email, config.testUser.password);
+    await api.auth.quickLogin(user.email, user.password);
     const profile = await api.auth.getProfile();
 
     // ============ Пласкі методи для User ============
@@ -142,8 +143,9 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     await api.contacts.deleteContact('target-id');
   });
 
-  test.skip('Example 4: Error handling with safe JSON parsing', async ({ request }) => {
+  test('Example 4: Error handling with safe JSON parsing', async ({ request, spawnUser }) => {
     const api = createApiClients(request);
+    const user = await spawnUser();
 
     // Тест на помилку 401 (не авторизований)
     const unauthorizedResult = await api.auth.getProfile();
@@ -153,27 +155,28 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
 
     // Логін з неправильними даними
     const failedLoginResult = await api.auth.login({
-      email: 'wrong@email.com',
+      identifier: 'wrong@email.com',
       password: 'wrongpassword',
     });
     assertResponse.is401(failedLoginResult.response);
     expect(failedLoginResult.data).toBeNull();
 
     // Тест на помилку 404 (не знайдено)
-    await api.auth.quickLogin(config.testUser.email, config.testUser.password);
+    await api.auth.quickLogin(user.email, user.password);
 
     const notFoundResult = await api.users.getUser('non-existent-id');
     assertResponse.is401(notFoundResult.response);
     expect(notFoundResult.data).toBeNull();
   });
 
-  test.skip('Example 5: Isolated contexts for multiple users', async ({ request }) => {
+  test('Example 5: Isolated contexts for multiple users', async ({ request, spawnUser }) => {
     // Створюємо два окремі клієнти з ізольованими контекстами
     const user1Api = createApiClients(request);
     const user2Api = createApiClients(request);
+    const user = await spawnUser();
 
     // Логін першого користувача
-    await user1Api.auth.quickLogin(config.testUser.email, config.testUser.password);
+    await user1Api.auth.quickLogin(user.email, user.password);
 
     // Логін другого користувача (припустимо, маємо другі credentials)
     // await user2Api.auth.quickLogin('user2@test.com', 'password2');
@@ -191,10 +194,11 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     console.log('User2 Context:', user2Api.getContext());
   });
 
-  test.skip('Example 6: Cloning factory for test isolation', async ({ request }) => {
+  test('Example 6: Cloning factory for test isolation', async ({ request, spawnUser }) => {
     const originalApi = createApiClients(request);
+    const user = await spawnUser();
 
-    await originalApi.auth.quickLogin(config.testUser.email, config.testUser.password);
+    await originalApi.auth.quickLogin(user.email, user.password);
 
     // Клонуємо без контексту - новий порожній контекст
     const cleanClone = originalApi.clone();
@@ -210,13 +214,14 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     expect(originalApi.getContext().accessToken).toBeDefined();
   });
 
-  test.skip('Example 7: Password management with flat methods', async ({ request }) => {
+  test('Example 7: Password management with flat methods', async ({ request, spawnUser }) => {
     const api = createApiClients(request);
     const newPassword = 'NewPassword123!';
+    const user = await spawnUser();
 
     // Запит на скидання пароля
     const forgotResult = await api.auth.forgotPassword({
-      email: config.testUser.email,
+      email: user.email,
     });
     assertResponse.is201(forgotResult.response);
 
@@ -227,10 +232,10 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
     });
 
     // Зміна пароля (для авторизованого користувача)
-    await api.auth.quickLogin(config.testUser.email, config.testUser.password);
+    await api.auth.quickLogin(user.email, user.password);
 
     const changeResult = await api.auth.changePassword({
-      oldPassword: config.testUser.password,
+      oldPassword: user.password,
       newPassword: newPassword,
       confirmNewPassword: newPassword,
     });
@@ -238,16 +243,17 @@ test.describe.skip('Refactored API Clients Usage Examples', () => {
 
     const cleanupResult = await api.auth.changePassword({
       oldPassword: newPassword,
-      newPassword: config.testUser.password,
-      confirmNewPassword: config.testUser.password,
+      newPassword: user.password,
+      confirmNewPassword: user.password,
     });
     assertResponse.is201(cleanupResult.response);
   });
 
-  test.skip('Example 8: Using built-in Playwright params', async ({ request }) => {
+  test('Example 8: Using built-in Playwright params', async ({ request, spawnUser }) => {
     const api = createApiClients(request);
+    const user = await spawnUser();
 
-    await api.auth.quickLogin(config.testUser.email, config.testUser.password);
+    await api.auth.quickLogin(user.email, user.password);
 
     // Playwright автоматично обробляє params
     // BaseClient передає params напряму в request.get()
