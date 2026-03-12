@@ -44,7 +44,7 @@ export default function CirclesScreen() {
         setActiveCircle(updated);
       }
     }
-  }, [circles]);
+  }, [circles, activeCircle]);
 
   // Fetch all circles
   const fetchCircles = useCallback(async () => {
@@ -89,7 +89,7 @@ export default function CirclesScreen() {
       return false;
     });
     return () => sub.remove();
-  }, [isAddModalVisible, isActionsVisible]);
+  }, [isAddModalVisible, isActionsVisible, isDetailsVisible]);
 
   function openActionsModal(circle: typeof activeCircle) {
     setActiveCircle(circle);
