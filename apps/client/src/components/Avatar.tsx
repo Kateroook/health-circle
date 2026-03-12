@@ -48,12 +48,12 @@ export const Avatar: React.FC<AvatarProps> = ({
         !border && {
           width: outer,
           height: outer,
-          borderRadius: outer / 2,
+          borderRadius: theme.radius.circle,
         },
         border && {
           width: inner,
           height: inner,
-          borderRadius: inner / 2,
+          borderRadius: theme.radius.circle,
         },
       ]}
       onError={() => setImageError(true)}
@@ -74,7 +74,7 @@ export const Avatar: React.FC<AvatarProps> = ({
         {
           width: outer + whiteBorder * 2,
           height: outer + whiteBorder * 2,
-          borderRadius: (outer + whiteBorder * 2) / 2,
+          borderRadius: theme.radius.circle,
           borderWidth: whiteBorder,
           borderColor: "white",
           padding: 0,
@@ -87,7 +87,7 @@ export const Avatar: React.FC<AvatarProps> = ({
         style={{
           width: outer,
           height: outer,
-          borderRadius: outer / 2,
+          borderRadius: theme.radius.circle,
           borderWidth: colorBorder,
           borderColor,
           justifyContent: "center",

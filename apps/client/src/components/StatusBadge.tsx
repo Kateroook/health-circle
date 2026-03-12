@@ -1,4 +1,5 @@
 import { theme } from "@/src/theme/theme";
+import { FontAwesome6 } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Typography } from "./typography/Typography";
@@ -6,28 +7,39 @@ import { Typography } from "./typography/Typography";
 export type StatusBadgeVariant = "round" | "pill";
 export type UserStatus = "SAFE" | "DANGER" | "UNKNOWN";
 
-export const STATUS_CONFIG: Record<UserStatus, { bg: string; icon: string; label: string }> = {
+export const STATUS_CONFIG: Record<
+  UserStatus,
+  {
+    bg: string;
+    icon: string;
+    label: string;
+    mcIcon: keyof typeof FontAwesome6.glyphMap;
+    iconColor?: string;
+    showCircle?: boolean;
+  }
+> = {
   SAFE: {
     bg: theme.colors.stateBackground.safe,
     icon: theme.colors.state.safe,
     label: "В безпеці",
+    mcIcon: "check",
+    showCircle: true,
   },
   DANGER: {
     bg: theme.colors.stateBackground.emergency,
     icon: theme.colors.state.emergency,
     label: "Потрібна допомога!",
+    mcIcon: "triangle-exclamation",
+    iconColor: theme.colors.state.emergency,
+    showCircle: false,
   },
   UNKNOWN: {
     bg: theme.colors.stateBackground.unknown,
     icon: theme.colors.state.unknown,
     label: "Невідомо",
+    mcIcon: "question",
+    showCircle: true,
   },
-};
-
-const STATUS_SYMBOL: Record<UserStatus, string> = {
-  SAFE: "✓",
-  DANGER: "!",
-  UNKNOWN: "?",
 };
 
 interface StatusBadgeProps {
@@ -40,17 +52,17 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = "rou
 
   const roundBadge = (
     <View style={[styles.roundOuter, { backgroundColor: config.bg }]}>
-      <View style={[styles.roundInner, { backgroundColor: config.icon }]}>
-        <Typography variant="subtitle1" tone="onColor" weight="bold">
-          {STATUS_SYMBOL[status]}
-        </Typography>
-      </View>
+      {config.showCircle ? (
+        <View style={[styles.roundInner, { backgroundColor: config.icon }]}>
+          <FontAwesome6 name={config.mcIcon} size={16} color="white" />
+        </View>
+      ) : (
+        <FontAwesome6 name={config.mcIcon} size={24} color={config.iconColor ?? config.icon} />
+      )}
     </View>
   );
 
-  if (variant === "round") {
-    return roundBadge;
-  }
+  if (variant === "round") return roundBadge;
 
   return (
     <View style={[styles.pill, { backgroundColor: config.bg }]}>
