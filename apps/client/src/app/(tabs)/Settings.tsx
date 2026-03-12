@@ -327,7 +327,7 @@ export default function SettingsScreen() {
               {/* Опціонально: кнопка "Скасувати" */}
               <Button
                 label="Скасувати"
-                hierarchy="tertiary"
+                hierarchy="secondary"
                 size="medium"
                 shape="rectangle"
                 onPress={() => {
@@ -637,33 +637,19 @@ const styles = StyleSheet.create({
   avatar: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
   avatarButtons: {
     flexDirection: "row",
-    justifyContent: "center", // ← головна зміна: центруємо вміст
-    gap: 16, // замість gap: 10, щоб було гарніше
+    justifyContent: "center",
+    gap: 16,
     marginBottom: 16,
-    width: "100%", // на всю ширину, щоб центр працював
+    width: "100%",
   },
-
-  removeButton: { backgroundColor: "#FF6B6B" },
-  avatarButtonText: { color: "#fff", fontWeight: "600" },
-
-  block: { marginBottom: 20 },
+  block: { marginBottom: theme.spacing[16] },
   profileName: {
     marginTop: theme.spacing[8],
     marginBottom: theme.spacing[32],
     textAlign: "center",
   },
   save: {
-    marginTop: 10,
-    backgroundColor: "#000000",
-    padding: 15,
-    borderRadius: 25,
-    alignItems: "center",
-    marginHorizontal: 20,
-  },
-  saveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-
-  securityHeader: {
-    flexDirection: "row",
+    marginTop: theme.spacing[8],
     alignItems: "center",
   },
   settingsSection: {
@@ -677,7 +663,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: theme.spacing[10],
     paddingHorizontal: theme.spacing[16],
-    gap: theme.spacing[12],
+    gap: theme.spacing[16],
     backgroundColor: theme.colors.background.secondary,
   },
   settingsRowLabel: {
@@ -688,74 +674,22 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.border.opaque,
     marginLeft: theme.spacing[16],
   },
-
-  logout: {
-    marginTop: 20,
-    backgroundColor: "#FF6B6B",
-    padding: 15,
-    borderRadius: 12,
-    alignItems: "center",
-    marginHorizontal: 20,
-  },
-  logoutText: { color: "#fff", fontSize: 16 },
-
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start", // вміст зліва
-    backgroundColor: "#ffffff", // білий фон
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 20,
-    marginHorizontal: 20,
+    backgroundColor: theme.colors.background.secondary,
+    marginTop: theme.spacing[8],
   },
-
-  logoutTextNew: {
-    color: "#000000",
-    fontSize: 16,
-    fontWeight: "500", // або '600' якщо хочеш жирніший текст
-  },
-
   editContainer: {
     width: "100%",
-    paddingHorizontal: 20,
-    marginTop: 10,
+    paddingHorizontal: theme.spacing[16],
+    marginTop: theme.spacing[8],
   },
   cancelButton: {
-    marginTop: 10,
-    padding: 15,
-    borderRadius: 12,
-    backgroundColor: "#f0f0f0",
+    marginTop: theme.spacing[8],
     alignItems: "center",
-    marginHorizontal: 20,
   },
-
-  cancelButtonText: {
-    color: "#666",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-
-  delete: {
-    marginTop: 15,
-    backgroundColor: "#D9534F",
-    padding: 15,
-    borderRadius: 12,
-    alignItems: "center",
-    marginHorizontal: 20,
-  },
-  deleteText: { color: "#fff", fontSize: 16 },
-
-  changePassword: {
-    marginTop: 15,
-    backgroundColor: "#2196F3",
-    padding: 15,
-    borderRadius: 12,
-    alignItems: "center",
-    marginHorizontal: 20,
-  },
-  changePasswordText: { color: "#fff", fontSize: 16, fontWeight: "600" },
 
   modalOverlay: {
     flex: 1,
