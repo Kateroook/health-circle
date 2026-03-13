@@ -1,4 +1,4 @@
-import { APIRequestContext, test as base } from '@playwright/test';
+import { APIRequestContext, test as base, expect as baseExpect, mergeExpects } from '@playwright/test';
 import { DbManager } from '../../core/db/db-manager';
 import { UserRepository } from '../../core/db/repositories/user-repository';
 import { GroupRepository } from '../../core/db/repositories/group-repository';
@@ -8,7 +8,9 @@ import { DbCleaner } from '../../core/db/db-cleaner';
 import { ApiClientFactory } from '../../core/api/api-client-factory';
 import { Kysely } from 'kysely';
 import { Database } from '../../core/db/schema';
-
+import { UserEntity } from '../../core/types/entites/user-interface';
+import { UserFactory } from '../../core/data/factories/user-factory';
+import {expect as statusExpect } from '../../core/api/helpers/response-checker'
 export type ApiFixture = {
   db: Kysely<Database>;
 };
@@ -30,7 +32,8 @@ export type MyFixture = {
   confirmationCodeRepository: ConfirmationCodeRepository;
   dbCleaner: DbCleaner;
   api: ApiClientFactory;
-  spawnApi: Promise<ApiClientFactory>;
+  spawnApi: () => Promise<ApiClientFactory>;
+  spawnUser: (overrides?: Partial<UserEntity>) => Promise<UserEntity>;
 };
 
 export const test = workerTest.extend<MyFixture>({
@@ -73,10 +76,39 @@ export const test = workerTest.extend<MyFixture>({
       });
     };
 
-    await use(spawn());
+    await use(spawn);
 
     for (const context of contexts) {
       await context.dispose();
     }
   },
+
+  spawnUser: async ({ api, confirmationCodeRepository }, use) => {
+    const factory = async (overrides?: Partial<UserEntity>) => {
+      let user = UserFactory.createRandomUser(overrides);
+  
+      const postUser = await api.users.createUser({
+        email: user.email,
+        phone: user.phone,
+        firstName: user.firstName,
+        middleName: user.middleName,
+        lastName: user.lastName,
+      });
+  
+      user.id = postUser.data.id;
+  
+      const code = (await confirmationCodeRepository.findBy({ userId: user.id }))[0];
+  
+      await api.auth.setupPassword(user.email!, code.code, {
+        newPassword: user.password,
+        confirmNewPassword: user.password,
+      });
+
+      return user;
+    }
+
+    await use(factory);
+  },
 });
+
+export const expect = mergeExpects(statusExpect);

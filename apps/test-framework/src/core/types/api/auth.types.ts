@@ -3,7 +3,7 @@ import { UserStatus } from './common.types';
 // ============ Auth DTOs ============
 
 export interface UserLoginDto {
-  email: string;
+  identifier: string;
   password: string;
 }
 

@@ -1,24 +1,45 @@
 name: Playwright Tests
+
 on:
   push:
-    branches: [main, master]
+    branches: [dev, stage]
   pull_request:
-    branches: [main, master]
+    branches: [dev]
+  workflow_dispatch:
+
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
+          cache: 'npm'               # кешуємо node_modules між запусками
+
       - name: Install dependencies
         run: npm ci
+
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps chromium  # тільки chromium — швидше
+
       - name: Run Playwright tests
         run: npx playwright test
+        env:
+          CI: true
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          HEALTHCIRCLE_POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          HEALTHCIRCLE_POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+          HEALTHCIRCLE_POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          HEALTHCIRCLE_POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
+          HEALTHCIRCLE_POSTGRES_DB_NAME: ${{ secrets.POSTGRES_DB_NAME }}
+          HEALTHCIRCLE_POSTGRES_SSL: ${{ secrets.POSTGRES_SSL }}
+          TEST_EMAIL_USER: ${{ secrets.TEST_EMAIL_USER }}
+          TEST_EMAIL_PASSWORD: ${{ secrets.TEST_EMAIL_PASSWORD }}
+
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
