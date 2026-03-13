@@ -66,7 +66,7 @@ export class ConfirmationsService {
 
   // todo: regenerate code if expired
   async verifyCode(type: ConfirmationTypes, email: string, code: string) {
-    const user = await this.usersRepository.findOne({ where: { email, lockedAt: IsNull() } });
+    const user = await this.usersRepository.findOne({ where: { email: email.toLowerCase(), lockedAt: IsNull() } });
     if (!user) throw new UnauthorizedException('Невірні облікові дані');
     const savedCode = await this.codeRepository.findOne({
       where: { user: { id: user.id }, type },

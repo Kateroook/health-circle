@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsDefined,
   IsEmail,
@@ -15,6 +16,7 @@ import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constra
 export class CreateUserDto {
   @IsDefined({ message: 'Поле електронної пошти є обовʼязковим' })
   @IsEmail({}, { message: 'Некоректний формат електронної пошти' })
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
   @Validate(UserUniqueConstraint, ['email'], { message: 'Електронна пошта вже використовується іншим користувачем' })
   email: string;
 
