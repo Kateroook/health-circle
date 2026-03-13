@@ -3,7 +3,7 @@ import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe('api/auth/login tests', async () => {
   test('[AUTH-001] Successfull login via email', async ({ api, spawnUser }) => {
-    const user = await spawnUser();
+    const user = await spawnUser(); //problem is here, let's see if it's been resolved
 
     const login = await api.auth.login({
       identifier: user.email,
