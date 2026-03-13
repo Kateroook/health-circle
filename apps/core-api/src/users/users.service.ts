@@ -158,7 +158,7 @@ export class UsersService {
   ): Promise<UserEntity> {
     if (isNew) {
       const existingUser = await this.repository.findOne({
-        where: [{ email: (item as CreateUserDto).email }, { phone: (item as CreateUserDto).phone }],
+        where: [{ email: (item as CreateUserDto).email.toLowerCase() }, { phone: (item as CreateUserDto).phone }],
       });
 
       if (existingUser) {

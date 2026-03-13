@@ -20,6 +20,7 @@ import { AddGroupBlockList1771186507666 } from './1771186507666-add-group-block-
 import { CascadeDeleteAndRelaxLogConstraints1772048762122 } from './1772048762122-CascadeDeleteAndRelaxLogConstraints';
 import { MakeMiddleNameOptional1772561853196 } from './1772561853196-MakeMiddleNameOptional';
 import { AlterUserEntity1772743614997 } from './1772743614997-alter-user-entity';
+import { LowercaseExistingEmails1772743615000 } from './1772743615000-LowercaseExistingEmails';
 
 export const migrations = [
   CreateEntities1762501994652,
@@ -44,4 +45,5 @@ export const migrations = [
   CascadeDeleteAndRelaxLogConstraints1772048762122,
   MakeMiddleNameOptional1772561853196,
   AlterUserEntity1772743614997,
+  LowercaseExistingEmails1772743615000,
 ];

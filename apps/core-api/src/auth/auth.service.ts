@@ -90,7 +90,7 @@ export class AuthService {
   async validateUser(identifier: string, password: string, metadata: RequestMetadata): Promise<UserProfileDto> {
     // Find user by email or phone
     const user = await this.userRepository.findOne({
-      where: [{ email: identifier }, { phone: identifier }],
+      where: [{ email: identifier.toLowerCase() }, { phone: identifier }],
     });
 
     // Check if user exists and is active
