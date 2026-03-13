@@ -35,7 +35,7 @@ jobs:
         env:
           CI: true
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
-          HEALTHCIRCLE_POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+          HEALTHCIRCLE_POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
           HEALTHCIRCLE_POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
           HEALTHCIRCLE_POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           HEALTHCIRCLE_POSTGRES_PASS: ${{ secrets.POSTGRES_PASS }}
