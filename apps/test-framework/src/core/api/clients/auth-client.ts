@@ -22,8 +22,7 @@ export class AuthClient extends BaseClient {
   public async login(data: LoginRequest): Promise<ApiResult<LoginResponse>> {
     const result = await this.post<LoginResponse>('/api/auth/login', { data });
 
-    // Автоматично зберігаємо токени з cookies
-    // const setCookieHeaders = result.response.headers()['set-cookie'];
+    // Автоматично зберігаємо токени
     if (checkResponse.is2xx(result.response)) {
       this.setAccessToken(result.data.accessToken!);
       this.setRefreshToken(result.data.refreshToken!);

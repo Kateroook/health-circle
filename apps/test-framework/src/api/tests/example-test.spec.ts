@@ -1,7 +1,5 @@
 import { expect } from '../fixtures/api-fixture';
 import { test } from '../fixtures/api-fixture'
-import { profile } from 'console';
-import { GroupRepository } from '../../core/db/repositories/group-repository';
 
 test.describe.skip('Refactored API Clients Usage Examples', async () => {
 
