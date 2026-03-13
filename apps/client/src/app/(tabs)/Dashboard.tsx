@@ -2,6 +2,7 @@ import { apiFetch, updateMyStatus } from "@/src/api/api";
 import MemberAvatar from "@/src/components/MemberAvatar";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
+import MemberDetailModal from "@/src/components/MemberDetailModal";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import {
@@ -17,9 +18,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type UserStatus = "SAFE" | "DANGER" | "UNKNOWN";
+export type UserStatus = "SAFE" | "DANGER" | "UNKNOWN";
 
-interface Member {
+export interface Member {
   id: string;
   firstName: string;
   lastName: string;
@@ -147,7 +148,7 @@ const StatusBadge = ({ status }: { status: UserStatus }) => {
       style={{
         width: 30,
         height: 30,
-        borderRadius: 5,
+        borderRadius: 15,
         backgroundColor: bgColor,
         justifyContent: "center",
         alignItems: "center",
@@ -180,92 +181,6 @@ const StatusBadge = ({ status }: { status: UserStatus }) => {
 };
 
 // --- MemberProfileModal ---
-const MemberProfileModal = ({
-  member,
-  visible,
-  onClose,
-}: {
-  member: Member | null;
-  visible: boolean;
-  onClose: () => void;
-}) => {
-  if (!member) return null;
-
-  let statusText: string;
-  let statusColor: string;
-  let circleColor: string;
-  let symbol: string;
-
-  switch (member.status) {
-    case "SAFE":
-      statusText = "В безпеці";
-      statusColor = "#4CAF50";
-      circleColor = "#4CAF50";
-      symbol = "✓";
-      break;
-    case "DANGER":
-      statusText = "Потрібна допомога!";
-      statusColor = "#F44336";
-      circleColor = "#F44336";
-      symbol = "!";
-      break;
-    default:
-      statusText = "Невідомо";
-      statusColor = "#FF9800";
-      circleColor = "#FF9800";
-      symbol = "?";
-  }
-
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={modalStyles.overlay} onPress={onClose}>
-        <Pressable style={modalStyles.card} onPress={(e) => e.stopPropagation()}>
-          {/* Close button */}
-          <TouchableOpacity style={modalStyles.closeButton} onPress={onClose}>
-            <Text style={modalStyles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-
-          {/* Avatar */}
-          <View style={modalStyles.avatarWrapper}>
-            <MemberAvatar member={member} />
-          </View>
-
-          {/* Name */}
-          <Text style={modalStyles.name}>
-            {member.firstName} {member.lastName}
-          </Text>
-
-          {/* Status row: icon + text */}
-          <View style={modalStyles.statusRow}>
-            <View style={[modalStyles.statusCircle, { backgroundColor: circleColor }]}>
-              <Text style={modalStyles.statusCircleSymbol}>{symbol}</Text>
-            </View>
-            <Text style={[modalStyles.statusText, { color: statusColor }]}>{statusText}</Text>
-          </View>
-
-          {/* Buttons — one under another */}
-          <View style={modalStyles.buttonsColumn}>
-            <TouchableOpacity
-              style={modalStyles.actionButton}
-              activeOpacity={0.8}
-              onPress={() => {}}
-            >
-              <Text style={modalStyles.actionButtonText}>Написати</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={modalStyles.actionButton}
-              activeOpacity={0.8}
-              onPress={() => {}}
-            >
-              <Text style={modalStyles.actionButtonText}>Перекличка</Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-};
 
 // --- ContactStatusRow ---
 const ContactStatusRow = ({
@@ -451,7 +366,7 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
-      <MemberProfileModal
+      <MemberDetailModal
         member={selectedMember}
         visible={modalVisible}
         onClose={handleCloseModal}
