@@ -1,11 +1,11 @@
 import { COLORS } from "@/src/theme/colors";
+import { theme } from "@/src/theme/theme";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { MemberAvatar } from "../../MemberAvatar";
 import { TextField } from "../../fields/TextField";
-
+import { Typography } from "../../typography";
 import { Member } from "../CircleItem";
-
 interface MemberDetailsViewProps {
   member: Member;
   onInternalRename?: (newName: string) => void;
@@ -48,11 +48,11 @@ export default function MemberDetailsView({
         <>
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
-              <MemberAvatar member={{ ...member, status: member.status || "UNKNOWN" }} />
+              <MemberAvatar member={{ ...member, status: member.status || "UNKNOWN" }} size="xl" />
             </View>
-            <Text style={styles.memberName}>
+            <Typography variant="h2" style={styles.header}>
               {member.fullName || `${member.firstName} ${member.lastName}`}
-            </Text>
+            </Typography>
           </View>
 
           <View style={styles.actionsCard}>
@@ -124,26 +124,22 @@ export default function MemberDetailsView({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 40,
     backgroundColor: "#F7F8FA",
   },
   profileSection: {
     alignItems: "center",
-    marginTop: 20,
-    marginBottom: 30,
+    marginBottom: theme.spacing[32],
   },
   avatarContainer: {
-    transform: [{ scale: 2 }],
-    marginBottom: 20,
+    marginBottom: theme.spacing[8],
+  },
+  header: {
+    marginBottom: theme.spacing[16],
   },
   memberName: {
-    fontSize: 24,
-    fontWeight: "800",
-    marginTop: 20,
-    color: COLORS.TEXT_DARK,
-    textAlign: "center",
+    marginTop: theme.spacing[16],
   },
   actionsCard: {
     backgroundColor: "#FFFFFF",
