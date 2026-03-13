@@ -8,6 +8,7 @@ export const STATUS_COLORS: Record<Member["status"], string> = {
   SAFE: theme.colors.state.safe,
   DANGER: theme.colors.state.emergency,
   UNKNOWN: theme.colors.state.unknown,
+  WAS_SAFE: theme.colors.state.beenSafe,
 };
 
 interface MemberAvatarProps {

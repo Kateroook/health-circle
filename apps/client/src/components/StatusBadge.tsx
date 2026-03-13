@@ -1,11 +1,15 @@
 import { theme } from "@/src/theme/theme";
 import { FontAwesome6 } from "@expo/vector-icons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Typography } from "./typography/Typography";
 
 export type StatusBadgeVariant = "round" | "pill";
-export type UserStatus = "SAFE" | "DANGER" | "UNKNOWN";
+export type UserStatus = "SAFE" | "DANGER" | "UNKNOWN" | "WAS_SAFE";
+type IconConfig =
+  | { iconLib: "fa6"; mcIcon: keyof typeof FontAwesome6.glyphMap }
+  | { iconLib: "mci"; mcIcon: keyof typeof MaterialCommunityIcons.glyphMap };
 
 export const STATUS_CONFIG: Record<
   UserStatus,
@@ -13,15 +17,15 @@ export const STATUS_CONFIG: Record<
     bg: string;
     icon: string;
     label: string;
-    mcIcon: keyof typeof FontAwesome6.glyphMap;
     iconColor?: string;
     showCircle?: boolean;
-  }
+  } & IconConfig
 > = {
   SAFE: {
     bg: theme.colors.stateBackground.safe,
     icon: theme.colors.state.safe,
     label: "В безпеці",
+    iconLib: "fa6",
     mcIcon: "check",
     showCircle: true,
   },
@@ -29,6 +33,7 @@ export const STATUS_CONFIG: Record<
     bg: theme.colors.stateBackground.emergency,
     icon: theme.colors.state.emergency,
     label: "Потрібна допомога!",
+    iconLib: "fa6",
     mcIcon: "triangle-exclamation",
     iconColor: theme.colors.state.emergency,
     showCircle: false,
@@ -37,8 +42,17 @@ export const STATUS_CONFIG: Record<
     bg: theme.colors.stateBackground.unknown,
     icon: theme.colors.state.unknown,
     label: "Невідомо",
+    iconLib: "fa6",
     mcIcon: "question",
     showCircle: true,
+  },
+  WAS_SAFE: {
+    bg: theme.colors.stateBackground.beenSafe,
+    icon: theme.colors.state.beenSafe,
+    label: "Був у безпеці",
+    iconLib: "mci",
+    mcIcon: "progress-check",
+    showCircle: false,
   },
 };
 
@@ -47,6 +61,21 @@ interface StatusBadgeProps {
   variant?: StatusBadgeVariant;
 }
 
+const StatusIcon = ({
+  config,
+  size,
+  color,
+}: {
+  config: (typeof STATUS_CONFIG)[UserStatus];
+  size: number;
+  color: string;
+}) => {
+  if (config.iconLib === "mci") {
+    return <MaterialCommunityIcons name={config.mcIcon} size={size} color={color} />;
+  }
+  return <FontAwesome6 name={config.mcIcon} size={size} color={color} />;
+};
+
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = "round" }) => {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.UNKNOWN;
 
@@ -54,10 +83,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = "rou
     <View style={[styles.roundOuter, { backgroundColor: config.bg }]}>
       {config.showCircle ? (
         <View style={[styles.roundInner, { backgroundColor: config.icon }]}>
-          <FontAwesome6 name={config.mcIcon} size={16} color="white" />
+          <StatusIcon config={config} size={12} color="white" />
         </View>
       ) : (
-        <FontAwesome6 name={config.mcIcon} size={24} color={config.iconColor ?? config.icon} />
+        <StatusIcon config={config} size={24} color={config.iconColor ?? config.icon} />
       )}
     </View>
   );
