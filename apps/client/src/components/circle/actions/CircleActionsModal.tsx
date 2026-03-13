@@ -12,6 +12,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import ConfirmationModal from "../../ConfirmationModal";
 import { TextField } from "../../fields/TextField";
 import { BottomSheetContainer } from "../../modal/BottomSheetContainer";
+import { RenameModal } from "./RenameModal";
 interface Member {
   id: string;
   firstName: string;
@@ -93,8 +94,6 @@ export default function CircleActionsModal({
     await Clipboard.setStringAsync(inviteCode);
   };
 
-  const isBottomSheetVisible = visible || (isRenaming && isOwner);
-
   interface RenameCircleModalProps {
     isVisible: boolean;
     newName: string;
@@ -147,7 +146,7 @@ export default function CircleActionsModal({
     );
   };
   return (
-    <BottomSheetContainer isVisible={isBottomSheetVisible} onClose={onClose}>
+    <BottomSheetContainer isVisible={visible} onClose={onClose}>
       <ConfirmationModal
         isVisible={isDeleteVisible}
         onCancel={() => setIsDeleteVisible(false)}
@@ -174,15 +173,21 @@ export default function CircleActionsModal({
         cancelText="Назад"
       />
       {/* ===== RENAME MODE ===== */}
-      <RenameCircleModal
+      <RenameModal
         isVisible={isRenaming && isOwner}
-        newName={newName}
-        onChangeName={setNewName}
+        title="Редагуй назву Кола"
+        placeholder="Введи нову назву"
+        caption="Назва зміниться для всіх членів Кола"
+        initialValue={currentName}
         onCancel={() => {
           setIsRenaming(false);
           setNewName("");
         }}
-        onSave={handleDoneRename}
+        onSave={(newName) => {
+          onRename(newName);
+          setIsRenaming(false);
+          setNewName("");
+        }}
       />
 
       {/* ===== EDIT MEMBERS MODE ===== */}
