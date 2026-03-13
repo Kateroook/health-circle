@@ -15,6 +15,10 @@ on:
       - '.github/workflows/playwright.yml'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     timeout-minutes: 60
@@ -25,6 +29,23 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Wait for correct version to deploy
+        if: github.event_name == 'push'
+        run: |
+          echo "Waiting for commit $GITHUB_SHA to be live on Railway..."
+          for i in $(seq 1 36); do
+            DEPLOYED=$(curl -sf "$API_BASE_URL/api/health" | jq -r '.version // empty' 2>/dev/null || echo "")
+            echo "Attempt $i/36 — deployed: ${DEPLOYED:-none} | expected: $GITHUB_SHA"
+            if [ "$DEPLOYED" = "$GITHUB_SHA" ]; then
+              echo "Correct version is live!"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for Railway deployment" && exit 1
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
 
       - uses: actions/setup-node@v4
         with:
