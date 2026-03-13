@@ -1,7 +1,7 @@
 import { COLORS } from "@/src/theme/colors";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import MemberAvatar from "../../MemberAvatar";
+import { MemberAvatar } from "../../MemberAvatar";
 import { TextField } from "../../fields/TextField";
 
 import { Member } from "../CircleItem";

@@ -3,7 +3,7 @@ import { AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import MemberAvatar from "../../MemberAvatar";
+import { MemberAvatar } from "../../MemberAvatar";
 
 import { Member } from "../CircleItem";
 
@@ -133,7 +133,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   membersList: {
-    flex: 1,
+    // Let content define height so it displays correctly inside bottom sheet
+    // rather than trying to flex into potentially zero height.
   },
   memberCard: {
     borderRadius: 16,
