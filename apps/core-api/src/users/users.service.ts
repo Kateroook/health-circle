@@ -157,25 +157,31 @@ export class UsersService {
     user: UserProfileDto,
   ): Promise<UserEntity> {
     if (isNew) {
-      const existingUser = await this.repository.findOne({
-        where: [{ email: (item as CreateUserDto).email.toLowerCase() }, { phone: (item as CreateUserDto).phone }],
-      });
+      const searchParams: any[] = [];
+      if (item.email) searchParams.push({ email: item.email.toLowerCase() });
+      if (item.phone) searchParams.push({ phone: item.phone });
 
-      if (existingUser) {
-        if (existingUser.isRegistered) {
-          throw new BadRequestException('Користувач з таким email або номером телефону вже існує');
-        }
-        // If not registered, we update the existing one
-        const updated = await this.repository.save({
-          ...existingUser,
-          ...item,
-          id: existingUser.id,
+      if (searchParams.length > 0) {
+        const existingUser = await this.repository.findOne({
+          where: searchParams,
         });
-        if (updated.email) {
-          await this.confirmationsService.setupPasswordCode(updated.email, updated.id, ConfirmationTypes.REGISTRATION);
+
+        if (existingUser) {
+          if (existingUser.isRegistered) {
+            throw new BadRequestException('Користувач з таким email або номером телефону вже існує');
+          }
+          // If not registered, we update the existing one
+          const updated = await this.repository.save({
+            ...existingUser,
+            ...item,
+            id: existingUser.id,
+          });
+          if (updated.email) {
+            await this.confirmationsService.setupPasswordCode(updated.email, updated.id, ConfirmationTypes.REGISTRATION);
+          }
+          await this.userActivitiesService.logActivity(UserActivityTypes.createUser, metadata, { userId: updated.id });
+          return updated;
         }
-        await this.userActivitiesService.logActivity(UserActivityTypes.createUser, metadata, { userId: updated.id });
-        return updated;
       }
     }
 
