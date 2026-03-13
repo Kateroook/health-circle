@@ -2,9 +2,17 @@ name: Playwright Tests
 
 on:
   push:
-    branches: [dev, stage]
+    branches: [dev]
+    paths:
+      - 'apps/core-api/**'
+      - 'apps/test-framework/**'
+      - '.github/workflows/playwright.yml'
   pull_request:
     branches: [dev]
+    paths:
+      - 'apps/core-api/**'
+      - 'apps/test-framework/**'
+      - '.github/workflows/playwright.yml'
   workflow_dispatch:
 
 jobs:
