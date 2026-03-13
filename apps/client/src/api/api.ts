@@ -135,7 +135,7 @@ export function getAvatarUrl(userId: string, timestamp?: string | number | Date)
   return url;
 }
 
-export async function updateMyStatus(status: "SAFE" | "DANGER" | "UNKNOWN") {
+export async function updateMyStatus(status: "SAFE" | "DANGER" | "UNKNOWN" | "WAS_SAFE") {
   return apiFetch("/users/status", {
     method: "PUT",
     body: JSON.stringify({ status }),

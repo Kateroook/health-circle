@@ -14,7 +14,7 @@ export interface Member {
   fullName?: string;
   isAlias?: boolean;
   avatarUpdatedAt?: string;
-  status: "SAFE" | "DANGER" | "UNKNOWN";
+  status: "SAFE" | "DANGER" | "UNKNOWN" | "WAS_SAFE";
   active?: boolean;
 }
 
