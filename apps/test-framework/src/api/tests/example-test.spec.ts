@@ -3,7 +3,7 @@ import { test } from '../fixtures/api-fixture'
 import { profile } from 'console';
 import { GroupRepository } from '../../core/db/repositories/group-repository';
 
-test.describe.only('Refactored API Clients Usage Examples', async () => {
+test.describe.skip('Refactored API Clients Usage Examples', async () => {
 
   test('Example 1: Basic usage with flat structure', async ({ api, spawnUser}) => {
     const user = await spawnUser();

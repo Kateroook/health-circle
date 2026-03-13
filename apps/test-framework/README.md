@@ -46,11 +46,24 @@ test-framework/
 ├── src/
 │   ├── api/                        # API test layer (tests live here)
 │   │   ├── fixtures/
-│   │   │   └── api-fixture.ts      # Playwright fixture definitions
-│   │   ├── helpers/
-│   │   │   └── config.ts           # API base URL and environment config
+│   │   │   └── api-fixture.ts      # Playwright fixture definitions + custom expect
+│   │   ├── helpers/                # (reserved for future helpers)
 │   │   └── tests/
-│   │       └── *.spec.ts           # Actual test files
+│   │       ├── auth/               # Auth endpoint test files
+│   │       │   ├── auth.change-password.spec.ts
+│   │       │   ├── auth.flow.spec.ts
+│   │       │   ├── auth.forgot-password.spec.ts
+│   │       │   ├── auth.login.spec.ts
+│   │       │   ├── auth.logout.spec.ts
+│   │       │   ├── auth.password-setup.spec.ts
+│   │       │   ├── auth.profile.spec.ts
+│   │       │   ├── auth.refresh.spec.ts
+│   │       │   ├── auth.resend-reg-code.spec.ts
+│   │       │   └── auth.reset-password.spec.ts
+│   │       ├── contacts/           # Contact endpoint test files
+│   │       ├── groups/             # Group endpoint test files
+│   │       ├── users/              # User endpoint test files
+│   │       └── test-plan.md        # Test coverage plan
 │   ├── core/                       # Reusable framework internals
 │   │   ├── api/
 │   │   │   ├── clients/            # HTTP client implementations
@@ -60,7 +73,7 @@ test-framework/
 │   │   │   │   ├── group-client.ts
 │   │   │   │   └── contact-client.ts
 │   │   │   ├── helpers/
-│   │   │   │   ├── response-checker.ts   # Assertion helpers for HTTP responses
+│   │   │   │   ├── response-checker.ts   # Custom expect matchers + checkResponse helpers
 │   │   │   │   └── test-context.ts       # Auth token & user state container
 │   │   │   └── api-client-factory.ts     # Entry point for API clients
 │   │   ├── data/
@@ -83,16 +96,27 @@ test-framework/
 │   │   │   └── schema.ts           # DB table-to-entity type map
 │   │   └── types/
 │   │       ├── api/                # Request/response TypeScript types
+│   │       │   ├── auth.types.ts
+│   │       │   ├── common.types.ts
+│   │       │   ├── contacts.types.ts
+│   │       │   ├── groups.types.ts
+│   │       │   ├── index.ts
+│   │       │   └── users.types.ts
 │   │       ├── db/                 # DB entity types
+│   │       │   ├── codes-and-files.ts
+│   │       │   ├── groups-and-contacts.ts
+│   │       │   └── user-entities.ts
 │   │       └── entites/            # Domain entity interfaces
+│   │           ├── contact-interface.ts
+│   │           ├── group-interface.ts
+│   │           └── user-interface.ts
 │   ├── mobile/                     # Placeholder for future mobile tests
 │   ├── scripts/
 │   │   └── test-db.ts              # DB connection sanity-check script
 │   └── utils/
 │       ├── utils.ts                # Top-level Utils class (random, date)
 │       ├── random-helper.ts        # Faker/nanoid wrappers
-│       ├── date-helper.ts          # Date utilities
-│       └── api-helper.ts           # Generic HTTP helpers
+│       └── date-helper.ts          # Date utilities
 ├── .env                            # Local environment variables (not committed)
 ├── playwright.config.ts
 └── package.json
@@ -146,6 +170,10 @@ api.auth      // AuthClient
 api.users     // UserClient
 api.groups    // GroupClient
 api.contacts  // ContactClient
+
+api.getContext()          // access current TestContext (accessToken, refreshToken, userId)
+api.clone()               // new factory with a fresh empty TestContext
+api.cloneWithContext()    // new factory with a copy of the current TestContext
 ```
 
 Because all clients share the same `TestContext` instance, logging in via `api.auth.login(...)` automatically makes the token available to all other clients.
@@ -182,9 +210,28 @@ Because all clients share the same `TestContext` instance, logging in via `api.a
 | `resetUserPassword(id)` | `PATCH /api/users/{id}/reset-password` | Admin-side password reset |
 | `saveFcmToken(token)` | `PUT /api/users/fcm-token` | Save FCM push token |
 
-`GroupClient` and `ContactClient` follow the same pattern and cover CRUD operations for their respective resources.
+`GroupClient` — `src/core/api/clients/group-client.ts`
 
-**`TestContext`** stores per-test state:
+| Method | Endpoint | Description |
+|---|---|---|
+| `createGroup(data)` | `POST /api/groups` | Create a group |
+| `getGroup(id)` | `GET /api/groups/{id}` | Get group by ID |
+| `getAllGroups()` | `GET /api/groups` | List all groups for the authenticated user |
+| `leaveGroup(id)` | `POST /api/groups/{id}/leave` | Leave a group |
+| `regenerateInviteCode(id)` | `POST /api/groups/{id}/invite` | Regenerate the group invite code |
+| `getBlockedUsers(id)` | `GET /api/groups/{id}/blocked` | Get list of blocked users in a group |
+| `blockUser(groupId, userId)` | `POST /api/groups/{groupId}/blocked/{userId}` | Block a user in a group |
+| `unblockUser(groupId, userId)` | `DELETE /api/groups/{groupId}/blocked/{userId}` | Unblock a user in a group |
+
+`ContactClient` — `src/core/api/clients/contact-client.ts`
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `updateContact(targetId, data)` | `PUT /api/contacts/{targetId}` | Update a contact |
+| `setContactAlias(targetId, data)` | `PATCH /api/contacts/{targetId}/alias` | Set an alias for a contact |
+| `deleteContact(targetId)` | `DELETE /api/contacts/{targetId}` | Delete a contact |
+
+**`TestContext`** stores per-test state and is accessible via `api.getContext()`:
 ```typescript
 interface TestContext {
   accessToken?: string;
@@ -193,19 +240,11 @@ interface TestContext {
 }
 ```
 
-**`response-checker`** exports two objects with different semantics — choose based on your need:
+**`response-checker`** — `src/core/api/helpers/response-checker.ts`
 
-`assertResponse` — throws a Playwright assertion error on failure (use in tests):
-```typescript
-assertResponse.is2xx(response);          // passes if 200–299
-assertResponse.is201(response);          // passes if exactly 201
-assertResponse.is4xx(response);          // passes if 400–499
-assertResponse.is401(response);          // passes if exactly 401
-assertResponse.status(response, 422);    // passes if exactly 422
-assertResponse.json(response);           // passes if Content-Type is application/json
-```
+This module provides two ways to assert or check response status.
 
-`checkResponse` — returns a boolean (use in client code and conditional logic):
+`checkResponse` — returns a boolean; use in client code and conditional logic:
 ```typescript
 if (checkResponse.is2xx(result.response)) {
   this.setAccessToken(result.data.accessToken);
@@ -215,7 +254,18 @@ if (checkResponse.is401(result.response)) {
 }
 ```
 
-Both objects expose the same set of keys: `is2xx`, `is200`, `is201`, `is204`, `is4xx`, `is400`, `is401`, `is403`, `is404`, `is5xx`, `is500`, `status`, `json`.
+`expect` (custom matchers) — extends Playwright's `expect` with HTTP-aware matchers; import from `api-fixture.ts` in tests:
+```typescript
+expect(response).toHaveStatus(201);     // exactly 201
+expect(response).toHaveStatus2xx();     // 200–299
+expect(response).toHaveStatus4xx();     // 400–499
+expect(response).toHaveStatus5xx();     // 500–599
+expect(response).toHaveJsonContent();   // Content-Type: application/json
+```
+
+`checkResponse` exposes: `is2xx`, `is200`, `is201`, `is204`, `is4xx`, `is400`, `is401`, `is403`, `is404`, `is5xx`, `is500`, `status`, `json`.
+
+> **Import note:** Always import `expect` from `../fixtures/api-fixture`, not directly from `@playwright/test`. The fixture file re-exports `expect` with the custom matchers merged in.
 
 ---
 
@@ -279,11 +329,11 @@ const user = new UserBuilder()
 **Factories** wrap common builder patterns into named presets for quick reuse:
 
 ```typescript
-// User with a custom prefix in email, and middleName set to the testId for traceability
-const user = UserFactory.createUserForTest('password-reset-flow');
-
-// Fully random user (no middleName by default)
+// Fully random user
 const user = UserFactory.createRandomUser();
+
+// Random user with field overrides
+const user = UserFactory.createRandomUser({ email: 'custom@test.com' });
 ```
 
 Use factories in tests whenever possible. Use builders directly when you need fine-grained control.
@@ -294,25 +344,70 @@ Use factories in tests whenever possible. Use builders directly when you need fi
 
 Fixtures are defined in `src/api/fixtures/api-fixture.ts` and extend Playwright's built-in `test` object. They handle the full lifecycle of test dependencies.
 
+The file also exports the custom `expect` — always import both `test` and `expect` from this file:
+
+```typescript
+import { test, expect } from '../fixtures/api-fixture';
+```
+
 **Worker-scoped fixture:**
 - `db` — a shared `Kysely<Database>` connection reused across all tests in a worker. Torn down once per worker.
 
 **Test-scoped fixtures:**
-- `dbCleaner` — a fresh `DbCleaner` instance per test; calls `cleanup()` after the test finishes.
-- `userRepository`, `groupRepository`, `contactRepository`, `confirmationCodeRepository` — DB repository instances wired to the test's `db` and `dbCleaner`.
-- `api` — an `ApiClientFactory` with a fresh `TestContext`, bound to Playwright's `request` context.
-- `spawnApi` — a factory function that creates additional isolated `ApiClientFactory` instances with their own `APIRequestContext`. Useful when you need multiple independent authenticated sessions in a single test.
 
-**Using fixtures in a test:**
+| Fixture | Type | Description |
+|---|---|---|
+| `dbCleaner` | `DbCleaner` | Fresh instance per test; calls `cleanup()` after the test finishes. |
+| `userRepository` | `UserRepository` | Wired to the test's `db` and `dbCleaner`. |
+| `groupRepository` | `GroupRepository` | Wired to the test's `db` and `dbCleaner`. |
+| `contactRepository` | `ContactRepository` | Wired to the test's `db` and `dbCleaner`. |
+| `confirmationCodeRepository` | `ConfirmationCodeRepository` | Wired to the test's `db` and `dbCleaner`. |
+| `api` | `ApiClientFactory` | Fresh `TestContext` bound to Playwright's `request` context. |
+| `spawnApi` | `() => Promise<ApiClientFactory>` | Factory function — call it to create additional isolated `ApiClientFactory` instances with their own `APIRequestContext`. Useful when a single test needs multiple independent authenticated sessions. |
+| `spawnUser` | `(overrides?) => Promise<UserEntity>` | Creates a fully ready user via API (POST user → fetch confirmation code → setup password) and returns the `UserEntity`. Accepts optional field overrides. The created user is automatically registered with `DbCleaner`. |
+
+**`spawnUser` — quick user creation**
+
+`spawnUser` is the recommended way to create a test user. It handles the full registration flow in one call:
 
 ```typescript
-import { test } from '../fixtures/api-fixture';
-import { expect } from '@playwright/test';
+test('example', async ({ api, spawnUser }) => {
+  // Fully random user
+  const user = await spawnUser();
 
-test('example', async ({ api, userRepository, confirmationCodeRepository }) => {
-  // api, repositories, and dbCleaner are ready to use
-  // cleanup runs automatically after the test
+  // User with a specific email (e.g. for forgot-password flows that require a real inbox)
+  const user = await spawnUser({ email: 'healthcircle.test@gmail.com' });
+
+  // user.email, user.phone, user.password, user.id are all populated and ready to use
+  await api.auth.login({ identifier: user.email, password: user.password });
 });
+```
+
+**`spawnApi` — multiple independent sessions**
+
+```typescript
+test('user A cannot see user B private data', async ({ spawnApi, spawnUser }) => {
+  const user1Api = await spawnApi();
+  const user2Api = await spawnApi();
+
+  await user1Api.auth.quickLogin('userA@test.com', 'password1');
+  await user2Api.auth.quickLogin('userB@test.com', 'password2');
+
+  // user1Api and user2Api have completely separate tokens
+});
+```
+
+**`clone` and `cloneWithContext`**
+
+`ApiClientFactory` also supports cloning when you need to derive a new client from an existing one mid-test:
+
+```typescript
+// New factory with a fresh empty TestContext (no tokens)
+const cleanClone = api.clone();
+
+// New factory that copies the current token state — mutations to the clone do not affect the original
+const cloneWithContext = api.cloneWithContext();
+cloneWithContext.auth.clearTokens();    // only affects the clone
 ```
 
 ---
@@ -324,15 +419,16 @@ All utilities are accessible through the `utils` singleton:
 ```typescript
 import { utils } from '../../utils/utils';
 
-utils.random.firstName()            // random first name
-utils.random.lastName()             // random last name
+utils.random.firstName()             // random first name
+utils.random.lastName()              // random last name
 utils.random.email({ prefix: 'qa' }) // qa<nanoid>@gmail.com
-utils.random.phone()                // international format phone
-utils.random.shortId(8)             // 8-char nanoid
-utils.random.pick([a, b, c])        // random array element
+utils.random.phone()                 // international format phone
+utils.random.shortId(8)              // 8-char nanoid
+utils.random.pick([a, b, c])         // random array element
 utils.random.number({ min: 1, max: 100 })
+utils.random.password()              // random valid password string
 
-utils.date                          // DateBuilder instance
+utils.date                           // DateBuilder instance
 ```
 
 `RandomHelper` wraps `@faker-js/faker` and `nanoid`. `DateBuilder` provides date arithmetic helpers.
@@ -354,32 +450,26 @@ Defined in `.env` at the project root. This file is not committed — create it 
 | `HEALTHCIRCLE_POSTGRES_PASS` | `DbManager` | Database password |
 | `HEALTHCIRCLE_POSTGRES_DB_NAME` | `DbManager` | Database name |
 | `HEALTHCIRCLE_POSTGRES_SSL` | `DbManager` | Enable SSL for DB connection (`true`/`false`) |
-| `TEST_USER_EMAIL` | `config.ts` (legacy) | Optional pre-seeded test user email |
-| `TEST_USER_PASSWORD` | `config.ts` (legacy) | Optional pre-seeded test user password |
 
 ### Playwright config (`playwright.config.ts`)
 
 ```
-testDir:          src/api/tests    ← where Playwright looks for spec files
-timeout:          30 000 ms        ← per-test timeout
-actionTimeout:    30 000 ms        ← per-action timeout (clicks, requests)
-navigationTimeout: 60 000 ms       ← navigation/fetch timeout
-fullyParallel:    true             ← tests within a file run in parallel
-workers:          8 (local) / 1 (CI)
-retries:          1 (local) / 2 (CI)
-reporter:         html             ← output to playwright-report/index.html
-screenshot:       only-on-failure
-video:            retain-on-failure
-trace:            retain-on-failure
+testDir:           src/api/tests    ← where Playwright looks for spec files
+timeout:           30 000 ms        ← per-test timeout
+actionTimeout:     30 000 ms        ← per-action timeout
+navigationTimeout: 60 000 ms        ← fetch timeout
+fullyParallel:     true             ← tests within a file run in parallel
+workers:           8 (local) / 1 (CI)
+retries:           1 (local) / 2 (CI)
+reporter:          html             ← output to playwright-report/index.html
+screenshot:        only-on-failure
+video:             retain-on-failure
+trace:             retain-on-failure
 ```
 
 Tests run against three browser projects (`Desktop Chrome`, `Desktop Safari`, `Desktop Firefox`). For pure API tests the browser choice has no functional effect, but it ensures the request context matches what the application would see from different clients.
 
 On CI (`process.env.CI` is set), `forbidOnly` is enabled — tests with `.only` will fail the run, preventing accidental focused test commits.
-
-### `config.ts` — legacy helper
-
-`src/api/helpers/config.ts` currently exports `config.baseApiUrl` (read from `API_BASE_URL`) and two pre-seeded test user credentials. This file will be removed once all references are migrated to environment variables accessed directly. Do not add new usages.
 
 ---
 
@@ -387,53 +477,43 @@ On CI (`process.env.CI` is set), `forbidOnly` is enabled — tests with `.only` 
 
 ### Step-by-step: creating a new test file
 
-1. Create a new `*.spec.ts` file in `src/api/tests/`.
-2. Import `test` from the fixture file, not from `@playwright/test` directly.
+1. Create a new `*.spec.ts` file in the appropriate subdirectory under `src/api/tests/` (e.g. `auth/`, `users/`, `groups/`, `contacts/`).
+2. Import `test` **and** `expect` from the fixture file — never from `@playwright/test` directly.
 3. Destructure the fixtures you need.
-4. Use `UserFactory` (or other factories) to generate test data.
-5. Call API methods and assert with `assertResponse` or `expect`.
+4. Use `spawnUser` to create test users; use other factories for groups, contacts, etc.
+5. Call API methods and assert with the custom `expect` matchers.
 
 ```typescript
-import { test } from '../fixtures/api-fixture';
-import { expect } from '@playwright/test';
-import { UserFactory } from '../../core/data/factories/user-factory';
-import { assertResponse } from '../../core/api/helpers/response-checker';
+import { test, expect } from '../fixtures/api-fixture';
 
-test('create user and verify profile', async ({ api, confirmationCodeRepository }) => {
-  const newUser = UserFactory.createUserForTest('profile-check');
-  newUser.phone = '+380501234567';
+test('create user and verify profile', async ({ api, spawnUser, confirmationCodeRepository }) => {
+  const user = await spawnUser();
 
-  // Create user via API
-  const { data, response } = await api.users.createUser({
-    email: newUser.email,
-    phone: newUser.phone,
-    firstName: newUser.firstName,
-    middleName: newUser.middleName,
-    lastName: newUser.lastName,
-  });
-  assertResponse.is2xx(response);
+  // Log in
+  const login = await api.auth.login({ identifier: user.email, password: user.password });
+  expect(login.response).toHaveStatus2xx();
 
-  // Fetch confirmation code from DB
-  const [code] = await confirmationCodeRepository.findBy({ userId: data.id });
-
-  // Set password and log in
-  await api.auth.setupPassword(newUser.email, code.code, {
-    newPassword: newUser.password,
-    confirmNewPassword: newUser.password,
-  });
-
-  // login() saves tokens; quickLogin() also fetches the profile and stores userId in context
-  await api.auth.login({ email: newUser.email, password: newUser.password });
+  // Verify tokens were saved to context
+  expect(api.getContext().accessToken).not.toBeUndefined();
 
   // Verify profile
-  const profile = (await api.auth.getProfile()).data;
-  expect(profile).toMatchObject({
-    firstName: newUser.firstName,
-    lastName: newUser.lastName,
-    phone: newUser.phone,
-  });
+  const { data: profile } = await api.auth.getProfile();
+  expect(profile?.email).toBe(user.email);
 
   // DbCleaner removes the created user automatically after the test
+});
+```
+
+### Testing error cases
+
+```typescript
+test('[AUTH-004] Login with non-existent email', async ({ api }) => {
+  // No spawnUser needed — testing the failure path
+  const login = await api.auth.login({
+    identifier: 'non.existent@test.com',
+    password: utils.random.password(),
+  });
+  expect(login.response).toHaveStatus(401);
 });
 ```
 
@@ -442,14 +522,17 @@ test('create user and verify profile', async ({ api, confirmationCodeRepository 
 Use `spawnApi` when a test requires two independent sessions:
 
 ```typescript
-test('user A cannot see user B private data', async ({ api, spawnApi }) => {
-  const apiA = await spawnApi;   // fresh isolated context
-  const apiB = api;              // default context
+test('user A cannot see user B private data', async ({ spawnApi, spawnUser }) => {
+  const apiA = await spawnApi();
+  const apiB = await spawnApi();
+  const userA = await spawnUser();
+  const userB = await spawnUser();
 
-  await apiA.auth.login({ email: 'userA@test.com', password: '...' });
-  await apiB.auth.login({ email: 'userB@test.com', password: '...' });
+  await apiA.auth.quickLogin(userA.email, userA.password);
+  await apiB.auth.quickLogin(userB.email, userB.password);
 
-  // apiA and apiB have separate tokens — they do not interfere
+  // apiA and apiB have separate tokens and do not interfere with each other
+  expect(apiA.getContext().accessToken).not.toBe(apiB.getContext().accessToken);
 });
 ```
 
@@ -480,10 +563,10 @@ npm install
 npx playwright test
 
 # Run a specific test file
-npx playwright test src/api/tests/new-user-test.spec.ts
+npx playwright test src/api/tests/auth/auth.login.spec.ts
 
 # Run tests matching a title pattern
-npx playwright test --grep "create user"
+npx playwright test --grep "AUTH-001"
 
 # Run only the Chrome project
 npx playwright test --project "API Tests (Chrome)"
