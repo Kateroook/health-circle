@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ExternalFilesEntity } from 'src/common/entities/external-files.entity';
 
+import { ExternalFilesEntity } from './entities/external-files.entity';
 import { ExternalFilesService } from './external-files.service';
-import { ExternalFilesCronService } from './external-files-cron/external-files-cron.service';
+import { ExternalFilesQueueService } from './external-files-cron/external-files-queue.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ExternalFilesEntity])],
   controllers: [],
-  providers: [ExternalFilesService, ExternalFilesCronService],
+  providers: [ExternalFilesService, ExternalFilesQueueService],
   exports: [ExternalFilesService],
 })
 export class ExternalFilesModule {}

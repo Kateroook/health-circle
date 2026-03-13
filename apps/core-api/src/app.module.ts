@@ -1,7 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import Joi from 'joi';
 import { SecurityModule } from 'src/security/security.module';
@@ -10,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { entities } from './common/entities';
 import { GlobalThrottlerGuard } from './common/guards/global-throttler.guard';
 import { migrations } from './common/migrations';
+import { QueueModule } from './common/queue/queue.module';
 import { subscribers } from './common/subscribers';
 import { ContactsModule } from './contacts/contacts.module';
 import { EmailModule } from './email/email.module';
@@ -25,6 +25,7 @@ import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
+    QueueModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [`.env`],
@@ -102,7 +103,6 @@ import { UsersModule } from './users/users.module';
     GroupsModule,
     ExternalFilesModule,
     ContactsModule,
-    ScheduleModule.forRoot(),
     NotificationsModule,
     HealthModule,
     ThrottlerModule.forRoot([

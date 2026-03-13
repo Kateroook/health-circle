@@ -4,17 +4,14 @@ import {
   Entity,
   Index,
   JoinColumn,
-  ManyToMany,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
-import { UserStatus } from '../enums/user-status';
-import { ContactEntity } from './contact.entity';
-import { ExternalFilesEntity } from './external-files.entity';
-import { GroupEntity } from './group.entity';
+import { UserStatus } from '../../common/enums/user-status';
+import { ExternalFilesEntity } from '../../external-files/entities/external-files.entity';
 import { UserSessionEntity } from './user-sessions.entity';
 
 @Entity({ name: 'users' })
@@ -81,15 +78,6 @@ export class UserEntity {
 
   @OneToMany(() => UserSessionEntity, (session) => session.user)
   sessions: UserSessionEntity[];
-
-  @OneToMany(() => GroupEntity, (group) => group.owner, { cascade: ['remove'], orphanedRowAction: 'delete' })
-  ownedGroups: GroupEntity[];
-
-  @ManyToMany(() => GroupEntity, (group) => group.members, { onDelete: 'CASCADE' })
-  groups: GroupEntity[];
-
-  @OneToMany(() => ContactEntity, (contact) => contact.owner)
-  contacts: ContactEntity[];
 
   @Column({ type: 'boolean', default: false })
   isRegistered: boolean;

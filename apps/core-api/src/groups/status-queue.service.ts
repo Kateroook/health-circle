@@ -1,30 +1,40 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as admin from 'firebase-admin';
-import { GroupEntity } from 'src/common/entities/group.entity';
-import { UserEntity } from 'src/common/entities/user.entity';
 import { UserStatus } from 'src/common/enums/user-status';
-import { NotificationsService } from 'src/notifications/notifications.service';
+import { QueueService } from 'src/common/queue/queue.service';
+import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
+import { UserEntity } from 'src/users/entities/user.entity';
+import { UsersService } from 'src/users/users.service';
 import { In, LessThan, Repository } from 'typeorm';
 
+import { GroupEntity } from './entities/group.entity';
+import { GroupMemberEntity } from './entities/group-member.entity';
+
 @Injectable()
-export class StatusSchedulerService {
-  private readonly logger = new Logger(StatusSchedulerService.name);
+export class StatusQueueService implements OnModuleInit {
+  private readonly logger = new Logger(StatusQueueService.name);
 
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(GroupEntity)
     private readonly groupRepository: Repository<GroupEntity>,
-    private readonly notificationsService: NotificationsService,
+    @InjectRepository(GroupMemberEntity)
+    private readonly memberRepository: Repository<GroupMemberEntity>,
+    private readonly usersService: UsersService,
     private readonly configService: ConfigService,
+    private readonly queueService: QueueService,
+    private readonly firestoreSyncService: FirestoreSyncService,
   ) {}
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  async onModuleInit() {
+    await this.queueService.schedule('handle-status-transitions', '*/5 * * * *');
+    await this.queueService.work('handle-status-transitions', () => this.handleStatusTransitions());
+  }
+
   async handleStatusTransitions() {
-    this.logger.debug('Running status transitions check...');
+    this.logger.debug('Running status transitions check via queue...');
     await this.handleRollCallTimeouts();
     await this.handleStatusExpiry();
   }
@@ -33,8 +43,6 @@ export class StatusSchedulerService {
     const timeoutMinutes = this.configService.get<number>('ROLL_CALL_TIMEOUT_MINUTES', 60);
     const timeoutThreshold = new Date(Date.now() - timeoutMinutes * 60 * 1000);
 
-    // Find groups that had a roll call in the last hour or so, but we care about those > 1h ago
-    // Actually, we want groups where lastRollCallAt < oneHourAgo
     const groupsWithRecentRollCall = await this.groupRepository.find({
       where: {
         lastRollCallAt: LessThan(timeoutThreshold),
@@ -43,7 +51,12 @@ export class StatusSchedulerService {
     });
 
     for (const group of groupsWithRecentRollCall) {
-      const usersToUpdate = group.members.filter(
+      const memberIds = group.members.map((m) => m.userId);
+      if (memberIds.length === 0) continue;
+
+      const members = await this.usersService.findByIds(memberIds);
+
+      const usersToUpdate = members.filter(
         (user) =>
           (user.status === UserStatus.SAFE || user.status === UserStatus.WAS_SAFE) &&
           group.lastRollCallAt &&
@@ -98,15 +111,6 @@ export class StatusSchedulerService {
   }
 
   private async syncUsers(userIds: string[]) {
-    try {
-      const batch = admin.firestore().batch();
-      userIds.forEach((id) => {
-        const ref = admin.firestore().collection('user_sync').doc(id);
-        batch.set(ref, { timestamp: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-      });
-      await batch.commit();
-    } catch (e) {
-      this.logger.error('Error updating firestore sync signals', e);
-    }
+    await this.firestoreSyncService.sendSyncSignal(userIds);
   }
 }

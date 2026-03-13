@@ -5,13 +5,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Response } from 'express';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
-import { UserEntity } from 'src/common/entities/user.entity';
-import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
-import { UserSessionEntity } from 'src/common/entities/user-sessions.entity';
 import { RequestMetadata } from 'src/common/types/request-metadata';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
+import { UserEntity } from 'src/users/entities/user.entity';
+import { UserPasswordEntity } from 'src/users/entities/user-password.entity';
+import { UserSessionEntity } from 'src/users/entities/user-sessions.entity';
+import { SessionActivityService } from 'src/users/session-activity.service';
 import { Repository } from 'typeorm';
 
 import { AuthService } from './auth.service';
@@ -27,6 +28,7 @@ describe('AuthService', () => {
   let jwtService: jest.Mocked<JwtService>;
   let confirmationService: jest.Mocked<ConfirmationsService>;
   let userActivitiesService: jest.Mocked<UserActivitiesService>;
+  let sessionActivityService: jest.Mocked<SessionActivityService>;
 
   const mockUserEntity = {
     id: 'user-123',
@@ -113,6 +115,12 @@ describe('AuthService', () => {
             setupPasswordCode: jest.fn(),
           },
         },
+        {
+          provide: SessionActivityService,
+          useValue: {
+            trackActivity: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -124,6 +132,7 @@ describe('AuthService', () => {
     jwtService = module.get(JwtService);
     confirmationService = module.get(ConfirmationsService);
     userActivitiesService = module.get(UserActivitiesService);
+    sessionActivityService = module.get(SessionActivityService);
   });
 
   it('should be defined', () => {
@@ -200,7 +209,7 @@ describe('AuthService', () => {
       const result = await service.verifyUser(payload, mockMetadata);
 
       expect(result.sessionId).toBe('sess-1');
-      expect(userSessionRepository.save).toHaveBeenCalled(); // updates lastUsedAt
+      expect(sessionActivityService.trackActivity).toHaveBeenCalledWith('sess-1', '127.0.0.1', expect.any(Object));
     });
 
     it('should throw UnauthorizedException if session missing', async () => {
@@ -218,24 +227,29 @@ describe('AuthService', () => {
 
   describe('verifySession (Refresh Token Check)', () => {
     it('should return profile if token hash matches', async () => {
+      const fingerprint = '9149be1cd3b2cc1a067e17e5e1429f1c55f5ba23d973d83085b46fa8cee64fa9';
       const session = {
         id: 'sess-1',
         user: mockUserEntity,
         tokenHash: 'hashed-token',
+        fingerprint: fingerprint,
       } as UserSessionEntity;
       userSessionRepository.findOne.mockResolvedValue(session);
       securityService.validate.mockResolvedValue(true);
 
-      const result = await service.verifySession('raw-token', { sub: 'u', jti: 'j' });
+      const result = await service.verifySession('raw-token', { sub: 'u', jti: 'j', fgp: fingerprint }, mockMetadata);
       expect(result.sessionId).toBe('sess-1');
     });
 
     it('should throw UnauthorizedException if hash mismatch', async () => {
-      const session = { tokenHash: 'hashed-token' };
+      const fingerprint = '9149be1cd3b2cc1a067e17e5e1429f1c55f5ba23d973d83085b46fa8cee64fa9';
+      const session = { tokenHash: 'hashed-token', fingerprint: fingerprint };
       userSessionRepository.findOne.mockResolvedValue(session as unknown as UserSessionEntity);
       securityService.validate.mockResolvedValue(false);
 
-      await expect(service.verifySession('t', { sub: 'u', jti: 'j' })).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifySession('t', { sub: 'u', jti: 'j', fgp: fingerprint }, mockMetadata)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -252,18 +266,20 @@ describe('AuthService', () => {
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2); // Access + Refresh
       expect(result.accessToken).toBe('signed-token');
 
-      // 2. Old sessions revoked and new session saved with user updates
+      // 2. Old sessions revoked and new session saved
       expect(userSessionRepository.save).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({ revokedAt: expect.any(Date) as unknown }),
           expect.objectContaining({
-            user: expect.objectContaining({
-              id: userProfile.id,
-              lastLoginDate: expect.any(Date) as unknown,
-              failedLoginAttempts: 0,
-            }) as unknown,
+            user: expect.objectContaining({ id: userProfile.id }),
           }),
         ]),
+      );
+
+      // 3. User updates saved
+      expect(userRepository.update).toHaveBeenCalledWith(
+        userProfile.id,
+        expect.objectContaining({ failedLoginAttempts: 0, lastLoginDate: expect.any(Date) as unknown }),
       );
 
       // 3. Activity logged

@@ -34,9 +34,10 @@ const statusMatchers = {
     const pass = is.status(apiResponse, expectedStatus);
     return {
       pass,
-      message: () => pass 
-        ? `Expected response not with status ${expectedStatus}`
-        : `Expected response with status ${expectedStatus}, but got ${apiResponse.status()}`,
+      message: () =>
+        pass
+          ? `Expected response not with status ${expectedStatus}`
+          : `Expected response with status ${expectedStatus}, but got ${apiResponse.status()}`,
     };
   },
   toHaveStatus2xx(apiResponse: APIResponse) {
@@ -56,10 +57,7 @@ const statusMatchers = {
 
     return {
       pass,
-      message: () =>
-        pass
-          ? `Expected response not to be 4xx`
-          : `Expected 4xx status but got ${apiResponse.status()}`,
+      message: () => (pass ? `Expected response not to be 4xx` : `Expected 4xx status but got ${apiResponse.status()}`),
     };
   },
 
@@ -68,10 +66,7 @@ const statusMatchers = {
 
     return {
       pass,
-      message: () =>
-        pass
-          ? `Expected response not to be 5xx`
-          : `Expected 5xx status but got ${apiResponse.status()}`,
+      message: () => (pass ? `Expected response not to be 5xx` : `Expected 5xx status but got ${apiResponse.status()}`),
     };
   },
 
@@ -81,10 +76,7 @@ const statusMatchers = {
 
     return {
       pass,
-      message: () =>
-        pass
-          ? `Expected response not to be JSON`
-          : `Expected JSON response but got "${contentType}"`,
+      message: () => (pass ? `Expected response not to be JSON` : `Expected JSON response but got "${contentType}"`),
     };
   },
 };

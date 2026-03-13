@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { UserActivityEntity } from 'src/common/entities/user-activities.entity';
 import { LoggingTypes } from 'src/common/enums/logging-types';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { RequestMetadata } from 'src/common/types/request-metadata';
 import { UserActivity } from 'src/common/types/user-activity';
 import { Repository } from 'typeorm';
+
+import { UserActivityEntity } from './entities/user-activities.entity';
 
 @Injectable()
 export class UserActivitiesService {
