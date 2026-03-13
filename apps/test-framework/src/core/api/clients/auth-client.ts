@@ -55,14 +55,13 @@ export class AuthClient extends BaseClient {
 
     // Тимчасово використовуємо refresh token
     if (this.context.refreshToken) {
-      this.setAccessToken(this.context.refreshToken);
+      this.setRefreshToken(this.context.refreshToken);
     }
 
     const result = await this.post<LoginResponse>('/api/auth/refresh');
 
     // Відновлюємо або оновлюємо токени
-    const setCookieHeaders = result.response.headers()['set-cookie'];
-    if (setCookieHeaders && result.response.ok()) {
+    if (result.response.ok()) {
       const accessToken = result.data.accessToken;
       const refreshToken = result.data.refreshToken;
 
