@@ -11,6 +11,9 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/test-framework
 
     steps:
       - uses: actions/checkout@v4
@@ -18,19 +21,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: 'npm'               # кешуємо node_modules між запусками
+          cache: 'npm'
+          cache-dependency-path: apps/test-framework/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium  # тільки chromium — швидше
+        run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
         run: npx playwright test
         env:
           CI: true
-          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
           HEALTHCIRCLE_POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
           HEALTHCIRCLE_POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
           HEALTHCIRCLE_POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
@@ -44,5 +48,5 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
-          path: playwright-report/
+          path: apps/test-framework/playwright-report/
           retention-days: 30
