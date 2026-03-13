@@ -30,6 +30,6 @@ export class HealthController {
       () => this.memory.checkRSS('memory_rss', 300 * 1024 * 1024), // 300MB RSS limit warning
       () => this.disk.checkStorage('storage', { path: '/', thresholdPercent: 0.9 }), // 90% full warning
     ]);
-    return { ...result, version: process.env.RAILWAY_GIT_COMMIT_SHA };
+    return { ...result, version: process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.COMMIT_SHA };
   }
 }
