@@ -37,7 +37,7 @@ export class AuthService {
   ) {}
 
   private generateFingerprint(metadata: RequestMetadata): string {
-    const raw = `${metadata.userAgent}-${metadata.ipAddress}`;
+    const raw = `${metadata.userAgent}`;
     return createHash('sha256').update(raw).digest('hex');
   }
 
