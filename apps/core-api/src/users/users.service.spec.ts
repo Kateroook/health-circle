@@ -317,6 +317,57 @@ describe('UsersService', () => {
       expect(userActivitiesService.logActivity).toHaveBeenCalledWith(UserActivityTypes.createUser, {}, { userId: 'u1' });
     });
 
+    it('creates new user with location info', async () => {
+      repository.save.mockResolvedValue({
+        id: 'u1',
+        email: 'a@a.com',
+        latitude: 50.4501,
+        longitude: 30.5234,
+        region: 'Kyiv',
+        district: 'Shevchenkivskyi',
+      } as UserEntity);
+
+      const res = await service.save(
+        {
+          email: 'a@a.com',
+          latitude: 50.4501,
+          longitude: 30.5234,
+          region: 'Kyiv',
+          district: 'Shevchenkivskyi',
+        } as any,
+        {} as any,
+        true,
+        { id: 'u1' } as any,
+      );
+
+      expect(res.latitude).toBe(50.4501);
+      expect(res.district).toBe('Shevchenkivskyi');
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          latitude: 50.4501,
+          district: 'Shevchenkivskyi',
+        }),
+      );
+    });
+
+    it('modifies existing user with location info', async () => {
+      repository.existsBy.mockResolvedValue(true);
+      repository.save.mockResolvedValue({
+        id: 'u1',
+        latitude: 49.8397,
+        longitude: 24.0297,
+      } as UserEntity);
+
+      await service.save({ id: 'u1', latitude: 49.8397, longitude: 24.0297 } as any, {} as any, false, { id: 'u1' } as any);
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          latitude: 49.8397,
+          longitude: 24.0297,
+        }),
+      );
+    });
+
     it('modifies existing user', async () => {
       repository.existsBy.mockResolvedValue(true);
       repository.save.mockResolvedValue({ id: 'u1' } as UserEntity);

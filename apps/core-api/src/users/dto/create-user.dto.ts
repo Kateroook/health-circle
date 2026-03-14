@@ -4,6 +4,7 @@ import {
   IsDefined,
   IsEmail,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsPhoneNumber,
   IsString,
@@ -52,4 +53,24 @@ export class CreateUserDto {
   @IsPhoneNumber(undefined, { message: 'Некоректний формат номера телефону' })
   @Validate(UserUniqueConstraint, ['phone'], { message: 'Номер телефону вже використовується іншим користувачем' })
   phone: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  region?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  district?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
 }

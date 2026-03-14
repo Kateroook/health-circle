@@ -148,3 +148,22 @@ export async function saveFcmTokenToBackend(token: string) {
     body: JSON.stringify({ token }),
   });
 }
+
+export async function updateUserLocation(locationData: {
+  latitude?: number;
+  longitude?: number;
+  region?: string;
+  district?: string;
+}) {
+  const { useAuthStore } = require("../store/authStore");
+  const user = useAuthStore.getState().user;
+  if (!user?.id) return;
+
+  return apiFetch("/users", {
+    method: "PUT",
+    body: JSON.stringify({
+      id: user.id,
+      ...locationData,
+    }),
+  });
+}

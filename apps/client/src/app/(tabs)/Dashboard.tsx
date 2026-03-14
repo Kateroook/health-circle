@@ -7,6 +7,7 @@ import { STATUS_CONFIG, StatusBadge, UserStatus } from "@/src/components/StatusB
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
+import { useLocationStore } from "@/src/store/locationStore";
 import { theme } from "@/src/theme/theme";
 import AntDesign from "@expo/vector-icons/build/AntDesign";
 import { useFocusEffect } from "expo-router";
@@ -183,6 +184,12 @@ export default function DashboardScreen() {
   const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const {
+    coords,
+    error: locationError,
+    updateCurrentLocation,
+    loading: locationLoading,
+  } = useLocationStore();
 
   const fetchGroups = async () => {
     try {
@@ -272,6 +279,29 @@ export default function DashboardScreen() {
         <Typography variant="h2" tone="primary" style={styles.greeting} numberOfLines={1}>
           Привіт, {user?.firstName || "Користувач"}!
         </Typography>
+
+        {coords ? (
+          <View style={styles.locationInfo}>
+            <Typography variant="caption" tone="secondary">
+              Локація: {coords.latitude.toFixed(4)}, {coords.longitude.toFixed(4)}
+              {useLocationStore.getState().region
+                ? ` (${useLocationStore.getState().region}${useLocationStore.getState().district ? `, ${useLocationStore.getState().district}` : ""})`
+                : ""}
+            </Typography>
+          </View>
+        ) : locationError ? (
+          <Pressable onPress={updateCurrentLocation} style={styles.locationInfo}>
+            <Typography variant="caption" style={{ color: theme.colors.state.emergency }}>
+              Помилка геолокації. Натисніть для повтору.
+            </Typography>
+          </Pressable>
+        ) : locationLoading ? (
+          <View style={styles.locationInfo}>
+            <Typography variant="caption" tone="secondary">
+              Визначаємо місцезнаходження...
+            </Typography>
+          </View>
+        ) : null}
 
         <MainStatusIndicator
           currentStatus={user?.status || "UNKNOWN"}
@@ -406,7 +436,12 @@ const styles = StyleSheet.create({
   },
   greeting: {
     marginTop: theme.spacing[24],
-    marginBottom: theme.spacing[40],
+    marginBottom: theme.spacing[8],
+  },
+  locationInfo: {
+    marginBottom: theme.spacing[24],
+    flexDirection: "row",
+    alignItems: "center",
   },
   mainStatusContainer: {
     alignItems: "center",

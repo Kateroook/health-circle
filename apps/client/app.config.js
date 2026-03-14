@@ -26,6 +26,8 @@ export default {
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
       ],
     },
     plugins: [
@@ -33,6 +35,7 @@ export default {
       "@react-native-firebase/messaging",
       "expo-notifications",
       "expo-router",
+      "expo-location",
       [
         "expo-splash-screen",
         {

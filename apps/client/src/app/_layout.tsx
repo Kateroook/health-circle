@@ -7,6 +7,7 @@ import React, { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import FlashMessage from "react-native-flash-message";
 import { useFcmToken } from "../hooks/useFcmToken";
+import { useLocation } from "../hooks/useLocation";
 import { useAuthStore } from "../store/authStore";
 
 SplashScreen.preventAutoHideAsync();
@@ -29,6 +30,7 @@ export default function RootLayout() {
   const hasCompletedOnboarding = useAuthStore((s) => s.hasCompletedOnboarding);
 
   useFcmToken();
+  useLocation();
 
   useEffect(() => {
     if (fontError) throw fontError;
