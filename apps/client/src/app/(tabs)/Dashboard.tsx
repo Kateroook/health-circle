@@ -10,6 +10,7 @@ import { useAuthStore } from "@/src/store/authStore";
 import { useLocationStore } from "@/src/store/locationStore";
 import { theme } from "@/src/theme/theme";
 import AntDesign from "@expo/vector-icons/build/AntDesign";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Vibration, View } from "react-native";
@@ -179,6 +180,7 @@ const MemberProfileModal = ({
 
 // --- DashboardScreen ---
 export default function DashboardScreen() {
+  const { logEvent } = useAnalytics();
   const user = useAuthStore((s) => s.user);
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
@@ -211,6 +213,7 @@ export default function DashboardScreen() {
   const handleStatusUpdate = async (newStatus: UserStatus) => {
     try {
       await updateMyStatus(newStatus);
+      logEvent("update_status", { status: newStatus });
       useAuthStore.setState((state) => {
         if (!state.user) return state;
         return { user: { ...state.user, status: newStatus as any } };
@@ -236,6 +239,7 @@ export default function DashboardScreen() {
     if (!selectedMember || !rollCallGroupId) return;
     try {
       await initiatePersonalRollCall(rollCallGroupId, selectedMember.id);
+      logEvent("initiate_personal_roll_call", { type: "individual" });
       Alert.alert("Успіх", "Запит на перекличку надіслано");
       handleCloseModal();
     } catch (e) {

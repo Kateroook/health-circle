@@ -5,26 +5,29 @@ import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { router } from "expo-router";
 import { useState } from "react";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
 import { formatErrorMessage } from "../../utils/error.util";
 export default function Login() {
-  const { login } = useAuthStore();
+  const { login, loading } = useAuthStore();
+  const { logEvent } = useAnalytics();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loadingLocal, setLoadingLocal] = useState(false);
   const [hasError, setHasError] = useState(false);
 
   async function handleLogin() {
     setFormError("");
     setHasError(false);
-    setLoading(true);
+    setLoadingLocal(true);
     try {
       // Clean phone number if it looks like one (simple trim/format logic if needed)
       const cleanIdentifier = email.trim();
       await login(cleanIdentifier, password);
+      logEvent("login", { method: "credentials" });
       router.replace("/Dashboard");
     } catch (e: any) {
       const errorMsg = formatErrorMessage(e);
@@ -35,7 +38,7 @@ export default function Login() {
       setFormError(errorMsg);
       setHasError(true);
     } finally {
-      setLoading(false);
+      setLoadingLocal(false);
     }
   }
 

@@ -4,6 +4,7 @@ import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -21,6 +22,7 @@ import { formatErrorMessage } from "../../utils/error.util";
 import { validatePasswordComplexity } from "../../utils/passwordValidation.util";
 
 export default function ResetPassword() {
+  const { logEvent } = useAnalytics();
   const { email } = useLocalSearchParams<{ email: string }>();
 
   const [code, setCode] = useState("");
@@ -68,6 +70,7 @@ export default function ResetPassword() {
         type: "success",
         duration: 3000,
       });
+      logEvent("password_reset_successful");
       router.replace("/Login");
     } catch (e: any) {
       setFormError(formatErrorMessage(e));
