@@ -57,6 +57,15 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   region: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  district: string | null;
+
+  @Column({ type: 'double precision', nullable: true })
+  latitude: number | null;
+
+  @Column({ type: 'double precision', nullable: true })
+  longitude: number | null;
+
   @Column({ type: 'timestamptz', nullable: true })
   lastPersonalRollCallAt: Date | null;
 
