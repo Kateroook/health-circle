@@ -12,6 +12,12 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.vlad-risenhin.health-circle",
+      infoPlist: {
+        NSLocationWhenInUseUsageDescription:
+          "Allow Health Circle to access your location to share your safety status with your circles.",
+        NSLocationAlwaysAndWhenInUseUsageDescription:
+          "Allow Health Circle to access your location even in the background to keep your circles updated on your safety.",
+      },
     },
     android: {
       package: "com.vlad_risenhin.health_circle",

@@ -227,7 +227,7 @@ describe('AuthService', () => {
 
   describe('verifySession (Refresh Token Check)', () => {
     it('should return profile if token hash matches', async () => {
-      const fingerprint = '9149be1cd3b2cc1a067e17e5e1429f1c55f5ba23d973d83085b46fa8cee64fa9';
+      const fingerprint = '81d87514fb97bb2a799c33d42140585357d1ffb69f327307c12cc41c2a431295';
       const session = {
         id: 'sess-1',
         user: mockUserEntity,
