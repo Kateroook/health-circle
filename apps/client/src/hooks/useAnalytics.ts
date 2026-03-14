@@ -1,6 +1,11 @@
-import analytics from "@react-native-firebase/analytics";
+import {
+  getAnalytics,
+  logEvent as firebaseLogEvent,
+  setUserId as firebaseSetUserId,
+  setUserProperties as firebaseSetUserProperties,
+} from "@react-native-firebase/analytics";
 import { useGlobalSearchParams, usePathname } from "expo-router";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 /**
  * Hook to automatically track screen views using expo-router.
@@ -18,9 +23,10 @@ export function useAnalytics() {
     // Params can be appended if needed, but pathname is usually enough for screen tracking.
     const logScreenView = async () => {
       try {
-        await analytics().logScreenView({
-          screen_name: pathname,
-          screen_class: pathname,
+        const analytics = getAnalytics();
+        await firebaseLogEvent(analytics, "screen_view", {
+          firebase_screen: pathname,
+          firebase_screen_class: pathname,
         });
       } catch (err) {
         console.warn("Failed to log screen view:", err);
@@ -33,35 +39,38 @@ export function useAnalytics() {
   /**
    * Manually log a custom event.
    */
-  const logEvent = async (eventName: string, eventParams?: Record<string, any>) => {
+  const logEvent = useCallback(async (eventName: string, eventParams?: Record<string, any>) => {
     try {
-      await analytics().logEvent(eventName, eventParams);
+      const analytics = getAnalytics();
+      await firebaseLogEvent(analytics, eventName, eventParams);
     } catch (err) {
       console.warn(`Failed to log event ${eventName}:`, err);
     }
-  };
+  }, []);
 
   /**
    * Set the user ID for analytics tracking.
    */
-  const setUserId = async (userId: string | null) => {
+  const setUserId = useCallback(async (userId: string | null) => {
     try {
-      await analytics().setUserId(userId);
+      const analytics = getAnalytics();
+      await firebaseSetUserId(analytics, userId);
     } catch (err) {
       console.warn("Failed to set user ID:", err);
     }
-  };
+  }, []);
 
   /**
    * Set user properties for better segmentation in the dashboard.
    */
-  const setUserProperties = async (properties: Record<string, string | null>) => {
+  const setUserProperties = useCallback(async (properties: Record<string, string | null>) => {
     try {
-      await analytics().setUserProperties(properties);
+      const analytics = getAnalytics();
+      await firebaseSetUserProperties(analytics, properties);
     } catch (err) {
       console.warn("Failed to set user properties:", err);
     }
-  };
+  }, []);
 
   return { logEvent, setUserId, setUserProperties };
 }

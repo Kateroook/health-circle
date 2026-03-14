@@ -193,21 +193,21 @@ export default function DashboardScreen() {
     loading: locationLoading,
   } = useLocationStore();
 
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     try {
       const data = await apiFetch("/groups", { method: "GET" });
       setGroups(data);
     } catch (error) {
       console.error("Error loading groups:", error);
     }
-  };
+  }, []);
 
   useSyncSignal(fetchGroups);
 
   useFocusEffect(
     useCallback(() => {
       fetchGroups();
-    }, []),
+    }, [fetchGroups]),
   );
 
   const handleStatusUpdate = async (newStatus: UserStatus) => {
