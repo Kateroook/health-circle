@@ -27,6 +27,7 @@ A Playwright + TypeScript test automation framework for API testing, with planne
 This framework is built on top of **Playwright Test** with **TypeScript** and covers API-level testing for a mobile full-stack application. It includes a layered client architecture, direct database access for setup/teardown, typed data builders, and automatic post-test cleanup.
 
 **Tech stack:**
+
 - [Playwright Test](https://playwright.dev/) — test runner and HTTP client
 - [Kysely](https://kysely.dev/) — type-safe SQL query builder
 - [PostgreSQL](https://www.postgresql.org/) — application database
@@ -144,6 +145,7 @@ The framework is organized in three clear layers:
 ```
 
 **Key design principles:**
+
 - **Isolation** — each test gets its own `TestContext`, so tokens and user state never leak between tests.
 - **Automatic cleanup** — `DbCleaner` tracks created entities and deletes them after each test in LIFO order.
 - **Typed everywhere** — all API requests and responses, DB entities, and domain objects are typed via TypeScript interfaces.
@@ -156,6 +158,7 @@ The framework is organized in three clear layers:
 ### API Clients
 
 All clients extend `BaseClient`, which handles:
+
 - Constructing request URLs from `baseURL + endpoint`
 - Injecting `Authorization: Bearer <token>` headers when a token is present in `TestContext`
 - Safe JSON parsing (returns `null` on empty or failed responses)
@@ -166,14 +169,14 @@ All clients extend `BaseClient`, which handles:
 ```typescript
 const api = new ApiClientFactory({ request, dbCleaner });
 
-api.auth      // AuthClient
-api.users     // UserClient
-api.groups    // GroupClient
-api.contacts  // ContactClient
+api.auth; // AuthClient
+api.users; // UserClient
+api.groups; // GroupClient
+api.contacts; // ContactClient
 
-api.getContext()          // access current TestContext (accessToken, refreshToken, userId)
-api.clone()               // new factory with a fresh empty TestContext
-api.cloneWithContext()    // new factory with a copy of the current TestContext
+api.getContext(); // access current TestContext (accessToken, refreshToken, userId)
+api.clone(); // new factory with a fresh empty TestContext
+api.cloneWithContext(); // new factory with a copy of the current TestContext
 ```
 
 Because all clients share the same `TestContext` instance, logging in via `api.auth.login(...)` automatically makes the token available to all other clients.
@@ -182,61 +185,62 @@ Because all clients share the same `TestContext` instance, logging in via `api.a
 
 `AuthClient` — `src/core/api/clients/auth-client.ts`
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `login(data)` | `POST /api/auth/login` | Login and auto-save tokens to `TestContext` |
-| `logout()` | `POST /api/auth/logout` | Logout and clear tokens from `TestContext` |
-| `refreshToken()` | `POST /api/auth/refresh` | Swap refresh token for a new access token |
-| `getProfile()` | `GET /api/auth/profile` | Get the authenticated user's profile |
-| `setupPassword(email, code, body)` | `POST /api/auth/password-setup` | Set initial password using a confirmation code |
-| `changePassword(data)` | `POST /api/auth/change-password` | Change password while authenticated |
-| `forgotPassword(data)` | `POST /api/auth/forgot-password` | Request a password reset code |
-| `resetPassword(email, code, body)` | `POST /api/auth/reset-password` | Reset password using a code |
-| `resendRegistrationCode()` | `POST /api/auth/resend-registration-code` | Resend registration confirmation code |
-| `quickLogin(email, password)` | — | Helper: login + fetch profile and save `userId` to context in one call |
+| Method                             | Endpoint                                  | Description                                                            |
+| ---------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------- |
+| `login(data)`                      | `POST /api/auth/login`                    | Login and auto-save tokens to `TestContext`                            |
+| `logout()`                         | `POST /api/auth/logout`                   | Logout and clear tokens from `TestContext`                             |
+| `refreshToken()`                   | `POST /api/auth/refresh`                  | Swap refresh token for a new access token                              |
+| `getProfile()`                     | `GET /api/auth/profile`                   | Get the authenticated user's profile                                   |
+| `setupPassword(email, code, body)` | `POST /api/auth/password-setup`           | Set initial password using a confirmation code                         |
+| `changePassword(data)`             | `POST /api/auth/change-password`          | Change password while authenticated                                    |
+| `forgotPassword(data)`             | `POST /api/auth/forgot-password`          | Request a password reset code                                          |
+| `resetPassword(email, code, body)` | `POST /api/auth/reset-password`           | Reset password using a code                                            |
+| `resendRegistrationCode()`         | `POST /api/auth/resend-registration-code` | Resend registration confirmation code                                  |
+| `quickLogin(email, password)`      | —                                         | Helper: login + fetch profile and save `userId` to context in one call |
 
 `UserClient` — `src/core/api/clients/user-client.ts`
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `createUser(data)` | `POST /api/users` | Create user; auto-registers ID with `DbCleaner` |
-| `getUser(id)` | `GET /api/users/{id}` | Get user by ID |
-| `modifyUser(data)` | `PUT /api/users` | Update authenticated user |
-| `deleteUser()` | `DELETE /api/users` | Delete authenticated user |
-| `updateUserStatus(data)` | `PUT /api/users/status` | Update user status |
-| `uploadUserAvatar(id, file)` | `PUT /api/users/{id}/avatar` | Upload avatar (Buffer or Blob) |
-| `getUserAvatar(id)` | `GET /api/users/{id}/avatar` | Fetch avatar |
-| `deleteUserAvatar(id)` | `DELETE /api/users/{id}/avatar` | Delete avatar |
-| `resetUserPassword(id)` | `PATCH /api/users/{id}/reset-password` | Admin-side password reset |
-| `saveFcmToken(token)` | `PUT /api/users/fcm-token` | Save FCM push token |
+| Method                       | Endpoint                               | Description                                     |
+| ---------------------------- | -------------------------------------- | ----------------------------------------------- |
+| `createUser(data)`           | `POST /api/users`                      | Create user; auto-registers ID with `DbCleaner` |
+| `getUser(id)`                | `GET /api/users/{id}`                  | Get user by ID                                  |
+| `modifyUser(data)`           | `PUT /api/users`                       | Update authenticated user                       |
+| `deleteUser()`               | `DELETE /api/users`                    | Delete authenticated user                       |
+| `updateUserStatus(data)`     | `PUT /api/users/status`                | Update user status                              |
+| `uploadUserAvatar(id, file)` | `PUT /api/users/{id}/avatar`           | Upload avatar (Buffer or Blob)                  |
+| `getUserAvatar(id)`          | `GET /api/users/{id}/avatar`           | Fetch avatar                                    |
+| `deleteUserAvatar(id)`       | `DELETE /api/users/{id}/avatar`        | Delete avatar                                   |
+| `resetUserPassword(id)`      | `PATCH /api/users/{id}/reset-password` | Admin-side password reset                       |
+| `saveFcmToken(token)`        | `PUT /api/users/fcm-token`             | Save FCM push token                             |
 
 `GroupClient` — `src/core/api/clients/group-client.ts`
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `createGroup(data)` | `POST /api/groups` | Create a group |
-| `getGroup(id)` | `GET /api/groups/{id}` | Get group by ID |
-| `getAllGroups()` | `GET /api/groups` | List all groups for the authenticated user |
-| `leaveGroup(id)` | `POST /api/groups/{id}/leave` | Leave a group |
-| `regenerateInviteCode(id)` | `POST /api/groups/{id}/invite` | Regenerate the group invite code |
-| `getBlockedUsers(id)` | `GET /api/groups/{id}/blocked` | Get list of blocked users in a group |
-| `blockUser(groupId, userId)` | `POST /api/groups/{groupId}/blocked/{userId}` | Block a user in a group |
-| `unblockUser(groupId, userId)` | `DELETE /api/groups/{groupId}/blocked/{userId}` | Unblock a user in a group |
+| Method                         | Endpoint                                        | Description                                |
+| ------------------------------ | ----------------------------------------------- | ------------------------------------------ |
+| `createGroup(data)`            | `POST /api/groups`                              | Create a group                             |
+| `getGroup(id)`                 | `GET /api/groups/{id}`                          | Get group by ID                            |
+| `getAllGroups()`               | `GET /api/groups`                               | List all groups for the authenticated user |
+| `leaveGroup(id)`               | `POST /api/groups/{id}/leave`                   | Leave a group                              |
+| `regenerateInviteCode(id)`     | `POST /api/groups/{id}/invite`                  | Regenerate the group invite code           |
+| `getBlockedUsers(id)`          | `GET /api/groups/{id}/blocked`                  | Get list of blocked users in a group       |
+| `blockUser(groupId, userId)`   | `POST /api/groups/{groupId}/blocked/{userId}`   | Block a user in a group                    |
+| `unblockUser(groupId, userId)` | `DELETE /api/groups/{groupId}/blocked/{userId}` | Unblock a user in a group                  |
 
 `ContactClient` — `src/core/api/clients/contact-client.ts`
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `updateContact(targetId, data)` | `PUT /api/contacts/{targetId}` | Update a contact |
+| Method                            | Endpoint                               | Description                |
+| --------------------------------- | -------------------------------------- | -------------------------- |
+| `updateContact(targetId, data)`   | `PUT /api/contacts/{targetId}`         | Update a contact           |
 | `setContactAlias(targetId, data)` | `PATCH /api/contacts/{targetId}/alias` | Set an alias for a contact |
-| `deleteContact(targetId)` | `DELETE /api/contacts/{targetId}` | Delete a contact |
+| `deleteContact(targetId)`         | `DELETE /api/contacts/{targetId}`      | Delete a contact           |
 
 **`TestContext`** stores per-test state and is accessible via `api.getContext()`:
+
 ```typescript
 interface TestContext {
   accessToken?: string;
   refreshToken?: string;
-  userId?: string;   // populated automatically by quickLogin()
+  userId?: string; // populated automatically by quickLogin()
 }
 ```
 
@@ -245,6 +249,7 @@ interface TestContext {
 This module provides two ways to assert or check response status.
 
 `checkResponse` — returns a boolean; use in client code and conditional logic:
+
 ```typescript
 if (checkResponse.is2xx(result.response)) {
   this.setAccessToken(result.data.accessToken);
@@ -255,12 +260,13 @@ if (checkResponse.is401(result.response)) {
 ```
 
 `expect` (custom matchers) — extends Playwright's `expect` with HTTP-aware matchers; import from `api-fixture.ts` in tests:
+
 ```typescript
-expect(response).toHaveStatus(201);     // exactly 201
-expect(response).toHaveStatus2xx();     // 200–299
-expect(response).toHaveStatus4xx();     // 400–499
-expect(response).toHaveStatus5xx();     // 500–599
-expect(response).toHaveJsonContent();   // Content-Type: application/json
+expect(response).toHaveStatus(201); // exactly 201
+expect(response).toHaveStatus2xx(); // 200–299
+expect(response).toHaveStatus4xx(); // 400–499
+expect(response).toHaveStatus5xx(); // 500–599
+expect(response).toHaveJsonContent(); // Content-Type: application/json
 ```
 
 `checkResponse` exposes: `is2xx`, `is200`, `is201`, `is204`, `is4xx`, `is400`, `is401`, `is403`, `is404`, `is5xx`, `is500`, `status`, `json`.
@@ -276,6 +282,7 @@ Direct DB access is used for test setup, cleanup and verification — things tha
 **`DbManager`** is a singleton that provides a shared `Kysely<Database>` connection pool. It reads connection parameters from environment variables and uses `CamelCasePlugin` to automatically map `snake_case` DB columns to `camelCase` TypeScript properties.
 
 **`BaseRepository<T, K>`** provides generic methods available to all repositories:
+
 ```typescript
 getAll(): Promise<T[]>
 getById(id: string | number): Promise<T | null>
@@ -284,12 +291,14 @@ findBy(criteria: Partial<T>): Promise<T[]>
 ```
 
 **Domain repositories** extend `BaseRepository` for their specific table:
+
 - `UserRepository` → `users`
 - `GroupRepository` → `group`
 - `ContactRepository` → `contacts`
 - `ConfirmationCodeRepository` → `confirmation_codes`
 
 **`DbCleaner`** tracks entities that need to be removed after a test:
+
 ```typescript
 dbCleaner.add('users', createdUser.id);
 // ... test runs ...
@@ -301,6 +310,7 @@ Cleanup runs in **reverse insertion order (LIFO)** to respect foreign key constr
 > **Note:** `UserClient.createUser()` automatically registers the created user with `DbCleaner`. For entities created directly via repositories, register them manually with `dbCleaner.add(table, id)`.
 
 **`schema.ts`** maps table names to their TypeScript entity types:
+
 ```typescript
 interface Database {
   users: UserDbEntity;
@@ -320,10 +330,7 @@ interface Database {
 **Builders** use a fluent interface to construct test objects with sensible random defaults. Override only what you need for a specific test case:
 
 ```typescript
-const user = new UserBuilder()
-  .withFirstName('John')
-  .withPhone('+380501234567')
-  .build();
+const user = new UserBuilder().withFirstName('John').withPhone('+380501234567').build();
 ```
 
 **Factories** wrap common builder patterns into named presets for quick reuse:
@@ -351,20 +358,21 @@ import { test, expect } from '../fixtures/api-fixture';
 ```
 
 **Worker-scoped fixture:**
+
 - `db` — a shared `Kysely<Database>` connection reused across all tests in a worker. Torn down once per worker.
 
 **Test-scoped fixtures:**
 
-| Fixture | Type | Description |
-|---|---|---|
-| `dbCleaner` | `DbCleaner` | Fresh instance per test; calls `cleanup()` after the test finishes. |
-| `userRepository` | `UserRepository` | Wired to the test's `db` and `dbCleaner`. |
-| `groupRepository` | `GroupRepository` | Wired to the test's `db` and `dbCleaner`. |
-| `contactRepository` | `ContactRepository` | Wired to the test's `db` and `dbCleaner`. |
-| `confirmationCodeRepository` | `ConfirmationCodeRepository` | Wired to the test's `db` and `dbCleaner`. |
-| `api` | `ApiClientFactory` | Fresh `TestContext` bound to Playwright's `request` context. |
-| `spawnApi` | `() => Promise<ApiClientFactory>` | Factory function — call it to create additional isolated `ApiClientFactory` instances with their own `APIRequestContext`. Useful when a single test needs multiple independent authenticated sessions. |
-| `spawnUser` | `(overrides?) => Promise<UserEntity>` | Creates a fully ready user via API (POST user → fetch confirmation code → setup password) and returns the `UserEntity`. Accepts optional field overrides. The created user is automatically registered with `DbCleaner`. |
+| Fixture                      | Type                                  | Description                                                                                                                                                                                                              |
+| ---------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `dbCleaner`                  | `DbCleaner`                           | Fresh instance per test; calls `cleanup()` after the test finishes.                                                                                                                                                      |
+| `userRepository`             | `UserRepository`                      | Wired to the test's `db` and `dbCleaner`.                                                                                                                                                                                |
+| `groupRepository`            | `GroupRepository`                     | Wired to the test's `db` and `dbCleaner`.                                                                                                                                                                                |
+| `contactRepository`          | `ContactRepository`                   | Wired to the test's `db` and `dbCleaner`.                                                                                                                                                                                |
+| `confirmationCodeRepository` | `ConfirmationCodeRepository`          | Wired to the test's `db` and `dbCleaner`.                                                                                                                                                                                |
+| `api`                        | `ApiClientFactory`                    | Fresh `TestContext` bound to Playwright's `request` context.                                                                                                                                                             |
+| `spawnApi`                   | `() => Promise<ApiClientFactory>`     | Factory function — call it to create additional isolated `ApiClientFactory` instances with their own `APIRequestContext`. Useful when a single test needs multiple independent authenticated sessions.                   |
+| `spawnUser`                  | `(overrides?) => Promise<UserEntity>` | Creates a fully ready user via API (POST user → fetch confirmation code → setup password) and returns the `UserEntity`. Accepts optional field overrides. The created user is automatically registered with `DbCleaner`. |
 
 **`spawnUser` — quick user creation**
 
@@ -407,7 +415,7 @@ const cleanClone = api.clone();
 
 // New factory that copies the current token state — mutations to the clone do not affect the original
 const cloneWithContext = api.cloneWithContext();
-cloneWithContext.auth.clearTokens();    // only affects the clone
+cloneWithContext.auth.clearTokens(); // only affects the clone
 ```
 
 ---
@@ -419,16 +427,16 @@ All utilities are accessible through the `utils` singleton:
 ```typescript
 import { utils } from '../../utils/utils';
 
-utils.random.firstName()             // random first name
-utils.random.lastName()              // random last name
-utils.random.email({ prefix: 'qa' }) // qa<nanoid>@gmail.com
-utils.random.phone()                 // international format phone
-utils.random.shortId(8)              // 8-char nanoid
-utils.random.pick([a, b, c])         // random array element
-utils.random.number({ min: 1, max: 100 })
-utils.random.password()              // random valid password string
+utils.random.firstName(); // random first name
+utils.random.lastName(); // random last name
+utils.random.email({ prefix: 'qa' }); // qa<nanoid>@gmail.com
+utils.random.phone(); // international format phone
+utils.random.shortId(8); // 8-char nanoid
+utils.random.pick([a, b, c]); // random array element
+utils.random.number({ min: 1, max: 100 });
+utils.random.password(); // random valid password string
 
-utils.date                           // DateBuilder instance
+utils.date; // DateBuilder instance
 ```
 
 `RandomHelper` wraps `@faker-js/faker` and `nanoid`. `DateBuilder` provides date arithmetic helpers.
@@ -441,15 +449,15 @@ utils.date                           // DateBuilder instance
 
 Defined in `.env` at the project root. This file is not committed — create it locally from the template below.
 
-| Variable | Used by | Description |
-|---|---|---|
-| `API_BASE_URL` | Playwright config, `BaseClient` | Base URL for all API requests (e.g. `https://api.staging.example.com`) |
-| `HEALTHCIRCLE_POSTGRES_HOST` | `DbManager` | Database host |
-| `HEALTHCIRCLE_POSTGRES_PORT` | `DbManager` | Database port |
-| `HEALTHCIRCLE_POSTGRES_USER` | `DbManager` | Database user |
-| `HEALTHCIRCLE_POSTGRES_PASS` | `DbManager` | Database password |
-| `HEALTHCIRCLE_POSTGRES_DB_NAME` | `DbManager` | Database name |
-| `HEALTHCIRCLE_POSTGRES_SSL` | `DbManager` | Enable SSL for DB connection (`true`/`false`) |
+| Variable                        | Used by                         | Description                                                            |
+| ------------------------------- | ------------------------------- | ---------------------------------------------------------------------- |
+| `API_BASE_URL`                  | Playwright config, `BaseClient` | Base URL for all API requests (e.g. `https://api.staging.example.com`) |
+| `HEALTHCIRCLE_POSTGRES_HOST`    | `DbManager`                     | Database host                                                          |
+| `HEALTHCIRCLE_POSTGRES_PORT`    | `DbManager`                     | Database port                                                          |
+| `HEALTHCIRCLE_POSTGRES_USER`    | `DbManager`                     | Database user                                                          |
+| `HEALTHCIRCLE_POSTGRES_PASS`    | `DbManager`                     | Database password                                                      |
+| `HEALTHCIRCLE_POSTGRES_DB_NAME` | `DbManager`                     | Database name                                                          |
+| `HEALTHCIRCLE_POSTGRES_SSL`     | `DbManager`                     | Enable SSL for DB connection (`true`/`false`)                          |
 
 ### Playwright config (`playwright.config.ts`)
 

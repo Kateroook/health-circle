@@ -1,7 +1,7 @@
 import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
+import { UserEntity } from '../../users/entities/user.entity';
 import { DataLogChangesEntity } from './data-logs-changes.entity';
-import { UserEntity } from './user.entity';
 
 @Entity('data_logs')
 export class DataLogEntity {

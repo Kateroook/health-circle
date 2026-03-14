@@ -4,18 +4,19 @@ import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
-import { ExternalFilesEntity } from 'src/common/entities/external-files.entity';
-import { UserEntity } from 'src/common/entities/user.entity';
-import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
+import { ExternalFilesEntity } from 'src/external-files/entities/external-files.entity';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
-import { EntityManager, Repository, SelectQueryBuilder, UpdateResult } from 'typeorm';
+import { UserEntity } from 'src/users/entities/user.entity';
+import { UserPasswordEntity } from 'src/users/entities/user-password.entity';
+import { EntityManager, Repository, UpdateResult } from 'typeorm';
 
+import { SessionActivityService } from './session-activity.service';
 import { UsersService } from './users.service';
 
 jest.mock('firebase-admin', () => {
@@ -46,17 +47,17 @@ describe('UsersService', () => {
     id: 'user1',
     firstName: 'John',
     lastName: 'Doe',
-    fcmToken: null,
+    fcmToken: 'token-abc',
     status: UserStatus.UNKNOWN,
     groups: [
       {
         members: [
-          { id: 'user1', fcmToken: null },
-          { id: 'user2', fcmToken: 'token-abc' },
+          { id: 'user1', fcmToken: 'token-abc' },
+          { id: 'user2', fcmToken: 'token-xyz' },
         ],
       },
     ],
-  } as UserEntity;
+  } as unknown as UserEntity;
 
   const mockUserProfile: UserProfileDto = {
     id: 'user1',
@@ -74,6 +75,8 @@ describe('UsersService', () => {
   const createRepoMock = () => {
     return {
       findOne: jest.fn(),
+      findOneBy: jest.fn(),
+      find: jest.fn(),
       update: jest.fn(),
       save: jest.fn(),
       remove: jest.fn(),
@@ -141,6 +144,7 @@ describe('UsersService', () => {
         { provide: NotificationsService, useValue: mockNotificationsService() },
         { provide: FirestoreSyncService, useValue: mockFirestoreSyncService() },
         { provide: ConfigService, useValue: {} },
+        { provide: SessionActivityService, useValue: { trackActivity: jest.fn() } },
       ],
     }).compile();
 
@@ -159,18 +163,10 @@ describe('UsersService', () => {
   describe('updateStatus', () => {
     it('updates status and sends push', async () => {
       repository.findOne.mockResolvedValue(mockUser);
+      repository.find.mockResolvedValue([{ id: 'user2', fcmToken: 'token-abc' } as UserEntity]);
       repository.save.mockResolvedValue(mockUser);
 
-      const qbMock = {
-        select: jest.fn().mockReturnThis(),
-        innerJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([{ id: 'user2', fcmToken: 'token-abc' }]),
-      };
-      repository.createQueryBuilder.mockReturnValue(qbMock as any);
-
-      await service.updateStatus('user1', UserStatus.SAFE);
+      await service.updateStatus('user1', UserStatus.SAFE, ['user2']);
 
       expect(repository.save).toHaveBeenCalled();
       expect(notificationsService.sendMulticast).toHaveBeenCalledWith(
@@ -293,25 +289,15 @@ describe('UsersService', () => {
 
   describe('getOne', () => {
     it('returns user', async () => {
-      // Mocking the query builder chain
-      const qbMock = {
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(mockUser),
-      };
-      repository.createQueryBuilder.mockReturnValue(qbMock as unknown as SelectQueryBuilder<UserEntity>);
+      repository.findOneBy.mockResolvedValue(mockUser);
 
       const res = await service.getOne('user1', mockUserProfile);
       expect(res).toEqual(mockUser);
-      expect(repository.createQueryBuilder).toHaveBeenCalledWith('users');
-      expect(qbMock.where).toHaveBeenCalledWith('users.id = :id', { id: 'user1' });
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 'user1' });
     });
 
     it('throws if not found', async () => {
-      const qbMock = {
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(null),
-      };
-      repository.createQueryBuilder.mockReturnValue(qbMock as any);
+      repository.findOneBy.mockResolvedValue(null);
 
       await expect(service.getOne('x', { id: 'x' } as any)).rejects.toThrow(NotFoundException);
     });

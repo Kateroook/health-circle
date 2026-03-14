@@ -1,0 +1,26 @@
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+
+import { GroupEntity } from './group.entity';
+
+@Entity({ name: 'group_block_list' })
+@Unique(['groupId', 'userId'])
+export class GroupBlockListEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ name: 'group_id', type: 'uuid' })
+  groupId: string;
+
+  @ManyToOne(() => GroupEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'group_id' })
+  group: GroupEntity;
+
+  @Column({ name: 'user_id', type: 'uuid' })
+  userId: string;
+
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  createdBy: string;
+
+  @CreateDateColumn({ type: 'timestamptz' })
+  createdAt: Date;
+}

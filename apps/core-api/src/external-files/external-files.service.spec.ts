@@ -5,8 +5,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ExternalFilesEntity } from 'src/common/entities/external-files.entity';
 import { FileParam } from 'src/common/types/file-param';
+import { ExternalFilesEntity } from 'src/external-files/entities/external-files.entity';
 import { QueryRunner, Repository } from 'typeorm';
 
 import { ExternalFilesService } from './external-files.service';

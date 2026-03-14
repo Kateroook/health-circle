@@ -10,7 +10,7 @@ import { Kysely } from 'kysely';
 import { Database } from '../../core/db/schema';
 import { UserEntity } from '../../core/types/entites/user-interface';
 import { UserFactory } from '../../core/data/factories/user-factory';
-import {expect as statusExpect } from '../../core/api/helpers/response-checker'
+import { expect as statusExpect } from '../../core/api/helpers/response-checker';
 export type ApiFixture = {
   db: Kysely<Database>;
 };
@@ -86,7 +86,7 @@ export const test = workerTest.extend<MyFixture>({
   spawnUser: async ({ api, confirmationCodeRepository }, use) => {
     const factory = async (overrides?: Partial<UserEntity>) => {
       let user = UserFactory.createRandomUser(overrides);
-  
+
       const postUser = await api.users.createUser({
         email: user.email,
         phone: user.phone,
@@ -94,18 +94,18 @@ export const test = workerTest.extend<MyFixture>({
         middleName: user.middleName,
         lastName: user.lastName,
       });
-  
+
       user.id = postUser.data.id;
-  
+
       const code = (await confirmationCodeRepository.findBy({ userId: user.id }))[0];
-  
+
       await api.auth.setupPassword(user.email!, code.code, {
         newPassword: user.password,
         confirmNewPassword: user.password,
       });
 
       return user;
-    }
+    };
 
     await use(factory);
   },

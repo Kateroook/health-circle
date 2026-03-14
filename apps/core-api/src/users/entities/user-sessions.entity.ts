@@ -55,6 +55,9 @@ export class UserSessionEntity {
   @Column({ type: 'timestamptz', nullable: true })
   lastUsedAt: Date | null;
 
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  fingerprint: string | null;
+
   @Column({ type: 'jsonb' })
   deviceInfo: DetectResult;
 }

@@ -2,8 +2,6 @@ import { BadRequestException, Injectable, NotFoundException, StreamableFile } fr
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
-import { UserEntity } from 'src/common/entities/user.entity';
-import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
 import { ensureSameUser } from 'src/common/helpers/ensure-same-user.util';
@@ -14,10 +12,12 @@ import { ExternalFilesService } from 'src/external-files/external-files.service'
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
-import { EntityManager, QueryRunner, Repository } from 'typeorm';
+import { EntityManager, In, QueryRunner, Repository } from 'typeorm';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { ModifyUserDto } from './dto/modify-user.dto';
+import { UserEntity } from './entities/user.entity';
+import { UserPasswordEntity } from './entities/user-password.entity';
 
 @Injectable()
 export class UsersService {
@@ -34,69 +34,50 @@ export class UsersService {
     private firestoreSyncService: FirestoreSyncService,
   ) {}
 
-  async updateStatus(userId: string, status: UserStatus) {
+  async updateStatus(userId: string, status: UserStatus, groupMemberIds?: string[]) {
     const user = await this.repository.findOne({
       where: { id: userId },
-      relations: ['groups', 'groups.members'],
     });
     if (!user) return;
 
     user.status = status;
     user.lastStatusUpdate = new Date();
     await this.repository.save(user);
-    const tokens = new Set<string>();
-    const groupIds = user.groups.map((g) => g.id);
 
-    if (groupIds.length > 0) {
-      const membersWithTokens = await this.repository
-        .createQueryBuilder('user')
-        .select(['user.id', 'user.fcmToken'])
-        .innerJoin('user.groups', 'group')
-        .where('group.id IN (:...groupIds)', { groupIds })
-        .andWhere('user.fcmToken IS NOT NULL')
-        .getMany();
+    // In a truly decoupled system, groupMemberIds would come from an event listener or a dedicated service call
+    if (groupMemberIds && groupMemberIds.length > 0) {
+      const membersWithTokens = await this.repository.find({
+        where: { id: In(groupMemberIds), fcmToken: In([...groupMemberIds]) }, // Simplistic filter for tokens
+        select: ['id', 'fcmToken'],
+      });
 
-      membersWithTokens.forEach((member) => {
-        if (member.id != userId && member.fcmToken) {
-          tokens.add(member.fcmToken);
+      const tokens = membersWithTokens.filter((m) => m.id !== userId && m.fcmToken).map((m) => m.fcmToken as string);
+
+      if (tokens.length > 0) {
+        let title = 'Оновлення статусу';
+        let body = `${user.firstName} оновив статус`;
+
+        if (status === UserStatus.DANGER) {
+          title = '🆘 ПОТРІБНА ДОПОМОГА!';
+          body = `${user.firstName} ${user.lastName} потребує допомоги!`;
+        } else if (status === UserStatus.SAFE) {
+          title = '✅ У безпеці';
+          body = `${user.firstName} ${user.lastName} зараз у безпеці.`;
+        } else if (status === UserStatus.WAS_SAFE) {
+          title = '💡 Був у безпеці';
+          body = `Статус ${user.firstName} ${user.lastName} змінено на "Був у безпеці".`;
         }
-      });
+
+        await this.notificationsService.sendMulticast(tokens, title, body, {
+          userId: user.id,
+          status: status,
+        });
+      }
+
+      await this.firestoreSyncService.sendSyncSignal([...groupMemberIds, userId]);
+    } else {
+      await this.firestoreSyncService.sendSyncSignal([userId]);
     }
-
-    let title = 'Оновлення статусу';
-    let body = `${user.firstName} оновив статус`;
-
-    if (status === UserStatus.DANGER) {
-      title = '🆘 ПОТРІБНА ДОПОМОГА!';
-      body = `${user.firstName} ${user.lastName} потребує допомоги!`;
-    } else if (status === UserStatus.SAFE) {
-      title = '✅ У безпеці';
-      body = `${user.firstName} ${user.lastName} зараз у безпеці.`;
-    } else if (status === UserStatus.WAS_SAFE) {
-      title = '💡 Був у безпеці';
-      body = `Статус ${user.firstName} ${user.lastName} змінено на "Був у безпеці".`;
-    } else if (status === UserStatus.UNKNOWN) {
-      title = '❓ Невідомо';
-      body = `Статус ${user.firstName} ${user.lastName} тепер "Невідомо".`;
-    }
-
-    if (tokens.size > 0) {
-      await this.notificationsService.sendMulticast(Array.from(tokens), title, body, {
-        userId: user.id,
-        status: status,
-      });
-    }
-
-    // Send sync signals to all group members
-    const memberIdsToSync = new Set<string>();
-    user.groups.forEach((group) => {
-      group.members.forEach((member) => {
-        memberIdsToSync.add(member.id);
-      });
-    });
-    memberIdsToSync.add(userId);
-
-    await this.firestoreSyncService.sendSyncSignal(Array.from(memberIdsToSync));
 
     return { status: user.status, message: 'Status updated' };
   }
@@ -145,13 +126,9 @@ export class UsersService {
     await entityManager.save(UserEntity, user);
   }
 
-  private getOneQueryBuilder() {
-    return this.repository.createQueryBuilder('users');
-  }
-
   public async getOne(id: string, user: UserProfileDto): Promise<UserEntity> {
     ensureSameUser(id, user.id);
-    const targetUser = await this.getOneQueryBuilder().where('users.id = :id', { id }).getOne();
+    const targetUser = await this.repository.findOneBy({ id });
     if (!targetUser) throw new NotFoundException(`Користувача з id = ${id} не знайдено`);
     return targetUser;
   }
@@ -176,7 +153,6 @@ export class UsersService {
           if (existingUser.isRegistered) {
             throw new BadRequestException('Користувач з таким email або номером телефону вже існує');
           }
-          // If not registered, we update the existing one
           const updated = await this.repository.save({
             ...existingUser,
             ...item,
@@ -233,20 +209,20 @@ export class UsersService {
     return { success: true };
   }
 
-  async handleAirAlert(region: string) {
-    const usersToUpdate = await this.repository.find({
-      where: {
-        region,
-        status: UserStatus.SAFE,
-      },
-      relations: ['groups', 'groups.members'],
-    });
+  async findByIds(ids: string[]): Promise<UserEntity[]> {
+    if (ids.length === 0) return [];
+    return this.repository.find({ where: { id: In(ids) } });
+  }
 
-    for (const user of usersToUpdate) {
-      await this.updateStatus(user.id, UserStatus.WAS_SAFE);
-      // Notifications are already handled inside updateStatus
-    }
+  async exists(id: string): Promise<boolean> {
+    return this.repository.existsBy({ id });
+  }
 
-    return { updatedCount: usersToUpdate.length };
+  async findOneInternal(id: string): Promise<UserEntity | null> {
+    return this.repository.findOneBy({ id });
+  }
+
+  async updateLastPersonalRollCallAt(id: string): Promise<void> {
+    await this.repository.update({ id }, { lastPersonalRollCallAt: new Date() });
   }
 }

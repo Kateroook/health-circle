@@ -1,5 +1,5 @@
-import { UserEntity } from 'src/common/entities/user.entity';
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
+import { UserEntity } from 'src/users/entities/user.entity';
 import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('confirmation_codes')
