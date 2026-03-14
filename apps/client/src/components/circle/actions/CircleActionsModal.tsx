@@ -2,6 +2,7 @@ import { Button } from "@/src/components/Button";
 import { ListItem } from "@/src/components/ListItem";
 import { ModalActions, ModalContent, ModalHeader } from "@/src/components/modal";
 import { ModalContainer } from "@/src/components/modal/ModalContainer";
+import { useAnalytics } from "@/src/hooks/useAnalytics";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { AntDesign } from "@expo/vector-icons";
@@ -50,6 +51,7 @@ export default function CircleActionsModal({
   onLeave,
   onRegenerateInvite,
 }: Props) {
+  const { logEvent } = useAnalytics();
   const [isRenaming, setIsRenaming] = useState(false);
   const [isEditingMembers, setIsEditingMembers] = useState(false);
   const [newName, setNewName] = useState("");
@@ -76,6 +78,7 @@ export default function CircleActionsModal({
   const handleDoneRename = () => {
     if (newName.trim() !== "") {
       onRename(newName.trim());
+      logEvent("rename_circle");
       setIsRenaming(false);
       setNewName("");
     }
@@ -92,6 +95,7 @@ export default function CircleActionsModal({
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(inviteCode);
+    logEvent("copy_invite_code");
   };
 
   interface RenameCircleModalProps {
@@ -185,6 +189,7 @@ export default function CircleActionsModal({
         }}
         onSave={(newName) => {
           onRename(newName);
+          logEvent("rename_circle");
           setIsRenaming(false);
           setNewName("");
         }}
@@ -250,7 +255,10 @@ export default function CircleActionsModal({
                 leadingIcon={
                   <Feather name="refresh-cw" size={16} color={theme.colors.content.onColor} />
                 }
-                onPress={onRegenerateInvite}
+                onPress={() => {
+                  onRegenerateInvite();
+                  logEvent("regenerate_invite_code");
+                }}
               />
               <Button
                 shape="round"

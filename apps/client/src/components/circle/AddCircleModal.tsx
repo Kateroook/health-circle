@@ -5,6 +5,7 @@ import { theme } from "@/src/theme/theme";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import { Alert, Share, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,6 +20,7 @@ interface AddCircleModalProps {
 }
 
 const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpdated }) => {
+  const { logEvent } = useAnalytics();
   const [activeTab, setActiveTab] = useState<"join" | "create">("join");
 
   // Join tab
@@ -43,6 +45,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
         method: "POST",
         body: JSON.stringify({ name: circleName.trim() }),
       });
+      logEvent("create_circle");
       const code = response.inviteCode || "";
       setGeneratedCode(code);
       setCreateStep(2);
@@ -70,6 +73,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
         method: "POST",
         body: JSON.stringify({ code }),
       });
+      logEvent("join_circle");
       Alert.alert("Успіх", "Ви приєдналися до кола");
 
       if (onUpdated) onUpdated();
