@@ -114,6 +114,14 @@ describe('EmailService', () => {
       );
     });
 
+    it('should skip sending if email is a test email', async () => {
+      const testEmail = 'test1234567890@gmail.com';
+      await service.registration(testEmail, context);
+
+      expect(mockResend.emails.send).not.toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({ to: testEmail }), 'Skipping test email sending');
+    });
+
     it('should log error if sending fails', async () => {
       const error = new Error('Resend Error');
       (mockResend.emails.send as jest.Mock).mockResolvedValueOnce({ data: null, error: error });
@@ -149,6 +157,14 @@ describe('EmailService', () => {
         expect.objectContaining({ to, messageId: 'msg_123' }),
         'Password change email sent successfully',
       );
+    });
+
+    it('should skip sending if email is a test email', async () => {
+      const testEmail = 'test1234567890@gmail.com';
+      await service.changePassword(testEmail, context);
+
+      expect(mockResend.emails.send).not.toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith(expect.objectContaining({ to: testEmail }), 'Skipping test email sending');
     });
 
     it('should log error if sending fails', async () => {
