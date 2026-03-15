@@ -10,7 +10,7 @@ import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
-import { IsNull, Repository } from 'typeorm';
+import { IsNull, MoreThan, Repository } from 'typeorm';
 
 import { RequestMetadata } from '../common/types/request-metadata';
 import { UserEntity } from '../users/entities/user.entity';
@@ -135,7 +135,7 @@ export class AuthService {
 
   async verifyUser(tokenPayload: UserTokenPayload, metadata: RequestMetadata): Promise<UserProfileDto> {
     const session = await this.userSessionRepository.findOne({
-      where: { jti: tokenPayload.jti, user: { id: tokenPayload.sub } },
+      where: { jti: tokenPayload.jti, user: { id: tokenPayload.sub }, revokedAt: IsNull(), expiresAt: MoreThan(new Date()) },
       relations: { user: true },
     });
 
@@ -166,7 +166,7 @@ export class AuthService {
 
   async verifySession(token: string, tokenPayload: UserTokenPayload, metadata: RequestMetadata): Promise<UserProfileDto> {
     const session = await this.userSessionRepository.findOne({
-      where: { jti: tokenPayload.jti, user: { id: tokenPayload.sub } },
+      where: { jti: tokenPayload.jti, user: { id: tokenPayload.sub }, revokedAt: IsNull(), expiresAt: MoreThan(new Date()) },
       relations: { user: true },
     });
 
