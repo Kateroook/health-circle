@@ -25,21 +25,20 @@ test.describe('api/auth/logout tests', async () => {
         expect(api.getContext().refreshToken).toBeUndefined();
     });
 
-    test('[AUTH-010] Repeated logout', async ({ api, spawnUser }) => {
+    test('[AUTH-010] Access tokens are revoked after logout', async ({ api, spawnUser }) => {
         const user = await spawnUser();
         
         const login = await api.auth.login({
             identifier: user.email,
             password: user.password,
         });
+        const clonedApi = api.cloneWithContext();
         expect(login.response).toHaveStatus2xx();
 
         const logout = await api.auth.logout();
         expect(logout.response).toHaveStatus2xx();
-        expect(api.getContext().accessToken).toBeUndefined();
-        expect(api.getContext().refreshToken).toBeUndefined();
 
-        const repeat = await api.auth.logout();
+        const repeat = await clonedApi.auth.logout();
         expect(repeat.response).toHaveStatus(401);
     });
 })
