@@ -8,7 +8,7 @@ import { useState } from "react";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Icon from "react-native-vector-icons/Feather";
+import { Feather as Icon } from "@expo/vector-icons";
 import { formatErrorMessage } from "../../utils/error.util";
 export default function Login() {
   const { login, loading } = useAuthStore();

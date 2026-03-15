@@ -52,7 +52,7 @@ export async function apiFetch(
 
   if (!res.ok) {
     // Auto-refresh on 401: try to refresh the session and retry the request once
-    if (res.status === 401 && !options._isRetry) {
+    if (res.status === 401 && !options._isRetry && path !== "/auth/refresh") {
       const { useAuthStore } = require("../store/authStore");
       const refreshed = await useAuthStore.getState().refreshSession();
       if (refreshed) {

@@ -241,13 +241,51 @@ describe('AuthService', () => {
       expect(result.sessionId).toBe('sess-1');
     });
 
-    it('should throw UnauthorizedException if hash mismatch', async () => {
-      const fingerprint = '9149be1cd3b2cc1a067e17e5e1429f1c55f5ba23d973d83085b46fa8cee64fa9';
-      const session = { tokenHash: 'hashed-token', fingerprint: fingerprint };
+    it('should throw UnauthorizedException if UA mismatch (even if legacy fgp matches)', async () => {
+      const legacyFingerprint = 'legacy-fgp';
+      const session = {
+        tokenHash: 'hashed-token',
+        fingerprint: legacyFingerprint,
+        userAgent: 'OldUA',
+      };
       userSessionRepository.findOne.mockResolvedValue(session as unknown as UserSessionEntity);
-      securityService.validate.mockResolvedValue(false);
+      securityService.validate.mockResolvedValue(true);
 
-      await expect(service.verifySession('t', { sub: 'u', jti: 'j', fgp: fingerprint }, mockMetadata)).rejects.toThrow(
+      const metadataWithNewUA = { ...mockMetadata, userAgent: 'NewUA' };
+
+      await expect(service.verifySession('t', { sub: 'u', jti: 'j', fgp: legacyFingerprint }, metadataWithNewUA)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should allow session if legacy fingerprint matches token AND User-Agent matches', async () => {
+      const legacyFingerprint = 'legacy-fgp'; // e.g. SHA256(UA + IP)
+      const session = {
+        id: 'sess-1',
+        user: mockUserEntity,
+        tokenHash: 'hashed-token',
+        fingerprint: legacyFingerprint,
+        userAgent: mockMetadata.userAgent,
+      } as UserSessionEntity;
+      userSessionRepository.findOne.mockResolvedValue(session);
+      securityService.validate.mockResolvedValue(true);
+
+      // Even if current hash (UA only) is different, it should pass if fgp matches legacy
+      const result = await service.verifySession('raw-token', { sub: 'u', jti: 'j', fgp: legacyFingerprint }, mockMetadata);
+      expect(result.sessionId).toBe('sess-1');
+    });
+
+    it('should throw UnauthorizedException if fingerprints mismatch and not legacy match', async () => {
+      const session = {
+        tokenHash: 'hashed-token',
+        fingerprint: 'fgp-1',
+        userAgent: 'UA-1',
+      };
+      userSessionRepository.findOne.mockResolvedValue(session as unknown as UserSessionEntity);
+      securityService.validate.mockResolvedValue(true);
+
+      // fgp-2 vs fgp-1
+      await expect(service.verifySession('t', { sub: 'u', jti: 'j', fgp: 'fgp-2' }, mockMetadata)).rejects.toThrow(
         UnauthorizedException,
       );
     });

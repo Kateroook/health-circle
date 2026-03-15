@@ -142,10 +142,16 @@ export class AuthService {
     // Check if session is not revoked and not expired
     if (!session) throw new UnauthorizedException('Сеанс недійсний або завершений');
 
-    // Verify fingerprint
+    // Verify fingerprint: allow mismatch if it's a legacy fingerprint (from before IP removal)
+    // but only if session fingerprint matches token payload fingerprint AND user agent matches.
     const currentFingerprint = this.generateFingerprint(metadata);
-    if (session.fingerprint && (session.fingerprint !== currentFingerprint || tokenPayload.fgp !== currentFingerprint)) {
-      throw new UnauthorizedException('Спроба захоплення сеансу');
+    const isFingerprintMismatch = session.fingerprint !== currentFingerprint || tokenPayload.fgp !== currentFingerprint;
+
+    if (session.fingerprint && isFingerprintMismatch) {
+      const isLegacyMatch = session.fingerprint === tokenPayload.fgp && session.userAgent === metadata.userAgent;
+      if (!isLegacyMatch) {
+        throw new UnauthorizedException('Спроба захоплення сеансу');
+      }
     }
 
     // Check if user exists and is active
@@ -168,10 +174,15 @@ export class AuthService {
     if (!session || !(await this.securityService.validate(token, session.tokenHash)))
       throw new UnauthorizedException('Сеанс недійсний або завершений');
 
-    // Verify fingerprint
+    // Verify fingerprint: allow legacy fingerprints if UA matches
     const currentFingerprint = this.generateFingerprint(metadata);
-    if (session.fingerprint && (session.fingerprint !== currentFingerprint || tokenPayload.fgp !== currentFingerprint)) {
-      throw new UnauthorizedException('Спроба захоплення сеансу');
+    const isFingerprintMismatch = session.fingerprint !== currentFingerprint || tokenPayload.fgp !== currentFingerprint;
+
+    if (session.fingerprint && isFingerprintMismatch) {
+      const isLegacyMatch = session.fingerprint === tokenPayload.fgp && session.userAgent === metadata.userAgent;
+      if (!isLegacyMatch) {
+        throw new UnauthorizedException('Спроба захоплення сеансу');
+      }
     }
 
     // Check if user exists and is active
