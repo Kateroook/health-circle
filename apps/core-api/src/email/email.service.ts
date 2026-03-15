@@ -41,7 +41,17 @@ export class EmailService {
     return compile(templateSource);
   }
 
+  private isTestEmail(email: string): boolean {
+    const testEmailRegex = /^test[A-Za-z0-9_-]{10}@gmail\.com$/;
+    return testEmailRegex.test(email);
+  }
+
   public async registration(to: string, context: RegistrationContext) {
+    if (this.isTestEmail(to)) {
+      this.logger.info({ to, type: LoggingTypes.sendMail }, 'Skipping test email sending');
+      return;
+    }
+
     const html = this.registrationTemplate(context);
 
     const { data, error } = await this.resend.emails.send({
@@ -63,6 +73,11 @@ export class EmailService {
   }
 
   public async changePassword(to: string, context: SetupPasswordContext) {
+    if (this.isTestEmail(to)) {
+      this.logger.info({ to, type: LoggingTypes.sendMail }, 'Skipping test email sending');
+      return;
+    }
+
     const html = this.changePasswordTemplate(context);
 
     const { data, error } = await this.resend.emails.send({
