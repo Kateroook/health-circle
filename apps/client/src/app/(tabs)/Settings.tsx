@@ -6,8 +6,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { Alert, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import Icon from "react-native-vector-icons/Feather";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import ConfirmationModal from "../../components/ConfirmationModal";
 
 import { Avatar } from "@/src/components/Avatar";
