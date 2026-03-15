@@ -36,7 +36,7 @@ const statusMatchers = {
       pass,
       message: () => pass 
         ? `Expected response not with status ${expectedStatus}`
-        : `Expected response with status ${expectedStatus}, but got ${apiResponse.status()}`,
+        : `Expected response with status ${expectedStatus}, but got ${apiResponse.status()}. Message: ${apiResponse.statusText()}`,
     };
   },
   toHaveStatus2xx(apiResponse: APIResponse) {
@@ -47,7 +47,7 @@ const statusMatchers = {
       message: () =>
         pass
           ? `Expected response not to be 2xx`
-          : `Expected 2xx status but got ${apiResponse.status()}, message: ${apiResponse.statusText()}`,
+          : `Expected 2xx status but got ${apiResponse.status()}. Message: ${apiResponse.statusText()}`,
     };
   },
 
@@ -59,7 +59,7 @@ const statusMatchers = {
       message: () =>
         pass
           ? `Expected response not to be 4xx`
-          : `Expected 4xx status but got ${apiResponse.status()}`,
+          : `Expected 4xx status but got ${apiResponse.status()}. Message: ${apiResponse.statusText()}`,
     };
   },
 
@@ -71,7 +71,7 @@ const statusMatchers = {
       message: () =>
         pass
           ? `Expected response not to be 5xx`
-          : `Expected 5xx status but got ${apiResponse.status()}`,
+          : `Expected 5xx status but got ${apiResponse.status()}. Message: ${apiResponse.statusText()}`,
     };
   },
 
