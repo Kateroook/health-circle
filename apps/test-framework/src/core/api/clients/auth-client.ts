@@ -48,18 +48,24 @@ export class AuthClient extends BaseClient {
    * POST /api/auth/refresh
    * Оновити access token
    */
-  public async refreshToken(): Promise<ApiResult<LoginResponse>> {
-    // Використовуємо refresh token для оновлення
+  public async refreshToken(
+    {
+      customToken,
+      noToken = false,
+    }: {
+      customToken?: string;
+      noToken?: boolean;
+    } = {}
+  ): Promise<ApiResult<LoginResponse>> {
+
     const oldAccessToken = this.context.accessToken;
 
-    // Тимчасово використовуємо refresh token
-    if (this.context.refreshToken) {
-      this.setRefreshToken(this.context.refreshToken);
-    }
+    const token = customToken ?? this.context.refreshToken;
 
-    const result = await this.post<LoginResponse>('/api/auth/refresh');
+    const result = await this.post<LoginResponse>('/api/auth/refresh', {
+      headers: noToken ? {} : { Authorization: `Bearer ${token}` },
+    });
 
-    // Відновлюємо або оновлюємо токени
     if (result.response.ok()) {
       const accessToken = result.data.accessToken;
       const refreshToken = result.data.refreshToken;
@@ -67,7 +73,6 @@ export class AuthClient extends BaseClient {
       if (accessToken) this.setAccessToken(accessToken);
       if (refreshToken) this.setRefreshToken(refreshToken);
     } else {
-      // Якщо оновлення не вдалось, відновлюємо старий токен
       if (oldAccessToken) {
         this.setAccessToken(oldAccessToken);
       }
@@ -75,7 +80,6 @@ export class AuthClient extends BaseClient {
 
     return result;
   }
-
   /**
    * GET /api/auth/profile
    * Отримати профіль користувача
