@@ -1,5 +1,5 @@
 import { APIResponse } from '@playwright/test';
-import { expect } from '@playwright/test';
+import { expect as baseExpect } from '@playwright/test';
 import { ApiResponseMeta } from '../../types/api';
 
 const is = {
@@ -10,25 +10,6 @@ const is = {
   json: (res: APIResponse) => res.headers()['content-type']?.includes('application/json'),
 };
 
-/**
- * Скорочені версії expectResponse для швидкого використання
- */
-export const assertResponse = {
-  is2xx: (res: APIResponse) => expect(is.ok(res), `Expected 2xx status, got ${res.status()}`).toBeTruthy(),
-  is200: (res: APIResponse) => expect(res.status(), `Expected 200, got ${res.status()}`).toBe(200),
-  is201: (res: APIResponse) => expect(res.status(), `Expected 201, got ${res.status()}`).toBe(201),
-  is204: (res: APIResponse) => expect(res.status(), `Expected 204, got ${res.status()}`).toBe(204),
-  is4xx: (res: APIResponse) => expect(is.clientError(res), `Expected 4xx status, got ${res.status()}`).toBeTruthy(),
-  is400: (res: APIResponse) => expect(res.status(), `Expected 400, got ${res.status()}`).toBe(400),
-  is401: (res: APIResponse) => expect(res.status(), `Expected 401, got ${res.status()}`).toBe(401),
-  is403: (res: APIResponse) => expect(res.status(), `Expected 403, got ${res.status()}`).toBe(403),
-  is404: (res: APIResponse) => expect(res.status(), `Expected 404, got ${res.status()}`).toBe(404),
-  is5xx: (res: APIResponse) => expect(is.serverError(res), `Expected 5xx status, got ${res.status()}`).toBeTruthy(),
-  is500: (res: APIResponse) => expect(res.status(), `Expected 500, got ${res.status()}`).toBe(500),
-  status: (res: APIResponse, status: number) =>
-    expect(res.status(), `Expected ${status}, got ${res.status()}`).toBe(status),
-  json: (res: APIResponse) => expect(is.json(res), `Expected content type to be json`).toBeTruthy(),
-};
 /**
  * Скорочені версії для швидкого використання
  */
@@ -47,3 +28,70 @@ export const checkResponse = {
   status: is.status,
   json: is.json,
 };
+
+const statusMatchers = {
+  toHaveStatus(apiResponse: APIResponse, expectedStatus: number) {
+    const pass = is.status(apiResponse, expectedStatus);
+    return {
+      pass,
+      message: () =>
+        pass
+          ? `Expected response not with status ${expectedStatus}`
+          : `Expected response with status ${expectedStatus}, but got ${apiResponse.status()}`,
+    };
+  },
+  toHaveStatus2xx(apiResponse: APIResponse) {
+    const pass = is.ok(apiResponse);
+
+    return {
+      pass,
+      message: () =>
+        pass
+          ? `Expected response not to be 2xx`
+          : `Expected 2xx status but got ${apiResponse.status()}, message: ${apiResponse.statusText()}`,
+    };
+  },
+
+  toHaveStatus4xx(apiResponse: APIResponse) {
+    const pass = is.clientError(apiResponse);
+
+    return {
+      pass,
+      message: () => (pass ? `Expected response not to be 4xx` : `Expected 4xx status but got ${apiResponse.status()}`),
+    };
+  },
+
+  toHaveStatus5xx(apiResponse: APIResponse) {
+    const pass = is.serverError(apiResponse);
+
+    return {
+      pass,
+      message: () => (pass ? `Expected response not to be 5xx` : `Expected 5xx status but got ${apiResponse.status()}`),
+    };
+  },
+
+  toHaveJsonContent(apiResponse: APIResponse) {
+    const contentType = apiResponse.headers()['content-type'] || '';
+    const pass = is.json(apiResponse);
+
+    return {
+      pass,
+      message: () => (pass ? `Expected response not to be JSON` : `Expected JSON response but got "${contentType}"`),
+    };
+  },
+};
+
+declare global {
+  namespace PlaywrightTest {
+    interface Matchers<R> {
+      toHaveStatus(apiResponse: APIResponse, expectedStatus: number): Promise<R>;
+      toHaveStatus2xx(apiResponse: APIResponse): Promise<R>;
+      toHaveStatus3xx(apiResponse: APIResponse): Promise<R>;
+      toHaveStatus4xx(apiResponse: APIResponse): Promise<R>;
+      toHaveStatus5xx(apiResponse: APIResponse): Promise<R>;
+      toHaveJsonContent(apiResponse: APIResponse): Promise<R>;
+    }
+  }
+}
+
+export const expect = baseExpect.extend(statusMatchers);

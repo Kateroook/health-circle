@@ -1,21 +1,25 @@
+import { Button } from "@/src/components/Button";
+import { TextField } from "@/src/components/fields/TextField";
+import { Typography } from "@/src/components/typography";
+import { theme } from "@/src/theme/theme";
 import { router } from "expo-router";
 import { useState } from "react";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Icon from "react-native-vector-icons/Feather";
+import { Feather as Icon } from "@expo/vector-icons";
 import { apiFetch } from "../../api/api";
 import { formatErrorMessage } from "../../utils/error.util";
 
 export default function ForgotPassword() {
+  const { logEvent } = useAnalytics();
   const [email, setEmail] = useState("");
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,6 +37,7 @@ export default function ForgotPassword() {
         method: "POST",
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
+      logEvent("forgot_password_requested");
       setSent(true);
       // Navigate to ResetPassword screen with email
       router.push({ pathname: "/ResetPassword", params: { email: email.trim().toLowerCase() } });
@@ -56,62 +61,76 @@ export default function ForgotPassword() {
           showsVerticalScrollIndicator={false}
         >
           {/* Back button */}
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          {/* <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Icon name="arrow-left" size={24} color="#1A1A1A" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+
+          <Button
+            shape="round"
+            hierarchy="tertiary"
+            size="medium"
+            leadingIcon={<Icon name="arrow-left" size={24} color={theme.colors.content.primary} />}
+            onPress={() => router.back()}
+            style={{ alignSelf: "flex-start" }}
+          />
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Забули пароль?</Text>
-            <Text style={styles.subtitle}>
+            <Typography variant="h2" tone="primary">
+              Забули пароль?
+            </Typography>
+            <Typography
+              variant="body1"
+              tone="secondary"
+              style={{ textAlign: "center", marginTop: 16 }}
+            >
               Введіть email, який ви використовували при реєстрації. Ми надішлемо вам код для
               скидання паролю.
-            </Text>
+            </Typography>
           </View>
 
           {/* Form */}
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
+              <TextField
+                label="Email"
                 placeholder="example@mail.com"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                style={styles.input}
-                placeholderTextColor="#999"
+                required
+                errorMessage={formError || undefined}
               />
             </View>
 
-            {formError && (
-              <View style={styles.errorContainer}>
-                <Icon name="alert-circle" size={18} color="#D32F2F" style={{ marginRight: 8 }} />
-                <Text style={styles.errorText}>{formError}</Text>
-              </View>
-            )}
-
-            <View style={styles.buttonsContainer}>
-              <TouchableOpacity
-                style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleSubmit}
+            <View>
+              <Button
+                label={loading ? "Надсилання..." : "Надіслати код"}
+                hierarchy="primary"
+                shape="rectangle"
+                size="medium"
+                loading={loading}
                 disabled={loading}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {loading ? "Надсилання..." : "Надіслати код"}
-                </Text>
-              </TouchableOpacity>
+                onPress={handleSubmit}
+                style={{ width: "100%" }}
+              />
             </View>
           </View>
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>
+            <Typography variant="body2" tone="primary">
               Згадали пароль?{" "}
-              <Text style={styles.footerLink} onPress={() => router.back()}>
+              <Typography
+                variant="body2"
+                tone="primary"
+                weight="bold"
+                onPress={() => router.back()}
+              >
                 Увійти
-              </Text>
-            </Text>
+              </Typography>
+            </Typography>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -122,119 +141,34 @@ export default function ForgotPassword() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: theme.colors.background.primary,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 10,
-    paddingBottom: 20,
-    justifyContent: "space-between",
+    paddingHorizontal: theme.spacing[16],
+    paddingTop: theme.spacing[56],
+    paddingBottom: theme.spacing[40],
   },
   backButton: {
-    marginBottom: 10,
-    padding: 4,
+    paddingBottom: theme.spacing[14],
     alignSelf: "flex-start",
   },
   header: {
     alignItems: "center",
-    marginTop: 10,
   },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#F0F0F0",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#666",
-    textAlign: "center",
-    paddingHorizontal: 10,
-    lineHeight: 22,
-  },
+
   formContainer: {
-    marginTop: 20,
+    marginTop: theme.spacing[32],
   },
   inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    fontSize: 16,
-    color: "#1A1A1A",
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-  },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFE5E5",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  errorText: {
-    color: "#D32F2F",
-    fontSize: 14,
-    flex: 1,
-  },
-  buttonsContainer: {
-    marginTop: 8,
-    gap: 12,
-  },
-  primaryButton: {
-    backgroundColor: "#000000",
-    paddingVertical: 16,
-    borderRadius: 25,
-    alignItems: "center",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonDisabled: {
-    backgroundColor: "#000000",
-    opacity: 0.7,
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
+    marginBottom: theme.spacing[16],
   },
   footer: {
     alignItems: "center",
-    gap: 16,
-    marginTop: 24,
-  },
-  footerText: {
-    fontSize: 14,
-    color: "#000000",
-  },
-  footerLink: {
-    color: "#000000",
-    fontWeight: "600",
+    gap: theme.spacing[16],
+    marginTop: theme.spacing[24],
   },
 });

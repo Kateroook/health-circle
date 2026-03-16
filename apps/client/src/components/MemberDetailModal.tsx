@@ -1,9 +1,11 @@
 import React from "react";
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import MemberAvatar from "@/src/components/MemberAvatar";
+import { MemberAvatar } from "@/src/components/MemberAvatar";
+import { UserStatus } from "@/src/components/StatusBadge";
 
-// Тимчасово дублюємо потрібні типи (потім винесемо в окремий файл)
-type UserStatus = "SAFE" | "DANGER" | "UNKNOWN";
+// UserStatus is imported from the single source of truth — StatusBadge.
+// Do NOT redeclare it locally; that caused TS2719 when "WAS_SAFE" was added
+// to StatusBadge.UserStatus but not propagated here.
 
 interface Member {
   id: string;
@@ -18,9 +20,17 @@ interface MemberProfileModalProps {
   member: Member | null;
   visible: boolean;
   onClose: () => void;
+  onRollCall?: () => void;
+  canRollCall?: boolean;
 }
 
-export default function MemberProfileModal({ member, visible, onClose }: MemberProfileModalProps) {
+export default function MemberDetailModal({
+  member,
+  visible,
+  onClose,
+  onRollCall,
+  canRollCall,
+}: MemberProfileModalProps) {
   if (!visible || !member) return null;
 
   let statusText: string;
@@ -30,7 +40,8 @@ export default function MemberProfileModal({ member, visible, onClose }: MemberP
 
   switch (member.status) {
     case "SAFE":
-      statusText = "В безпеці";
+    case "WAS_SAFE":
+      statusText = member.status === "SAFE" ? "В безпеці" : "Був у безпеці";
       statusColor = "#4CAF50";
       circleColor = "#4CAF50";
       symbol = "✓";
@@ -88,16 +99,15 @@ export default function MemberProfileModal({ member, visible, onClose }: MemberP
               <Text style={modalStyles.actionButtonText}>Написати</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={modalStyles.actionButton}
-              activeOpacity={0.8}
-              onPress={() => {
-                // TODO: Перекличка / дзвінок
-                console.log("Перекличка", member.id);
-              }}
-            >
-              <Text style={modalStyles.actionButtonText}>Перекличка</Text>
-            </TouchableOpacity>
+            {canRollCall && onRollCall && (
+              <TouchableOpacity
+                style={modalStyles.actionButton}
+                activeOpacity={0.8}
+                onPress={onRollCall}
+              >
+                <Text style={modalStyles.actionButtonText}>Перекличка</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </Pressable>
       </Pressable>

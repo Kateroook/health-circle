@@ -1,22 +1,24 @@
+import { Button } from "@/src/components/Button";
+import { TextField } from "@/src/components/fields/TextField";
+import { Typography } from "@/src/components/typography";
+import { theme } from "@/src/theme/theme";
 import { router } from "expo-router";
-import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useEffect, useState } from "react";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { apiFetch } from "../../api/api";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
-
 export default function Register() {
+  const { logEvent } = useAnalytics();
+
+  useEffect(() => {
+    logEvent("registration_started");
+  }, []);
+
   const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState({
     phone: "",
@@ -100,6 +102,7 @@ export default function Register() {
 
     if (isValid) {
       if (step === 1) {
+        logEvent("registration_step_2");
         setStep(2);
       } else {
         await handleRegister();
@@ -112,53 +115,43 @@ export default function Register() {
   };
 
   const renderInput = (
+    label: string,
     value: string,
     error: string | undefined,
     placeholder: string,
     keyboardType: "phone-pad" | "email-address" | "default" = "default",
-    secureTextEntry = false,
     onChangeText: (text: string) => void,
     autoCapitalize: "none" | "words" = "words",
+    maxLength?: number,
+    isPhone?: boolean,
+    required?: boolean,
   ) => {
-    const hasBeenValidated = validatedSteps.has(step);
-    const isFilled = value.trim().length > 0;
-    const hasError = !!error;
-
-    let indicatorStyle = null;
-    let symbol = null;
-
-    if (hasBeenValidated) {
-      if (hasError) {
-        indicatorStyle = styles.statusError;
-        symbol = "!";
-      } else if (isFilled) {
-        indicatorStyle = styles.statusSuccess;
-        symbol = "✓";
-      }
-    }
-
     return (
-      <View style={styles.inputWrapper}>
-        <TextInput
-          placeholder={placeholder}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          secureTextEntry={secureTextEntry}
-          autoCapitalize={autoCapitalize}
-          style={[
-            styles.input,
-            hasError ? styles.inputError : isFilled && !hasError ? styles.inputValid : null,
-          ]}
-          placeholderTextColor="#999"
-        />
-
-        {indicatorStyle && (
-          <View style={[styles.statusIndicator, indicatorStyle]}>
-            <Text style={styles.statusSymbol}>{symbol}</Text>
-          </View>
+      <>
+        {isPhone ? (
+          <TextField
+            label={label}
+            placeholder={placeholder}
+            value={value}
+            onChangeText={onChangeText}
+            keyboardType={keyboardType}
+            autoCapitalize={autoCapitalize}
+            required={required}
+            errorMessage={error}
+          />
+        ) : (
+          <TextField
+            label={label}
+            placeholder={placeholder}
+            value={value}
+            onChangeText={onChangeText}
+            keyboardType={keyboardType}
+            autoCapitalize={autoCapitalize}
+            required={required}
+            errorMessage={error}
+          />
         )}
-      </View>
+      </>
     );
   };
 
@@ -211,11 +204,24 @@ export default function Register() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Back button */}
+          {step > 1 && (
+            <Button
+              shape="round"
+              hierarchy="tertiary"
+              size="medium"
+              leadingIcon={
+                <Icon name="arrow-left" size={24} color={theme.colors.content.primary} />
+              }
+              onPress={handleBack}
+              style={{ alignSelf: "flex-start" }}
+            />
+          )}
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>
+            <Typography variant="h2" tone="primary" style={styles.title}>
               {step === 1 ? "Введи номер телефону та електронну пошту" : "Як тебе звати?"}
-            </Text>
+            </Typography>
           </View>
 
           {/* Form */}
@@ -223,31 +229,33 @@ export default function Register() {
             {step === 1 && (
               <>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Номер телефону</Text>
                   {renderInput(
+                    "Номер телефону",
                     form.phone,
                     errors.phone,
                     "+380 XX XXX XX XX",
                     "phone-pad",
-                    false,
                     (v) => handleChange("phone", v),
                     "words",
+                    13,
+                    true,
+                    true,
                   )}
-                  {errors.phone && <Text style={styles.fieldError}>{errors.phone}</Text>}
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Електронна пошта</Text>
                   {renderInput(
+                    "Електронна пошта",
                     form.email,
                     errors.email,
                     "example@mail.com",
                     "email-address",
-                    false,
                     (v) => handleChange("email", v),
                     "none",
+                    100,
+                    false,
+                    true,
                   )}
-                  {errors.email && <Text style={styles.fieldError}>{errors.email}</Text>}
                 </View>
               </>
             )}
@@ -255,42 +263,48 @@ export default function Register() {
             {step === 2 && (
               <>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Прізвище</Text>
                   {renderInput(
+                    "Прізвище",
                     form.lastName,
                     errors.lastName,
                     "Введіть прізвище",
                     "default",
-                    false,
                     (v) => handleChange("lastName", v),
+                    "words",
+                    50,
+                    false,
+                    true,
                   )}
-                  {errors.lastName && <Text style={styles.fieldError}>{errors.lastName}</Text>}
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{"Ім'я"}</Text>
                   {renderInput(
+                    "Ім'я",
                     form.firstName,
                     errors.firstName,
                     "Введіть ім'я",
                     "default",
-                    false,
                     (v) => handleChange("firstName", v),
+                    "words",
+                    50,
+                    false,
+                    true,
                   )}
-                  {errors.firstName && <Text style={styles.fieldError}>{errors.firstName}</Text>}
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>По батькові</Text>
                   {renderInput(
+                    "По батькові",
                     form.middleName,
                     errors.middleName,
                     "Введіть по батькові (опціонально)",
                     "default",
-                    false,
                     (v) => handleChange("middleName", v),
+                    "words",
+                    50,
+                    false,
+                    false,
                   )}
-                  {errors.middleName && <Text style={styles.fieldError}>{errors.middleName}</Text>}
                 </View>
               </>
             )}
@@ -299,31 +313,31 @@ export default function Register() {
 
             {/* Buttons */}
             <View style={styles.buttonsContainer}>
-              <TouchableOpacity
-                style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleNext}
+              <Button
+                label={loading ? "Зачекайте..." : step < 2 ? "Далі" : "Зареєструватися"}
+                hierarchy="primary"
+                shape="rectangle"
+                size="medium"
+                loading={loading}
                 disabled={loading}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {loading ? "Зачекайте..." : step < 2 ? "Далі" : "Зареєструватися"}
-                </Text>
-              </TouchableOpacity>
-
-              {step > 1 && (
-                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                  <Text style={styles.backButtonText}>Назад</Text>
-                </TouchableOpacity>
-              )}
+                onPress={handleNext}
+                style={{ width: "100%" }}
+              />
             </View>
           </View>
 
           {/* Footer */}
-          <Text style={styles.footer}>
+          <Typography variant="body2" tone="primary" style={styles.footer}>
             Вже є акаунт?{" "}
-            <Text style={styles.footerLink} onPress={() => router.push("/Login")}>
+            <Typography
+              variant="body2"
+              tone="primary"
+              weight="bold"
+              onPress={() => router.push("/Login")}
+            >
               Увійти
-            </Text>
-          </Text>
+            </Typography>
+          </Typography>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -333,148 +347,60 @@ export default function Register() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: theme.colors.background.primary,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingHorizontal: theme.spacing[16],
+    paddingTop: theme.spacing[56],
+    paddingBottom: theme.spacing[40],
   },
   header: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: theme.spacing[32],
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginBottom: 8,
     textAlign: "center",
   },
   formContainer: {
-    marginBottom: 24,
+    marginBottom: theme.spacing[16],
   },
   inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
-  },
-
-  inputWrapper: {
-    position: "relative",
-  },
-
-  input: {
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    paddingRight: 48,
-    borderRadius: 10,
-    fontSize: 16,
-    color: "#1A1A1A",
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-  },
-
-  inputError: {
-    borderColor: "#FF6B6B",
-  },
-
-  inputValid: {
-    borderColor: "#4CAF50",
-  },
-
-  statusIndicator: {
-    position: "absolute",
-    right: 16,
-    top: "50%",
-    marginTop: -10,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  statusSuccess: {
-    backgroundColor: "#4CAF50",
-  },
-
-  statusError: {
-    backgroundColor: "#FF6B6B",
-  },
-
-  statusSymbol: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "bold",
-    lineHeight: 20,
-  },
-
-  fieldError: {
-    color: "#FF6B6B",
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
+    marginBottom: theme.spacing[16],
   },
 
   buttonsContainer: {
-    marginTop: 16,
-    gap: 12,
+    paddingTop: theme.spacing[8],
+    gap: theme.spacing[16],
   },
 
   primaryButton: {
-    backgroundColor: "#000000",
-    paddingVertical: 16,
-    borderRadius: 25,
+    backgroundColor: theme.colors.primaryB,
+    paddingVertical: theme.spacing[16],
+    borderRadius: theme.radius.pill,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: theme.spacing[8],
+    elevation: theme.spacing[4],
   },
 
   buttonDisabled: {
-    backgroundColor: "#000000",
+    backgroundColor: theme.colors.primaryB,
     opacity: 0.7,
   },
 
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
-  },
-
   backButton: {
-    paddingVertical: 12,
+    paddingVertical: theme.spacing[12],
     alignItems: "center",
-  },
-
-  backButtonText: {
-    color: "#000000",
-    fontSize: 16,
-    fontWeight: "500",
   },
 
   footer: {
     textAlign: "center",
-    fontSize: 14,
-    color: "#666",
-    marginTop: 24,
-    marginBottom: 20,
-  },
-
-  footerLink: {
-    color: "#000000",
-    fontWeight: "600",
+    marginTop: theme.spacing[16],
   },
 });

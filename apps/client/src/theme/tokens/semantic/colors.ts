@@ -26,6 +26,7 @@ export const semanticColors = {
     lightPositive: colors.green[50], // "#eaf6ed" – Soft success background
     lightNegative: colors.red[50], // "#fff0ee" – Soft error background
     lightWarning: colors.amber[50], // "#fff1e1" – Soft warning background
+    stateDisable: colors.grey[100], // "#fafbfd" – Disabled background
   },
 
   /**
@@ -38,6 +39,7 @@ export const semanticColors = {
     tertiary: colors.grey[500], // "#8a9099" – Disabled, hints
     onColor: colors.white, // "#ffffff" – Text on colored backgrounds
     onColorInverse: colors.black, // "#000000" – Inverse text (rare)
+    stateDisable: colors.grey[400], // "#8a9099" – Disabled content
   },
 
   /**

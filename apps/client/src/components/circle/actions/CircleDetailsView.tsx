@@ -1,9 +1,9 @@
 import { COLORS } from "@/src/theme/colors";
-import { AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import MemberAvatar from "../../MemberAvatar";
+import { MemberAvatar } from "../../MemberAvatar";
 
 import { Member } from "../CircleItem";
 
@@ -18,6 +18,7 @@ interface CircleDetailsViewProps {
   onRenamePress: () => void;
   onUnsubscribePress: () => void;
   onMemberPress: (member: DetailsMember) => void;
+  onRollCallPress: () => void;
 }
 
 export default function CircleDetailsView({
@@ -29,64 +30,117 @@ export default function CircleDetailsView({
   onRenamePress,
   onUnsubscribePress,
   onMemberPress,
+  onRollCallPress,
 }: CircleDetailsViewProps) {
   const handleCopy = async () => {
     await Clipboard.setStringAsync(inviteCode);
   };
 
+  const unknownCount = members.filter((m) => (m.status as any) === "UNKNOWN" || !m.status).length;
+  const safeCount = members.filter((m) => m.status === "SAFE").length;
+  const wasSafeCount = members.filter((m) => (m.status as any) === "WAS_SAFE").length;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{name}</Text>
+        <TouchableOpacity onPress={onClose} style={styles.backArrow}>
+          <AntDesign name="left" size={24} color={COLORS.TEXT_DARK} />
+        </TouchableOpacity>
+        <View style={styles.titleInfo}>
+          <Text style={styles.title}>{name}</Text>
+          <View style={styles.codeContainer}>
+            <Text style={styles.codeText}>Код: {inviteCode}</Text>
+            <TouchableOpacity onPress={handleCopy} style={styles.copyButton}>
+              <Feather name="copy" size={14} color={COLORS.TEXT_DARK} />
+            </TouchableOpacity>
+          </View>
+        </View>
         {isOwner && (
           <TouchableOpacity onPress={onRenamePress} style={styles.editButton}>
-            <AntDesign name="edit" size={20} color={COLORS.PRIMARY_BLUE} />
+            <AntDesign name="edit" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         )}
       </View>
 
-      <View style={styles.codeContainer}>
-        <Text style={styles.codeText}>Код: {inviteCode}</Text>
-        <TouchableOpacity onPress={handleCopy} style={styles.copyButton}>
-          <Feather name="copy" size={16} color={COLORS.TEXT_DARK} />
-        </TouchableOpacity>
+      <View style={styles.statsCard}>
+        <View style={styles.statsHeader}>
+          <Text style={styles.membersCountText}>{members.length} учасників</Text>
+          {isOwner && (
+            <TouchableOpacity onPress={onRollCallPress} style={styles.rollCallButton}>
+              <Text style={styles.rollCallButtonText}>Перекличка</Text>
+              <Feather name="rss" size={16} color="#FFF" />
+            </TouchableOpacity>
+          )}
+        </View>
+        <Text style={styles.statsSummaryText}>
+          {unknownCount} не відповіли,{"\n"}
+          {wasSafeCount} нещодавно в безпеці, {safeCount} в безпеці
+        </Text>
       </View>
 
-      <ScrollView style={styles.membersList}>
-        {members.map((member) => (
-          <View key={member.id} style={styles.memberCard}>
-            <View style={styles.memberHeader}>
-              <View style={styles.memberInfo}>
-                <MemberAvatar member={{ ...member, status: member.status || "UNKNOWN" }} />
-                <View style={styles.memberNameContainer}>
-                  <Text style={styles.memberName}>
+      <ScrollView style={styles.membersList} contentContainerStyle={styles.membersListContent}>
+        <View style={styles.membersCard}>
+          {members.map((member, index) => (
+            <TouchableOpacity
+              key={member.id}
+              style={[styles.memberCard, index === members.length - 1 && { borderBottomWidth: 0 }]}
+              onPress={() => onMemberPress(member)}
+            >
+              <View style={styles.memberMainInfo}>
+                <MemberAvatar member={{ ...member, status: (member.status as any) || "UNKNOWN" }} />
+                <View style={styles.memberTextInfo}>
+                  <Text style={styles.memberNameText}>
                     {member.fullName || `${member.firstName} ${member.lastName}`.trim()}
                   </Text>
-                  <View style={styles.statusContainer}>
-                    <Text style={styles.statusText}>
-                      {member.status === "SAFE"
-                        ? "В безпеці"
-                        : member.status === "DANGER"
-                          ? "У небезпеці"
-                          : "Невідомо"}
-                    </Text>
-                    <MaterialIcons name="notifications" size={16} color={COLORS.PRIMARY_BLUE} />
-                  </View>
-                  <View style={styles.moodContainer}>
-                    <Text style={styles.moodLabel}>НАСТРІЙ</Text>
-                    <View style={styles.moodValueContainer}>
-                      <Text style={styles.moodText}>{member.mood || "Не відмітився"}</Text>
-                      <MaterialIcons name="notifications" size={16} color={COLORS.PRIMARY_BLUE} />
-                    </View>
-                  </View>
+                  <Text style={styles.memberStatusLabel}>
+                    {member.status === "SAFE"
+                      ? "У безпеці"
+                      : (member.status as any) === "WAS_SAFE"
+                        ? "Був у безпеці"
+                        : "Невідомо"}
+                  </Text>
+                  <Text style={styles.memberStatusTime}>
+                    {member.status === "SAFE"
+                      ? "19:05"
+                      : member.status === "WAS_SAFE"
+                        ? "У безпеці о 18:56"
+                        : "19:05"}
+                  </Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => onMemberPress(member)}>
-                <MaterialIcons name="more-horiz" size={24} color={COLORS.TEXT_GRAY} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
+              <View
+                style={[
+                  styles.statusIconContainer,
+                  {
+                    backgroundColor: "transparent",
+                  },
+                ]}
+              >
+                <AntDesign
+                  name={
+                    member.status === "SAFE"
+                      ? "check-circle"
+                      : member.status === "WAS_SAFE"
+                        ? "sync"
+                        : "question-circle"
+                  }
+                  size={
+                    member.status === "SAFE" || member.status === "UNKNOWN" || !member.status
+                      ? 26
+                      : 18
+                  }
+                  color={
+                    member.status === "SAFE"
+                      ? COLORS.STATE_SAFE
+                      : member.status === "WAS_SAFE"
+                        ? COLORS.PRIMARY_BLUE
+                        : "#FF9500"
+                  }
+                />
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
     </View>
   );
@@ -95,105 +149,154 @@ export default function CircleDetailsView({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    backgroundColor: "#F7F8FA",
   },
   header: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  titleInfo: {
+    flex: 1,
+    marginLeft: 15,
+  },
+  backArrow: {
+    marginTop: 8,
   },
   title: {
     fontSize: 28,
-    fontWeight: "700",
+    fontWeight: "800",
     color: COLORS.TEXT_DARK,
+    marginBottom: 4,
   },
   editButton: {
-    padding: 8,
-    backgroundColor: COLORS.PRIMARY_BLUE + "20", // Light blue background
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: COLORS.PRIMARY_BLUE,
+    borderRadius: 18,
+    marginTop: 4,
   },
   codeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EEF2F6",
+    backgroundColor: "#EBEDF0",
     alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    marginBottom: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
   codeText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
     color: COLORS.TEXT_DARK,
-    marginRight: 8,
+    marginRight: 6,
   },
   copyButton: {
-    padding: 4,
+    padding: 2,
   },
-  membersList: {
-    flex: 1,
-  },
-  memberCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    backgroundColor: "#fff", // Use explicit white if card bg is different
+  statsCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: 10,
     elevation: 2,
   },
-  memberHeader: {
+  statsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+    marginBottom: 12,
   },
-  memberInfo: {
-    flexDirection: "row",
-    flex: 1,
-  },
-  memberNameContainer: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  memberName: {
-    fontSize: 18,
+  membersCountText: {
+    fontSize: 17,
     fontWeight: "700",
     color: COLORS.TEXT_DARK,
-    marginBottom: 4,
   },
-  statusContainer: {
+  rollCallButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    backgroundColor: COLORS.PRIMARY_BLUE,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
     gap: 6,
   },
-  statusText: {
-    fontSize: 14,
-    fontWeight: "600",
+  rollCallButtonText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  statsSummaryText: {
+    fontSize: 12,
+    color: COLORS.TEXT_DARK,
+    lineHeight: 18,
+    fontWeight: "500",
+    opacity: 0.8,
+  },
+  membersList: {
+    // Let content define height so it displays correctly inside bottom sheet
+    // rather than trying to flex into potentially zero height.
+  },
+  membersListContent: {
+    paddingBottom: 40,
+  },
+  membersCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  memberCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F7",
+  },
+  memberMainInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  memberTextInfo: {
+    marginLeft: 12,
+  },
+  memberNameText: {
+    fontSize: 16,
+    fontWeight: "700",
     color: COLORS.TEXT_DARK,
   },
-  moodContainer: {
-    marginTop: 4,
-  },
-  moodLabel: {
-    fontSize: 10,
+  memberStatusLabel: {
+    fontSize: 14,
     fontWeight: "600",
     color: COLORS.TEXT_GRAY,
-    textTransform: "uppercase",
-    marginBottom: 2,
+    marginTop: 2,
   },
-  moodValueContainer: {
-    flexDirection: "row",
+  memberStatusTime: {
+    fontSize: 12,
+    color: COLORS.TEXT_GRAY,
+    marginTop: 2,
+    opacity: 0.7,
+  },
+  statusIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
     alignItems: "center",
-    gap: 6,
-  },
-  moodText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.TEXT_DARK,
   },
 });

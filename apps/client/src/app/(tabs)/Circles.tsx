@@ -1,16 +1,18 @@
 import { apiFetch } from "@/src/api/api";
+import { Button } from "@/src/components/Button";
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
 import type { Member as CircleItemMember } from "@/src/components/circle/CircleItem";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
+//import CircleDetailsModal from "@/src/components/circle/CircleDetailsModal";
 import MemberDetailModal from "@/src/components/MemberDetailModal";
+import { MemberAvatar } from "@/src/components/MemberAvatar";
+import { Typography } from "@/src/components/typography/Typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { COLORS } from "@/src/theme/colors";
-import { AntDesign, Feather } from "@expo/vector-icons";
+import { AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
-import MemberAvatar from "@/src/components/MemberAvatar";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { MaterialIcons } from "@expo/vector-icons";
 import {
   Alert,
   BackHandler,
@@ -26,6 +28,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/src/store/authStore";
+import { theme } from "@/src/theme/theme";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -115,6 +118,7 @@ export default function CirclesScreen() {
 
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
+  const [isDetailsVisible, setIsDetailsVisible] = useState(false);
   const [activeCircle, setActiveCircle] = useState<Circle | null>(null);
   const [circles, setCircles] = useState<Circle[]>([]);
   const [showCircleDetail, setShowCircleDetail] = useState(false);
@@ -170,6 +174,10 @@ export default function CirclesScreen() {
         setIsActionsVisible(false);
         return true;
       }
+      if (isDetailsVisible) {
+        setIsDetailsVisible(false);
+        return true;
+      }
       if (showCircleDetail) {
         setShowCircleDetail(false);
         setActiveCircle(null);
@@ -178,7 +186,13 @@ export default function CirclesScreen() {
       return false;
     });
     return () => sub.remove();
-  }, [isAddModalVisible, isActionsVisible, showCircleDetail, isRenameModalVisible]);
+  }, [
+    isAddModalVisible,
+    isActionsVisible,
+    isDetailsVisible,
+    showCircleDetail,
+    isRenameModalVisible,
+  ]);
 
   function openActionsModal(circle: Circle | null) {
     setActiveCircle(circle);
@@ -393,6 +407,7 @@ export default function CirclesScreen() {
         <CircleActionsModal
           visible={isActionsVisible}
           onClose={() => setIsActionsVisible(false)}
+          circleId={activeCircle?.id || ""}
           ownerId={activeCircle?.owner.id || ""}
           currentName={activeCircle?.name || ""}
           inviteCode={activeCircle?.inviteCode || ""}
@@ -455,10 +470,16 @@ export default function CirclesScreen() {
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Кола</Text>
-          <TouchableOpacity style={styles.addButton} onPress={() => setIsAddModalVisible(true)}>
-            <AntDesign name="plus" size={24} color="#FFF" />
-          </TouchableOpacity>
+          <Typography variant="h1" tone="primary">
+            Кола
+          </Typography>
+          <Button
+            shape="round"
+            hierarchy="accent"
+            size="medium"
+            leadingIcon={<AntDesign name="plus" size={24} color={theme.colors.content.onColor} />}
+            onPress={() => setIsAddModalVisible(true)}
+          />
         </View>
 
         {circles.length === 0 ? (
@@ -489,6 +510,7 @@ export default function CirclesScreen() {
         currentName={activeCircle?.name || ""}
         inviteCode={activeCircle?.inviteCode || ""}
         members={activeCircle?.members || []}
+        circleId={activeCircle ? activeCircle.id : ""}
         onSaveMembers={async (updatedMembers) => {
           if (!activeCircle) return;
           await apiFetch("/groups", {
@@ -525,28 +547,23 @@ export default function CirclesScreen() {
             method: "POST",
           });
           setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+          fetchCircles();
         }}
       />
+
+      {/* Circle Details Modal */}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F7F7F7" },
-  content: { padding: 20, paddingBottom: 120 },
+  screen: { flex: 1, backgroundColor: theme.colors.background.primary },
+  content: { paddingHorizontal: theme.spacing[16], paddingBottom: 140 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  title: { fontSize: 28, fontWeight: "700" },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.PRIMARY_BLUE,
-    justifyContent: "center",
-    alignItems: "center",
+    marginTop: theme.spacing[20],
+    marginBottom: theme.spacing[28],
   },
   emptyText: {
     textAlign: "center",

@@ -1,10 +1,10 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ContactEntity } from 'src/common/entities/contact.entity';
 import { Repository } from 'typeorm';
 
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
+import { ContactEntity } from './entities/contact.entity';
 
 @Injectable()
 export class ContactsService {
@@ -16,7 +16,6 @@ export class ContactsService {
   async findAllForUser(ownerId: string): Promise<ContactEntity[]> {
     return this.repository.find({
       where: { ownerId },
-      relations: ['target'],
     });
   }
 

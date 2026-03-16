@@ -1,10 +1,10 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import type { Request } from 'express';
 import { ExtractJwt, Strategy, StrategyOptionsWithRequest } from 'passport-jwt';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { AuthStrategies } from 'src/common/enums/auth-strategies';
+import { AuthRequest } from 'src/common/types/auth-request';
 
 import { AuthService } from '../auth.service';
 import { UserTokenPayload } from '../types/user-token-payload';
@@ -24,9 +24,9 @@ export class UserJwtRefreshStrategy extends PassportStrategy(Strategy, AuthStrat
     } as StrategyOptionsWithRequest);
   }
 
-  async validate(req: Request, payload: UserTokenPayload): Promise<UserProfileDto> {
+  async validate(req: AuthRequest, payload: UserTokenPayload): Promise<UserProfileDto> {
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
     if (!token) throw new UnauthorizedException('Missing Authorization header');
-    return this.authService.verifySession(token, payload);
+    return this.authService.verifySession(token, payload, req.metadata);
   }
 }

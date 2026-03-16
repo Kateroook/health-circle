@@ -1,12 +1,13 @@
 import { useAuthStore } from "@/src/store/authStore";
 import { AntDesign } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { useAnalytics } from "@/src/hooks/useAnalytics";
+import { StyleSheet, View } from "react-native";
 
 import { setContactAlias } from "@/src/api/contacts";
-import { blockUser } from "@/src/api/groups";
+import { blockUser, initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
+import { Button } from "@/src/components/Button";
 import { BottomSheetContainer, ModalActions } from "@/src/components/modal";
-import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import ConfirmationModal from "../../ConfirmationModal";
 import { Member } from "../CircleItem";
@@ -22,11 +23,12 @@ interface Props {
   ownerId: string;
   onClose: () => void;
   onSaveMembers: (updated: { id: string }[]) => void;
-  onDelete: () => void; // Used for "Delete Circle" from details
-  onLeave: () => void; // Used for "Leave Circle" from details
+  onDelete: () => void;
+  onLeave: () => void;
   onRegenerateInvite: () => Promise<void>;
   onMemberUpdated: () => void;
   onEdit: () => void;
+  onRollCall: () => void;
 }
 
 export default function CircleDetailsModal({
@@ -43,7 +45,9 @@ export default function CircleDetailsModal({
   onRegenerateInvite,
   onMemberUpdated,
   onEdit,
+  onRollCall,
 }: Props) {
+  const { logEvent } = useAnalytics();
   const [view, setView] = useState<"details" | "member">("details");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
@@ -85,7 +89,6 @@ export default function CircleDetailsModal({
         setView("details");
       } catch (error) {
         console.error("Failed to rename member:", error);
-        // Optionally show an alert
       }
     }
   };
@@ -94,11 +97,34 @@ export default function CircleDetailsModal({
     if (selectedMember && circleId) {
       try {
         await blockUser(circleId, selectedMember.id);
+        logEvent("block_user");
         onMemberUpdated();
         setView("details");
         setIsBlockConfirmVisible(false);
       } catch (error) {
         console.error("Failed to block user:", error);
+      }
+    }
+  };
+
+  const handleRollCall = async () => {
+    try {
+      await initiateRollCall(circleId);
+      logEvent("initiate_roll_call", { type: "group" });
+      onRollCall();
+    } catch (error) {
+      console.error("Failed to initiate roll call:", error);
+    }
+  };
+
+  const handlePersonalRollCall = async () => {
+    if (selectedMember && circleId) {
+      try {
+        await initiatePersonalRollCall(circleId, selectedMember.id);
+        logEvent("initiate_personal_roll_call", { type: "individual" });
+        onRollCall();
+      } catch (error) {
+        console.error("Failed to initiate personal roll call:", error);
       }
     }
   };
@@ -117,10 +143,14 @@ export default function CircleDetailsModal({
       {/* ===== MEMBER DETAILS MODE ===== */}
       {view === "member" && selectedMember && (
         <View style={styles.section}>
-          <TouchableOpacity onPress={() => setView("details")} style={styles.backButton}>
-            <AntDesign name="arrow-left" size={16} color={theme.colors.accent} />
-            <Typography variant="subtitle1"> Назад</Typography>
-          </TouchableOpacity>
+          <Button
+            shape="round"
+            hierarchy="tertiary"
+            size="xsmall"
+            leadingIcon={<AntDesign name="arrow-left" size={16} color={theme.colors.accent} />}
+            onPress={() => setView("details")}
+            style={{ alignSelf: "flex-start" }}
+          />
 
           <MemberDetailsView
             member={selectedMember}
@@ -128,6 +158,8 @@ export default function CircleDetailsModal({
             onClose={() => setView("details")}
             onRemoveMember={handleRemoveMember}
             onBlock={isOwner ? () => setIsBlockConfirmVisible(true) : undefined}
+            onRollCall={handlePersonalRollCall}
+            isOwner={isOwner}
           />
         </View>
       )}
@@ -144,22 +176,44 @@ export default function CircleDetailsModal({
             onRenamePress={onEdit}
             onUnsubscribePress={() => setIsLeaveVisible(true)}
             onMemberPress={handleMemberPress}
+            onRollCallPress={handleRollCall}
           />
 
           {/* Footer Actions (Delete/Leave) */}
           <ModalActions direction="column" style={styles.footer}>
             {isOwner ? (
-              <TouchableOpacity style={styles.delete} onPress={() => setIsDeleteVisible(true)}>
-                <Typography variant="subtitle1" weight="semibold" tone="negative">
-                  Видалити коло
-                </Typography>
-              </TouchableOpacity>
+              <>
+                <Button
+                  label="Згенерувати нове запрошення"
+                  hierarchy="tertiary"
+                  shape="rectangle"
+                  size="medium"
+                  onPress={async () => {
+                    await onRegenerateInvite();
+                    logEvent("regenerate_invite_code");
+                  }}
+                  style={{ width: "100%" }}
+                />
+                <Button
+                  label="Видалити коло"
+                  hierarchy="tertiary"
+                  shape="rectangle"
+                  size="medium"
+                  onPress={() => setIsDeleteVisible(true)}
+                  style={{ width: "100%" }}
+                  textStyle={{ color: theme.colors.negative }}
+                />
+              </>
             ) : (
-              <TouchableOpacity style={styles.delete} onPress={() => setIsLeaveVisible(true)}>
-                <Typography variant="subtitle1" weight="semibold" tone="negative">
-                  Покинути коло
-                </Typography>
-              </TouchableOpacity>
+              <Button
+                label="Покинути коло"
+                hierarchy="tertiary"
+                shape="rectangle"
+                size="medium"
+                onPress={() => setIsLeaveVisible(true)}
+                style={{ width: "100%" }}
+                textStyle={{ color: theme.colors.negative }}
+              />
             )}
           </ModalActions>
         </View>
@@ -170,6 +224,7 @@ export default function CircleDetailsModal({
         onCancel={() => setIsDeleteVisible(false)}
         onConfirm={() => {
           setIsDeleteVisible(false);
+          logEvent("delete_circle");
           setTimeout(() => onDelete(), 300);
         }}
         title="Видалити це Коло?"
@@ -183,6 +238,7 @@ export default function CircleDetailsModal({
         onCancel={() => setIsLeaveVisible(false)}
         onConfirm={() => {
           setIsLeaveVisible(false);
+          logEvent("leave_circle");
           setTimeout(() => onLeave(), 300);
         }}
         title="Покинути Коло?"
@@ -212,45 +268,5 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: theme.spacing[16],
     paddingBottom: theme.spacing[10],
-  },
-  delete: {
-    backgroundColor: "transparent",
-    paddingVertical: theme.spacing[12],
-    alignItems: "center",
-  },
-  input: {
-    backgroundColor: theme.colors.background.tertiary,
-    borderRadius: theme.radius.lg,
-    paddingVertical: theme.spacing[16],
-    paddingHorizontal: theme.spacing[20],
-    fontSize: theme.typography.fontSize.h2,
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.content.primary,
-    textAlign: "center",
-    marginTop: theme.spacing[8],
-    marginBottom: theme.spacing[24],
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: theme.spacing[16],
-  },
-  backButtonText: {
-    fontSize: theme.typography.fontSize.subtitle1,
-    fontWeight: theme.typography.fontWeight.semibold,
-    color: theme.colors.accent,
-    marginLeft: theme.spacing[8],
-  },
-  doneButton: {
-    backgroundColor: theme.colors.accent,
-    borderRadius: theme.radius.pill,
-    paddingVertical: theme.spacing[14],
-    alignItems: "center",
-    marginTop: theme.spacing[20],
-  },
-  doneButtonText: {
-    color: theme.colors.content.onColor,
-    fontSize: theme.typography.fontSize.subtitle1,
-    fontWeight: theme.typography.fontWeight.bold,
   },
 });

@@ -1,8 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsDefined,
   IsEmail,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsPhoneNumber,
   IsString,
@@ -15,6 +17,7 @@ import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constra
 export class CreateUserDto {
   @IsDefined({ message: 'Поле електронної пошти є обовʼязковим' })
   @IsEmail({}, { message: 'Некоректний формат електронної пошти' })
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
   @Validate(UserUniqueConstraint, ['email'], { message: 'Електронна пошта вже використовується іншим користувачем' })
   email: string;
 
@@ -50,4 +53,24 @@ export class CreateUserDto {
   @IsPhoneNumber(undefined, { message: 'Некоректний формат номера телефону' })
   @Validate(UserUniqueConstraint, ['phone'], { message: 'Номер телефону вже використовується іншим користувачем' })
   phone: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  region?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  district?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
 }

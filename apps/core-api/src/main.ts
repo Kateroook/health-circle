@@ -1,4 +1,8 @@
+import { setDefaultResultOrder } from 'node:dns';
+
 import { ValidationPipe } from '@nestjs/common';
+
+setDefaultResultOrder('ipv4first');
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -52,11 +56,21 @@ async function bootstrap() {
       .setVersion('1.0')
       .addBearerAuth(
         {
-          type: 'http', // must be 'http'
-          scheme: 'bearer', // must be 'bearer'
-          bearerFormat: 'JWT', // optional, just for display
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Access Token',
         },
-        AuthStrategies.userJwtAccess, // your internal name, used in @ApiBearerAuth()
+        AuthStrategies.userJwtAccess,
+      )
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Refresh Token',
+        },
+        AuthStrategies.userJwtRefresh,
       )
       .build();
     const document = SwaggerModule.createDocument(app, config);

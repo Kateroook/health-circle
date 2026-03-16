@@ -1,20 +1,15 @@
+import { Button } from "@/src/components/Button";
+import { PasswordField, TextField } from "@/src/components/fields/TextField";
+import { Typography } from "@/src/components/typography";
+import { theme } from "@/src/theme/theme";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import {
-  Alert,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Icon from "react-native-vector-icons/Feather";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { Alert, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import ConfirmationModal from "../../components/ConfirmationModal";
+import { Avatar } from "@/src/components/Avatar";
+import { ListItem } from "@/src/components/ListItem";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import { useAuthStore } from "../../store/authStore";
 import { cleanObj } from "../../utils/clean.util";
@@ -42,17 +37,15 @@ export default function SettingsScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [showOldPassword, setShowOldPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [isDeleteAccountVisible, setIsDeleteAccountVisible] = useState(false);
   const [isDeleteAvatarVisible, setIsDeleteAvatarVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Modal states
+  // Modal / section states
   const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
   const [isSecurityModalVisible, setIsSecurityModalVisible] = useState(false);
+  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
 
   const [toggle1, setToggle1] = useState(false);
   const [toggle2, setToggle2] = useState(false);
@@ -73,6 +66,11 @@ export default function SettingsScreen() {
   const [contactsEnabled, setContactsEnabled] = useState(false);
 
   useEffect(() => {
+    setFirstName(user?.firstName || "");
+    setMiddleName(user?.middleName || "");
+    setLastName(user?.lastName || "");
+    setFullName(user?.fullName || "");
+    setPhone(user?.phone || "");
     if (user?.id) setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
   }, [user]);
 
@@ -165,12 +163,8 @@ export default function SettingsScreen() {
           name: filename,
           type,
         });
-
-        if (response && response.avatarUpdatedAt && user?.id) {
+        if (response?.avatarUpdatedAt) {
           updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
-          const freshUrl = `${getAvatarUrl(user.id, response.avatarUpdatedAt)}?_${Date.now()}`;
-          setAvatarUrl(freshUrl);
-          setImageError(false);
         }
         await refreshProfile();
         Alert.alert("Успіх", "Аватар оновлено");
@@ -225,6 +219,8 @@ export default function SettingsScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   const fields = [
     {
       label: "Прізвище",
@@ -268,179 +264,83 @@ export default function SettingsScreen() {
     },
   ];
 
-  const ToggleRow = ({
-    label,
-    sublabel,
-    value,
-    onValueChange,
-  }: {
-    label: string;
-    sublabel?: string; // необов'язковий підтекст
-    value: boolean;
-    onValueChange: (newValue: boolean) => void;
-  }) => (
-    <View
-      style={{
-        paddingVertical: 14,
-      }}
-    >
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text
-          style={{
-            fontSize: 16,
-            color: "#000000",
-            flex: 1,
-            paddingRight: 16,
-            lineHeight: 22,
-          }}
-        >
-          {label}
-        </Text>
-        <CustomToggle value={value} onValueChange={onValueChange} />
-      </View>
-
-      {sublabel && (
-        <Text
-          style={{
-            fontSize: 13,
-            color: "#666666",
-            marginTop: 4,
-            lineHeight: 18,
-          }}
-        >
-          {sublabel}
-        </Text>
-      )}
-    </View>
-  );
-
-  const CustomToggle = ({
-    value,
-    onValueChange,
-  }: {
-    value: boolean;
-    onValueChange: (newValue: boolean) => void;
-  }) => {
-    return (
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => onValueChange(!value)}
-        style={{
-          width: 54,
-          height: 32,
-          borderRadius: 16,
-          backgroundColor: value ? "#000000" : "#E0E0E0", // активний — чорний, неактивний — сірий
-          justifyContent: "center",
-          paddingHorizontal: 3,
-        }}
-      >
-        <View
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: 13,
-            backgroundColor: "#FFFFFF",
-            alignSelf: value ? "flex-end" : "flex-start",
-            justifyContent: "center",
-            alignItems: "center",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.22,
-            shadowRadius: 2.22,
-            elevation: 3,
-          }}
-        >
-          {value ? (
-            <Text
-              style={{
-                color: "#000000", // біла галочка на чорному фоні тоггла
-                fontSize: 18,
-                fontWeight: "bold",
-                lineHeight: 20,
-              }}
-            >
-              ✓
-            </Text>
-          ) : (
-            <Text
-              style={{
-                color: "#E0E0E0", // світло-сірий хрестик
-                fontSize: 18,
-                fontWeight: "bold",
-                lineHeight: 20,
-              }}
-            >
-              ✕
-            </Text>
-          )}
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <View style={styles.headerContainer}>
-          <Image
-            key={avatarUrl || "no-avatar"}
-            source={!imageError && avatarUrl ? { uri: avatarUrl } : defaultAvatar}
-            style={styles.avatar}
-            onError={() => setImageError(true)}
+          <Avatar
+            userId={user?.id ?? ""}
+            avatarUpdatedAt={user?.avatarUpdatedAt}
+            size="xl"
+            border={true}
           />
-          <Text style={styles.profileName}>{user?.firstName}</Text>
+
+          <Typography variant="h2" tone="primary" style={styles.profileName}>
+            {user?.firstName}
+          </Typography>
 
           {!isEditMode && (
-            <TouchableOpacity style={styles.editButton} onPress={() => setIsEditMode(true)}>
-              <Icon name="edit-2" size={18} color="#ffffff" style={{ marginRight: 8 }} />
-              <Text style={styles.editButtonText}>Редагувати</Text>
-            </TouchableOpacity>
+            <Button
+              label="Редагувати"
+              hierarchy="accent"
+              size="medium"
+              shape="rectangle"
+              leadingIcon={<Icon name="edit-2" size={18} color={theme.colors.content.onColor} />}
+              onPress={() => setIsEditMode(true)}
+              style={{ width: "100%" }}
+            />
           )}
 
           {isEditMode && (
             <View style={styles.editContainer}>
               <View style={styles.avatarButtons}>
-                <TouchableOpacity style={styles.avatarButton} onPress={handlePickAvatar}>
-                  <Text style={styles.avatarButtonText}>Змінити аватар</Text>
-                </TouchableOpacity>
+                <Button
+                  label="Змінити аватар"
+                  hierarchy="secondary"
+                  size="small"
+                  shape="rectangle"
+                  onPress={handlePickAvatar}
+                />
+
                 {avatarUrl && !imageError && (
-                  <TouchableOpacity
-                    style={[styles.avatarButton, styles.removeButton]}
+                  <Button
+                    label="Видалити аватар"
+                    hierarchy="secondary"
+                    size="small"
+                    shape="rectangle"
                     onPress={handleRemoveAvatar}
-                  >
-                    <Text style={styles.avatarButtonText}>Видалити аватар</Text>
-                  </TouchableOpacity>
+                  />
                 )}
               </View>
 
               {fields.map((field) => (
                 <View key={field.label} style={styles.block}>
-                  <Text style={styles.label}>
-                    {field.label}
-                    {field.required ? (
-                      <Text style={styles.requiredStar}> *</Text>
-                    ) : (
-                      <Text style={styles.optionalText}> (опціонально)</Text>
-                    )}
-                  </Text>
-                  <TextInput
-                    style={styles.input}
+                  <TextField
+                    label={field.label}
+                    required={field.required}
                     value={field.value}
                     onChangeText={field.setter}
                     placeholder={field.placeholder}
-                    placeholderTextColor="#999"
                     keyboardType={field.keyboardType as any}
                     maxLength={field.maxLength}
                   />
                 </View>
               ))}
 
-              <TouchableOpacity style={styles.save} onPress={handleSave}>
-                <Text style={styles.saveText}>Зберегти</Text>
-              </TouchableOpacity>
+              <Button
+                label="Зберегти"
+                hierarchy="primary"
+                size="medium"
+                shape="rectangle"
+                onPress={handleSave}
+                style={styles.save}
+              />
 
-              <TouchableOpacity
-                style={styles.cancelButton}
+              <Button
+                label="Скасувати"
+                hierarchy="secondary"
+                size="medium"
+                shape="rectangle"
                 onPress={() => {
                   setIsEditMode(false);
                   setFirstName(user?.firstName || "");
@@ -448,60 +348,98 @@ export default function SettingsScreen() {
                   setLastName(user?.lastName || "");
                   setPhone(user?.phone || "");
                 }}
-              >
-                <Text style={styles.cancelButtonText}>Скасувати</Text>
-              </TouchableOpacity>
+                style={styles.cancelButton}
+              />
             </View>
           )}
         </View>
 
-        <TouchableOpacity
-          style={styles.notificationsHeader}
-          onPress={() => setIsNotificationsModalVisible(true)}
-        >
-          <MaterialCommunityIcons
-            name="bell"
-            size={24}
-            color="#000000"
-            style={{ marginRight: 12 }}
+        {/* 1. Сповіщення */}
+        <View style={styles.settingsSection}>
+          <ListItem
+            layout="compact"
+            artworkSize="small"
+            label="Сповіщення"
+            leadingIcon={
+              <MaterialCommunityIcons name="bell" size={24} color={theme.colors.content.primary} />
+            }
+            onPress={() => setIsNotificationsModalVisible(true)}
+            showDivider={false}
           />
-          <Text style={styles.notificationsHeaderText}>Сповіщення</Text>
-          <MaterialCommunityIcons
-            name="chevron-right"
-            size={20}
-            color="#000000"
-            style={{ marginLeft: "auto" }}
-          />
-        </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          style={styles.securityHeader}
-          onPress={() => setIsSecurityModalVisible(true)}
-        >
-          <MaterialCommunityIcons
-            name="shield-lock"
-            size={24}
-            color="#000000"
-            style={{ marginRight: 12 }}
-          />
-          <Text style={styles.securityHeaderText}>Приватність та безпека</Text>
-          <MaterialCommunityIcons
-            name="chevron-right"
-            size={20}
-            color="#000000"
-            style={{ marginLeft: "auto" }}
-          />
-        </TouchableOpacity>
+        {/* 2. Приватність та безпека */}
+        <View style={styles.settingsSection}>
+          <TouchableOpacity
+            style={styles.settingsRow}
+            onPress={() => setIsSecurityOpen(!isSecurityOpen)}
+          >
+            <MaterialCommunityIcons
+              name="shield-lock"
+              size={24}
+              color={theme.colors.content.primary}
+            />
+            <Typography variant="subtitle1" tone="primary" style={styles.settingsRowLabel}>
+              Приватність та безпека
+            </Typography>
+            <MaterialCommunityIcons
+              name={isSecurityOpen ? "chevron-up" : "chevron-down"}
+              size={28}
+              color={theme.colors.content.primary}
+            />
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-          <MaterialCommunityIcons
-            name="door-open"
-            size={24}
-            color="#000000"
-            style={{ marginRight: 12 }}
-          />
-          <Text style={styles.logoutTextNew}>Вийти</Text>
-        </TouchableOpacity>
+          {isSecurityOpen && (
+            <>
+              <View style={styles.separator} />
+              <ListItem
+                layout="compact"
+                artworkSize="small"
+                label="Змінити пароль"
+                leadingIcon={
+                  <MaterialCommunityIcons
+                    name="key-variant"
+                    size={22}
+                    color={theme.colors.content.primary}
+                  />
+                }
+                onPress={() => setShowPasswordModal(true)}
+              />
+              <ListItem
+                layout="compact"
+                artworkSize="small"
+                label="Видалити акаунт"
+                leadingIcon={
+                  <MaterialCommunityIcons
+                    name="delete-forever"
+                    size={22}
+                    color={theme.colors.negative}
+                  />
+                }
+                onPress={handleDeleteAccount}
+                showDivider={false}
+              />
+            </>
+          )}
+        </View>
+
+        {/* 3. Вихід */}
+        <Button
+          label="Вихід"
+          hierarchy="tertiary"
+          size="medium"
+          shape="rectangle"
+          leadingIcon={
+            <MaterialCommunityIcons
+              name="door-open"
+              size={24}
+              color={theme.colors.content.primary}
+              style={{ marginRight: 12 }}
+            />
+          }
+          onPress={logout}
+          style={styles.logoutButton}
+        />
       </ScrollView>
 
       {/* Change Password Modal */}
@@ -513,73 +451,52 @@ export default function SettingsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Змінити пароль</Text>
+            <Typography variant="h3" tone="primary" style={styles.modalTitle}>
+              Змінити пароль
+            </Typography>
 
-            <View style={styles.modalPasswordContainer}>
-              <TextInput
-                style={styles.modalPasswordInput}
-                placeholder="Поточний пароль"
-                placeholderTextColor="#999"
-                secureTextEntry={!showOldPassword}
+            <View style={{ gap: 12 }}>
+              <PasswordField
+                label="Поточний пароль"
+                required
+                placeholder="Введіть поточний пароль"
                 value={oldPassword}
                 onChangeText={setOldPassword}
               />
-              <TouchableOpacity
-                onPress={() => setShowOldPassword(!showOldPassword)}
-                style={styles.eyeButton}
-              >
-                <Icon name={showOldPassword ? "eye-off" : "eye"} size={20} color="#999" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalPasswordContainer}>
-              <TextInput
-                style={styles.modalPasswordInput}
+              <PasswordField
+                label="Новий пароль"
+                required
                 placeholder="Новий пароль (мін. 12 символів)"
-                placeholderTextColor="#999"
-                secureTextEntry={!showNewPassword}
                 value={newPassword}
                 onChangeText={setNewPassword}
+                caption="Має містити щонайменше 12 символів"
               />
-              <TouchableOpacity
-                onPress={() => setShowNewPassword(!showNewPassword)}
-                style={styles.eyeButton}
-              >
-                <Icon name={showNewPassword ? "eye-off" : "eye"} size={20} color="#999" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.modalPasswordContainer}>
-              <TextInput
-                style={styles.modalPasswordInput}
-                placeholder="Підтвердити новий пароль"
-                placeholderTextColor="#999"
-                secureTextEntry={!showConfirmPassword}
+              <PasswordField
+                label="Підтвердіть новий пароль"
+                required
+                placeholder="Повторно введіть новий пароль"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
+                errorMessage={passwordError || undefined}
               />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeButton}
-              >
-                <Icon name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#999" />
-              </TouchableOpacity>
             </View>
 
-            {passwordError ? <Text style={styles.modalError}>{passwordError}</Text> : null}
-
-            <TouchableOpacity
-              style={[styles.modalSave, passwordLoading && { opacity: 0.6 }]}
+            <Button
+              label={passwordLoading ? "Збереження..." : "Змінити пароль"}
+              hierarchy="primary"
+              size="medium"
+              shape="rectangle"
               onPress={handleChangePassword}
               disabled={passwordLoading}
-            >
-              <Text style={styles.modalSaveText}>
-                {passwordLoading ? "Збереження..." : "Змінити пароль"}
-              </Text>
-            </TouchableOpacity>
+              loading={passwordLoading}
+              style={styles.modalSave}
+            />
 
-            <TouchableOpacity
-              style={styles.modalCancel}
+            <Button
+              label="Скасувати"
+              hierarchy="tertiary"
+              size="medium"
+              shape="rectangle"
               onPress={() => {
                 setShowPasswordModal(false);
                 setPasswordError("");
@@ -587,9 +504,8 @@ export default function SettingsScreen() {
                 setNewPassword("");
                 setConfirmPassword("");
               }}
-            >
-              <Text style={styles.modalCancelText}>Скасувати</Text>
-            </TouchableOpacity>
+              style={styles.modalCancel}
+            />
           </View>
         </View>
       </Modal>
@@ -601,250 +517,85 @@ export default function SettingsScreen() {
         transparent={false}
         onRequestClose={() => setIsNotificationsModalVisible(false)}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#F5F5F7" }}>
-          {/* Заголовок */}
-          <View
-            style={{
-              height: 56,
-              backgroundColor: "#F5F5F7",
-              borderBottomWidth: 1,
-              borderBottomColor: "#E0E0E0",
-              justifyContent: "center",
-              position: "relative",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 20,
-                fontWeight: "700",
-                color: "#000000",
-                textAlign: "center",
-              }}
-            >
+        <View style={{ flex: 1, backgroundColor: theme.colors.background.primary }}>
+          <View style={{ height: insets.top, backgroundColor: theme.colors.background.primary }} />
+          <View style={notifStyles.header}>
+            <Typography variant="h3" tone="primary" style={{ flex: 1, textAlign: "center" }}>
               Сповіщення
-            </Text>
-            <TouchableOpacity
+            </Typography>
+            <Button
+              shape="round"
+              hierarchy="tertiary"
+              size="small"
+              leadingIcon={
+                <MaterialCommunityIcons
+                  name="close"
+                  size={20}
+                  color={theme.colors.content.primary}
+                />
+              }
               onPress={() => setIsNotificationsModalVisible(false)}
-              style={{
-                position: "absolute",
-                right: 16,
-                top: 0,
-                bottom: 0,
-                justifyContent: "center",
-                paddingHorizontal: 8,
-              }}
-              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-            >
-              <MaterialCommunityIcons name="close" size={28} color="#000" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Контент */}
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-            }}
-          >
-            {/* Група 1 */}
-            <Text style={styles.sectionHeader}>ПОВІТРЯНА ТРИВОГА</Text>
-
-            <View style={styles.card}>
-              <ToggleRow
-                label="Отримувати сповіщення, коли у вашому районі повітряна тривога"
-                value={toggle1}
-                onValueChange={setToggle1}
-              />
-            </View>
-
-            <View style={styles.card}>
-              <ToggleRow
-                label="Отримувати сповіщення про статус членів Кола"
-                sublabel="Повідомляти, коли хтось має статус «В безпеці» або «Потрібна допомога»"
-                value={toggle2}
-                onValueChange={setToggle2}
-              />
-            </View>
-
-            <View style={styles.card}>
-              <ToggleRow
-                label='Отримувати сповіщення, коли у когось стан залишається "Невідомо" під час тривоги'
-                value={toggle3}
-                onValueChange={setToggle3}
-              />
-            </View>
-
-            {/* Група 2 */}
-            <Text style={styles.sectionHeader}>НАГАДУВАННЯ</Text>
-
-            <View style={styles.card}>
-              <ToggleRow
-                label="Нагадувати оновити статус під час тривоги"
-                value={toggle4}
-                onValueChange={setToggle4}
-              />
-            </View>
-
-            <View style={styles.card}>
-              <ToggleRow
-                label="Нагадувати позначити настрій"
-                value={toggle5}
-                onValueChange={setToggle5}
-              />
-            </View>
-
-            {/* Група 3 */}
-            <Text style={styles.sectionHeader}>SMS</Text>
-
-            <View style={styles.card}>
-              <ToggleRow
-                label="Отримувати SMS лише тоді, коли немає інтернету, але є важливе сповіщення"
-                value={toggle6}
-                onValueChange={setToggle6}
-              />
-            </View>
-
-            <View style={styles.card}>
-              <ToggleRow
-                label="SMS для статусу безпеки"
-                sublabel="Повідомляти, коли хтось із близьких позначився як «В безпеці» або «Потрібна допомога»"
-                value={toggle7}
-                onValueChange={setToggle7}
-              />
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
-
-      {/* Security & Privacy Modal */}
-      <Modal
-        visible={isSecurityModalVisible}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={() => setIsSecurityModalVisible(false)}
-      >
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#F5F5F7" }}>
-          {/* Заголовок */}
-          <View
-            style={{
-              height: 56,
-              backgroundColor: "#F5F5F7",
-              borderBottomWidth: 1,
-              borderBottomColor: "#E0E0E0",
-              justifyContent: "center",
-              position: "relative",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 20,
-                fontWeight: "700",
-                color: "#000000",
-                textAlign: "center",
-              }}
-            >
-              Приватність та безпека
-            </Text>
-            <TouchableOpacity
-              onPress={() => setIsSecurityModalVisible(false)}
-              style={{
-                position: "absolute",
-                right: 16,
-                top: 0,
-                bottom: 0,
-                justifyContent: "center",
-                paddingHorizontal: 8,
-              }}
-              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-            >
-              <MaterialCommunityIcons name="close" size={28} color="#000" />
-            </TouchableOpacity>
+              style={{ position: "absolute", left: theme.spacing[16] }}
+            />
           </View>
 
           <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              paddingBottom: 40,
-            }}
+            contentContainerStyle={notifStyles.scrollContent}
+            showsVerticalScrollIndicator={false}
           >
-            {/* Група налаштувань приватності */}
-            <Text style={styles.sectionHeader}>ДОЗВОЛИ СИСТЕМИ</Text>
-
-            <View style={styles.card}>
-              <ToggleRow
-                label="Push-сповіщення"
-                value={securityToggle1}
-                onValueChange={setSecurityToggle1}
-              />
-            </View>
-
-            <View style={styles.card}>
-              <ToggleRow
-                label="SMS-сповіщення"
-                sublabel="Може стягуватись тариф твого оператора"
-                value={securityToggle2}
-                onValueChange={setSecurityToggle2}
-              />
-            </View>
-
-            <View style={styles.card}>
-              <ToggleRow
-                label="Геолокація"
-                sublabel="Локація надсилається лише після натискання «Потрібна допомога»"
-                value={securityToggle3}
-                onValueChange={setSecurityToggle3}
-              />
-            </View>
-
-            <View style={styles.card}>
-              <ToggleRow
-                label="Доступ до контактів"
-                value={securityToggle4}
-                onValueChange={setSecurityToggle4}
-              />
-            </View>
-
-            {/* Група Обліковий запис – внизу */}
-            <Text style={[styles.sectionHeader, { marginTop: 32 }]}>ОБЛІКОВИЙ ЗАПИС</Text>
-
-            <View style={styles.card}>
-              <TouchableOpacity
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  paddingVertical: 16,
-                }}
-                onPress={() => {
-                  setIsSecurityModalVisible(false);
-                  setShowPasswordModal(true);
-                }}
-              >
-                <Text style={styles.securityItemText}>Змінити пароль</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.card}>
-              <TouchableOpacity
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  paddingVertical: 16,
-                }}
-                onPress={() => {
-                  setIsSecurityModalVisible(false);
-                  handleDeleteAccount();
-                }}
-              >
-                <Text style={[styles.securityItemText, { color: "#D32F2F" }]}>Видалити акаунт</Text>
-              </TouchableOpacity>
+            <View style={notifStyles.listSection}>
+              {[
+                {
+                  label: "Отримувати сповіщення, коли у вашому районі повітряна тривога",
+                  value: toggle1,
+                  setter: setToggle1,
+                },
+                {
+                  label: "Отримувати сповіщення про статус членів Кола",
+                  value: toggle2,
+                  setter: setToggle2,
+                },
+                {
+                  label:
+                    'Отримувати сповіщення, коли у когось стан залишається "Невідомо" під час тривоги',
+                  value: toggle3,
+                  setter: setToggle3,
+                },
+                {
+                  label: "Нагадувати оновити статус під час тривоги",
+                  value: toggle4,
+                  setter: setToggle4,
+                },
+                {
+                  label: "Нагадувати позначити настрій",
+                  value: toggle5,
+                  setter: setToggle5,
+                },
+                {
+                  label: "Отримувати SMS лише тоді, коли немає інтернету, але є важливе сповіщення",
+                  value: toggle6,
+                  setter: setToggle6,
+                },
+                {
+                  label: "SMS для статусу безпеки",
+                  value: toggle7,
+                  setter: setToggle7,
+                },
+              ].map((item, index, arr) => (
+                <ListItem
+                  key={index}
+                  layout="switch"
+                  artworkSize="none"
+                  label={item.label}
+                  switchValue={item.value}
+                  onSwitchChange={item.setter}
+                  showDivider={index < arr.length - 1}
+                />
+              ))}
             </View>
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </Modal>
 
       <ConfirmationModal
@@ -864,7 +615,6 @@ export default function SettingsScreen() {
         confirmText="Видалити"
         cancelText="Скасувати"
       />
-
       <ConfirmationModal
         isVisible={isDeleteAvatarVisible}
         onCancel={() => setIsDeleteAvatarVisible(false)}
@@ -888,9 +638,16 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F7F7F7" },
-  headerContainer: { alignItems: "center", marginBottom: 30, padding: 20 },
-  avatar: { width: 100, height: 100, borderRadius: 50, marginTop: 10, marginBottom: 10 },
+  container: {
+    flex: 1,
+    paddingHorizontal: theme.spacing[16],
+    backgroundColor: theme.colors.background.primary,
+  },
+  headerContainer: {
+    alignItems: "center",
+    paddingTop: theme.spacing[20],
+    paddingBottom: theme.spacing[32],
+  },
   avatarButtons: {
     flexDirection: "row",
     justifyContent: "center",
@@ -898,147 +655,53 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     width: "100%",
   },
-  avatarButton: {
-    backgroundColor: "#5B8DEE",
-    padding: 10,
-    borderRadius: 10,
-    alignItems: "center",
-    marginHorizontal: 5,
-  },
-  removeButton: { backgroundColor: "#FF6B6B" },
-  avatarButtonText: { color: "#fff", fontWeight: "600" },
-  block: { marginBottom: 20, paddingHorizontal: 20 },
-  label: { fontSize: 18, marginBottom: 8 },
-  requiredStar: { color: "#D9534F", fontSize: 18 },
-  input: {
-    height: 50,
-    backgroundColor: "#eee",
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    fontSize: 16,
-  },
+  block: { marginBottom: theme.spacing[16] },
   profileName: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#000000",
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: theme.spacing[8],
+    marginBottom: theme.spacing[32],
     textAlign: "center",
   },
   save: {
-    marginTop: 10,
-    backgroundColor: "#000000",
-    padding: 15,
-    borderRadius: 25,
+    marginTop: theme.spacing[8],
     alignItems: "center",
-    marginHorizontal: 20,
   },
-  saveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  securityHeader: {
+  settingsSection: {
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.lg,
+    overflow: "hidden",
+    marginBottom: theme.spacing[8],
+  },
+  settingsRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 16,
-    marginHorizontal: 20,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
+    paddingVertical: theme.spacing[10],
+    paddingHorizontal: theme.spacing[16],
+    gap: theme.spacing[16],
+    backgroundColor: theme.colors.background.secondary,
   },
-  securityHeaderText: {
-    color: "#000000",
-    fontSize: 16,
-    fontWeight: "500",
+  settingsRowLabel: {
     flex: 1,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: theme.colors.border.opaque,
+    marginLeft: theme.spacing[16],
   },
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start",
-    backgroundColor: "#ffffff",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 20,
-    marginHorizontal: 20,
-  },
-  logoutTextNew: {
-    color: "#000000",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  editButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#5B8DEE",
-    paddingVertical: 16,
-    paddingHorizontal: 100,
-    borderRadius: 15,
-    marginTop: 16,
-    marginHorizontal: 10,
-    marginBottom: 20,
-  },
-  editButtonText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "600",
+    backgroundColor: theme.colors.background.secondary,
+    marginTop: theme.spacing[8],
   },
   editContainer: {
     width: "100%",
-    paddingHorizontal: 20,
-    marginTop: 10,
+    paddingHorizontal: theme.spacing[16],
+    marginTop: theme.spacing[8],
   },
   cancelButton: {
-    marginTop: 10,
-    padding: 15,
-    borderRadius: 12,
-    backgroundColor: "#f0f0f0",
+    marginTop: theme.spacing[8],
     alignItems: "center",
-    marginHorizontal: 20,
-  },
-  cancelButtonText: {
-    color: "#666",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  notificationsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#ffffff",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 16,
-    marginHorizontal: 20,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
-  },
-  notificationsHeaderText: {
-    color: "#000000",
-    fontSize: 16,
-    fontWeight: "500",
-    flex: 1,
-  },
-  securityItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  securityItemText: {
-    color: "#000000",
-    fontSize: 16,
-    fontWeight: "500",
-    flex: 1,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: "#e0e0e0",
-    marginHorizontal: 0,
   },
   modalOverlay: {
     flex: 1,
@@ -1098,16 +761,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#1A1A1A",
   },
-  eyeButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-  },
-  modalError: {
-    color: "#D32F2F",
-    fontSize: 14,
-    marginBottom: 12,
-    textAlign: "center",
-  },
   modalSave: {
     backgroundColor: "#4CAF50",
     padding: 15,
@@ -1122,9 +775,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
-  modalCancelText: { color: "#999", fontSize: 16, fontWeight: "500" },
-  optionalText: {
-    fontSize: 14,
-    color: "#999",
+});
+
+const notifStyles = StyleSheet.create({
+  header: {
+    height: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: theme.spacing[16],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.opaque,
+  },
+  scrollContent: {
+    padding: theme.spacing[16],
+    paddingBottom: theme.spacing[40],
+  },
+  listSection: {
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.xl,
+    overflow: "hidden",
   },
 });

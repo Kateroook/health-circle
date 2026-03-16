@@ -2,9 +2,9 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConfirmationCodeEntity } from 'src/common/entities/confirmation-code.entity';
-import { UserEntity } from 'src/common/entities/user.entity';
+import { ConfirmationCodeEntity } from 'src/confirmations/entities/confirmation-code.entity';
 import { EmailService } from 'src/email/email.service';
+import { UserEntity } from 'src/users/entities/user.entity';
 
 import { SecurityService } from '../security/security.service';
 import { ConfirmationsService } from './confirmations.service';
