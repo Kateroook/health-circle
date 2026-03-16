@@ -24,6 +24,8 @@ const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => 
   return (
     <View style={[styles.tabBar, { bottom: 20 + insets.bottom }]}>
       {state.routes.map((route, index) => {
+        if (route.name === "Notifications") return null;
+
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
 

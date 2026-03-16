@@ -6,7 +6,7 @@ import { StyleSheet, View } from "react-native";
 import { setContactAlias } from "@/src/api/contacts";
 import { blockUser } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
-import { BottomSheetContainer, ModalActions } from "@/src/components/modal";
+import { BottomSheetContainer } from "@/src/components/modal";
 import { theme } from "@/src/theme/theme";
 import ConfirmationModal from "../../ConfirmationModal";
 import { Member } from "../CircleItem";
@@ -150,30 +150,7 @@ export default function CircleDetailsModal({
             onMemberPress={handleMemberPress}
           />
 
-          {/* Footer Actions (Delete/Leave) */}
-          <ModalActions direction="column" style={styles.footer}>
-            {isOwner ? (
-              <Button
-                label="Видалити коло"
-                hierarchy="tertiary"
-                shape="rectangle"
-                size="medium"
-                onPress={() => setIsDeleteVisible(true)}
-                style={{ width: "100%" }}
-                textStyle={{ color: theme.colors.negative }}
-              />
-            ) : (
-              <Button
-                label="Покинути коло"
-                hierarchy="tertiary"
-                shape="rectangle"
-                size="medium"
-                onPress={() => setIsLeaveVisible(true)}
-                style={{ width: "100%" }}
-                textStyle={{ color: theme.colors.negative }}
-              />
-            )}
-          </ModalActions>
+          {/* Actions removed as requested */}
         </View>
       )}
 

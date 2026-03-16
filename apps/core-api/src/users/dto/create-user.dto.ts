@@ -1,15 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsDefined,
-  IsEmail,
-  IsNotEmpty,
-  IsOptional,
-  IsPhoneNumber,
-  IsString,
-  MaxLength,
-  MinLength,
-  Validate,
-} from 'class-validator';
+import { IsDefined, IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength, Validate } from 'class-validator';
 import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constraint';
 
 export class CreateUserDto {
@@ -47,7 +37,9 @@ export class CreateUserDto {
   @ApiProperty({ example: '+380922022491' })
   @IsDefined({ message: 'Поле номера телефону є обовʼязковим' })
   @IsString()
-  @IsPhoneNumber(undefined, { message: 'Некоректний формат номера телефону' })
+  @Matches(/^\+[1-9]\d{6,14}$/, {
+    message: 'Некоректний формат номера телефону (має починатися з + та містити від 7 до 15 цифр)',
+  })
   @Validate(UserUniqueConstraint, ['phone'], { message: 'Номер телефону вже використовується іншим користувачем' })
   phone: string;
 }

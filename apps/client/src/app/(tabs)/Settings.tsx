@@ -1,4 +1,5 @@
 import { Button } from "@/src/components/Button";
+import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import * as ImagePicker from "expo-image-picker";
@@ -62,6 +63,7 @@ export default function SettingsScreen() {
   const [toggle5, setToggle5] = useState(false);
   const [toggle6, setToggle6] = useState(false);
   const [toggle7, setToggle7] = useState(false);
+  const [isLogoutVisible, setIsLogoutVisible] = useState(false);
 
   useEffect(() => {
     if (user?.id) setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
@@ -331,7 +333,7 @@ export default function SettingsScreen() {
           {/* Нова кнопка "Редагувати" */}
           {!isEditMode && (
             <Button
-              label="Редагувати"
+              label="Редагуввати"
               hierarchy="accent"
               size="medium"
               shape="rectangle"
@@ -380,15 +382,24 @@ export default function SettingsScreen() {
                       </Typography>
                     )}
                   </Typography>
-                  <TextInput
-                    style={styles.input}
-                    value={field.value}
-                    onChangeText={field.setter}
-                    placeholder={field.placeholder}
-                    placeholderTextColor="#999"
-                    keyboardType={field.keyboardType as any}
-                    maxLength={field.maxLength}
-                  />
+                  {field.label === "Номер телефону" ? (
+                    <PhoneInput
+                      value={field.value}
+                      onChangeText={field.setter}
+                      placeholder={field.placeholder}
+                      showClearButton={false}
+                    />
+                  ) : (
+                    <TextInput
+                      style={styles.input}
+                      value={field.value}
+                      onChangeText={field.setter}
+                      placeholder={field.placeholder}
+                      placeholderTextColor="#999"
+                      keyboardType={field.keyboardType as any}
+                      maxLength={field.maxLength}
+                    />
+                  )}
                 </View>
               ))}
 
@@ -521,10 +532,24 @@ export default function SettingsScreen() {
               style={{ marginRight: 12 }}
             />
           }
-          onPress={logout}
+          onPress={() => setIsLogoutVisible(true)}
           style={styles.logoutButton}
         />
       </ScrollView>
+
+      <ConfirmationModal
+        isVisible={isLogoutVisible}
+        onCancel={() => setIsLogoutVisible(false)}
+        onConfirm={async () => {
+          setIsLogoutVisible(false);
+          logout();
+        }}
+        title="Вийти"
+        message="Ти впевнений, що хочеш вийти?"
+        confirmText="Вийти"
+        cancelText="Назад"
+        confirmStyle="default"
+      />
 
       {/* Change Password Modal */}
       <Modal
@@ -636,9 +661,10 @@ export default function SettingsScreen() {
           }
         }}
         title="Видалити акаунт?"
-        message="Цю дію не можна скасувати."
+        message="Після видалення акаунта всі кола та контакти будуть безповоротно видалені"
         confirmText="Видалити"
-        cancelText="Скасувати"
+        cancelText="Назад"
+        confirmStyle="default"
       />
 
       <ConfirmationModal

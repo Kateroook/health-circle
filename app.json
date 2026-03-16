@@ -4,6 +4,9 @@
       "eas": {
         "projectId": "4545ad66-9636-4519-aa61-e077b65c798a"
       }
+    },
+    "android": {
+      "package": "com.anonymous.healthcircleroot"
     }
   }
 }
