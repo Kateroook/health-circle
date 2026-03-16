@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ContactsService } from 'src/contacts/contacts.service';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
+import { NotificationTemplates, NotificationType } from 'src/notifications/notification-types';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { SecurityService } from 'src/security/security.service';
 import { UsersService } from 'src/users/users.service';
@@ -313,17 +314,16 @@ export class GroupService {
     await this.repository.save(group);
 
     const memberIds = group.members.map((m) => m.userId).filter((id) => id !== userId);
-    const members = await this.usersService.findByIds(memberIds);
-    const tokens = members.filter((m) => m.fcmToken).map((m) => m.fcmToken as string);
+    const type = NotificationType.ROLL_CALL;
+    const tokens = await this.usersService.getTokensForUsers(memberIds, NotificationTemplates[type].permissionKey);
 
     if (tokens.length > 0) {
-      await this.notificationsService.sendMulticast(
+      await this.notificationsService.sendMulticastByType(
         tokens,
-        'Перекличка! 📢',
-        `Адміністратор кола "${group.name}" просить підтвердити ваш статус безпеки.`,
+        type,
+        { groupName: group.name },
         {
           groupId: group.id,
-          type: 'ROLL_CALL',
         },
       );
     }
@@ -355,14 +355,18 @@ export class GroupService {
 
     await this.usersService.updateLastPersonalRollCallAt(targetUserId);
 
-    if (targetUser.fcmToken) {
-      await this.notificationsService.sendMulticast(
-        [targetUser.fcmToken],
-        'Особиста перекличка! 📢',
-        `Адміністратор кола "${group.name}" просить особисто підтвердити ваш статус.`,
+    const tokens = await this.usersService.getTokensForUsers(
+      [targetUserId],
+      NotificationTemplates[NotificationType.PERSONAL_ROLL_CALL].permissionKey,
+    );
+
+    if (tokens.length > 0) {
+      await this.notificationsService.sendMulticastByType(
+        tokens,
+        NotificationType.PERSONAL_ROLL_CALL,
+        { groupName: group.name },
         {
           groupId: group.id,
-          type: 'PERSONAL_ROLL_CALL',
         },
       );
     }

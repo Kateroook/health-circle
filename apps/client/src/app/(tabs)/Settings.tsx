@@ -2,18 +2,20 @@ import { Button } from "@/src/components/Button";
 import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { Alert, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import ConfirmationModal from "../../components/ConfirmationModal";
 
 import { Avatar } from "@/src/components/Avatar";
 import { ListItem } from "@/src/components/ListItem";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
+import { useFcmToken } from "../../hooks/useFcmToken";
 import { useAuthStore } from "../../store/authStore";
 import { useLocationStore } from "../../store/locationStore";
+import { useSettingsStore } from "../../store/settingsStore";
 import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
 
@@ -23,6 +25,8 @@ export default function SettingsScreen() {
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
   const updateUser = useAuthStore((s) => s.updateUser);
   const { updateCurrentLocation, loading: locationLoading } = useLocationStore();
+  const { isPushEnabled, setPushEnabled } = useSettingsStore();
+  const { requestPermission } = useFcmToken();
 
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [middleName, setMiddleName] = useState(user?.middleName || "");
@@ -46,13 +50,39 @@ export default function SettingsScreen() {
   const [isSecurityOpen, setIsSecurityOpen] = useState(false);
   const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
 
-  const [toggle1, setToggle1] = useState(false);
-  const [toggle2, setToggle2] = useState(false);
-  const [toggle3, setToggle3] = useState(false);
-  const [toggle4, setToggle4] = useState(false);
-  const [toggle5, setToggle5] = useState(false);
-  const [toggle6, setToggle6] = useState(false);
-  const [toggle7, setToggle7] = useState(false);
+  const [notifSettings, setNotifSettings] = useState<any>(null);
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  useEffect(() => {
+    if (isNotificationsModalVisible) {
+      fetchNotifSettings();
+    }
+  }, [isNotificationsModalVisible]);
+
+  const fetchNotifSettings = async () => {
+    setNotifLoading(true);
+    try {
+      const data = await apiFetch("/users/notifications/settings");
+      setNotifSettings(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+
+  const updateNotifSetting = async (key: string, value: boolean) => {
+    setNotifSettings((prev: any) => (prev ? { ...prev, [key]: value } : prev));
+    try {
+      await apiFetch("/users/notifications/settings", {
+        method: "PUT",
+        body: JSON.stringify({ [key]: value }),
+      });
+    } catch (e) {
+      Alert.alert("Помилка", "Не вдалося зберегти налаштування");
+      fetchNotifSettings();
+    }
+  };
 
   useEffect(() => {
     // Ensure text fields stay in sync when the user object changes (e.g., after refreshProfile)
@@ -608,39 +638,39 @@ export default function SettingsScreen() {
               {[
                 {
                   label: "Отримувати сповіщення, коли у вашому районі повітряна тривога",
-                  value: toggle1,
-                  setter: setToggle1,
+                  value: notifSettings?.airAlerts ?? false,
+                  key: "airAlerts",
                 },
                 {
                   label: "Отримувати сповіщення про статус членів Кола",
-                  value: toggle2,
-                  setter: setToggle2,
+                  value: notifSettings?.statusUpdates ?? false,
+                  key: "statusUpdates",
                 },
                 {
                   label:
                     'Отримувати сповіщення, коли у когось стан залишається "Невідомо" під час тривоги',
-                  value: toggle3,
-                  setter: setToggle3,
+                  value: notifSettings?.unknownStatusAlerts ?? false,
+                  key: "unknownStatusAlerts",
                 },
                 {
                   label: "Нагадувати оновити статус під час тривоги",
-                  value: toggle4,
-                  setter: setToggle4,
+                  value: notifSettings?.statusUpdateReminders ?? false,
+                  key: "statusUpdateReminders",
                 },
                 {
                   label: "Нагадувати позначити настрій",
-                  value: toggle5,
-                  setter: setToggle5,
+                  value: notifSettings?.moodReminders ?? false,
+                  key: "moodReminders",
                 },
                 {
                   label: "Отримувати SMS лише тоді, коли немає інтернету, але є важливе сповіщення",
-                  value: toggle6,
-                  setter: setToggle6,
+                  value: notifSettings?.smsFallover ?? false,
+                  key: "smsFallover",
                 },
                 {
                   label: "SMS для статусу безпеки",
-                  value: toggle7,
-                  setter: setToggle7,
+                  value: notifSettings?.smsSafetyStatus ?? false,
+                  key: "smsSafetyStatus",
                 },
               ].map((item, index, arr) => (
                 <ListItem
@@ -649,10 +679,37 @@ export default function SettingsScreen() {
                   artworkSize="none"
                   label={item.label}
                   switchValue={item.value}
-                  onSwitchChange={item.setter}
+                  onSwitchChange={(val) => updateNotifSetting(item.key, val)}
                   showDivider={index < arr.length - 1}
                 />
               ))}
+            </View>
+
+            <Typography variant="h3" tone="primary" style={{ marginTop: 24, marginBottom: 16 }}>
+              Системні налаштування
+            </Typography>
+
+            <View style={notifStyles.listSection}>
+              <ListItem
+                layout="switch"
+                artworkSize="none"
+                label="Дозволити push-сповіщення"
+                switchValue={notifSettings?.enabled ?? isPushEnabled}
+                onSwitchChange={async (val) => {
+                  if (val) {
+                    const granted = await requestPermission();
+                    if (!granted) {
+                      Alert.alert(
+                        "Дозвіл не отримано",
+                        "Будь ласка, дозвольте сповіщення у налаштуваннях пристрою.",
+                      );
+                      return;
+                    }
+                  }
+                  setPushEnabled(val);
+                  updateNotifSetting("enabled", val);
+                }}
+              />
             </View>
           </ScrollView>
         </View>

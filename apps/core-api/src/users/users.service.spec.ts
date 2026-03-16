@@ -9,10 +9,13 @@ import { UserStatus } from 'src/common/enums/user-status';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ExternalFilesEntity } from 'src/external-files/entities/external-files.entity';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { GroupMemberEntity } from 'src/groups/entities/group-member.entity';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
+import { NotificationType } from 'src/notifications/notification-types';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { UserEntity } from 'src/users/entities/user.entity';
+import { UserNotificationSettingsEntity } from 'src/users/entities/user-notification-settings.entity';
 import { UserPasswordEntity } from 'src/users/entities/user-password.entity';
 import { EntityManager, Repository, UpdateResult } from 'typeorm';
 
@@ -123,6 +126,7 @@ describe('UsersService', () => {
 
   const mockNotificationsService = () => ({
     sendMulticast: jest.fn(),
+    sendMulticastByType: jest.fn(),
   });
 
   const mockFirestoreSyncService = () => ({
@@ -140,10 +144,12 @@ describe('UsersService', () => {
         { provide: getRepositoryToken(UserPasswordEntity), useValue: createRepoMock() },
         { provide: ConfirmationsService, useValue: mockConfirmationsService() },
         { provide: UserActivitiesService, useValue: mockUserActivitiesService() },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: ExternalFilesService, useValue: mockExternalFilesService() },
+        { provide: getRepositoryToken(GroupMemberEntity), useValue: createRepoMock() },
+        { provide: getRepositoryToken(UserNotificationSettingsEntity), useValue: createRepoMock() },
         { provide: NotificationsService, useValue: mockNotificationsService() },
         { provide: FirestoreSyncService, useValue: mockFirestoreSyncService() },
-        { provide: ConfigService, useValue: {} },
         { provide: SessionActivityService, useValue: { trackActivity: jest.fn() } },
       ],
     }).compile();
@@ -169,10 +175,13 @@ describe('UsersService', () => {
       await service.updateStatus('user1', UserStatus.SAFE, ['user2']);
 
       expect(repository.save).toHaveBeenCalled();
-      expect(notificationsService.sendMulticast).toHaveBeenCalledWith(
+      expect(notificationsService.sendMulticastByType).toHaveBeenCalledWith(
         ['token-abc'],
-        expect.any(String),
-        expect.any(String),
+        NotificationType.STATUS_UPDATE,
+        expect.objectContaining({
+          firstName: mockUser.firstName,
+          statusName: 'у безпеці',
+        }),
         expect.objectContaining({
           userId: mockUser.id,
           status: UserStatus.SAFE,
