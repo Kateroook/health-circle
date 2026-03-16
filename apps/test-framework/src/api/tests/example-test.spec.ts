@@ -1,9 +1,8 @@
 import { expect } from '../fixtures/api-fixture';
-import { test } from '../fixtures/api-fixture'
+import { test } from '../fixtures/api-fixture';
 
 test.describe.skip('Refactored API Clients Usage Examples', async () => {
-
-  test('Example 1: Basic usage with flat structure', async ({ api, spawnUser}) => {
+  test('Example 1: Basic usage with flat structure', async ({ api, spawnUser }) => {
     const user = await spawnUser();
     // ============ Auth ============
     // Логін користувача - повертає { data, response }

@@ -1,7 +1,7 @@
 import type { DetectResult } from 'node-device-detector';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, RelationId } from 'typeorm';
 
-import { UserEntity } from './user.entity';
+import { UserEntity } from '../../users/entities/user.entity';
 import { UserActivityTypeEntity } from './user-activity-type.entity';
 
 @Entity('user_activities')

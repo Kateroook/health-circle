@@ -1,8 +1,8 @@
 import { StreamableFile } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserEntity } from 'src/common/entities/user.entity';
 import { UserStatus } from 'src/common/enums/user-status';
 import { AuthRequest } from 'src/common/types/auth-request';
+import { UserEntity } from 'src/users/entities/user.entity';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { ModifyUserDto } from './dto/modify-user.dto';

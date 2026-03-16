@@ -7,8 +7,10 @@ import { STATUS_CONFIG, StatusBadge, UserStatus } from "@/src/components/StatusB
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
+import { useLocationStore } from "@/src/store/locationStore";
 import { theme } from "@/src/theme/theme";
 import AntDesign from "@expo/vector-icons/build/AntDesign";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Vibration, View } from "react-native";
@@ -178,32 +180,40 @@ const MemberProfileModal = ({
 
 // --- DashboardScreen ---
 export default function DashboardScreen() {
+  const { logEvent } = useAnalytics();
   const user = useAuthStore((s) => s.user);
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const {
+    coords,
+    error: locationError,
+    updateCurrentLocation,
+    loading: locationLoading,
+  } = useLocationStore();
 
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     try {
       const data = await apiFetch("/groups", { method: "GET" });
       setGroups(data);
     } catch (error) {
       console.error("Error loading groups:", error);
     }
-  };
+  }, []);
 
   useSyncSignal(fetchGroups);
 
   useFocusEffect(
     useCallback(() => {
       fetchGroups();
-    }, []),
+    }, [fetchGroups]),
   );
 
   const handleStatusUpdate = async (newStatus: UserStatus) => {
     try {
       await updateMyStatus(newStatus);
+      logEvent("update_status", { status: newStatus });
       useAuthStore.setState((state) => {
         if (!state.user) return state;
         return { user: { ...state.user, status: newStatus as any } };
@@ -229,6 +239,7 @@ export default function DashboardScreen() {
     if (!selectedMember || !rollCallGroupId) return;
     try {
       await initiatePersonalRollCall(rollCallGroupId, selectedMember.id);
+      logEvent("initiate_personal_roll_call", { type: "individual" });
       Alert.alert("Успіх", "Запит на перекличку надіслано");
       handleCloseModal();
     } catch (e) {
@@ -272,6 +283,29 @@ export default function DashboardScreen() {
         <Typography variant="h2" tone="primary" style={styles.greeting} numberOfLines={1}>
           Привіт, {user?.firstName || "Користувач"}!
         </Typography>
+
+        {coords ? (
+          <View style={styles.locationInfo}>
+            <Typography variant="caption" tone="secondary">
+              Локація: {coords.latitude.toFixed(4)}, {coords.longitude.toFixed(4)}
+              {useLocationStore.getState().region
+                ? ` (${useLocationStore.getState().region}${useLocationStore.getState().district ? `, ${useLocationStore.getState().district}` : ""})`
+                : ""}
+            </Typography>
+          </View>
+        ) : locationError ? (
+          <Pressable onPress={updateCurrentLocation} style={styles.locationInfo}>
+            <Typography variant="caption" style={{ color: theme.colors.state.emergency }}>
+              Помилка геолокації. Натисніть для повтору.
+            </Typography>
+          </Pressable>
+        ) : locationLoading ? (
+          <View style={styles.locationInfo}>
+            <Typography variant="caption" tone="secondary">
+              Визначаємо місцезнаходження...
+            </Typography>
+          </View>
+        ) : null}
 
         <MainStatusIndicator
           currentStatus={user?.status || "UNKNOWN"}
@@ -406,7 +440,12 @@ const styles = StyleSheet.create({
   },
   greeting: {
     marginTop: theme.spacing[24],
-    marginBottom: theme.spacing[40],
+    marginBottom: theme.spacing[8],
+  },
+  locationInfo: {
+    marginBottom: theme.spacing[24],
+    flexDirection: "row",
+    alignItems: "center",
   },
   mainStatusContainer: {
     alignItems: "center",

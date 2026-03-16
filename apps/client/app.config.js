@@ -12,6 +12,12 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.vlad-risenhin.health-circle",
+      infoPlist: {
+        NSLocationWhenInUseUsageDescription:
+          "Allow Health Circle to access your location to share your safety status with your circles.",
+        NSLocationAlwaysAndWhenInUseUsageDescription:
+          "Allow Health Circle to access your location even in the background to keep your circles updated on your safety.",
+      },
     },
     android: {
       package: "com.vlad_risenhin.health_circle",
@@ -26,6 +32,8 @@ export default {
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
       ],
     },
     plugins: [
@@ -33,6 +41,7 @@ export default {
       "@react-native-firebase/messaging",
       "expo-notifications",
       "expo-router",
+      "expo-location",
       [
         "expo-splash-screen",
         {

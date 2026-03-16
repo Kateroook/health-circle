@@ -4,10 +4,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ExternalFilesEntity } from 'src/common/entities/external-files.entity';
 import { generateHash } from 'src/common/helpers/generate-hash.util';
 import { FileParam } from 'src/common/types/file-param';
 import { QueryRunner, Repository } from 'typeorm';
+
+import { ExternalFilesEntity } from './entities/external-files.entity';
 
 @Injectable()
 export class ExternalFilesService {

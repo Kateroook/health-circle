@@ -4,6 +4,7 @@ import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -15,12 +16,13 @@ import {
 } from "react-native";
 import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Icon from "react-native-vector-icons/Feather";
+import { Feather as Icon } from "@expo/vector-icons";
 import { apiFetch } from "../../api/api";
 import { formatErrorMessage } from "../../utils/error.util";
 import { validatePasswordComplexity } from "../../utils/passwordValidation.util";
 
 export default function ResetPassword() {
+  const { logEvent } = useAnalytics();
   const { email } = useLocalSearchParams<{ email: string }>();
 
   const [code, setCode] = useState("");
@@ -68,6 +70,7 @@ export default function ResetPassword() {
         type: "success",
         duration: 3000,
       });
+      logEvent("password_reset_successful");
       router.replace("/Login");
     } catch (e: any) {
       setFormError(formatErrorMessage(e));

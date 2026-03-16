@@ -81,10 +81,7 @@ const statusMatchers = {
 
     return {
       pass,
-      message: () =>
-        pass
-          ? `Expected response not to be JSON`
-          : `Expected JSON response but got "${contentType}"`,
+      message: () => (pass ? `Expected response not to be JSON` : `Expected JSON response but got "${contentType}"`),
     };
   },
 };

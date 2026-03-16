@@ -44,7 +44,7 @@ export default function CirclesScreen() {
         setActiveCircle(updated);
       }
     }
-  }, [circles, activeCircle]);
+  }, [circles]);
 
   // Fetch all circles
   const fetchCircles = useCallback(async () => {
@@ -198,6 +198,7 @@ export default function CirclesScreen() {
             method: "POST",
           });
           setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+          fetchCircles();
         }}
       />
 

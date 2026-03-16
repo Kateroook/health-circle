@@ -52,7 +52,7 @@ export async function apiFetch(
 
   if (!res.ok) {
     // Auto-refresh on 401: try to refresh the session and retry the request once
-    if (res.status === 401 && !options._isRetry) {
+    if (res.status === 401 && !options._isRetry && path !== "/auth/refresh") {
       const { useAuthStore } = require("../store/authStore");
       const refreshed = await useAuthStore.getState().refreshSession();
       if (refreshed) {
@@ -146,5 +146,24 @@ export async function saveFcmTokenToBackend(token: string) {
   return apiFetch("/users/fcm-token", {
     method: "PUT",
     body: JSON.stringify({ token }),
+  });
+}
+
+export async function updateUserLocation(locationData: {
+  latitude?: number;
+  longitude?: number;
+  region?: string;
+  district?: string;
+}) {
+  const { useAuthStore } = require("../store/authStore");
+  const user = useAuthStore.getState().user;
+  if (!user?.id) return;
+
+  return apiFetch("/users", {
+    method: "PUT",
+    body: JSON.stringify({
+      id: user.id,
+      ...locationData,
+    }),
   });
 }

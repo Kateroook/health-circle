@@ -1,5 +1,8 @@
 import { Button } from "@/src/components/Button";
 import { ListItem } from "@/src/components/ListItem";
+import { ModalActions, ModalContent, ModalHeader } from "@/src/components/modal";
+import { ModalContainer } from "@/src/components/modal/ModalContainer";
+import { useAnalytics } from "@/src/hooks/useAnalytics";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { AntDesign } from "@expo/vector-icons";
@@ -7,11 +10,10 @@ import Feather from "@expo/vector-icons/Feather";
 import * as Clipboard from "expo-clipboard";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-
 import ConfirmationModal from "../../ConfirmationModal";
 import { TextField } from "../../fields/TextField";
 import { BottomSheetContainer } from "../../modal/BottomSheetContainer";
-
+import { RenameModal } from "./RenameModal";
 interface Member {
   id: string;
   firstName: string;
@@ -26,6 +28,7 @@ interface Props {
   inviteCode: string;
   members: Member[];
   ownerId: string;
+  circleId: string;
   onClose: () => void;
   onRename: (newName: string) => void;
   onSaveMembers: (updated: { id: string }[]) => void;
@@ -40,6 +43,7 @@ export default function CircleActionsModal({
   inviteCode,
   members,
   ownerId,
+  circleId,
   onClose,
   onRename,
   onSaveMembers,
@@ -47,6 +51,7 @@ export default function CircleActionsModal({
   onLeave,
   onRegenerateInvite,
 }: Props) {
+  const { logEvent } = useAnalytics();
   const [isRenaming, setIsRenaming] = useState(false);
   const [isEditingMembers, setIsEditingMembers] = useState(false);
   const [newName, setNewName] = useState("");
@@ -73,6 +78,7 @@ export default function CircleActionsModal({
   const handleDoneRename = () => {
     if (newName.trim() !== "") {
       onRename(newName.trim());
+      logEvent("rename_circle");
       setIsRenaming(false);
       setNewName("");
     }
@@ -89,8 +95,60 @@ export default function CircleActionsModal({
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(inviteCode);
+    logEvent("copy_invite_code");
   };
 
+  interface RenameCircleModalProps {
+    isVisible: boolean;
+    newName: string;
+    onChangeName: (name: string) => void;
+    onCancel: () => void;
+    onSave: () => void;
+  }
+
+  const RenameCircleModal: React.FC<RenameCircleModalProps> = ({
+    isVisible,
+    newName,
+    onChangeName,
+    onCancel,
+    onSave,
+  }) => {
+    if (!isVisible) return null;
+
+    return (
+      <ModalContainer isVisible={isVisible} onClose={onCancel}>
+        <ModalHeader title="Редагуй назву Кола" />
+        <ModalContent noMarginBottom>
+          <TextField
+            label=""
+            placeholder="Введи нову назву"
+            value={newName}
+            onChangeText={onChangeName}
+            autoFocus
+            required
+            caption="Назва зміниться для всіх членів Кола"
+          />
+        </ModalContent>
+        <ModalActions>
+          <Button
+            label="Скасувати"
+            hierarchy="secondary"
+            shape="rectangle"
+            size="medium"
+            onPress={onCancel}
+          />
+          <Button
+            label="Зберегти"
+            hierarchy="primary"
+            shape="rectangle"
+            size="medium"
+            disabled={newName.trim() === ""}
+            onPress={onSave}
+          />
+        </ModalActions>
+      </ModalContainer>
+    );
+  };
   return (
     <BottomSheetContainer isVisible={visible} onClose={onClose}>
       <ConfirmationModal
@@ -101,7 +159,7 @@ export default function CircleActionsModal({
           setTimeout(() => onDelete(), 300);
         }}
         title="Видалити це Коло?"
-        message="Після видалення ви не зможете стежити за станом його учасників"
+        message="Після видалення ви не зможете стежити за станом його учасників"
         confirmText="Видалити"
         cancelText="Назад"
       />
@@ -119,42 +177,26 @@ export default function CircleActionsModal({
         cancelText="Назад"
       />
       {/* ===== RENAME MODE ===== */}
-      {isRenaming && isOwner && (
-        <View style={styles.section}>
-          <Button
-            shape="round"
-            hierarchy="tertiary"
-            size="xsmall"
-            leadingIcon={
-              <AntDesign name="arrow-left" size={16} color={theme.colors.content.primary} />
-            }
-            onPress={() => setIsRenaming(false)}
-            style={{ alignSelf: "flex-start" }}
-          />
-          <Text style={styles.sectionTitle}>Редагуй назву Кола</Text>
-          <TextField
-            label=""
-            placeholder="Введи нову назву"
-            value={newName}
-            onChangeText={setNewName}
-            autoFocus
-            required
-            caption="Назва зміниться для всіх членів Кола"
-          />
-          <Button
-            label="Зберегти"
-            hierarchy="primary"
-            shape="pill"
-            size="large"
-            disabled={newName.trim() === ""}
-            onPress={handleDoneRename}
-            style={{ width: "100%" }}
-          />
-        </View>
-      )}
+      <RenameModal
+        isVisible={isRenaming && isOwner}
+        title="Редагуй назву Кола"
+        placeholder="Введи нову назву"
+        caption="Назва зміниться для всіх членів Кола"
+        initialValue={currentName}
+        onCancel={() => {
+          setIsRenaming(false);
+          setNewName("");
+        }}
+        onSave={(newName) => {
+          onRename(newName);
+          logEvent("rename_circle");
+          setIsRenaming(false);
+          setNewName("");
+        }}
+      />
 
       {/* ===== EDIT MEMBERS MODE ===== */}
-      {!isRenaming && isEditingMembers && isOwner && (
+      {isEditingMembers && isOwner && (
         <View style={styles.section}>
           <Button
             shape="round"
@@ -166,7 +208,7 @@ export default function CircleActionsModal({
             onPress={() => setIsEditingMembers(false)}
             style={{ alignSelf: "flex-start" }}
           />
-          <Text style={styles.sectionTitle}>Редагуй склад кола</Text>
+          <Text style={styles.sectionTitle}>Редагуй склад кола</Text>
           <Text style={styles.sectionSubtitle}>
             Видали учасників, яких більше не потрібно відстежувати
           </Text>
@@ -197,7 +239,7 @@ export default function CircleActionsModal({
       )}
 
       {/* ===== MAIN MENU ===== */}
-      {!isRenaming && !isEditingMembers && (
+      {!isEditingMembers && (
         <View style={styles.section}>
           <Text style={styles.modalTitle} numberOfLines={1} ellipsizeMode="tail">
             {currentName}
@@ -213,7 +255,10 @@ export default function CircleActionsModal({
                 leadingIcon={
                   <Feather name="refresh-cw" size={16} color={theme.colors.content.onColor} />
                 }
-                onPress={onRegenerateInvite}
+                onPress={() => {
+                  onRegenerateInvite();
+                  logEvent("regenerate_invite_code");
+                }}
               />
               <Button
                 shape="round"
@@ -229,7 +274,7 @@ export default function CircleActionsModal({
             {isOwner ? (
               <>
                 <Button
-                  label="Перейменувати"
+                  label="Перейменувати"
                   hierarchy="secondary"
                   shape="rectangle"
                   size="medium"

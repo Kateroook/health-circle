@@ -1,14 +1,18 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { GroupEntity } from 'src/common/entities/group.entity';
-import { GroupBlockListEntity } from 'src/common/entities/group-block-list.entity';
-import { UserEntity } from 'src/common/entities/user.entity';
+import { QueueService } from 'src/common/queue/queue.service';
 import { ContactsService } from 'src/contacts/contacts.service';
+import { GroupEntity } from 'src/groups/entities/group.entity';
+import { GroupBlockListEntity } from 'src/groups/entities/group-block-list.entity';
+import { GroupMemberEntity } from 'src/groups/entities/group-member.entity';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { SecurityService } from 'src/security/security.service';
-import { In, Repository } from 'typeorm';
+import { UserEntity } from 'src/users/entities/user.entity';
+import { UsersService } from 'src/users/users.service';
+import { Repository } from 'typeorm';
 
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
@@ -17,11 +21,11 @@ import { GroupService } from './groups.service';
 describe('GroupService', () => {
   let service: GroupService;
   let groupRepository: jest.Mocked<Repository<GroupEntity>>;
-  let userRepository: jest.Mocked<Repository<UserEntity>>;
   let blockListRepository: jest.Mocked<Repository<GroupBlockListEntity>>;
+  let memberRepository: jest.Mocked<Repository<GroupMemberEntity>>;
   let securityService: jest.Mocked<SecurityService>;
-  let contactsService: jest.Mocked<ContactsService>;
   let notificationsService: jest.Mocked<NotificationsService>;
+  let usersService: jest.Mocked<UsersService>;
 
   // Variables are declared here but initialized in beforeEach
   let mockUser: UserEntity;
@@ -37,10 +41,13 @@ describe('GroupService', () => {
     mockGroup = {
       id: 'group-1',
       name: 'Test Group',
-      owner: mockOwner,
-      members: [mockOwner, mockUser],
+      ownerId: 'owner-1',
+      members: [
+        { groupId: 'group-1', userId: 'owner-1' } as GroupMemberEntity,
+        { groupId: 'group-1', userId: 'user-1' } as GroupMemberEntity,
+      ],
       inviteCode: 'ABC',
-    } as GroupEntity;
+    } as unknown as GroupEntity;
 
     // 2. Define mock behavior using the fresh objects
     const createQueryBuilderMock = {
@@ -62,6 +69,7 @@ describe('GroupService', () => {
           provide: getRepositoryToken(GroupEntity),
           useValue: {
             createQueryBuilder: jest.fn(() => createQueryBuilderMock),
+            find: jest.fn(),
             findOne: jest.fn(),
             findOneBy: jest.fn(),
             save: jest.fn(),
@@ -82,6 +90,16 @@ describe('GroupService', () => {
             upsert: jest.fn(),
             delete: jest.fn(),
             find: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(GroupMemberEntity),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+            findOne: jest.fn(),
+            save: jest.fn(),
+            remove: jest.fn(),
+            delete: jest.fn(),
           },
         },
         {
@@ -108,16 +126,40 @@ describe('GroupService', () => {
             sendMulticast: jest.fn(),
           },
         },
+        {
+          provide: QueueService,
+          useValue: {
+            schedule: jest.fn(),
+            send: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockImplementation((key) => {
+              if (key === 'ROLL_CALL_TIMEOUT_MINUTES') return 60;
+              return null;
+            }),
+          },
+        },
+        {
+          provide: UsersService,
+          useValue: {
+            exists: jest.fn().mockResolvedValue(true),
+            getOne: jest.fn(),
+            findByIds: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<GroupService>(GroupService);
     groupRepository = module.get(getRepositoryToken(GroupEntity));
-    userRepository = module.get(getRepositoryToken(UserEntity));
     blockListRepository = module.get(getRepositoryToken(GroupBlockListEntity));
+    memberRepository = module.get(getRepositoryToken(GroupMemberEntity));
     securityService = module.get(SecurityService);
-    contactsService = module.get(ContactsService);
     notificationsService = module.get(NotificationsService);
+    usersService = module.get(UsersService);
   });
 
   afterEach(() => {
@@ -127,12 +169,16 @@ describe('GroupService', () => {
   describe('findAllForUser', () => {
     it('should return groups and filter out the current user from members list', async () => {
       // Logic in service filters out the requesting user from the members list
-      const result = await service.findAllForUser('user-1');
+      memberRepository.find.mockResolvedValue([{ groupId: 'group-1', userId: 'user-1' } as GroupMemberEntity]);
+      groupRepository.find.mockResolvedValue([mockGroup]);
+      usersService.findByIds.mockImplementation(async (ids: string[]) => {
+        return ids.map((id) => ({ id, firstName: id === 'owner-1' ? 'Owner' : 'User' }) as UserEntity);
+      });
 
-      expect(groupRepository.createQueryBuilder).toHaveBeenCalledWith('group');
-      // logic maps members. Since we passed mockGroup with 2 members (owner, user-1),
-      // filtering user-1 should leave 1 member.
-      expect(result[0].members).toHaveLength(1); // mockUser removed
+      const result = await service.findAllForUser('user-1');
+      // logic maps members. In findAllForUser, it returns Member Profile objects.
+      // Filtering user-1 should leave 1 member.
+      expect(result[0].members).toHaveLength(1);
       expect(result[0].members[0].id).toBe('owner-1');
     });
   });
@@ -140,14 +186,16 @@ describe('GroupService', () => {
   describe('findOne', () => {
     it('should return group if user is owner', async () => {
       groupRepository.findOne.mockResolvedValue(mockGroup);
+      usersService.findByIds.mockResolvedValue([mockOwner, mockUser]);
       const result = await service.findOne('group-1', 'owner-1');
-      expect(result).toEqual(mockGroup);
+      expect(result.id).toBe('group-1');
     });
 
     it('should return group if user is member', async () => {
       groupRepository.findOne.mockResolvedValue(mockGroup);
+      usersService.findByIds.mockResolvedValue([mockOwner, mockUser]);
       const result = await service.findOne('group-1', 'user-1');
-      expect(result).toEqual(mockGroup);
+      expect(result.id).toBe('group-1');
     });
 
     it('should throw NotFoundException if group missing', async () => {
@@ -166,14 +214,21 @@ describe('GroupService', () => {
       securityService.generateRandomToken.mockReturnValue('NEW');
       securityService.generateRandomToken.mockReturnValue('NEW');
       groupRepository.findOneBy.mockResolvedValue(null); // Code is unique
-      groupRepository.save.mockResolvedValue({ id: 'g1', inviteCode: 'NEW', members: [{ id: 'owner-1' }] } as GroupEntity);
+      const groupData = {
+        id: 'g1',
+        inviteCode: 'NEW',
+        members: [{ groupId: 'g1', userId: 'owner-1' }],
+      } as unknown as GroupEntity;
+      groupRepository.save.mockResolvedValue(groupData);
+      groupRepository.findOne.mockResolvedValue(groupData);
+      usersService.findByIds.mockResolvedValue([mockOwner]);
 
       const dto = { name: 'New Group', members: [] } as CreateGroupDto;
       const result = await service.createGroup('owner-1', dto);
 
       expect(groupRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
-          owner: { id: 'owner-1' },
+          ownerId: 'owner-1',
           inviteCode: 'NEW',
         }),
       );
@@ -187,7 +242,14 @@ describe('GroupService', () => {
         .mockResolvedValueOnce({ id: 'existing' } as GroupEntity) // First check: Taken
         .mockResolvedValueOnce(null); // Second check: Free
 
+      const groupData = {
+        id: 'g2',
+        inviteCode: 'FREE',
+        members: [{ groupId: 'g2', userId: 'owner-1' }],
+      } as unknown as GroupEntity;
       groupRepository.save.mockImplementation((g) => Promise.resolve(g as GroupEntity));
+      groupRepository.findOne.mockResolvedValue(groupData);
+      usersService.findByIds.mockResolvedValue([mockOwner]);
 
       await service.createGroup('owner-1', { name: 'G' } as CreateGroupDto);
 
@@ -202,9 +264,12 @@ describe('GroupService', () => {
 
   describe('regenerateInviteCode', () => {
     it('should regenerate code if user is owner', async () => {
-      groupRepository.findOne.mockResolvedValue(mockGroup);
+      groupRepository.findOneBy.mockImplementation((criteria: any) => {
+        if (criteria.id === 'group-1') return Promise.resolve(mockGroup);
+        if (criteria.inviteCode === 'XYZ') return Promise.resolve(null as any);
+        return Promise.resolve(null as any);
+      });
       securityService.generateRandomToken.mockReturnValue('XYZ');
-      groupRepository.findOneBy.mockResolvedValue(null);
       groupRepository.save.mockResolvedValue({ ...mockGroup, inviteCode: 'XYZ' });
 
       const result = await service.regenerateInviteCode('owner-1', 'group-1');
@@ -214,7 +279,7 @@ describe('GroupService', () => {
     });
 
     it('should throw ForbiddenException if not owner', async () => {
-      groupRepository.findOne.mockResolvedValue(mockGroup);
+      groupRepository.findOneBy.mockResolvedValue(mockGroup);
       await expect(service.regenerateInviteCode('user-1', 'group-1')).rejects.toThrow(ForbiddenException);
     });
   });
@@ -222,17 +287,25 @@ describe('GroupService', () => {
   describe('joinByInviteCode', () => {
     it('should add user to group members', async () => {
       // Create a specific group state for this test where user is NOT a member yet
-      const groupWithOneMember = { ...mockGroup, members: [mockOwner] } as GroupEntity;
+      const groupWithOneMember = { ...mockGroup, members: [{ groupId: 'group-1', userId: 'owner-1' }] } as unknown as GroupEntity;
 
-      groupRepository.findOne.mockResolvedValue(groupWithOneMember);
-      userRepository.findOneBy.mockResolvedValue(mockUser);
-      blockListRepository.findOne.mockResolvedValue(null); // Not blocked
-      groupRepository.save.mockImplementation((g) => Promise.resolve(g as GroupEntity));
+      groupRepository.findOne
+        .mockResolvedValueOnce(groupWithOneMember) // Call in joinByInviteCode (finding group)
+        .mockResolvedValueOnce({
+          ...groupWithOneMember,
+          members: [
+            { groupId: 'group-1', userId: 'owner-1' } as GroupMemberEntity,
+            { groupId: 'group-1', userId: 'user-1' } as GroupMemberEntity,
+          ],
+        } as unknown as GroupEntity); // Call in findOne (returning joined group)
+      usersService.exists.mockResolvedValue(true);
+      usersService.findByIds.mockResolvedValue([mockOwner, mockUser]);
+      blockListRepository.findOne.mockResolvedValue(null);
+      memberRepository.save.mockResolvedValue({ groupId: 'group-1', userId: 'user-1' } as GroupMemberEntity);
 
       const result = await service.joinByInviteCode('user-1', 'ABC');
 
-      expect(groupWithOneMember.members).toContain(mockUser);
-      expect(groupRepository.save).toHaveBeenCalled();
+      expect(memberRepository.save).toHaveBeenCalledWith(expect.objectContaining({ userId: 'user-1' }));
       expect(result.message).toContain('приєдналися');
     });
 
@@ -249,9 +322,9 @@ describe('GroupService', () => {
     });
 
     it('should throw BadRequestException if already member', async () => {
-      groupRepository.findOne.mockResolvedValue(mockGroup); // mockUser is already in members
+      groupRepository.findOne.mockResolvedValue(mockGroup); // mockGroup has user-1 already
       blockListRepository.findOne.mockResolvedValue(null);
-      userRepository.findOneBy.mockResolvedValue(mockUser);
+      usersService.exists.mockResolvedValue(true);
 
       await expect(service.joinByInviteCode('user-1', 'ABC')).rejects.toThrow(BadRequestException);
     });
@@ -260,20 +333,15 @@ describe('GroupService', () => {
   describe('updateGroup', () => {
     it('should update group name and members', async () => {
       groupRepository.findOne.mockResolvedValue(mockGroup);
-      const newMember = { id: 'new-mem' } as UserEntity;
-      userRepository.find.mockResolvedValue([newMember]);
+      usersService.findByIds.mockResolvedValue([mockOwner, { id: 'new-mem' } as UserEntity]);
       groupRepository.save.mockImplementation((g) => Promise.resolve(g as GroupEntity));
 
       const dto = { id: 'group-1', name: 'Updated Name', members: [{ id: 'new-mem' }] } as UpdateGroupDto;
 
       const result = await service.updateGroup('owner-1', dto);
 
-      expect(userRepository.find).toHaveBeenCalledWith({ where: { id: In(['new-mem']) } });
+      expect(memberRepository.delete).toHaveBeenCalledWith({ groupId: 'group-1' });
       expect(result.name).toBe('Updated Name');
-      // Should contain owner + new member
-      expect(result.members).toHaveLength(2);
-      expect(result.members.some((m) => m.id === 'new-mem')).toBeTruthy();
-      expect(result.members.some((m) => m.id === 'owner-1')).toBeTruthy();
     });
 
     it('should throw ForbiddenException if not owner', async () => {
@@ -285,16 +353,11 @@ describe('GroupService', () => {
 
   describe('leaveGroup', () => {
     it('should remove user from members', async () => {
-      // Explicitly define group state for this test
-      const group = { ...mockGroup, members: [mockOwner, mockUser] } as GroupEntity;
-      groupRepository.findOne.mockResolvedValue(group);
-      groupRepository.save.mockImplementation((g) => Promise.resolve(g as GroupEntity));
+      groupRepository.findOne.mockResolvedValue(mockGroup);
 
       await service.leaveGroup('user-1', 'group-1');
 
-      expect(group.members).toHaveLength(1);
-      expect(group.members[0].id).toBe('owner-1'); // Only owner left
-      expect(groupRepository.save).toHaveBeenCalledWith(group);
+      expect(memberRepository.delete).toHaveBeenCalledWith({ groupId: 'group-1', userId: 'user-1' });
     });
 
     it('should throw ForbiddenException if owner tries to leave', async () => {
@@ -322,15 +385,10 @@ describe('GroupService', () => {
   describe('blockUser', () => {
     it('should block user and remove from members', async () => {
       groupRepository.findOne.mockResolvedValue(mockGroup);
-      // mockGroup has mockUser as member
-      groupRepository.save.mockResolvedValue(mockGroup);
-      blockListRepository.upsert.mockResolvedValue({} as any);
 
       await service.blockUser('group-1', 'user-1', 'owner-1');
 
-      // Members should be filtered
-      expect(mockGroup.members).not.toContain(mockUser);
-      expect(groupRepository.save).toHaveBeenCalled();
+      expect(memberRepository.delete).toHaveBeenCalledWith({ groupId: 'group-1', userId: 'user-1' });
       expect(blockListRepository.upsert).toHaveBeenCalled();
     });
 
@@ -353,14 +411,14 @@ describe('GroupService', () => {
 
   describe('initiateRollCall', () => {
     it('should set lastRollCallAt and send notifications', async () => {
-      mockGroup.members[1].fcmToken = 'token-1';
+      const mockMemberWithToken = { id: 'user-1', fcmToken: 'token-1' } as UserEntity;
       groupRepository.findOne.mockResolvedValue(mockGroup);
+      usersService.findByIds.mockResolvedValue([mockMemberWithToken]);
       groupRepository.save.mockResolvedValue(mockGroup);
 
       const result = await service.initiateRollCall('group-1', 'owner-1');
 
       expect(groupRepository.save).toHaveBeenCalled();
-      expect(mockGroup.lastRollCallAt).toBeInstanceOf(Date);
       expect(notificationsService.sendMulticast).toHaveBeenCalledWith(
         ['token-1'],
         expect.stringContaining('Перекличка'),

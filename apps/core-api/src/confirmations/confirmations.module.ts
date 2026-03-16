@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfirmationCodeEntity } from 'src/common/entities/confirmation-code.entity';
-import { UserEntity } from 'src/common/entities/user.entity';
 import { EmailModule } from 'src/email/email.module';
 import { SecurityService } from 'src/security/security.service';
+import { UserEntity } from 'src/users/entities/user.entity';
 
 import { ConfirmationsService } from './confirmations.service';
+import { ConfirmationCodeEntity } from './entities/confirmation-code.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([UserEntity, ConfirmationCodeEntity]), EmailModule],

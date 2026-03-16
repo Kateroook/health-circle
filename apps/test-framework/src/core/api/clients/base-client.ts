@@ -23,7 +23,7 @@ export abstract class BaseClient {
   constructor(request: APIRequestContext, context: TestContext, dbCleaner?: DbCleaner) {
     this.request = request;
     this.context = context;
-    this.baseURL = process.env.API_BASE_URL!
+    this.baseURL = process.env.API_BASE_URL!;
     this.dbCleaner = dbCleaner;
   }
 

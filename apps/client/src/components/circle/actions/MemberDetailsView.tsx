@@ -1,11 +1,13 @@
+import { Button } from "@/src/components/Button";
 import { COLORS } from "@/src/theme/colors";
+import { theme } from "@/src/theme/theme";
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { MemberAvatar } from "../../MemberAvatar";
-import { TextField } from "../../fields/TextField";
-
+import { StatusBadge } from "../../StatusBadge";
+import { Typography } from "../../typography";
 import { Member } from "../CircleItem";
-
+import { RenameModal } from "./RenameModal";
 interface MemberDetailsViewProps {
   member: Member;
   onInternalRename?: (newName: string) => void;
@@ -28,147 +30,112 @@ export default function MemberDetailsView({
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(member.fullName || member.firstName);
 
-  const handleSaveRename = () => {
-    if (onInternalRename) {
-      onInternalRename(newName);
-    }
+  const handleSaveRename = (newName: string) => {
+    onInternalRename?.(newName);
     setIsRenaming(false);
   };
 
   const handleResetAlias = () => {
-    if (onInternalRename) {
-      onInternalRename(""); // Clearing alias
-    }
+    onInternalRename?.("");
     setIsRenaming(false);
   };
 
   return (
     <View style={styles.container}>
-      {!isRenaming ? (
-        <>
-          <View style={styles.profileSection}>
-            <View style={styles.avatarContainer}>
-              <MemberAvatar member={{ ...member, status: member.status || "UNKNOWN" }} />
-            </View>
-            <Text style={styles.memberName}>
-              {member.fullName || `${member.firstName} ${member.lastName}`}
-            </Text>
-          </View>
+      {/* RenameModal always rendered, controlled by isRenaming */}
+      <RenameModal
+        isVisible={isRenaming}
+        title="Редагування імʼя"
+        placeholder="Введіть нове імʼя"
+        caption="Це імʼя буде відображатися у вашому колі"
+        initialValue={member.fullName || member.firstName}
+        onCancel={() => setIsRenaming(false)}
+        onSave={handleSaveRename}
+        extraAction={
+          member.isAlias
+            ? {
+                label: "Відновити оригінальне імʼя",
+                onPress: handleResetAlias,
+              }
+            : undefined
+        }
+      />
 
-          <View style={styles.actionsCard}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => {
-                setNewName(member.fullName || member.firstName);
-                setIsRenaming(true);
-              }}
-            >
-              <Text style={styles.actionButtonText}>Редагувати імʼя</Text>
-            </TouchableOpacity>
-
-            {isOwner && onRollCall && (
-              <TouchableOpacity style={styles.actionButton} onPress={onRollCall}>
-                <Text style={styles.actionButtonText}>Перекличка</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              style={[styles.actionButton, { borderBottomWidth: 0 }]}
-              onPress={onRemoveMember}
-            >
-              <Text style={[styles.actionButtonText, styles.dangerText]}>Видалити з кола</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      ) : (
-        <View style={styles.renameContainer}>
-          <Text style={styles.renameTitle}>Редагування імʼя</Text>
-          <TextField
-            label=""
-            placeholder="Введіть нове імʼя"
-            value={newName}
-            onChangeText={setNewName}
-            required
-            caption="Це імʼя буде відображатися у вашому колі"
-          />
-
-          <View style={{ width: "100%", gap: 10 }}>
-            <TouchableOpacity style={styles.saveButton} onPress={handleSaveRename}>
-              <Text style={styles.saveButtonText}>Зберегти</Text>
-            </TouchableOpacity>
-
-            {/* Show restore only if it is an alias */}
-            {member.isAlias && (
-              <TouchableOpacity
-                style={[styles.saveButton, { backgroundColor: "#FFEEF0" }]}
-                onPress={handleResetAlias}
-              >
-                <Text style={[styles.saveButtonText, { color: COLORS.STATE_DANGER }]}>
-                  Відновити оригінальне імʼя
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              style={[styles.saveButton, { backgroundColor: "transparent" }]}
-              onPress={() => setIsRenaming(false)}
-            >
-              <Text style={[styles.saveButtonText, { color: COLORS.TEXT_GRAY }]}>Скасувати</Text>
-            </TouchableOpacity>
-          </View>
+      {/* Profile section always visible */}
+      <View style={styles.profileSection}>
+        <View style={styles.avatarContainer}>
+          <MemberAvatar member={{ ...member, status: member.status || "UNKNOWN" }} size="xl" />
         </View>
-      )}
+        <Typography variant="h2" style={styles.header}>
+          {member.fullName || `${member.firstName} ${member.lastName}`}
+        </Typography>
+        <StatusBadge variant="pill" status={member.status} />
+      </View>
+
+      {/* Actions always visible */}
+      <View style={styles.actionsCard}>
+        <Button
+          label="Редагувати імʼя"
+          hierarchy="secondary"
+          shape="rectangle"
+          size="medium"
+          onPress={() => setIsRenaming(true)}
+          style={{ width: "100%" }}
+        />
+        {isOwner && onRollCall && (
+          <Button
+            label="Перекличка"
+            hierarchy="secondary"
+            shape="rectangle"
+            size="medium"
+            onPress={onRollCall}
+            style={{ width: "100%" }}
+          />
+        )}
+        {isOwner && onBlock && (
+          <Button
+            label="Заблокувати"
+            hierarchy="secondary"
+            shape="rectangle"
+            size="medium"
+            onPress={onBlock}
+            style={{ width: "100%" }}
+          />
+        )}
+        <Button
+          label="Видалити з кола"
+          hierarchy="tertiary"
+          shape="rectangle"
+          size="medium"
+          onPress={onRemoveMember}
+          style={{ width: "100%" }}
+          textStyle={{ color: theme.colors.negative }}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    backgroundColor: "#F7F8FA",
-  },
+  container: {},
   profileSection: {
     alignItems: "center",
-    marginTop: 20,
-    marginBottom: 30,
+    marginBottom: theme.spacing[32],
   },
   avatarContainer: {
-    transform: [{ scale: 2 }],
-    marginBottom: 20,
+    marginBottom: theme.spacing[8],
+  },
+  header: {
+    marginBottom: theme.spacing[16],
   },
   memberName: {
-    fontSize: 24,
-    fontWeight: "800",
-    marginTop: 20,
-    color: COLORS.TEXT_DARK,
-    textAlign: "center",
+    marginTop: theme.spacing[16],
   },
   actionsCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  actionButton: {
-    paddingVertical: 18,
-    alignItems: "center",
-    width: "100%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F2F2F7",
-  },
-  actionButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: COLORS.TEXT_DARK,
+    gap: theme.spacing[8],
   },
   dangerText: {
-    color: COLORS.STATE_DANGER,
+    color: theme.colors.negative,
   },
   // Rename Styles
   renameContainer: {
@@ -183,12 +150,7 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_DARK,
   },
   input: {
-    width: "100%",
-    backgroundColor: "#Eef2F6",
-    padding: 16,
-    borderRadius: 12,
-    fontSize: 16,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   hintText: {
     fontSize: 12,
