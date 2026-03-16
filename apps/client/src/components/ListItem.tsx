@@ -63,6 +63,8 @@ export interface ListItemProps {
   /** Whether the checkmark is shown as selected (check layout). */
   checked?: boolean;
   status?: UserStatus;
+  /** Hide the right-side chevron icon (compact layout). Defaults to false. */
+  hideChevron?: boolean;
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -114,6 +116,7 @@ export const ListItem: React.FC<ListItemProps> = ({
   onSwitchChange,
   checked = false,
   status,
+  hideChevron = false,
 }) => {
   const isCompact = layout === "compact";
 
@@ -156,6 +159,7 @@ export const ListItem: React.FC<ListItemProps> = ({
   const renderTailArtwork = () => {
     switch (layout) {
       case "compact":
+        if (hideChevron) return null;
         return (
           <View style={styles.tailArrowFrame}>
             <ArrowRight />
