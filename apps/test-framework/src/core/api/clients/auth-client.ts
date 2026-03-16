@@ -9,6 +9,7 @@ import {
   ProfileResponse,
 } from '../../types/api';
 import { checkResponse } from '../helpers/response-checker';
+import { test } from '../../../api/fixtures/api-fixture';
 
 /**
  * AuthClient - клієнт для роботи з Auth API
@@ -97,9 +98,11 @@ export class AuthClient extends BaseClient {
     code: string,
     body: SetupPasswordRequest['body'],
   ): Promise<ApiResult<void>> {
-    return await this.post<void>('/api/auth/password-setup', {
-      params: { email, code },
-      data: body,
+    return test.step(`Setup password "${body.newPassword}" for "${email}" email with code "${code}"`, async() => {
+      return await this.post<void>('/api/auth/password-setup', {
+        params: { email, code },
+        data: body,
+      });
     });
   }
 
