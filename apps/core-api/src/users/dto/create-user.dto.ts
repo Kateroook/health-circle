@@ -6,8 +6,8 @@ import {
   IsNotEmpty,
   IsNumber,
   IsOptional,
+  IsPhoneNumber,
   IsString,
-  Matches,
   MaxLength,
   MinLength,
   Validate,
@@ -50,9 +50,7 @@ export class CreateUserDto {
   @ApiProperty({ example: '+380922022491' })
   @IsDefined({ message: 'Поле номера телефону є обовʼязковим' })
   @IsString()
-  @Matches(/^\+[1-9]\d{6,14}$/, {
-    message: 'Некоректний формат номера телефону (має починатися з + та містити від 7 до 15 цифр)',
-  })
+  @IsPhoneNumber(undefined, { message: 'Некоректний формат номера телефону' })
   @Validate(UserUniqueConstraint, ['phone'], { message: 'Номер телефону вже використовується іншим користувачем' })
   phone: string;
 

@@ -411,7 +411,7 @@ describe('UsersService', () => {
   describe('remove', () => {
     it('removes user', async () => {
       repository.findOne.mockResolvedValue({ id: 'u1' } as UserEntity);
-      repository.save.mockResolvedValue({ id: 'u1' } as UserEntity); // Додайте цей рядок замість remove
+      repository.remove.mockResolvedValue({} as UserEntity);
 
       const res = await service.remove('u1', { id: 'u1' } as any, {} as any);
 
