@@ -124,6 +124,8 @@ export default function DashboardScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const {
     coords,
+    region,
+    district,
     error: locationError,
     updateCurrentLocation,
     loading: locationLoading,
@@ -223,9 +225,7 @@ export default function DashboardScreen() {
           <View style={styles.locationInfo}>
             <Typography variant="caption" tone="secondary">
               Локація: {coords.latitude.toFixed(4)}, {coords.longitude.toFixed(4)}
-              {useLocationStore.getState().region
-                ? ` (${useLocationStore.getState().region}${useLocationStore.getState().district ? `, ${useLocationStore.getState().district}` : ""})`
-                : ""}
+              {region ? ` (${region}${district ? `, ${district}` : ""})` : ""}
             </Typography>
           </View>
         ) : locationError ? (

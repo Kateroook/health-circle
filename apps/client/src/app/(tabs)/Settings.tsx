@@ -12,6 +12,7 @@ import { Avatar } from "@/src/components/Avatar";
 import { ListItem } from "@/src/components/ListItem";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import { useAuthStore } from "../../store/authStore";
+import { useLocationStore } from "../../store/locationStore";
 import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
 
@@ -20,6 +21,7 @@ export default function SettingsScreen() {
   const logout = useAuthStore((s) => s.logout);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
   const updateUser = useAuthStore((s) => s.updateUser);
+  const { updateCurrentLocation, loading: locationLoading } = useLocationStore();
 
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [middleName, setMiddleName] = useState(user?.middleName || "");
@@ -216,6 +218,24 @@ export default function SettingsScreen() {
       setPasswordError(formatErrorMessage(e, "Не вдалося змінити пароль"));
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  const handleLocationUpdate = async () => {
+    if (locationLoading) return;
+
+    try {
+      await updateCurrentLocation();
+      Alert.alert("Успіх", "Геолокацію оновлено");
+    } catch (e: any) {
+      if (e.message === "LOCATION_PERMISSION_DENIED") {
+        Alert.alert(
+          "Доступ заборонено",
+          "Будь ласка, дозвольте доступ до геолокації в налаштуваннях пристрою.",
+        );
+      } else {
+        Alert.alert("Помилка", "Не вдалося оновити геолокацію");
+      }
     }
   };
 
@@ -422,7 +442,23 @@ export default function SettingsScreen() {
             </>
           )}
         </View>
-
+        <View style={styles.settingsSection}>
+          <ListItem
+            layout="compact"
+            artworkSize="small"
+            label={locationLoading ? "Оновлення..." : "Оновити геолокацію"}
+            leadingIcon={
+              <MaterialCommunityIcons
+                name="map-marker-radius"
+                size={24}
+                color={theme.colors.content.primary}
+              />
+            }
+            onPress={handleLocationUpdate}
+            hideChevron={true}
+            showDivider={false}
+          />
+        </View>
         {/* 3. Вихід */}
         <Button
           label="Вихід"

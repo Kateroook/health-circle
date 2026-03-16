@@ -94,15 +94,23 @@ export const test = workerTest.extend<MyFixture>({
         middleName: user.middleName,
         lastName: user.lastName,
       });
-
+      statusExpect(postUser.response).toHaveStatus2xx();
+  
       user.id = postUser.data.id;
 
       const code = (await confirmationCodeRepository.findBy({ userId: user.id }))[0];
 
-      await api.auth.setupPassword(user.email!, code.code, {
+      console.log(code);
+
+      baseExpect(code).not.toBeUndefined();
+      baseExpect(code).not.toBeNull();
+  
+      const setupPassword = await api.auth.setupPassword(user.email!, code.code, {
         newPassword: user.password,
         confirmNewPassword: user.password,
       });
+
+      statusExpect(setupPassword.response).toHaveStatus2xx();
 
       return user;
     };
