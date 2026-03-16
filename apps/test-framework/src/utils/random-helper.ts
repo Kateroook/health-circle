@@ -7,7 +7,7 @@ export class RandomHelper {
   }
 
   password(length = 12) {
-    return nanoid(length);
+    return nanoid(length)+String(this.number({min: 10, max: 99}));
   }
 
   firstName() {
