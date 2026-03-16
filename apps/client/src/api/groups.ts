@@ -17,3 +17,15 @@ export async function getBlockedUsers(groupId: string) {
     method: "GET",
   });
 }
+
+export async function initiatePersonalRollCall(groupId: string, userId: string) {
+  return apiFetch(`/groups/${groupId}/members/${userId}/roll-call`, {
+    method: "POST",
+  });
+}
+
+export async function initiateRollCall(groupId: string) {
+  return apiFetch(`/groups/${groupId}/roll-call`, {
+    method: "POST",
+  });
+}

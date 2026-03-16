@@ -8,8 +8,7 @@ import {
   ForgotPasswordRequest,
   ProfileResponse,
 } from '../../types/api';
-import { extractTokenFromCookies } from '../../../api/helpers/config';
-import { assertResponse, checkResponse } from '../helpers/response-checker';
+import { checkResponse } from '../helpers/response-checker';
 
 /**
  * AuthClient - клієнт для роботи з Auth API
@@ -23,8 +22,7 @@ export class AuthClient extends BaseClient {
   public async login(data: LoginRequest): Promise<ApiResult<LoginResponse>> {
     const result = await this.post<LoginResponse>('/api/auth/login', { data });
 
-    // Автоматично зберігаємо токени з cookies
-    // const setCookieHeaders = result.response.headers()['set-cookie'];
+    // Автоматично зберігаємо токени
     if (checkResponse.is2xx(result.response)) {
       this.setAccessToken(result.data.accessToken!);
       this.setRefreshToken(result.data.refreshToken!);
@@ -50,28 +48,21 @@ export class AuthClient extends BaseClient {
    * POST /api/auth/refresh
    * Оновити access token
    */
-  public async refreshToken(): Promise<ApiResult<void>> {
+  public async refreshToken(): Promise<ApiResult<LoginResponse>> {
     // Використовуємо refresh token для оновлення
     const oldAccessToken = this.context.accessToken;
 
     // Тимчасово використовуємо refresh token
     if (this.context.refreshToken) {
-      this.setAccessToken(this.context.refreshToken);
+      this.setRefreshToken(this.context.refreshToken);
     }
 
-    const result = await this.post<void>('/api/auth/refresh');
+    const result = await this.post<LoginResponse>('/api/auth/refresh');
 
     // Відновлюємо або оновлюємо токени
-    const setCookieHeaders = result.response.headers()['set-cookie'];
-    if (setCookieHeaders && result.response.ok()) {
-      const accessToken = extractTokenFromCookies(
-        Array.isArray(setCookieHeaders) ? setCookieHeaders : [setCookieHeaders],
-        'accessToken',
-      );
-      const refreshToken = extractTokenFromCookies(
-        Array.isArray(setCookieHeaders) ? setCookieHeaders : [setCookieHeaders],
-        'refreshToken',
-      );
+    if (result.response.ok()) {
+      const accessToken = result.data.accessToken;
+      const refreshToken = result.data.refreshToken;
 
       if (accessToken) this.setAccessToken(accessToken);
       if (refreshToken) this.setRefreshToken(refreshToken);
@@ -151,7 +142,7 @@ export class AuthClient extends BaseClient {
    * Хелпер: швидкий логін з автоматичним збереженням userId
    */
   public async quickLogin(email: string, password: string): Promise<ApiResult<LoginResponse>> {
-    const result = await this.login({ email, password });
+    const result = await this.login({ identifier: email, password });
 
     // Зберігаємо userId якщо логін успішний
     if (result.response.ok()) {

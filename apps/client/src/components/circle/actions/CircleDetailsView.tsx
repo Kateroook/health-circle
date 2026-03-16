@@ -1,8 +1,9 @@
-import { AntDesign, Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import { COLORS } from "@/src/theme/colors";
+import { AntDesign, Feather, Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
-import React, { useMemo } from "react";
+import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import MemberAvatar from "../../MemberAvatar";
+import { MemberAvatar } from "../../MemberAvatar";
 import { Member } from "../CircleItem";
 
 type DetailsMember = Member & { mood?: string; lastUpdate?: string };
@@ -16,6 +17,7 @@ interface CircleDetailsViewProps {
   onRenamePress: () => void;
   onUnsubscribePress: () => void;
   onMemberPress: (member: DetailsMember) => void;
+  onRollCallPress: () => void;
 }
 
 export default function CircleDetailsView({
@@ -25,165 +27,121 @@ export default function CircleDetailsView({
   isOwner,
   onClose,
   onRenamePress,
-  onUnsubscribePress,
   onMemberPress,
+  onRollCallPress,
 }: CircleDetailsViewProps) {
   const handleCopy = async () => {
     await Clipboard.setStringAsync(inviteCode);
   };
 
-  const stats = useMemo(() => {
-    const unknown = members.filter((m) => m.status === "UNKNOWN").length;
-    const safe = members.filter((m) => m.status === "SAFE").length;
-    const danger = members.filter((m) => m.status === "DANGER").length;
-    return { unknown, safe, danger, total: members.length };
-  }, [members]);
-
-  const statsTextLines = [];
-  if (stats.unknown > 0) statsTextLines.push(`${stats.unknown} не відповіли`);
-  if (stats.danger > 0) statsTextLines.push(`${stats.danger} у небезпеці`);
-  if (stats.safe > 0) statsTextLines.push(`${stats.safe} в безпеці`);
-
-  // Hardcoded for matching the design look if data is 0 but we want to show stats as in design
-  // You can keep the dynamic one
-  const displayStatsText =
-    statsTextLines.length > 0 ? statsTextLines.join(",\n") : "Всі учасники в безпеці";
-
-  const renderStatusIcon = (status: string) => {
-    if (status === "UNKNOWN") {
-      return (
-        <View style={[styles.statusIconWrapper, { backgroundColor: "#FFF4EF" }]}>
-          <View style={[styles.statusIconInner, { backgroundColor: "#FFB067" }]}>
-            <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>?</Text>
-          </View>
-        </View>
-      );
-    }
-    if (status === "DANGER") {
-      // In design there is "Був у безпеці" mapped to blue check with dashed edges
-      // but DANGER usually is red. If the user uses DANGER as 'was safe', we fallback to blue dashes.
-      return (
-        <View style={[styles.statusIconWrapper, { backgroundColor: "#EAF2FF" }]}>
-          <View
-            style={[
-              styles.statusIconInner,
-              {
-                backgroundColor: "#FFF",
-                borderColor: "#508CFF",
-                borderWidth: 2,
-                borderStyle: "dashed",
-              },
-            ]}
-          >
-            <View style={{ backgroundColor: "#508CFF", borderRadius: 10, padding: 2 }}>
-              <AntDesign name="check" size={12} color="#FFF" />
-            </View>
-          </View>
-        </View>
-      );
-    }
-    return (
-      <View style={[styles.statusIconWrapper, { backgroundColor: "#EAFBF0" }]}>
-        <View style={[styles.statusIconInner, { backgroundColor: "#1FC16B" }]}>
-          <AntDesign name="check" size={16} color="#FFF" />
-        </View>
-      </View>
-    );
-  };
-
-  const getStatusText = (member: DetailsMember) => {
-    if (member.status === "UNKNOWN") return "Невідомо";
-    if (member.status === "DANGER") return "Був у безпеці"; // mimicking image design
-    return "У безпеці";
-  };
+  const unknownCount = members.filter((m) => (m.status as any) === "UNKNOWN" || !m.status).length;
+  const safeCount = members.filter((m) => m.status === "SAFE").length;
+  const wasSafeCount = members.filter((m) => (m.status as any) === "WAS_SAFE").length;
 
   return (
     <View style={styles.outerContainer}>
       <View style={styles.headerArea}>
         <View style={styles.headerTop}>
-          <View style={styles.titleRow}>
-            <TouchableOpacity onPress={onClose} style={styles.backButton}>
-              <AntDesign name="left" size={18} color="#1A1D2B" />
+          <View style={styles.titleInfo}>
+            <TouchableOpacity onPress={onClose} style={styles.backArrow}>
+              <AntDesign name="left" size={24} color={COLORS.TEXT_DARK} />
             </TouchableOpacity>
-            <Text style={styles.title} numberOfLines={1}>
-              {name}
-            </Text>
+            <Text style={styles.title} numberOfLines={1}>{name}</Text>
           </View>
-
-          <TouchableOpacity onPress={onRenamePress} style={styles.editButton}>
-            <MaterialIcons name="edit" size={20} color="#FFF" />
-          </TouchableOpacity>
+          {isOwner && (
+            <TouchableOpacity onPress={onRenamePress} style={styles.editButton}>
+              <AntDesign name="edit" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.codeWrapper}>
           <View style={styles.codeContainer}>
             <Text style={styles.codeText}>Код: {inviteCode}</Text>
-            <TouchableOpacity
-              onPress={handleCopy}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="copy" size={16} color="#1A1D2B" />
+            <TouchableOpacity onPress={handleCopy} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={styles.copyButton}>
+              <Ionicons name="copy" size={16} color={COLORS.TEXT_DARK} />
             </TouchableOpacity>
           </View>
         </View>
       </View>
 
       <View style={styles.statsCard}>
-        <View style={styles.statsTop}>
-          <Text style={styles.statsTotalTitle}>{stats.total} учасників</Text>
-          <TouchableOpacity style={styles.rollCallButton}>
-            <Text style={styles.rollCallText}>Перекличка</Text>
-            <MaterialCommunityIcons
-              name="broadcast"
-              size={18}
-              color="#FFF"
-              style={{ marginLeft: 6 }}
-            />
-          </TouchableOpacity>
+        <View style={styles.statsHeader}>
+          <Text style={styles.membersCountText}>{members.length} учасників</Text>
+          {isOwner && (
+            <TouchableOpacity onPress={onRollCallPress} style={styles.rollCallButton}>
+              <Text style={styles.rollCallButtonText}>Перекличка</Text>
+              <Feather name="rss" size={16} color="#FFF" />
+            </TouchableOpacity>
+          )}
         </View>
-        <Text style={styles.statsDescription}>{displayStatsText}</Text>
+        <Text style={styles.statsSummaryText}>
+          {unknownCount} не відповіли,{"\n"}
+          {wasSafeCount} нещодавно в безпеці, {safeCount} в безпеці
+        </Text>
       </View>
 
-      <View style={styles.membersCard}>
-        <ScrollView contentContainerStyle={styles.membersList} showsVerticalScrollIndicator={false}>
-          {members.map((member) => (
-            <View key={member.id}>
-              <TouchableOpacity
-                style={styles.memberItem}
-                onPress={() => onMemberPress(member)}
-                activeOpacity={0.7}
-              >
-                <MemberAvatar member={{ ...member, status: member.status || "UNKNOWN" }} />
-
-                <View style={styles.memberInfo}>
-                  <Text style={styles.memberName}>
+      <ScrollView style={styles.membersList} contentContainerStyle={styles.membersListContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.membersCard}>
+          {members.map((member, index) => (
+            <TouchableOpacity
+              key={member.id}
+              style={[styles.memberCard, index === members.length - 1 && { borderBottomWidth: 0 }]}
+              onPress={() => onMemberPress(member)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.memberMainInfo}>
+                <MemberAvatar member={{ ...member, status: (member.status as any) || "UNKNOWN" }} />
+                <View style={styles.memberTextInfo}>
+                  <Text style={styles.memberNameText}>
                     {member.fullName || `${member.firstName} ${member.lastName}`.trim()}
                   </Text>
-                  <Text style={styles.memberStatusText}>{getStatusText(member)}</Text>
-                  <Text style={styles.memberTimeText}>
+                  <Text style={styles.memberStatusLabel}>
+                    {member.status === "SAFE"
+                      ? "У безпеці"
+                      : (member.status as any) === "WAS_SAFE"
+                        ? "Був у безпеці"
+                        : "Невідомо"}
+                  </Text>
+                  <Text style={styles.memberStatusTime}>
                     {member.status === "SAFE"
                       ? "19:05"
-                      : member.status === "DANGER"
+                      : member.status === "WAS_SAFE"
                         ? "У безпеці о 18:56"
                         : "19:05"}
                   </Text>
                 </View>
-
-                {renderStatusIcon(member.status)}
-              </TouchableOpacity>
-              {/* Optional Divider, design shows very subtle or none, but list is tight. */}
-            </View>
+              </View>
+              <View style={[styles.statusIconContainer, { backgroundColor: "transparent" }]}>
+                <AntDesign
+                  name={
+                    member.status === "SAFE"
+                      ? "check-circle"
+                      : member.status === "WAS_SAFE"
+                        ? "sync"
+                        : "question-circle"
+                  }
+                  size={member.status === "SAFE" || member.status === "UNKNOWN" || !member.status ? 26 : 18}
+                  color={
+                    member.status === "SAFE"
+                      ? COLORS.STATE_SAFE
+                      : member.status === "WAS_SAFE"
+                        ? COLORS.PRIMARY_BLUE
+                        : "#FF9500"
+                  }
+                />
+              </View>
+            </TouchableOpacity>
           ))}
-          <View style={{ height: 40 }} />
-        </ScrollView>
-      </View>
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   outerContainer: {
-    backgroundColor: "#F4F6F9", // soft app background mapped
+    backgroundColor: "#F4F6F9",
     marginHorizontal: -16,
     marginTop: -32,
     paddingTop: 32,
@@ -196,32 +154,31 @@ const styles = StyleSheet.create({
   },
   headerTop: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
   },
-  titleRow: {
+  titleInfo: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
     marginRight: 16,
   },
-  backButton: {
+  backArrow: {
     marginRight: 16,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "800",
-    color: "#1A1D2B",
-    letterSpacing: -0.5,
+    color: COLORS.TEXT_DARK,
   },
   editButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#5982FF",
-    alignItems: "center",
+    width: 36,
+    height: 36,
     justifyContent: "center",
-    shadowColor: "#5982FF",
+    alignItems: "center",
+    backgroundColor: COLORS.PRIMARY_BLUE,
+    borderRadius: 18,
+    shadowColor: COLORS.PRIMARY_BLUE,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -235,120 +192,123 @@ const styles = StyleSheet.create({
   codeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EAECEF", // Трохи темніший за F2F4F7, але світліший за попередній E6E9EF
+    backgroundColor: "#EBEDF0",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
   },
   codeText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
-    color: "#1A1D2B",
+    color: COLORS.TEXT_DARK,
     marginRight: 10,
+  },
+  copyButton: {
+    padding: 2,
   },
   statsCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
     marginHorizontal: 20,
-    padding: 24,
-    paddingVertical: 20,
-    marginBottom: 16,
+    padding: 20,
+    marginBottom: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
     elevation: 2,
   },
-  statsTop: {
+  statsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  statsTotalTitle: {
+  membersCountText: {
     fontSize: 17,
-    fontWeight: "800",
-    color: "#2C2D35",
+    fontWeight: "700",
+    color: COLORS.TEXT_DARK,
   },
   rollCallButton: {
-    backgroundColor: "#5982FF",
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: COLORS.PRIMARY_BLUE,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
-    shadowColor: "#5982FF",
+    borderRadius: 14,
+    gap: 6,
+    shadowColor: COLORS.PRIMARY_BLUE,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
-  rollCallText: {
+  rollCallButtonText: {
     color: "#FFFFFF",
+    fontSize: 13,
     fontWeight: "700",
-    fontSize: 14,
   },
-  statsDescription: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: "#5B5D68",
+  statsSummaryText: {
+    fontSize: 12,
+    color: COLORS.TEXT_DARK,
+    lineHeight: 18,
     fontWeight: "500",
+    opacity: 0.8,
+  },
+  membersList: {
+    paddingHorizontal: 20,
+  },
+  membersListContent: {
+    paddingBottom: 40,
   },
   membersCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
-    marginHorizontal: 20,
-    paddingTop: 24,
-    paddingHorizontal: 20,
+    overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
     elevation: 2,
-    marginBottom: 20,
   },
-  membersList: {
-    paddingBottom: 20,
-  },
-  memberItem: {
+  memberCard: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 28,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F7",
   },
-  memberInfo: {
-    flex: 1,
-    marginLeft: 18,
-    justifyContent: "center",
-  },
-  memberName: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#1A1D2B",
-    marginBottom: 2,
-  },
-  memberStatusText: {
-    fontSize: 14,
-    color: "#5B5D68",
-    fontWeight: "600",
-    marginBottom: 1,
-  },
-  memberTimeText: {
-    fontSize: 13,
-    color: "#A2A4B0",
-    fontWeight: "500",
-  },
-  statusIconWrapper: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  memberMainInfo: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    flex: 1,
   },
-  statusIconInner: {
+  memberTextInfo: {
+    marginLeft: 12,
+  },
+  memberNameText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.TEXT_DARK,
+  },
+  memberStatusLabel: {
+    fontSize: 14,
+    color: COLORS.TEXT_GRAY,
+    marginTop: 2,
+  },
+  memberStatusTime: {
+    fontSize: 12,
+    color: COLORS.TEXT_GRAY,
+    marginTop: 2,
+    opacity: 0.7,
+  },
+  statusIconContainer: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    alignItems: "center",
     justifyContent: "center",
+    alignItems: "center",
   },
 });

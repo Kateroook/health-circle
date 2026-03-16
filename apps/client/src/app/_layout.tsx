@@ -6,7 +6,9 @@ import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import FlashMessage from "react-native-flash-message";
+import { useAnalytics } from "../hooks/useAnalytics";
 import { useFcmToken } from "../hooks/useFcmToken";
+import { useLocation } from "../hooks/useLocation";
 import { useAuthStore } from "../store/authStore";
 
 SplashScreen.preventAutoHideAsync();
@@ -24,11 +26,26 @@ const useAppFonts = () => {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
-  const { loading } = useAuthStore();
+  const { loading, user } = useAuthStore();
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const hasCompletedOnboarding = useAuthStore((s) => s.hasCompletedOnboarding);
 
   useFcmToken();
+  useLocation();
+  const { setUserId, setUserProperties } = useAnalytics();
+
+  useEffect(() => {
+    if (user?.id) {
+      setUserId(user.id);
+      setUserProperties({
+        status: user.status || "UNKNOWN",
+        hasCompletedOnboarding: String(hasCompletedOnboarding),
+      });
+    } else {
+      setUserId(null);
+      setUserProperties({ status: null });
+    }
+  }, [user?.id, user?.status, hasCompletedOnboarding, setUserId, setUserProperties]);
 
   useEffect(() => {
     if (fontError) throw fontError;

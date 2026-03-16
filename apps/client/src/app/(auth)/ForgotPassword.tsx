@@ -4,6 +4,7 @@ import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { router } from "expo-router";
 import { useState } from "react";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -13,11 +14,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Icon from "react-native-vector-icons/Feather";
+import { Feather as Icon } from "@expo/vector-icons";
 import { apiFetch } from "../../api/api";
 import { formatErrorMessage } from "../../utils/error.util";
 
 export default function ForgotPassword() {
+  const { logEvent } = useAnalytics();
   const [email, setEmail] = useState("");
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,6 +37,7 @@ export default function ForgotPassword() {
         method: "POST",
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
+      logEvent("forgot_password_requested");
       setSent(true);
       // Navigate to ResetPassword screen with email
       router.push({ pathname: "/ResetPassword", params: { email: email.trim().toLowerCase() } });

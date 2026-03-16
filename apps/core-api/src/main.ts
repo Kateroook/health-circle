@@ -1,4 +1,8 @@
+import { setDefaultResultOrder } from 'node:dns';
+
 import { ValidationPipe } from '@nestjs/common';
+
+setDefaultResultOrder('ipv4first');
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';

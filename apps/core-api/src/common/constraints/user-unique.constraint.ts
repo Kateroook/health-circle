@@ -4,7 +4,7 @@ import { ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface 
 import { ModifyUserDto } from 'src/users/dto/modify-user.dto';
 import { Repository } from 'typeorm';
 
-import { UserEntity } from '../entities/user.entity';
+import { UserEntity } from '../../users/entities/user.entity';
 
 @ValidatorConstraint({ name: 'IsUserUnique', async: true })
 @Injectable()

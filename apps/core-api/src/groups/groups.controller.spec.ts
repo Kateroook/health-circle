@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { GroupEntity } from 'src/common/entities/group.entity';
+import { QueueService } from 'src/common/queue/queue.service';
 import { AuthRequest } from 'src/common/types/auth-request';
 
 import { CreateGroupDto } from './dto/create-group.dto';
 import { JoinGroupDto } from './dto/join-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
+import { GroupEntity } from './entities/group.entity';
 import { GroupController } from './groups.controller';
 import { GroupService } from './groups.service';
 
@@ -38,6 +39,7 @@ describe('GroupController', () => {
           provide: GroupService,
           useValue: mockGroupService,
         },
+        { provide: QueueService, useValue: { schedule: jest.fn(), send: jest.fn() } },
       ],
     }).compile();
 

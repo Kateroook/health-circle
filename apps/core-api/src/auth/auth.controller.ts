@@ -16,6 +16,7 @@ import type { AuthRequest } from '../common/types/auth-request';
 import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
+import { ResendRegistrationCodeDto } from './dto/resend-registration-code.dto';
 import { SetupPasswordDto } from './dto/token-query.dto';
 import { UserChangePasswordDto } from './dto/user-change-password.dto';
 import { UserLoginDto } from './dto/user-login.dto';
@@ -105,8 +106,8 @@ export class AuthController {
   @Throttle({ long: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: 'Resend registration confirmation code' })
   @ApiOkResponse({ description: 'New registration code sent' })
-  async resendRegistrationCode(@Body() body: { email: string }) {
-    await this.authService.resendRegistrationCode(body.email);
+  async resendRegistrationCode(@Body() data: ResendRegistrationCodeDto) {
+    await this.authService.resendRegistrationCode(data.email);
     return { success: true, message: 'Код підтвердження надіслано повторно' };
   }
 

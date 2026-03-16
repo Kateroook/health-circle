@@ -1,70 +1,57 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Tabs } from "expo-router";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const TabIcon = ({
-  name,
-  focused,
-}: {
-  name: keyof typeof MaterialCommunityIcons.glyphMap;
-  focused: boolean;
-}) => {
-  return (
-    <View style={[styles.iconContainer, focused && styles.iconContainerFocused]}>
-      <MaterialCommunityIcons name={name} color={focused ? "#000000" : "#FFFFFF"} size={28} />
-    </View>
-  );
-};
+import { Dimensions } from "react-native";
 
-const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
+const screenWidth = Dimensions.get("window").width;
+const TAB_WIDTH = (screenWidth - 64 - 12) / 3;
+
+const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
   const insets = useSafeAreaInsets();
+  const translateX = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(translateX, {
+      toValue: state.index * TAB_WIDTH,
+      useNativeDriver: true,
+      friction: 8,
+    }).start();
+  }, [state.index]);
 
   return (
     <View style={[styles.tabBar, { bottom: 20 + insets.bottom }]}>
-      {state.routes.map((route, index) => {
-        if (route.name === "Notifications") return null;
+      {/* Animated pill */}
+      <Animated.View
+        style={[
+          styles.activePill,
+          {
+            transform: [{ translateX }],
+          },
+        ]}
+      />
 
-        const { options } = descriptors[route.key];
+      {state.routes.map((route, index) => {
         const isFocused = state.index === index;
 
         const onPress = () => {
-          const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          });
-
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name, route.params);
+          if (!isFocused) {
+            navigation.navigate(route.name);
           }
         };
 
-        const onLongPress = () => {
-          navigation.emit({
-            type: "tabLongPress",
-            target: route.key,
-          });
-        };
-
         let iconName: keyof typeof MaterialCommunityIcons.glyphMap = "circle";
-        if (route.name === "Dashboard") iconName = "heart";
-        else if (route.name === "Circles") iconName = "account-group";
-        else if (route.name === "Notifications") iconName = "bell-outline";
-        else if (route.name === "Settings") iconName = "cog";
+
+        if (route.name === "Dashboard") iconName = "heart-outline";
+        if (route.name === "Circles") iconName = "account-group-outline";
+        if (route.name === "Settings") iconName = "cog";
 
         return (
-          <TouchableOpacity
-            key={route.key}
-            accessibilityRole="button"
-            accessibilityState={isFocused ? { selected: true } : {}}
-            accessibilityLabel={options.tabBarAccessibilityLabel}
-            onPress={onPress}
-            onLongPress={onLongPress}
-            style={styles.tabBarItem}
-          >
-            <TabIcon name={iconName} focused={isFocused} />
+          <TouchableOpacity key={route.key} style={styles.tabItem} onPress={onPress}>
+            <MaterialCommunityIcons name={iconName} size={32} color={isFocused ? "#000" : "#FFF"} />
           </TouchableOpacity>
         );
       })}
@@ -74,43 +61,10 @@ const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => 
 
 export default function TabLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-      }}
-      tabBar={(props) => <CustomTabBar {...props} />}
-    >
-      {/* Dashboard */}
-      <Tabs.Screen
-        name="Dashboard"
-        options={{
-          title: "Головна",
-        }}
-      />
-
-      {/* Circles */}
-      <Tabs.Screen
-        name="Circles"
-        options={{
-          title: "Кола",
-        }}
-      />
-
-      {/* Notifications */}
-      <Tabs.Screen
-        name="Notifications"
-        options={{
-          title: "Сповіщення",
-        }}
-      />
-
-      {/* Settings */}
-      <Tabs.Screen
-        name="Settings"
-        options={{
-          title: "Налаштування",
-        }}
-      />
+    <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <CustomTabBar {...props} />}>
+      <Tabs.Screen name="Dashboard" />
+      <Tabs.Screen name="Circles" />
+      <Tabs.Screen name="Settings" />
     </Tabs>
   );
 }
@@ -120,37 +74,29 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 32,
     right: 32,
-    height: 72,
-    backgroundColor: "#000000",
+    height: 56,
+    backgroundColor: "#000",
     borderRadius: 30,
-    borderTopWidth: 0,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 }, // Standard shadow
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16, // Add some padding for the items
+    padding: 6,
   },
-  tabBarItem: {
-    flex: 1,
-    height: "100%",
-    justifyContent: "center",
+
+  tabItem: {
+    width: TAB_WIDTH,
+    height: 44,
     alignItems: "center",
-  },
-  iconContainer: {
-    width: 76,
-    height: 56,
     justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 28,
-    backgroundColor: "transparent",
-    overflow: "hidden", // Force clipping
+    zIndex: 2,
   },
-  iconContainerFocused: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 28, // Reinforce radius
+
+  activePill: {
+    position: "absolute",
+    width: TAB_WIDTH,
+    height: 44,
+    borderRadius: 25,
+    backgroundColor: "#FFF",
+    left: 6,
+    zIndex: 1,
   },
 });

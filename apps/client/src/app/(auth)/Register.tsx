@@ -4,15 +4,22 @@ import { TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { apiFetch } from "../../api/api";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
 export default function Register() {
+  const { logEvent } = useAnalytics();
+
+  useEffect(() => {
+    logEvent("registration_started");
+  }, []);
+
   const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState({
     phone: "",
@@ -96,6 +103,7 @@ export default function Register() {
 
     if (isValid) {
       if (step === 1) {
+        logEvent("registration_step_2");
         setStep(2);
       } else {
         await handleRegister();

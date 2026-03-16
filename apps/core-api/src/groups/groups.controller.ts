@@ -1,7 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UUIdParamDto } from 'src/common/dto/uuid-param.dto';
-import { GroupEntity } from 'src/common/entities/group.entity';
 import { AuthStrategies } from 'src/common/enums/auth-strategies';
 import { UserJwtAccessGuard } from 'src/common/guards/user-jwt-access.guard';
 import type { AuthRequest } from 'src/common/types/auth-request';
@@ -9,6 +8,7 @@ import type { AuthRequest } from 'src/common/types/auth-request';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { JoinGroupDto } from './dto/join-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
+import { GroupEntity } from './entities/group.entity';
 import { GroupService } from './groups.service';
 
 @ApiTags('Groups API')
@@ -97,5 +97,19 @@ export class GroupController {
   @ApiOkResponse({ description: 'List of blocked users' })
   async getBlockedUsers(@Param('id') groupId: string, @Req() req: AuthRequest) {
     return this.service.getBlockedUsers(groupId, req.user.id);
+  }
+
+  @Post(':id/roll-call')
+  @ApiOperation({ summary: 'Initiate a roll call in the group' })
+  @ApiOkResponse({ description: 'Roll call initiated successfully' })
+  async initiateRollCall(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
+    return this.service.initiateRollCall(params.id, req.user.id);
+  }
+
+  @Post(':id/members/:userId/roll-call')
+  @ApiOperation({ summary: 'Initiate a personal roll call for a member' })
+  @ApiOkResponse({ description: 'Personal roll call initiated successfully' })
+  async initiatePersonalRollCall(@Param('id') groupId: string, @Param('userId') userId: string, @Req() req: AuthRequest) {
+    return this.service.initiatePersonalRollCall(groupId, userId, req.user.id);
   }
 }
