@@ -1,10 +1,11 @@
 import { useAuthStore } from "@/src/store/authStore";
 import { AntDesign } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
+import { useAnalytics } from "@/src/hooks/useAnalytics";
 import { StyleSheet, View } from "react-native";
 
 import { setContactAlias } from "@/src/api/contacts";
-import { blockUser } from "@/src/api/groups";
+import { blockUser, initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
 import { BottomSheetContainer } from "@/src/components/modal";
 import { theme } from "@/src/theme/theme";
@@ -22,11 +23,12 @@ interface Props {
   ownerId: string;
   onClose: () => void;
   onSaveMembers: (updated: { id: string }[]) => void;
-  onDelete: () => void; // Used for "Delete Circle" from details
-  onLeave: () => void; // Used for "Leave Circle" from details
+  onDelete: () => void;
+  onLeave: () => void;
   onRegenerateInvite: () => Promise<void>;
   onMemberUpdated: () => void;
   onEdit: () => void;
+  onRollCall: () => void;
 }
 
 export default function CircleDetailsModal({
@@ -43,7 +45,9 @@ export default function CircleDetailsModal({
   onRegenerateInvite,
   onMemberUpdated,
   onEdit,
+  onRollCall,
 }: Props) {
+  const { logEvent } = useAnalytics();
   const [view, setView] = useState<"details" | "member">("details");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
@@ -85,7 +89,6 @@ export default function CircleDetailsModal({
         setView("details");
       } catch (error) {
         console.error("Failed to rename member:", error);
-        // Optionally show an alert
       }
     }
   };
@@ -94,11 +97,34 @@ export default function CircleDetailsModal({
     if (selectedMember && circleId) {
       try {
         await blockUser(circleId, selectedMember.id);
+        logEvent("block_user");
         onMemberUpdated();
         setView("details");
         setIsBlockConfirmVisible(false);
       } catch (error) {
         console.error("Failed to block user:", error);
+      }
+    }
+  };
+
+  const handleRollCall = async () => {
+    try {
+      await initiateRollCall(circleId);
+      logEvent("initiate_roll_call", { type: "group" });
+      onRollCall();
+    } catch (error) {
+      console.error("Failed to initiate roll call:", error);
+    }
+  };
+
+  const handlePersonalRollCall = async () => {
+    if (selectedMember && circleId) {
+      try {
+        await initiatePersonalRollCall(circleId, selectedMember.id);
+        logEvent("initiate_personal_roll_call", { type: "individual" });
+        onRollCall();
+      } catch (error) {
+        console.error("Failed to initiate personal roll call:", error);
       }
     }
   };
@@ -132,6 +158,8 @@ export default function CircleDetailsModal({
             onClose={() => setView("details")}
             onRemoveMember={handleRemoveMember}
             onBlock={isOwner ? () => setIsBlockConfirmVisible(true) : undefined}
+            onRollCall={handlePersonalRollCall}
+            isOwner={isOwner}
           />
         </View>
       )}
@@ -148,9 +176,46 @@ export default function CircleDetailsModal({
             onRenamePress={onEdit}
             onUnsubscribePress={() => setIsLeaveVisible(true)}
             onMemberPress={handleMemberPress}
+            onRollCallPress={handleRollCall}
           />
 
-          {/* Actions removed as requested */}
+{/* Footer Actions (Delete/Leave) */}
+          <View style={styles.footer}>
+            {isOwner ? (
+              <>
+                <Button
+                  label="Згенерувати нове запрошення"
+                  hierarchy="tertiary"
+                  shape="rectangle"
+                  size="medium"
+                  onPress={async () => {
+                    await onRegenerateInvite();
+                    logEvent("regenerate_invite_code");
+                  }}
+                  style={{ width: "100%", marginBottom: 8 }}
+                />
+                <Button
+                  label="Видалити коло"
+                  hierarchy="tertiary"
+                  shape="rectangle"
+                  size="medium"
+                  onPress={() => setIsDeleteVisible(true)}
+                  style={{ width: "100%" }}
+                  textStyle={{ color: theme.colors.negative }}
+                />
+              </>
+            ) : (
+              <Button
+                label="Покинути коло"
+                hierarchy="tertiary"
+                shape="rectangle"
+                size="medium"
+                onPress={() => setIsLeaveVisible(true)}
+                style={{ width: "100%" }}
+                textStyle={{ color: theme.colors.negative }}
+              />
+            )}
+          </View>
         </View>
       )}
 
@@ -159,6 +224,7 @@ export default function CircleDetailsModal({
         onCancel={() => setIsDeleteVisible(false)}
         onConfirm={() => {
           setIsDeleteVisible(false);
+          logEvent("delete_circle");
           setTimeout(() => onDelete(), 300);
         }}
         title="Видалити це Коло?"
@@ -172,6 +238,7 @@ export default function CircleDetailsModal({
         onCancel={() => setIsLeaveVisible(false)}
         onConfirm={() => {
           setIsLeaveVisible(false);
+          logEvent("leave_circle");
           setTimeout(() => onLeave(), 300);
         }}
         title="Покинути Коло?"

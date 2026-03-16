@@ -62,7 +62,7 @@ export const Button: React.FC<ButtonProps> = ({
       case "medium":
         return "subtitle1";
       case "small":
-        return "body2";
+        return "subtitle1";
       case "xsmall":
         return "caption";
       default:
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   size_small: {
     paddingVertical: theme.spacing[8],
     paddingHorizontal: theme.spacing[16],
-    minHeight: 36,
+    height: 36,
   },
   size_xsmall: {
     paddingVertical: theme.spacing[4],

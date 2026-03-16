@@ -1,6 +1,6 @@
 import { ApiHideProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
-import { UserEntity } from 'src/common/entities/user.entity';
+import { UserEntity } from 'src/users/entities/user.entity';
 
 export class UserProfileDto {
   id: string;

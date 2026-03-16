@@ -1,26 +1,20 @@
 import { apiFetch, updateMyStatus } from "@/src/api/api";
+import { initiatePersonalRollCall } from "@/src/api/groups";
+import { Avatar } from "@/src/components/Avatar";
 import { Button } from "@/src/components/Button";
-import MemberAvatar from "@/src/components/MemberAvatar";
+import { ListItem } from "@/src/components/ListItem";
+import { STATUS_CONFIG, StatusBadge, UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
+import { useLocationStore } from "@/src/store/locationStore";
 import { theme } from "@/src/theme/theme";
+import AntDesign from "@expo/vector-icons/build/AntDesign";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
-import {
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  Vibration,
-  View,
-} from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, Vibration, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-type UserStatus = "SAFE" | "DANGER" | "UNKNOWN";
 
 interface Member {
   id: string;
@@ -34,13 +28,11 @@ interface Member {
 interface Group {
   id: string;
   name: string;
+  owner?: { id: string };
   members: Member[];
 }
 
 const PRIMARY_COLOR = theme.colors.accent;
-const TEXT_COLOR = theme.colors.content.primary;
-const LIGHT_GRAY = theme.colors.background.secondary;
-const BORDER_RADIUS = 12;
 
 // --- MainStatusIndicator ---
 const MainStatusIndicator = ({
@@ -58,6 +50,8 @@ const MainStatusIndicator = ({
         return theme.colors.state.safe;
       case "DANGER":
         return theme.colors.state.emergency;
+      case "WAS_SAFE":
+        return theme.colors.state.safe; // Or a variation if we have a specific color for WAS_SAFE
       default:
         return PRIMARY_COLOR;
     }
@@ -106,7 +100,9 @@ const MainStatusIndicator = ({
             ? "В безпеці"
             : currentStatus === "DANGER"
               ? "Потрібна допомога!"
-              : "Невідомо"}
+              : currentStatus === "WAS_SAFE"
+                ? "Був у безпеці"
+                : "Невідомо"}
         </Typography>
       </Pressable>
       <Typography variant="caption" tone="secondary" style={styles.mainStatusHelperText}>
@@ -117,99 +113,21 @@ const MainStatusIndicator = ({
   );
 };
 
-// --- StatusBadge ---
-const StatusBadge = ({ status }: { status: UserStatus }) => {
-  let bgColor: string;
-  let circleColor: string;
-  let symbol: string;
-
-  switch (status) {
-    case "SAFE":
-      bgColor = theme.colors.stateBackground.safe;
-      circleColor = theme.colors.state.safe;
-      symbol = "✓";
-      break;
-    case "UNKNOWN":
-      bgColor = theme.colors.stateBackground.unknown;
-      circleColor = theme.colors.state.unknown;
-      symbol = "?";
-      break;
-    case "DANGER":
-      bgColor = theme.colors.stateBackground.emergency;
-      circleColor = theme.colors.state.emergency;
-      symbol = "!";
-      break;
-    default:
-      bgColor = theme.colors.stateBackground.calm;
-      circleColor = theme.colors.state.calm;
-      symbol = "?";
-  }
-
-  return (
-    <View
-      style={{
-        width: 30,
-        height: 30,
-        borderRadius: 5,
-        backgroundColor: bgColor,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <View
-        style={{
-          width: 20,
-          height: 20,
-          borderRadius: 10,
-          backgroundColor: circleColor,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Typography variant="subtitle1" tone="onColor" weight="bold">
-          {symbol}
-        </Typography>
-      </View>
-    </View>
-  );
-};
-
 // --- MemberProfileModal ---
 const MemberProfileModal = ({
   member,
   visible,
   onClose,
+  onRollCall,
+  canRollCall,
 }: {
   member: Member | null;
   visible: boolean;
   onClose: () => void;
+  onRollCall: () => void;
+  canRollCall: boolean;
 }) => {
   if (!member) return null;
-
-  let statusText: string;
-  let statusColor: string;
-  let circleColor: string;
-  let symbol: string;
-
-  switch (member.status) {
-    case "SAFE":
-      statusText = "В безпеці";
-      statusColor = theme.colors.state.safe;
-      circleColor = theme.colors.state.safe;
-      symbol = "✓";
-      break;
-    case "DANGER":
-      statusText = "Потрібна допомога!";
-      statusColor = theme.colors.state.emergency;
-      circleColor = theme.colors.state.emergency;
-      symbol = "!";
-      break;
-    default:
-      statusText = "Невідомо";
-      statusColor = theme.colors.state.unknown;
-      circleColor = theme.colors.state.unknown;
-      symbol = "?";
-  }
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -220,45 +138,39 @@ const MemberProfileModal = ({
             shape="round"
             hierarchy="tertiary"
             size="medium"
-            leadingIcon="✕"
+            leadingIcon={<AntDesign name="close" size={16} color={theme.colors.content.primary} />}
             onPress={onClose}
             style={{ alignSelf: "flex-start" }}
           />
           {/* Avatar */}
-          <View style={modalStyles.avatarWrapper}>
-            <MemberAvatar member={member} />
-          </View>
+          <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="xl" />
 
           {/* Name */}
-          <Text style={modalStyles.name}>
+          <Typography variant="h2" tone="primary" style={modalStyles.name}>
             {member.firstName} {member.lastName}
-          </Text>
+          </Typography>
 
-          {/* Status row: icon + text */}
-          <View style={modalStyles.statusRow}>
-            <View style={[modalStyles.statusCircle, { backgroundColor: circleColor }]}>
-              <Text style={modalStyles.statusCircleSymbol}>{symbol}</Text>
-            </View>
-            <Text style={[modalStyles.statusText, { color: statusColor }]}>{statusText}</Text>
-          </View>
+          {/* Status row */}
+          <StatusBadge variant="pill" status={member.status} />
 
           {/* Buttons — one under another */}
           <View style={modalStyles.buttonsColumn}>
-            <TouchableOpacity
-              style={modalStyles.actionButton}
-              activeOpacity={0.8}
+            <Button
+              label="Написати"
+              hierarchy="secondary"
+              shape="rectangle"
+              size="medium"
               onPress={() => {}}
-            >
-              <Text style={modalStyles.actionButtonText}>Написати</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={modalStyles.actionButton}
-              activeOpacity={0.8}
-              onPress={() => {}}
-            >
-              <Text style={modalStyles.actionButtonText}>Перекличка</Text>
-            </TouchableOpacity>
+            />
+            {canRollCall && (
+              <Button
+                label="Перекличка"
+                hierarchy="secondary"
+                shape="rectangle"
+                size="medium"
+                onPress={onRollCall}
+              />
+            )}
           </View>
         </Pressable>
       </Pressable>
@@ -266,83 +178,72 @@ const MemberProfileModal = ({
   );
 };
 
-// --- ContactStatusRow ---
-const ContactStatusRow = ({
-  member,
-  onPress,
-}: {
-  member: Member;
-  onPress: (member: Member) => void;
-}) => {
-  let statusText: string;
-  let statusColor: string;
-
-  switch (member.status) {
-    case "SAFE":
-      statusText = "В безпеці";
-      statusColor = "#4CAF50";
-      break;
-    case "DANGER":
-      statusText = "Потрібна допомога!";
-      statusColor = "#F44336";
-      break;
-    default:
-      statusText = "Невідомо";
-      statusColor = "#FF9800";
-  }
-
-  return (
-    <TouchableOpacity style={styles.contactRow} activeOpacity={0.7} onPress={() => onPress(member)}>
-      <View style={styles.avatarContainer}>
-        <MemberAvatar member={member} />
-      </View>
-      <View style={styles.contactInfo}>
-        <Text style={styles.contactName}>
-          {member.firstName} {member.lastName}
-        </Text>
-        <Text style={[styles.contactStatusText, { color: statusColor }]}>{statusText}</Text>
-      </View>
-      <View style={styles.contactStatusIcon}>
-        <StatusBadge status={member.status} />
-      </View>
-    </TouchableOpacity>
-  );
-};
-
 // --- DashboardScreen ---
 export default function DashboardScreen() {
+  const { logEvent } = useAnalytics();
   const user = useAuthStore((s) => s.user);
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const {
+    coords,
+    error: locationError,
+    updateCurrentLocation,
+    loading: locationLoading,
+  } = useLocationStore();
 
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     try {
       const data = await apiFetch("/groups", { method: "GET" });
       setGroups(data);
     } catch (error) {
       console.error("Error loading groups:", error);
     }
-  };
+  }, []);
 
   useSyncSignal(fetchGroups);
 
   useFocusEffect(
     useCallback(() => {
       fetchGroups();
-    }, []),
+    }, [fetchGroups]),
   );
 
   const handleStatusUpdate = async (newStatus: UserStatus) => {
     try {
       await updateMyStatus(newStatus);
+      logEvent("update_status", { status: newStatus });
       useAuthStore.setState((state) => {
         if (!state.user) return state;
-        return { user: { ...state.user, status: newStatus } };
+        return { user: { ...state.user, status: newStatus as any } };
       });
     } catch (e) {
       Alert.alert("Помилка", "Не вдалося оновити статус. Перевірте інтернет.");
+    }
+  };
+
+  const { canRollCall, rollCallGroupId } = useMemo(() => {
+    if (!selectedMember || !user) return { canRollCall: false, rollCallGroupId: null };
+    // Find a group where current user is owner AND selectedMember is a member
+    const ownedGroup = groups.find(
+      (g) => g.owner?.id === user.id && g.members.some((m) => m.id === selectedMember.id),
+    );
+    return {
+      canRollCall: !!ownedGroup,
+      rollCallGroupId: ownedGroup?.id || null,
+    };
+  }, [selectedMember, groups, user]);
+
+  const handleRollCall = async () => {
+    if (!selectedMember || !rollCallGroupId) return;
+    try {
+      await initiatePersonalRollCall(rollCallGroupId, selectedMember.id);
+      logEvent("initiate_personal_roll_call", { type: "individual" });
+      Alert.alert("Успіх", "Запит на перекличку надіслано");
+      handleCloseModal();
+    } catch (e) {
+      Alert.alert("Помилка", "Не вдалося надіслати запит");
     }
   };
 
@@ -383,11 +284,33 @@ export default function DashboardScreen() {
           Привіт, {user?.firstName || "Користувач"}!
         </Typography>
 
+        {coords ? (
+          <View style={styles.locationInfo}>
+            <Typography variant="caption" tone="secondary">
+              Локація: {coords.latitude.toFixed(4)}, {coords.longitude.toFixed(4)}
+              {useLocationStore.getState().region
+                ? ` (${useLocationStore.getState().region}${useLocationStore.getState().district ? `, ${useLocationStore.getState().district}` : ""})`
+                : ""}
+            </Typography>
+          </View>
+        ) : locationError ? (
+          <Pressable onPress={updateCurrentLocation} style={styles.locationInfo}>
+            <Typography variant="caption" style={{ color: theme.colors.state.emergency }}>
+              Помилка геолокації. Натисніть для повтору.
+            </Typography>
+          </Pressable>
+        ) : locationLoading ? (
+          <View style={styles.locationInfo}>
+            <Typography variant="caption" tone="secondary">
+              Визначаємо місцезнаходження...
+            </Typography>
+          </View>
+        ) : null}
+
         <MainStatusIndicator
           currentStatus={user?.status || "UNKNOWN"}
           onUpdateStatus={handleStatusUpdate}
         />
-
         <View style={styles.statusCircleSection}>
           <Typography variant="subtitle2" tone="secondary" style={styles.sectionHeader}>
             СТАТУС КОЛА
@@ -397,7 +320,7 @@ export default function DashboardScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.statusFilters}
-            contentContainerStyle={{ paddingRight: 20 }}
+            contentContainerStyle={{ paddingRight: 16 }}
           >
             <Button
               label="Усі"
@@ -430,7 +353,18 @@ export default function DashboardScreen() {
               </View>
             ) : (
               displayedMembers.map((member) => (
-                <ContactStatusRow key={member.id} member={member} onPress={handleMemberPress} />
+                <ListItem
+                  key={member.id}
+                  layout="stateBadge"
+                  artworkSize="small"
+                  label={`${member.firstName} ${member.lastName}`}
+                  subLabel={STATUS_CONFIG[member.status]?.label ?? "Невідомо"}
+                  status={member.status}
+                  onPress={() => handleMemberPress(member)}
+                  renderAvatar={() => (
+                    <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="sm" />
+                  )}
+                />
               ))
             )}
           </View>
@@ -441,6 +375,8 @@ export default function DashboardScreen() {
         member={selectedMember}
         visible={modalVisible}
         onClose={handleCloseModal}
+        onRollCall={handleRollCall}
+        canRollCall={canRollCall}
       />
     </SafeAreaView>
   );
@@ -459,9 +395,9 @@ const modalStyles = StyleSheet.create({
     width: "100%",
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.radius.xl,
-    paddingTop: theme.spacing[24],
-    paddingBottom: theme.spacing[28],
-    paddingHorizontal: theme.spacing[24],
+    paddingTop: theme.spacing[16],
+    paddingBottom: theme.spacing[24],
+    paddingHorizontal: theme.spacing[16],
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
@@ -469,58 +405,14 @@ const modalStyles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 12,
   },
-  closeButton: {
-    position: "absolute",
-    top: 14,
-    right: 16,
-    width: 30,
-    height: 30,
-    borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.background.tertiary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  avatarWrapper: {
-    marginBottom: theme.spacing[14],
-    transform: [{ scale: 1.6 }],
-  },
   name: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: theme.colors.content.primary,
-    marginBottom: theme.spacing[10],
-    textAlign: "center",
+    marginTop: theme.spacing[8],
+    marginBottom: theme.spacing[16],
   },
-  // Status: circle icon + text side by side
-  statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: theme.spacing[24],
-    gap: theme.spacing[8],
-  },
-  statusCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: theme.radius.lg,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  statusCircleSymbol: {
-    color: theme.colors.content.onColor,
-    fontSize: 13,
-    fontWeight: "bold",
-    includeFontPadding: false,
-    lineHeight: 22,
-  },
-  statusText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  // Buttons stacked vertically
   buttonsColumn: {
     width: "100%",
-    gap: theme.spacing[12],
+    marginTop: theme.spacing[32],
+    gap: theme.spacing[8],
   },
   actionButton: {
     width: "100%",
@@ -543,22 +435,27 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background.primary,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 120,
+    paddingHorizontal: theme.spacing[16],
+    paddingBottom: 140,
   },
   greeting: {
-    marginTop: 16,
-    marginBottom: 40,
+    marginTop: theme.spacing[24],
+    marginBottom: theme.spacing[8],
+  },
+  locationInfo: {
+    marginBottom: theme.spacing[24],
+    flexDirection: "row",
+    alignItems: "center",
   },
   mainStatusContainer: {
     alignItems: "center",
-    marginBottom: 40,
+    marginTop: theme.spacing[32],
+    marginBottom: theme.spacing[40],
   },
   mainStatusGlowBackground: {
     width: 200,
     height: 200,
-    borderRadius: 100,
+    borderRadius: theme.radius.circle,
     backgroundColor: PRIMARY_COLOR,
     justifyContent: "center",
     alignItems: "center",
@@ -573,12 +470,8 @@ const styles = StyleSheet.create({
   },
   mainStatusHelperText: {
     marginTop: theme.spacing[20],
-    fontSize: 14,
-    color: theme.colors.content.secondary,
     textAlign: "center",
-    lineHeight: 20,
   },
-
   statusCircleSection: {
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.radius.xl,
@@ -586,71 +479,16 @@ const styles = StyleSheet.create({
   },
   statusFilters: {
     flexDirection: "row",
-    gap: theme.spacing[8], // won't work on ScrollView directly
+    gap: theme.spacing[8],
   },
   sectionHeader: {
-    marginBottom: theme.spacing[8],
+    marginBottom: theme.spacing[16],
     letterSpacing: 0.5,
-  },
-
-  statusFilter: {
-    paddingVertical: theme.spacing[8],
-    paddingHorizontal: theme.spacing[16],
-    backgroundColor: LIGHT_GRAY,
-    borderRadius: theme.radius.lg,
-    marginRight: theme.spacing[10],
-    maxWidth: 150,
-  },
-  statusFilterActive: {
-    paddingVertical: theme.spacing[8],
-    paddingHorizontal: theme.spacing[16],
-    backgroundColor: TEXT_COLOR,
-    borderRadius: theme.radius.lg,
-    marginRight: theme.spacing[10],
-    maxWidth: 150,
-  },
-  statusFilterText: {
-    fontSize: 14,
-    color: TEXT_COLOR,
-    fontWeight: "600",
-  },
-  statusFilterTextActive: {
-    fontSize: 14,
-    color: theme.colors.primaryA,
-    fontWeight: "600",
   },
   contactList: {
     backgroundColor: theme.colors.background.secondary,
     minHeight: 50,
-  },
-  contactRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.colors.border.opaque,
-  },
-  avatarContainer: {
-    marginRight: theme.spacing[12],
-  },
-  contactInfo: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  contactName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: TEXT_COLOR,
-    marginBottom: theme.spacing[2],
-  },
-  contactStatusText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  contactStatusIcon: {
-    marginLeft: theme.spacing[12],
-    width: 44,
-    alignItems: "flex-end",
+    marginTop: theme.spacing[8],
   },
   emptyState: {
     padding: theme.spacing[20],

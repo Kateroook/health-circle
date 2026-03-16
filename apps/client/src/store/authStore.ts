@@ -19,7 +19,7 @@ interface User {
   fullName?: string;
   phone: string;
   avatarUpdatedAt?: string;
-  status: "SAFE" | "DANGER" | "UNKNOWN";
+  status: "SAFE" | "DANGER" | "UNKNOWN" | "WAS_SAFE";
 }
 
 interface AuthStoreState {

@@ -29,8 +29,16 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'API Tests',
+      name: 'API Tests (Chrome)',
       use: { ...devices['Desktop Chrome'] },
     },
+    // {
+    //   name: 'API Tests (Safari)',
+    //   use: { ...devices['Desktop Safari'] },
+    // },
+    // {
+    //   name: 'API Tests (Firefox)',
+    //   use: { ...devices['Desktop Firefox'] },
+    // },
   ],
 });
