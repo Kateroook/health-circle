@@ -270,7 +270,7 @@ export default function SettingsScreen() {
           {/* Нова кнопка "Редагувати" */}
           {!isEditMode && (
             <Button
-              label="Редагуввати"
+              label="Редагувати"
               hierarchy="accent"
               size="medium"
               shape="rectangle"
@@ -305,12 +305,15 @@ export default function SettingsScreen() {
 
               {fields.map((field) => (
                 <View key={field.label} style={styles.block}>
-{field.label === "Номер телефону" ? (
+                  {field.label === "Номер телефону" ? (
                     <View>
                       <Typography variant="body2" tone="primary" style={{ marginBottom: 4 }}>
                         {field.label}
                         {field.required && (
-                          <Typography variant="body2" tone="negative"> *</Typography>
+                          <Typography variant="body2" tone="negative">
+                            {" "}
+                            *
+                          </Typography>
                         )}
                       </Typography>
                       <PhoneInput

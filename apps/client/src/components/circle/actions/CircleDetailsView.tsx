@@ -46,23 +46,29 @@ export default function CircleDetailsView({
             <TouchableOpacity onPress={onClose} style={styles.backArrow}>
               <AntDesign name="left" size={24} color={COLORS.TEXT_DARK} />
             </TouchableOpacity>
-            <Text style={styles.title} numberOfLines={1}>{name}</Text>
+            <Text style={styles.title} numberOfLines={1}>
+              {name}
+            </Text>
           </View>
-          {isOwner && (
-            <TouchableOpacity onPress={onRenamePress} style={styles.editButton}>
-              <AntDesign name="edit" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-          )}
         </View>
 
         <View style={styles.codeWrapper}>
           <View style={styles.codeContainer}>
             <Text style={styles.codeText}>Код: {inviteCode}</Text>
-            <TouchableOpacity onPress={handleCopy} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={styles.copyButton}>
+            <TouchableOpacity
+              onPress={handleCopy}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.copyButton}
+            >
               <Ionicons name="copy" size={16} color={COLORS.TEXT_DARK} />
             </TouchableOpacity>
           </View>
         </View>
+        {isOwner && (
+          <TouchableOpacity onPress={onRenamePress} style={styles.editButton}>
+            <AntDesign name="edit" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.statsCard}>
@@ -81,7 +87,11 @@ export default function CircleDetailsView({
         </Text>
       </View>
 
-      <ScrollView style={styles.membersList} contentContainerStyle={styles.membersListContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.membersList}
+        contentContainerStyle={styles.membersListContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.membersCard}>
           {members.map((member, index) => (
             <TouchableOpacity
@@ -121,7 +131,11 @@ export default function CircleDetailsView({
                         ? "sync"
                         : "question-circle"
                   }
-                  size={member.status === "SAFE" || member.status === "UNKNOWN" || !member.status ? 26 : 18}
+                  size={
+                    member.status === "SAFE" || member.status === "UNKNOWN" || !member.status
+                      ? 26
+                      : 18
+                  }
                   color={
                     member.status === "SAFE"
                       ? COLORS.STATE_SAFE
