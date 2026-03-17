@@ -33,14 +33,18 @@ export abstract class BaseClient {
   protected getHeaders(customHeaders?: Record<string, string>): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...customHeaders,
     };
 
-    if (this.context.accessToken) {
+    if (this.context.accessToken && !customHeaders?.Authorization) {
       headers['Authorization'] = `Bearer ${this.context.accessToken}`;
     }
 
-    return headers;
+    const result : Record<string, string> = {
+      ...headers,
+      ...customHeaders,
+    };
+
+    return result;
   }
 
   /**

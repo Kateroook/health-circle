@@ -35,6 +35,7 @@ import { UsersModule } from './users/users.module';
         PORT: Joi.number().required(),
         API_DOCS_ENABLED: Joi.string().optional().default('false').allow('true', 'false'),
         THROTTLER_ENABLED: Joi.string().optional().default('true').allow('true', 'false'),
+        DEV_SEND_PUSH_TO_SENDER: Joi.boolean().optional().default(false),
         // PostgreSQL
         POSTGRES_HOST: Joi.string().required(),
         POSTGRES_PORT: Joi.number().required(),

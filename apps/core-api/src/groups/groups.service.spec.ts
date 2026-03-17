@@ -8,6 +8,7 @@ import { GroupEntity } from 'src/groups/entities/group.entity';
 import { GroupBlockListEntity } from 'src/groups/entities/group-block-list.entity';
 import { GroupMemberEntity } from 'src/groups/entities/group-member.entity';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
+import { NotificationType } from 'src/notifications/notification-types';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { SecurityService } from 'src/security/security.service';
 import { UserEntity } from 'src/users/entities/user.entity';
@@ -124,6 +125,7 @@ describe('GroupService', () => {
           provide: NotificationsService,
           useValue: {
             sendMulticast: jest.fn(),
+            sendMulticastByType: jest.fn(),
           },
         },
         {
@@ -148,6 +150,7 @@ describe('GroupService', () => {
             exists: jest.fn().mockResolvedValue(true),
             getOne: jest.fn(),
             findByIds: jest.fn(),
+            getTokensForUsers: jest.fn().mockResolvedValue(['token-1']),
           },
         },
       ],
@@ -419,18 +422,30 @@ describe('GroupService', () => {
       const result = await service.initiateRollCall('group-1', 'owner-1');
 
       expect(groupRepository.save).toHaveBeenCalled();
-      expect(notificationsService.sendMulticast).toHaveBeenCalledWith(
+      expect(notificationsService.sendMulticastByType).toHaveBeenCalledWith(
         ['token-1'],
-        expect.stringContaining('Перекличка'),
-        expect.stringContaining('Test Group'),
-        expect.objectContaining({ type: 'ROLL_CALL' }),
+        NotificationType.ROLL_CALL,
+        expect.objectContaining({ groupName: 'Test Group' }),
+        expect.objectContaining({ groupId: 'group-1' }),
       );
       expect(result.message).toContain('розпочато');
     });
 
-    it('should throw Forbidden if not owner', async () => {
+    it('should allow members to initiate', async () => {
+      const mockMemberWithToken = { id: 'user-1', fcmToken: 'token-1' } as UserEntity;
       groupRepository.findOne.mockResolvedValue(mockGroup);
-      await expect(service.initiateRollCall('group-1', 'user-1')).rejects.toThrow(ForbiddenException);
+      usersService.findByIds.mockResolvedValue([mockMemberWithToken]);
+      groupRepository.save.mockResolvedValue(mockGroup);
+
+      const result = await service.initiateRollCall('group-1', 'user-1');
+
+      expect(groupRepository.save).toHaveBeenCalled();
+      expect(result.message).toContain('розпочато');
+    });
+
+    it('should throw Forbidden if not member or owner', async () => {
+      groupRepository.findOne.mockResolvedValue(mockGroup);
+      await expect(service.initiateRollCall('group-1', 'stranger')).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFound if group missing', async () => {

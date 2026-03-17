@@ -49,8 +49,6 @@ export const useLocationStore = create<LocationState>((set, get) => ({
     set({
       region: info.region,
       district: info.district,
-      loading: false,
-      error: null,
     });
   },
 
@@ -71,28 +69,78 @@ export const useLocationStore = create<LocationState>((set, get) => ({
   },
 
   updateCurrentLocation: async () => {
-    const { permissionStatus } = get();
+    const { loading } = get();
+    if (loading) return;
 
-    let status = permissionStatus;
-    if (!status) {
-      status = (await Location.getForegroundPermissionsAsync()).status;
-      set({ permissionStatus: status });
+    set({ loading: true, error: null });
+
+    let status: Location.PermissionStatus;
+    try {
+      const permission = await Location.getForegroundPermissionsAsync();
+      status = permission.status;
+
+      if (status !== Location.PermissionStatus.GRANTED) {
+        const granted = await get().requestPermissions();
+        if (!granted) {
+          throw new Error("LOCATION_PERMISSION_DENIED");
+        }
+        status = Location.PermissionStatus.GRANTED;
+      }
+    } catch (err: any) {
+      set({ loading: false });
+      if (err.message === "LOCATION_PERMISSION_DENIED") throw err;
+      console.error("Permission check failed:", err);
+      throw new Error("LOCATION_FETCH_FAILED");
     }
 
-    if (status !== Location.PermissionStatus.GRANTED) {
-      set({ error: "Location permission not granted" });
-      return;
+    set({ permissionStatus: status });
+
+    // Fast-First approach: show last known position immediately
+    try {
+      const lastKnown = await Location.getLastKnownPositionAsync();
+      if (lastKnown) {
+        get().setLocation(lastKnown);
+      }
+    } catch (err) {
+      console.warn("Failed to get last known position:", err);
     }
 
-    set({ loading: true });
     try {
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
       get().setLocation(location);
+
+      // Perform reverse geocoding and sync immediately
+      const [place] = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      if (place) {
+        const geoInfo = {
+          region: place.region || place.city || "",
+          district: place.district || place.subregion || place.street || "",
+        };
+        get().setGeographicInfo(geoInfo);
+
+        // Sync to backend
+        try {
+          const { updateUserLocation } = require("../api/api");
+          await updateUserLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            ...geoInfo,
+          });
+        } catch (syncErr) {
+          console.error("Failed to sync location to backend:", syncErr);
+        }
+      }
     } catch (err) {
       console.error("Failed to get current position:", err);
-      set({ error: "Failed to get current location", loading: false });
+      set({ error: "Failed to get current location" });
+    } finally {
+      set({ loading: false });
     }
   },
 }));
