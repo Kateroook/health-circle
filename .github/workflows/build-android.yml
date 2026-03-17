@@ -95,7 +95,7 @@ jobs:
           LLM7_API_KEY: ${{ secrets.LLM7_API_KEY }}
           COMMITS_JSON: ${{ env.COMMITS_JSON }}
         run: |
-          SUMMARY=$(node scripts/generate-build-summary.js)
+          SUMMARY=$(node ${{ github.workspace }}/scripts/generate-build-summary.js)
           {
             echo "SUMMARY<<EOF"
             echo "$SUMMARY"
