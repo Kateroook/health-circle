@@ -12,7 +12,7 @@ if (!GITHUB_TOKEN || !GITHUB_REPOSITORY || !PR_NUMBER || !LLM7_API_KEY) {
 
 function getProjectContext() {
   try {
-    const contextPath = path.join(__dirname, '../docs/pr-review-context.md');
+    const contextPath = path.join(__dirname, '../docs/pr-review-guidelines.md');
     if (fs.existsSync(contextPath)) {
       return fs.readFileSync(contextPath, 'utf8');
     }
@@ -82,9 +82,10 @@ async function getReview(diff, details, context) {
   const prompt = `
     You are a Senior Software Engineer acting as a mentor for a developer. 
     The developer is relatively new to React Native and Expo and relies heavily on AI assistance.
-    Your goal is to provide a detailed, educational, and strict code review based on our project guidelines.
+    Your goal is to provide a detailed, educational, and STRICT code review based on our project guidelines.
 
     ### PROJECT CONTEXT & GUIDELINES:
+    // Important: The following content is the project context read from docs/pr-review-guidelines.md
     ${context}
 
     ### PR INFORMATION:
@@ -92,40 +93,43 @@ async function getReview(diff, details, context) {
     PR Number: #${PR_NUMBER}
     Description: ${details.body || 'No description provided.'}
 
-    ### CORE FOCUS AREAS:
+    ### CORE FOCUS AREAS & RULES:
 
-    1. **SECURITY & SECRETS (CRITICAL)**:
+    1. **SECURITY & SECRETS (FATAL IF FOUND)**:
        - Check for "google-services.json" or "GoogleService-Info.plist" being added to the codebase. 
        - Check for hardcoded API keys, tokens, or sensitive URLs.
-       - If found, stop everything and warn the user immediately.
+       - If found, stop everything and warn the user immediately with a 🚨 CRITICAL warning.
 
-    2. **COMPONENT REUSE & DRY**:
+    2. **STRICT COMPONENT REUSE**:
        - Refer to the "Key Components" section in the project context.
-       - NEVER allow creating a new UI element if a standardized component exists.
-       - Specifically watch out for custom TouchableOpacity, View, or Text components that should be using Button, ListItem, or Typography.
+       - If the user writes custom TouchableOpacity, View, or Text components for elements that should be Button, ListItem, or Typography, you MUST reject the change and show them which component to use.
+       - DO NOT allow any "one-off" UI elements that violate our design system.
 
-    3. **THEME & STYLING**:
+    3. **THEME ADHERENCE**:
        - Refer to the "Theme & Styling" section in the project context.
-       - Reject any hardcoded colors, spacing, or radius values.
-       - Ensure \`StyleSheet.create\` is used for all styles.
+       - Reject ANY hardcoded HEX colors, hardcoded spacing (e.g., 20, 15), or ad-hoc radius values.
+       - Ensure \`StyleSheet.create\` is used. Do not accept inline styles for anything more than a simple conditional.
 
-    4. **EXPO & REACT NATIVE BEST PRACTICES**:
-       - **hooks**: Check for missing dependency arrays in useEffect/useCallback or \`useMemo\`.
-       - **performance**: Check for heavy computations inside the render body.
-       - **Expo APIs**: Prefer Expo SDK libraries over bare React Native ones where applicable (e.g., Expo Image vs RN Image).
+    4. **AI MISTAKES & DELTA NOISE**:
+       - **Unnecessary Moves**: If the AI moved a function but didn't change it, identify it as "Noise" and ask to revert it.
+       - **Accidental Deletions**: Check if helper functions, unrelated comments, or exports were deleted by mistake.
+       - **AI Hallucinations**: Look for imaginary props or inconsistently named variables.
 
-    5. **AI MISTAKES & DELTA CHECK**:
-       - **Function Moving**: Did the AI move a function for no reason? If it didn't change the logic, ask why it was moved.
-       - **Deletions**: Check if the code accidentally deleted comments, helper functions, or formatting that was unrelated to the task.
-       - **Typos**: Look for typical AI-generated typos or variable naming inconsistencies (e.g., mixing camelCase and snake_case).
-       - **Placeholders**: Look for "TODO", "FIXME", or placeholder text left behind.
+    5. **EXPO & RN BEST PRACTICES**:
+       - Ensure dependency arrays in hooks like \`useMemo\`, \`useCallback\`, and \`useEffect\` are present and accurate.
+       - Suggest \`expo-image\` for performance-critical image loading.
 
-    ### OUTPUT FORMAT:
-    - Start with a quick "Overall Impression".
-    - Use clear headings for each category.
-    - Be specific: cite the file and line if possible (from the diff).
-    - Be constructive: don't just say "it's wrong", explain *why* and *how to fix it*.
-    - Keep the tone professional yet encouraging.
+    ### YOUR OUTPUT FORMAT:
+
+    1. **Overall Impression**: A 1-2 sentence summary.
+    2. **🚨 Mandatory Checklist**:
+       - [ ] No secrets found
+       - [ ] Component reuse verified
+       - [ ] Theme adherence verified
+    3. **Mentorship Findings**:
+       - Group by category (Security, Components, Styling, etc.).
+       - For each finding: Cite file/line, explain the mistake, and provide the correct code snippet from our project.
+    4. **AI Noise Check**: List any unnecessary moves or deletions.
 
     PR Diff:
     ${diff.substring(0, 15000)} 
