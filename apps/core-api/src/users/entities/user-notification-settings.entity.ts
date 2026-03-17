@@ -1,13 +1,14 @@
-import { Column, Entity, OneToOne, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, OneToOne, PrimaryColumn } from 'typeorm';
 
 import { UserEntity } from './user.entity';
 
 @Entity({ name: 'user_notification_settings' })
 export class UserNotificationSettingsEntity {
-  @PrimaryColumn('uuid')
+  @PrimaryColumn('uuid', { name: 'user_id' })
   userId: string;
 
-  @OneToOne(() => UserEntity, { onDelete: 'CASCADE' })
+  @OneToOne(() => UserEntity, (user) => user.notificationSettings, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
   @Column({ type: 'boolean', default: true })

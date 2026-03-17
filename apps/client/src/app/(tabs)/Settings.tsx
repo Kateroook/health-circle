@@ -635,66 +635,13 @@ export default function SettingsScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={notifStyles.listSection}>
-              {[
-                {
-                  label: "Отримувати сповіщення, коли у вашому районі повітряна тривога",
-                  value: notifSettings?.airAlerts ?? false,
-                  key: "airAlerts",
-                },
-                {
-                  label: "Отримувати сповіщення про статус членів Кола",
-                  value: notifSettings?.statusUpdates ?? false,
-                  key: "statusUpdates",
-                },
-                {
-                  label:
-                    'Отримувати сповіщення, коли у когось стан залишається "Невідомо" під час тривоги',
-                  value: notifSettings?.unknownStatusAlerts ?? false,
-                  key: "unknownStatusAlerts",
-                },
-                {
-                  label: "Нагадувати оновити статус під час тривоги",
-                  value: notifSettings?.statusUpdateReminders ?? false,
-                  key: "statusUpdateReminders",
-                },
-                {
-                  label: "Нагадувати позначити настрій",
-                  value: notifSettings?.moodReminders ?? false,
-                  key: "moodReminders",
-                },
-                {
-                  label: "Отримувати SMS лише тоді, коли немає інтернету, але є важливе сповіщення",
-                  value: notifSettings?.smsFallover ?? false,
-                  key: "smsFallover",
-                },
-                {
-                  label: "SMS для статусу безпеки",
-                  value: notifSettings?.smsSafetyStatus ?? false,
-                  key: "smsSafetyStatus",
-                },
-              ].map((item, index, arr) => (
-                <ListItem
-                  key={index}
-                  layout="switch"
-                  artworkSize="none"
-                  label={item.label}
-                  switchValue={item.value}
-                  onSwitchChange={(val) => updateNotifSetting(item.key, val)}
-                  showDivider={index < arr.length - 1}
-                />
-              ))}
-            </View>
-
-            <Typography variant="h3" tone="primary" style={{ marginTop: 24, marginBottom: 16 }}>
-              Системні налаштування
-            </Typography>
-
-            <View style={notifStyles.listSection}>
               <ListItem
                 layout="switch"
                 artworkSize="none"
-                label="Дозволити push-сповіщення"
+                label="Push-сповіщення"
+                subLabel="Дозвіл на надсилання сповіщень"
                 switchValue={notifSettings?.enabled ?? isPushEnabled}
+                showDivider={true}
                 onSwitchChange={async (val) => {
                   if (val) {
                     const granted = await requestPermission();
@@ -710,6 +657,53 @@ export default function SettingsScreen() {
                   updateNotifSetting("enabled", val);
                 }}
               />
+              {[
+                {
+                  label: "Повітряна тривога",
+                  value: notifSettings?.airAlerts ?? false,
+                  key: "airAlerts",
+                },
+                {
+                  label: "Оновлення статусів у Колі",
+                  value: notifSettings?.statusUpdates ?? false,
+                  key: "statusUpdates",
+                },
+                {
+                  label: "Статус «Невідомо» під час тривоги",
+                  value: notifSettings?.unknownStatusAlerts ?? false,
+                  key: "unknownStatusAlerts",
+                },
+                {
+                  label: "Нагадування про статус",
+                  value: notifSettings?.statusUpdateReminders ?? false,
+                  key: "statusUpdateReminders",
+                },
+                {
+                  label: "Нагадування про настрій",
+                  value: notifSettings?.moodReminders ?? false,
+                  key: "moodReminders",
+                },
+                {
+                  label: "SMS-сповіщення без інтернету",
+                  value: notifSettings?.smsFallover ?? false,
+                  key: "smsFallover",
+                },
+                {
+                  label: "SMS про безпеку",
+                  value: notifSettings?.smsSafetyStatus ?? false,
+                  key: "smsSafetyStatus",
+                },
+              ].map((item, index, arr) => (
+                <ListItem
+                  key={index}
+                  layout="switch"
+                  artworkSize="none"
+                  label={item.label}
+                  switchValue={item.value}
+                  onSwitchChange={(val) => updateNotifSetting(item.key, val)}
+                  showDivider={index < arr.length - 1}
+                />
+              ))}
             </View>
           </ScrollView>
         </View>
