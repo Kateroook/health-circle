@@ -141,8 +141,10 @@ export class AuthClient extends BaseClient {
    * POST /api/auth/resend-registration-code
    * Повторно відправити код реєстрації
    */
-  public async resendRegistrationCode(): Promise<ApiResult<void>> {
-    return await this.post<void>('/api/auth/resend-registration-code');
+  public async resendRegistrationCode(email: string): Promise<ApiResult<void>> {
+    return await this.post<void>('/api/auth/resend-registration-code', {
+      data: {email: email},
+    });
   }
 
   /**
