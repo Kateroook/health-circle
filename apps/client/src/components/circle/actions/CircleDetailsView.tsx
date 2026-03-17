@@ -1,13 +1,12 @@
 import { COLORS } from "@/src/theme/colors";
-import { AntDesign, Feather } from "@expo/vector-icons";
+import { AntDesign, Feather, Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { MemberAvatar } from "../../MemberAvatar";
-
 import { Member } from "../CircleItem";
 
-type DetailsMember = Member & { mood?: string };
+type DetailsMember = Member & { mood?: string; lastUpdate?: string };
 
 interface CircleDetailsViewProps {
   name: string;
@@ -28,7 +27,6 @@ export default function CircleDetailsView({
   isOwner,
   onClose,
   onRenamePress,
-  onUnsubscribePress,
   onMemberPress,
   onRollCallPress,
 }: CircleDetailsViewProps) {
@@ -41,17 +39,28 @@ export default function CircleDetailsView({
   const wasSafeCount = members.filter((m) => (m.status as any) === "WAS_SAFE").length;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onClose} style={styles.backArrow}>
-          <AntDesign name="left" size={24} color={COLORS.TEXT_DARK} />
-        </TouchableOpacity>
-        <View style={styles.titleInfo}>
-          <Text style={styles.title}>{name}</Text>
+    <View style={styles.outerContainer}>
+      <View style={styles.headerArea}>
+        <View style={styles.headerTop}>
+          <View style={styles.titleInfo}>
+            <TouchableOpacity onPress={onClose} style={styles.backArrow}>
+              <AntDesign name="left" size={24} color={COLORS.TEXT_DARK} />
+            </TouchableOpacity>
+            <Text style={styles.title} numberOfLines={1}>
+              {name}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.codeWrapper}>
           <View style={styles.codeContainer}>
             <Text style={styles.codeText}>Код: {inviteCode}</Text>
-            <TouchableOpacity onPress={handleCopy} style={styles.copyButton}>
-              <Feather name="copy" size={14} color={COLORS.TEXT_DARK} />
+            <TouchableOpacity
+              onPress={handleCopy}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.copyButton}
+            >
+              <Ionicons name="copy" size={16} color={COLORS.TEXT_DARK} />
             </TouchableOpacity>
           </View>
         </View>
@@ -76,13 +85,18 @@ export default function CircleDetailsView({
         </Text>
       </View>
 
-      <ScrollView style={styles.membersList} contentContainerStyle={styles.membersListContent}>
+      <ScrollView
+        style={styles.membersList}
+        contentContainerStyle={styles.membersListContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.membersCard}>
           {members.map((member, index) => (
             <TouchableOpacity
               key={member.id}
               style={[styles.memberCard, index === members.length - 1 && { borderBottomWidth: 0 }]}
               onPress={() => onMemberPress(member)}
+              activeOpacity={0.7}
             >
               <View style={styles.memberMainInfo}>
                 <MemberAvatar member={{ ...member, status: (member.status as any) || "UNKNOWN" }} />
@@ -106,14 +120,7 @@ export default function CircleDetailsView({
                   </Text>
                 </View>
               </View>
-              <View
-                style={[
-                  styles.statusIconContainer,
-                  {
-                    backgroundColor: "transparent",
-                  },
-                ]}
-              >
+              <View style={[styles.statusIconContainer, { backgroundColor: "transparent" }]}>
                 <AntDesign
                   name={
                     member.status === "SAFE"
@@ -145,29 +152,36 @@ export default function CircleDetailsView({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 20,
-    backgroundColor: "#F7F8FA",
+  outerContainer: {
+    backgroundColor: "#F4F6F9",
+    marginHorizontal: -16,
+    marginTop: -32,
+    paddingTop: 32,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
-  header: {
+  headerArea: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  headerTop: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    marginTop: 20,
-    marginBottom: 20,
   },
   titleInfo: {
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
-    marginLeft: 15,
+    marginRight: 16,
   },
   backArrow: {
-    marginTop: 8,
+    marginRight: 16,
   },
   title: {
     fontSize: 28,
     fontWeight: "800",
     color: COLORS.TEXT_DARK,
-    marginBottom: 4,
   },
   editButton: {
     width: 36,
@@ -176,22 +190,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: COLORS.PRIMARY_BLUE,
     borderRadius: 18,
-    marginTop: 4,
+    shadowColor: COLORS.PRIMARY_BLUE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  codeWrapper: {
+    flexDirection: "row",
+    paddingLeft: 40,
+    marginTop: 8,
   },
   codeContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#EBEDF0",
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   codeText: {
     fontSize: 12,
     fontWeight: "600",
     color: COLORS.TEXT_DARK,
-    marginRight: 6,
+    marginRight: 10,
   },
   copyButton: {
     padding: 2,
@@ -199,6 +221,7 @@ const styles = StyleSheet.create({
   statsCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
+    marginHorizontal: 20,
     padding: 20,
     marginBottom: 20,
     shadowColor: "#000",
@@ -226,6 +249,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 14,
     gap: 6,
+    shadowColor: COLORS.PRIMARY_BLUE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   rollCallButtonText: {
     color: "#FFFFFF",
@@ -240,8 +268,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   membersList: {
-    // Let content define height so it displays correctly inside bottom sheet
-    // rather than trying to flex into potentially zero height.
+    paddingHorizontal: 20,
   },
   membersListContent: {
     paddingBottom: 40,
@@ -280,7 +307,6 @@ const styles = StyleSheet.create({
   },
   memberStatusLabel: {
     fontSize: 14,
-    fontWeight: "600",
     color: COLORS.TEXT_GRAY,
     marginTop: 2,
   },

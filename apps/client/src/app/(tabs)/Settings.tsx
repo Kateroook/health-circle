@@ -1,4 +1,5 @@
 import { Button } from "@/src/components/Button";
+import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
@@ -50,6 +51,14 @@ export default function SettingsScreen() {
   const [isSecurityOpen, setIsSecurityOpen] = useState(false);
   const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
 
+  const [toggle1, setToggle1] = useState(false);
+  const [toggle2, setToggle2] = useState(false);
+  const [toggle3, setToggle3] = useState(false);
+  const [toggle4, setToggle4] = useState(false);
+  const [toggle5, setToggle5] = useState(false);
+  const [toggle6, setToggle6] = useState(false);
+  const [toggle7, setToggle7] = useState(false);
+  const [isLogoutVisible, setIsLogoutVisible] = useState(false);
   const [notifSettings, setNotifSettings] = useState<any>(null);
   const [notifLoading, setNotifLoading] = useState(false);
 
@@ -119,12 +128,6 @@ export default function SettingsScreen() {
       } else if (trimmedMiddle.length > 50) {
         errors.push("По-батькові має містити не більше 50 символів");
       }
-    }
-
-    const trimmedFullName = fullName.trim();
-    if (!trimmedFullName) errors.push("Не можна зберегти порожнє повне імʼя");
-    else if (trimmedFullName.length > 255) {
-      errors.push("Повне імʼя має містити не більше 255 символів");
     }
 
     if (!trimmedPhone) {
@@ -284,14 +287,6 @@ export default function SettingsScreen() {
       required: false,
     },
     {
-      label: "Відображаєме імʼя",
-      value: fullName,
-      setter: setFullName,
-      placeholder: "Введіть відображаєме імʼя",
-      maxLength: 255,
-      required: false,
-    },
-    {
       label: "Номер телефону",
       value: phone,
       setter: setPhone,
@@ -354,15 +349,35 @@ export default function SettingsScreen() {
 
               {fields.map((field) => (
                 <View key={field.label} style={styles.block}>
-                  <TextField
-                    label={field.label}
-                    required={field.required}
-                    value={field.value}
-                    onChangeText={field.setter}
-                    placeholder={field.placeholder}
-                    keyboardType={field.keyboardType as any}
-                    maxLength={field.maxLength}
-                  />
+                  {field.label === "Номер телефону" ? (
+                    <View>
+                      <Typography variant="body2" tone="primary" style={{ marginBottom: 4 }}>
+                        {field.label}
+                        {field.required && (
+                          <Typography variant="body2" tone="negative">
+                            {" "}
+                            *
+                          </Typography>
+                        )}
+                      </Typography>
+                      <PhoneInput
+                        value={field.value}
+                        onChangeText={field.setter}
+                        placeholder={field.placeholder}
+                        showClearButton={false}
+                      />
+                    </View>
+                  ) : (
+                    <TextField
+                      label={field.label}
+                      required={field.required}
+                      value={field.value}
+                      onChangeText={field.setter}
+                      placeholder={field.placeholder}
+                      keyboardType={field.keyboardType as any}
+                      maxLength={field.maxLength}
+                    />
+                  )}
                 </View>
               ))}
 
@@ -491,10 +506,24 @@ export default function SettingsScreen() {
               style={{ marginRight: 12 }}
             />
           }
-          onPress={logout}
+          onPress={() => setIsLogoutVisible(true)}
           style={styles.logoutButton}
         />
       </ScrollView>
+
+      <ConfirmationModal
+        isVisible={isLogoutVisible}
+        onCancel={() => setIsLogoutVisible(false)}
+        onConfirm={async () => {
+          setIsLogoutVisible(false);
+          logout();
+        }}
+        title="Вийти"
+        message="Ти впевнений, що хочеш вийти?"
+        confirmText="Вийти"
+        cancelText="Назад"
+        confirmStyle="default"
+      />
 
       {/* Change Password Modal */}
       <Modal
@@ -576,9 +605,10 @@ export default function SettingsScreen() {
           }
         }}
         title="Видалити акаунт?"
-        message="Цю дію не можна скасувати."
+        message="Після видалення акаунта всі кола та контакти будуть безповоротно видалені"
         confirmText="Видалити"
-        cancelText="Скасувати"
+        cancelText="Назад"
+        confirmStyle="default"
       />
       <ConfirmationModal
         isVisible={isDeleteAvatarVisible}

@@ -1,4 +1,5 @@
 import { Button } from "@/src/components/Button";
+import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
@@ -49,11 +50,11 @@ export default function Register() {
 
     if (step === 1) {
       const cleanPhone = form.phone.replace(/\s/g, "");
-      const phoneRegex = /^\+380\d{9}$/;
+      const phoneRegex = /^\+[1-9]\d{6,14}$/;
       if (!cleanPhone) {
         newErrors.phone = "Поле номера телефону є обовʼязковим";
       } else if (!phoneRegex.test(cleanPhone)) {
-        newErrors.phone = "Формат: +380XXXXXXXXX";
+        newErrors.phone = "Некоректний формат (наприклад: +380...)";
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -129,12 +130,11 @@ export default function Register() {
     return (
       <>
         {isPhone ? (
-          <TextField
+          <PhoneInput
             label={label}
             placeholder={placeholder}
             value={value}
             onChangeText={onChangeText}
-            keyboardType={keyboardType}
             autoCapitalize={autoCapitalize}
             required={required}
             errorMessage={error}
@@ -233,11 +233,11 @@ export default function Register() {
                     "Номер телефону",
                     form.phone,
                     errors.phone,
-                    "+380 XX XXX XX XX",
+                    "XX XXX XX XX",
                     "phone-pad",
                     (v) => handleChange("phone", v),
                     "words",
-                    13,
+                    15,
                     true,
                     true,
                   )}
