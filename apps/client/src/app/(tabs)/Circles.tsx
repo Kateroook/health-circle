@@ -2,27 +2,24 @@ import { apiFetch } from "@/src/api/api";
 import { Button } from "@/src/components/Button";
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
-import type { Member as CircleItemMember } from "@/src/components/circle/CircleItem";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
-//import CircleDetailsModal from "@/src/components/circle/CircleDetailsModal";
 import MemberDetailModal from "@/src/components/MemberDetailModal";
 import { MemberAvatar } from "@/src/components/MemberAvatar";
+import { StatusBadge, UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography/Typography";
+import { TextField } from "@/src/components/fields/TextField";
+import { ModalContainer } from "@/src/components/modal/ModalContainer";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
-import { COLORS } from "@/src/theme/colors";
-import { AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
+import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   BackHandler,
-  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
   UIManager,
   View,
 } from "react-native";
@@ -34,13 +31,12 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// Member type сумісний з MemberDetailModal (active: boolean, не boolean | undefined)
 export interface Member {
   id: string;
   firstName: string;
   lastName: string;
   avatarUpdatedAt?: string;
-  status: "SAFE" | "DANGER" | "UNKNOWN";
+  status: UserStatus;
   active: boolean;
 }
 
@@ -52,67 +48,6 @@ interface Circle {
   members: Member[];
 }
 
-// --- StatusBadge (copied from Dashboard) ---
-const StatusBadge = ({ status }: { status: Member["status"] }) => {
-  let bgColor: string;
-  let circleColor: string;
-  let symbol: string;
-
-  switch (status) {
-    case "SAFE":
-      bgColor = "#E8F5E9";
-      circleColor = "#4CAF50";
-      symbol = "✓";
-      break;
-    case "DANGER":
-      bgColor = "#FFEBEE";
-      circleColor = "#F44336";
-      symbol = "!";
-      break;
-    default:
-      bgColor = "#FFF3E0";
-      circleColor = "#FF9800";
-      symbol = "?";
-      break;
-  }
-
-  return (
-    <View
-      style={{
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        backgroundColor: bgColor,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <View
-        style={{
-          width: 20,
-          height: 20,
-          borderRadius: 10,
-          backgroundColor: circleColor,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text
-          style={{
-            color: "#fff",
-            fontSize: 14,
-            fontWeight: "bold",
-            includeFontPadding: false,
-            lineHeight: 20,
-          }}
-        >
-          {symbol}
-        </Text>
-      </View>
-    </View>
-  );
-};
-
 export default function CirclesScreen() {
   const user = useAuthStore().user;
 
@@ -123,16 +58,12 @@ export default function CirclesScreen() {
   const [circles, setCircles] = useState<Circle[]>([]);
   const [showCircleDetail, setShowCircleDetail] = useState(false);
 
-  // Member detail modal state
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
 
-  // Rename modal state
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
   const [renameValue, setRenameValue] = useState("");
-  const renameInputRef = useRef<TextInput>(null);
 
-  // Sync activeCircle when circles update
   useEffect(() => {
     if (activeCircle) {
       const updated = circles.find((c) => c.id === activeCircle.id);
@@ -159,7 +90,6 @@ export default function CirclesScreen() {
   useSyncSignal(fetchCircles);
   useFocusEffect(useCallback(() => {}, []));
 
-  // BackHandler
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       if (isRenameModalVisible) {
@@ -226,13 +156,6 @@ export default function CirclesScreen() {
     ]);
   };
 
-  // Opens custom rename modal (works on both iOS and Android)
-  const handleRename = () => {
-    setRenameValue(activeCircle?.name || "");
-    setIsRenameModalVisible(true);
-    setTimeout(() => renameInputRef.current?.focus(), 100);
-  };
-
   const handleRenameSubmit = async () => {
     if (!renameValue.trim() || !activeCircle) return;
     try {
@@ -245,11 +168,6 @@ export default function CirclesScreen() {
     } catch {
       Alert.alert("Помилка", "Не вдалося перейменувати");
     }
-  };
-
-  // Opens CircleActionsModal from the detail view to edit members
-  const handleEditMembers = () => {
-    setIsActionsVisible(true);
   };
 
   const handleDelete = () => {
@@ -277,88 +195,93 @@ export default function CirclesScreen() {
     return (
       <SafeAreaView style={styles.screen}>
         {/* Rename Modal */}
-        <Modal
-          visible={isRenameModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setIsRenameModalVisible(false)}
+        <ModalContainer
+          isVisible={isRenameModalVisible}
+          onClose={() => setIsRenameModalVisible(false)}
         >
-          <View style={styles.renameOverlay}>
-            <View style={styles.renameCard}>
-              <Text style={styles.renameTitle}>Перейменувати коло</Text>
-              <TextInput
-                ref={renameInputRef}
-                style={styles.renameInput}
-                value={renameValue}
-                onChangeText={setRenameValue}
-                placeholder="Нова назва"
-                returnKeyType="done"
-                onSubmitEditing={handleRenameSubmit}
-              />
-              <View style={styles.renameActions}>
-                <TouchableOpacity
-                  style={styles.renameCancelBtn}
-                  onPress={() => setIsRenameModalVisible(false)}
-                >
-                  <Text style={styles.renameCancelText}>Скасувати</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.renameSaveBtn} onPress={handleRenameSubmit}>
-                  <Text style={styles.renameSaveText}>Зберегти</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+          <Typography variant="h3" tone="primary" style={{ textAlign: "center" }}>
+            Перейменувати коло
+          </Typography>
+          <TextField
+            label="Нова назва"
+            value={renameValue}
+            onChangeText={setRenameValue}
+            placeholder="Нова назва"
+            returnKeyType="done"
+            onSubmitEditing={handleRenameSubmit}
+          />
+          <View style={styles.renameActions}>
+            <Button
+              label="Скасувати"
+              hierarchy="secondary"
+              shape="rectangle"
+              size="medium"
+              onPress={() => setIsRenameModalVisible(false)}
+              style={{ flex: 1 }}
+            />
+            <Button
+              label="Зберегти"
+              hierarchy="primary"
+              shape="rectangle"
+              size="medium"
+              onPress={handleRenameSubmit}
+              style={{ flex: 1 }}
+            />
           </View>
-        </Modal>
+        </ModalContainer>
 
+        {/* Header */}
         <View style={styles.detailHeader}>
-          <TouchableOpacity
+          <Button
+            shape="round"
+            hierarchy="tertiary"
+            size="medium"
+            leadingIcon={
+              <AntDesign name="arrow-left" size={24} color={theme.colors.content.primary} />
+            }
             onPress={() => {
               setShowCircleDetail(false);
               setActiveCircle(null);
             }}
-            style={styles.backButton}
-          >
-            <AntDesign name="arrow-left" size={28} color="#000" />
-          </TouchableOpacity>
+          />
           <View style={styles.detailTitleBlock}>
-            <Text style={styles.detailTitle}>{activeCircle.name}</Text>
+            <Typography variant="h2" tone="primary">
+              {activeCircle.name}
+            </Typography>
             {activeCircle.inviteCode && (
-              <View
-                style={[
-                  styles.inlineInviteRow,
-                  {
-                    backgroundColor: "#F2F2F7",
-                    borderRadius: 6,
-                    paddingHorizontal: 8,
-                    paddingVertical: 2,
-                    alignSelf: "flex-start",
-                    marginTop: 4,
-                  },
-                ]}
-              >
-                <Text style={styles.inlineInviteLabel}>Код: </Text>
-                <Text style={styles.inlineInviteCode}>{activeCircle.inviteCode}</Text>
+              <View style={styles.inlineInviteRow}>
+                <Typography variant="caption" tone="secondary">
+                  Код:{" "}
+                </Typography>
+                <Typography variant="caption" tone="primary" weight="bold">
+                  {activeCircle.inviteCode}
+                </Typography>
               </View>
             )}
           </View>
           {isOwner && (
-            <TouchableOpacity style={styles.editCircleBtn} onPress={handleEditMembers}>
-              <MaterialIcons name="edit" size={16} color="#fff" />
-            </TouchableOpacity>
+            <Button
+              shape="round"
+              hierarchy="accent"
+              size="small"
+              leadingIcon={
+                <MaterialIcons name="edit" size={16} color={theme.colors.content.onColor} />
+              }
+              onPress={() => setIsActionsVisible(true)}
+            />
           )}
         </View>
 
         <ScrollView contentContainerStyle={styles.detailContent}>
-          <View style={styles.membersHeader}>
-            <Text style={styles.membersCount}>Учасників: {activeCircle.members.length}</Text>
-          </View>
+          <Typography variant="subtitle1" tone="primary" style={styles.membersCount}>
+            Учасників: {activeCircle.members.length}
+          </Typography>
 
           <View style={styles.membersList}>
             {activeCircle.members.map((member) => (
-              <TouchableOpacity
+              <Pressable
                 key={member.id}
                 style={styles.memberRow}
-                activeOpacity={0.7}
                 onPress={() => {
                   setSelectedMember(member);
                   setIsMemberModalVisible(true);
@@ -366,44 +289,36 @@ export default function CirclesScreen() {
               >
                 <MemberAvatar member={member} />
                 <View style={styles.memberInfo}>
-                  <Text style={styles.memberName}>
+                  <Typography variant="subtitle1" tone="primary">
                     {member.firstName} {member.lastName}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.memberStatus,
-                      {
-                        color:
-                          member.status === "SAFE"
-                            ? "#34C759"
-                            : member.status === "DANGER"
-                              ? "#FF3B30"
-                              : "#FF9500",
-                      },
-                    ]}
-                  >
+                  </Typography>
+                  <Typography variant="body2" tone="secondary">
                     {member.status === "SAFE"
                       ? "В безпеці"
                       : member.status === "DANGER"
                         ? "Потрібна допомога!"
-                        : "Невідомо"}
-                  </Text>
+                        : member.status === "WAS_SAFE"
+                          ? "Був у безпеці"
+                          : "Невідомо"}
+                  </Typography>
                 </View>
-                <StatusBadge status={member.status} />
-              </TouchableOpacity>
+                <StatusBadge status={member.status} variant="round" />
+              </Pressable>
             ))}
           </View>
 
-          {isOwner ? (
-            <View style={styles.ownerActions}></View>
-          ) : (
-            <TouchableOpacity style={[styles.actionBtn, styles.danger]} onPress={handleLeave}>
-              <Text style={styles.dangerText}>Покинути коло</Text>
-            </TouchableOpacity>
+          {!isOwner && (
+            <Button
+              label="Покинути коло"
+              hierarchy="secondary"
+              shape="rectangle"
+              size="medium"
+              onPress={handleLeave}
+              style={styles.leaveButton}
+            />
           )}
         </ScrollView>
 
-        {/* CircleActionsModal — доступний і з детального перегляду */}
         <CircleActionsModal
           visible={isActionsVisible}
           onClose={() => setIsActionsVisible(false)}
@@ -483,7 +398,9 @@ export default function CirclesScreen() {
         </View>
 
         {circles.length === 0 ? (
-          <Text style={styles.emptyText}>Кола не знайдені</Text>
+          <Typography variant="body1" tone="secondary" style={styles.emptyText}>
+            Кола не знайдені
+          </Typography>
         ) : (
           circles.map((circle) => (
             <CircleItem
@@ -506,11 +423,11 @@ export default function CirclesScreen() {
       <CircleActionsModal
         visible={isActionsVisible}
         onClose={() => setIsActionsVisible(false)}
+        circleId={activeCircle?.id || ""}
         ownerId={activeCircle?.owner.id || ""}
         currentName={activeCircle?.name || ""}
         inviteCode={activeCircle?.inviteCode || ""}
         members={activeCircle?.members || []}
-        circleId={activeCircle ? activeCircle.id : ""}
         onSaveMembers={async (updatedMembers) => {
           if (!activeCircle) return;
           await apiFetch("/groups", {
@@ -543,15 +460,11 @@ export default function CirclesScreen() {
         }}
         onRegenerateInvite={async () => {
           if (!activeCircle) return;
-          const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
-            method: "POST",
-          });
+          const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, { method: "POST" });
           setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
           fetchCircles();
         }}
       />
-
-      {/* Circle Details Modal */}
     </SafeAreaView>
   );
 }
@@ -562,132 +475,61 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     marginTop: theme.spacing[20],
     marginBottom: theme.spacing[28],
   },
   emptyText: {
     textAlign: "center",
-    marginTop: 20,
-    color: "#666",
-    fontSize: 16,
+    marginTop: theme.spacing[20],
   },
 
   // Detail view
   detailHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: "#fff",
+    paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[8],
+    backgroundColor: theme.colors.background.primary,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: theme.colors.border.opaque,
+    gap: theme.spacing[8],
   },
-  backButton: { paddingRight: 12 },
   detailTitleBlock: {
     flex: 1,
-    justifyContent: "center",
   },
-  detailTitle: { fontSize: 24, fontWeight: "700" },
   inlineInviteRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 2,
+    marginTop: theme.spacing[2],
   },
-  inlineInviteLabel: { fontSize: 13, color: "#888" },
-  inlineInviteCode: { fontSize: 13, fontWeight: "700", color: "#000000" },
-  editCircleBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#5B8DEE",
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 8,
+  detailContent: {
+    padding: theme.spacing[16],
   },
-  detailContent: { padding: 16 },
-
-  membersHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
+  membersCount: {
+    marginBottom: theme.spacing[16],
   },
-  membersCount: { fontSize: 16, fontWeight: "600" },
-
-  membersList: { gap: 12 },
+  membersList: {
+    gap: theme.spacing[4],
+  },
   memberRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: theme.spacing[10],
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: theme.colors.border.opaque,
   },
-  memberInfo: { marginLeft: 12, flex: 1 },
-  memberName: { fontSize: 16, fontWeight: "600" },
-  memberStatus: { fontSize: 14, marginTop: 2 },
-
-  ownerActions: { marginTop: 24, gap: 12 },
-  actionBtn: {
-    paddingVertical: 14,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 12,
-    alignItems: "center",
+  memberInfo: {
+    marginLeft: theme.spacing[12],
+    flex: 1,
   },
-  actionText: { fontSize: 16, color: "#007AFF", fontWeight: "600" },
-  danger: { backgroundColor: "#ffebee" },
-  dangerText: { color: "#FF3B30", fontWeight: "600" },
+  leaveButton: {
+    marginTop: theme.spacing[24],
+  },
 
   // Rename modal
-  renameOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-  renameCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-    width: "100%",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  renameTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 16,
-    textAlign: "center",
-  },
-  renameInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 16,
-    marginBottom: 20,
-  },
   renameActions: {
     flexDirection: "row",
-    gap: 12,
+    gap: theme.spacing[12],
   },
-  renameCancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  renameCancelText: { fontSize: 16, color: "#666", fontWeight: "600" },
-  renameSaveBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: COLORS.PRIMARY_BLUE,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  renameSaveText: { fontSize: 16, color: "#fff", fontWeight: "600" },
 });
