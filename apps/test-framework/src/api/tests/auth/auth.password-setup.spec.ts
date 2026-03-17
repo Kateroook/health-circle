@@ -180,7 +180,7 @@ test.describe('api/auth/password-setup tests', async () => {
     });
     // | AUTH-027 | Старий код після відправки нового | `resendRegistrationCode` → спроба зі старим кодом | 400 або 401 |
     test("[AUTH-027] Passwords setup with the old code", async ({ api, confirmationCodeRepository }) => {
-        const resendCode = await api.auth.resendRegistrationCode(user.email);
+        const resendCode = await api.auth.resendRegistrationCode({email: user.email});
         expect(resendCode.response).toHaveStatus2xx();
         const newCode = (await confirmationCodeRepository.findBy({userId: user.id}))[0];
 

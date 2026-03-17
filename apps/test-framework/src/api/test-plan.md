@@ -153,7 +153,7 @@
 
 ---
 
-### 5.5 POST /api/auth/password-setup
+### [+] 5.5 POST /api/auth/password-setup
 
 | ID | Назва | Вхідні дані | Очікуваний результат |
 |---|---|---|---|

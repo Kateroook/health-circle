@@ -7,6 +7,7 @@ import {
   ChangePasswordRequest,
   ForgotPasswordRequest,
   ProfileResponse,
+  ResendRegistrationCodeRequest,
 } from '../../types/api';
 import { checkResponse } from '../helpers/response-checker';
 import { test } from '../../../api/fixtures/api-fixture';
@@ -141,9 +142,9 @@ export class AuthClient extends BaseClient {
    * POST /api/auth/resend-registration-code
    * Повторно відправити код реєстрації
    */
-  public async resendRegistrationCode(email: string): Promise<ApiResult<void>> {
+  public async resendRegistrationCode(data: ResendRegistrationCodeRequest): Promise<ApiResult<void>> {
     return await this.post<void>('/api/auth/resend-registration-code', {
-      data: {email: email},
+      data: data,
     });
   }
 
