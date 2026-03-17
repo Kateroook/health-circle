@@ -116,11 +116,7 @@ describe('StatusQueueService', () => {
 
       await service.handleStatusTransitions();
 
-      expect(userRepository.update).toHaveBeenCalledWith(
-        { id: In(['user-1']) },
-        expect.objectContaining({ status: UserStatus.UNKNOWN }),
-      );
-      expect(firestoreSyncService.sendSyncSignal).toHaveBeenCalledWith(['user-1']);
+      expect(usersService.updateStatus).toHaveBeenCalledWith('user-1', UserStatus.UNKNOWN, ['group-1']);
     });
 
     it('should respect ROLL_CALL_TIMEOUT_MINUTES from config', async () => {
@@ -154,10 +150,7 @@ describe('StatusQueueService', () => {
       await service.handleStatusTransitions();
 
       // Should timeout because 40m > 30m threshold
-      expect(userRepository.update).toHaveBeenCalledWith(
-        { id: In(['user-1']) },
-        expect.objectContaining({ status: UserStatus.UNKNOWN }),
-      );
+      expect(usersService.updateStatus).toHaveBeenCalledWith('user-1', UserStatus.UNKNOWN, ['group-1']);
 
       // Reset mock for other tests
       configService.get.mockImplementation((key) => {
@@ -190,7 +183,7 @@ describe('StatusQueueService', () => {
 
       await service.handleStatusTransitions();
 
-      expect(userRepository.update).not.toHaveBeenCalledWith({ id: In(['user-1']) }, expect.any(Object));
+      expect(usersService.updateStatus).not.toHaveBeenCalled();
     });
 
     it('should update users to UNKNOWN if they missed a personal roll call', async () => {
@@ -212,10 +205,7 @@ describe('StatusQueueService', () => {
 
       await service.handleStatusTransitions();
 
-      expect(userRepository.update).toHaveBeenCalledWith(
-        { id: In(['user-personal']) },
-        expect.objectContaining({ status: UserStatus.UNKNOWN }),
-      );
+      expect(usersService.updateStatus).toHaveBeenCalledWith('user-personal', UserStatus.UNKNOWN);
     });
 
     it('should NOT update users if they responded after the personal roll call started', async () => {
@@ -237,7 +227,7 @@ describe('StatusQueueService', () => {
 
       await service.handleStatusTransitions();
 
-      expect(userRepository.update).not.toHaveBeenCalledWith({ id: In(['user-personal-active']) }, expect.any(Object));
+      expect(usersService.updateStatus).not.toHaveBeenCalled();
     });
   });
 

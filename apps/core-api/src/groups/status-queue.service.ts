@@ -65,10 +65,9 @@ export class StatusQueueService implements OnModuleInit {
 
       if (usersToUpdate.length > 0) {
         this.logger.log(`Timed out ${usersToUpdate.length} users in group ${group.name} due to roll call`);
-        const userIds = usersToUpdate.map((u) => u.id);
-        await this.userRepository.update({ id: In(userIds) }, { status: UserStatus.UNKNOWN, lastStatusUpdate: new Date() });
-
-        await this.syncUsers(userIds);
+        for (const u of usersToUpdate) {
+          await this.usersService.updateStatus(u.id, UserStatus.UNKNOWN, [group.id]);
+        }
       }
     }
 
@@ -80,14 +79,15 @@ export class StatusQueueService implements OnModuleInit {
       },
     });
 
-    const personalUserIds = personalTimedOutUsers
-      .filter((u) => u.lastPersonalRollCallAt && u.lastStatusUpdate < u.lastPersonalRollCallAt)
-      .map((u) => u.id);
+    const personalUsersToNotify = personalTimedOutUsers.filter(
+      (u) => u.lastPersonalRollCallAt && u.lastStatusUpdate < u.lastPersonalRollCallAt,
+    );
 
-    if (personalUserIds.length > 0) {
-      this.logger.log(`Timed out ${personalUserIds.length} users due to personal roll call`);
-      await this.userRepository.update({ id: In(personalUserIds) }, { status: UserStatus.UNKNOWN, lastStatusUpdate: new Date() });
-      await this.syncUsers(personalUserIds);
+    if (personalUsersToNotify.length > 0) {
+      this.logger.log(`Timed out ${personalUsersToNotify.length} users due to personal roll call`);
+      for (const u of personalUsersToNotify) {
+        await this.usersService.updateStatus(u.id, UserStatus.UNKNOWN);
+      }
     }
   }
 

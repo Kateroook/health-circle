@@ -1,3 +1,5 @@
+import { UserNotificationSettingsEntity } from 'src/users/entities/user-notification-settings.entity';
+
 import { ConfirmationCodeEntity } from '../../confirmations/entities/confirmation-code.entity';
 import { ContactEntity } from '../../contacts/entities/contact.entity';
 import { ExternalFilesEntity } from '../../external-files/entities/external-files.entity';
@@ -28,4 +30,5 @@ export const entities = [
   ContactEntity,
   GroupBlockListEntity,
   SystemLogEntity,
+  UserNotificationSettingsEntity,
 ];

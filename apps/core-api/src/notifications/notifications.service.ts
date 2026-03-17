@@ -1,9 +1,30 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 
+import { NotificationTemplates, NotificationType } from './notification-types';
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
+
+  async sendMulticastByType(tokens: string[], type: NotificationType, templateData: any, extraData?: Record<string, string>) {
+    if (!tokens.length) return;
+
+    const template = NotificationTemplates[type];
+    if (!template) {
+      this.logger.error(`No template found for notification type: ${type}`);
+      return;
+    }
+
+    const title = template.title;
+    const body = typeof template.body === 'function' ? template.body(templateData) : template.body;
+
+    await this.sendMulticast(tokens, title, body, {
+      ...extraData,
+      type: template.fcmType,
+      notificationType: type,
+    });
+  }
 
   async sendMulticast(tokens: string[], title: string, body: string, data?: Record<string, string>) {
     if (!tokens.length) return;

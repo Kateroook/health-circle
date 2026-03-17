@@ -1,8 +1,9 @@
 import { saveFcmTokenToBackend } from "@/src/api/api";
 import { useAuthStore } from "@/src/store/authStore";
+import { useSettingsStore } from "@/src/store/settingsStore";
 import messaging from "@react-native-firebase/messaging";
 import * as Notifications from "expo-notifications";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 
 // Configure how notifications are handled when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -17,38 +18,77 @@ Notifications.setNotificationHandler({
 
 export function useFcmToken() {
   const { user, accessToken } = useAuthStore();
+  const {
+    isPushEnabled,
+    setPushEnabled,
+    hasPromptedForNotifications,
+    setHasPromptedForNotifications,
+  } = useSettingsStore();
 
-  useEffect(() => {
-    if (!user || !accessToken) return;
+  const getAndSaveToken = useCallback(async () => {
+    try {
+      const fcmToken = await messaging().getToken();
+      if (fcmToken) {
+        console.log("FCM Token:", fcmToken);
+        await saveFcmTokenToBackend(fcmToken);
+      }
+    } catch (error) {
+      console.error("Error getting FCM token:", error);
+    }
+  }, []);
 
-    const requestPermission = async () => {
-      try {
-        const authStatus = await messaging().requestPermission();
-        const enabled =
-          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+  const requestPermission = useCallback(async () => {
+    try {
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
-        if (enabled) {
-          const fcmToken = await messaging().getToken();
-          if (fcmToken) {
-            console.log("FCM Token:", fcmToken);
-            await saveFcmTokenToBackend(fcmToken);
-          }
-        }
+      setHasPromptedForNotifications(true);
+      if (enabled) {
+        setPushEnabled(true);
+        await getAndSaveToken();
 
         // Ensure channel exists for Android
         await Notifications.setNotificationChannelAsync("default", {
           name: "Default Channel",
           importance: Notifications.AndroidImportance.HIGH,
         });
-      } catch (error) {
-        console.error("FCM Permission denied:", error);
+        return true;
+      } else {
+        setPushEnabled(false);
+        return false;
+      }
+    } catch (error) {
+      console.error("FCM Permission error:", error);
+      return false;
+    }
+  }, [getAndSaveToken, setPushEnabled, setHasPromptedForNotifications]);
+
+  useEffect(() => {
+    if (!user || !accessToken) return;
+
+    if (!hasPromptedForNotifications) {
+      requestPermission();
+      return;
+    }
+
+    if (!isPushEnabled) return;
+
+    // Background check to verify if we still have permissions
+    const checkPermission = async () => {
+      const authStatus = await messaging().hasPermission();
+      if (
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL
+      ) {
+        await getAndSaveToken();
       }
     };
 
-    requestPermission();
+    checkPermission();
 
-    const unsubscribe = messaging().onTokenRefresh(async (newToken) => {
+    const unsubscribeTokenRefresh = messaging().onTokenRefresh(async (newToken) => {
       console.log("FCM Token Refreshed:", newToken);
       await saveFcmTokenToBackend(newToken);
     });
@@ -69,8 +109,17 @@ export function useFcmToken() {
     });
 
     return () => {
-      unsubscribe();
+      unsubscribeTokenRefresh();
       unsubscribeOnMessage();
     };
-  }, [user, accessToken]);
+  }, [
+    user,
+    accessToken,
+    isPushEnabled,
+    hasPromptedForNotifications,
+    requestPermission,
+    getAndSaveToken,
+  ]);
+
+  return { requestPermission };
 }
