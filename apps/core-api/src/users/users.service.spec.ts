@@ -195,6 +195,36 @@ describe('UsersService', () => {
       const res = await service.updateStatus('x', UserStatus.SAFE);
       expect(res).toBeUndefined();
     });
+
+    it('includes the sender in notifications if DEV_SEND_PUSH_TO_SENDER is enabled', async () => {
+      const sender = { id: 'sender', fcmToken: 'sender-token', status: UserStatus.SAFE, firstName: 'Sender' } as UserEntity;
+      repository.findOne.mockResolvedValue(sender);
+      repository.save.mockResolvedValue(sender);
+
+      const targetMemberIds = ['m1'];
+      const memberRepo = (service as any).memberRepository;
+      memberRepo.find.mockResolvedValue([{ userId: 'm1' }]);
+
+      const configService = (service as any).configService;
+      configService.get.mockImplementation((key: string) => {
+        if (key === 'DEV_SEND_PUSH_TO_SENDER') return true;
+        return false;
+      });
+
+      // Mock getTokensForUsers to return target tokens
+      const getTokensSpy = jest.spyOn(service, 'getTokensForUsers').mockResolvedValue(['m1-token']);
+
+      await service.updateStatus('sender', UserStatus.SAFE, ['m1']);
+
+      expect(notificationsService.sendMulticastByType).toHaveBeenCalledWith(
+        expect.arrayContaining(['m1-token', 'sender-token']),
+        expect.any(String),
+        expect.any(Object),
+        expect.any(Object),
+      );
+
+      getTokensSpy.mockRestore();
+    });
   });
 
   describe('saveFcmToken', () => {
@@ -398,6 +428,42 @@ describe('UsersService', () => {
       await expect(service.save({ id: 'wrong' } as any, {} as any, false, { id: 'wrong' } as any)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('getTokensForUsers', () => {
+    it('returns tokens for users with enabled notifications', async () => {
+      const users = [
+        { id: 'u1', fcmToken: 't1', notificationSettings: { enabled: true, prefs: { k: true } } },
+        { id: 'u2', fcmToken: 't2', notificationSettings: { enabled: true, prefs: { k: false } } },
+        { id: 'u3', fcmToken: 't3', notificationSettings: { enabled: false } },
+        { id: 'u4', fcmToken: null },
+        { id: 'u5', fcmToken: 't5', notificationSettings: null },
+      ] as any[];
+
+      repository.find.mockResolvedValue(users);
+
+      const tokens = await service.getTokensForUsers(['u1', 'u2', 'u3', 'u4', 'u5'], 'k');
+
+      // u1: has token, enabled, pref k is true -> YES
+      // u2: has token, enabled, pref k is false -> NO
+      // u3: has token, disabled -> NO
+      // u4: no token -> NO
+      // u5: has token, no settings record (defaults to true) -> YES
+      expect(tokens).toEqual(['t1', 't5']);
+    });
+
+    it('returns all tokens if no settingKey provided and enabled', async () => {
+      const users = [
+        { id: 'u1', fcmToken: 't1', notificationSettings: { enabled: true } },
+        { id: 'u2', fcmToken: 't2', notificationSettings: null },
+      ] as any[];
+
+      repository.find.mockResolvedValue(users);
+
+      const tokens = await service.getTokensForUsers(['u1', 'u2']);
+
+      expect(tokens).toEqual(['t1', 't2']);
     });
   });
 

@@ -88,6 +88,41 @@ describe('NotificationsService', () => {
         }),
       );
     });
+
+    it('should send a mood reminder notification', async () => {
+      const sendSpy = jest.spyOn(service, 'sendMulticast');
+      const tokens = ['token1'];
+
+      await service.sendMulticastByType(tokens, NotificationType.MOOD_REMINDER, {});
+
+      expect(sendSpy).toHaveBeenCalledWith(
+        tokens,
+        'Як ви почуваєтесь? 😊',
+        'Не забудьте відмітити свій настрій у додатку.',
+        expect.objectContaining({
+          type: 'MOOD_REMINDER',
+          notificationType: NotificationType.MOOD_REMINDER,
+        }),
+      );
+    });
+
+    it('should send an unknown status notification', async () => {
+      const sendSpy = jest.spyOn(service, 'sendMulticast');
+      const tokens = ['token1'];
+      const data = { firstName: 'Ivan', lastName: 'Ivanov' };
+
+      await service.sendMulticastByType(tokens, NotificationType.UNKNOWN_STATUS, data);
+
+      expect(sendSpy).toHaveBeenCalledWith(
+        tokens,
+        '❓ Статус невідомий',
+        'Ivan Ivanov не оновив статус вчасно.',
+        expect.objectContaining({
+          type: 'USER_STATUS_UPDATE',
+          notificationType: NotificationType.UNKNOWN_STATUS,
+        }),
+      );
+    });
   });
 
   describe('sendMulticast', () => {
