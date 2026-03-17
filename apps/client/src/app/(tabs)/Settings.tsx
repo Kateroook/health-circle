@@ -130,12 +130,6 @@ export default function SettingsScreen() {
       }
     }
 
-    const trimmedFullName = fullName.trim();
-    if (!trimmedFullName) errors.push("Не можна зберегти порожнє повне імʼя");
-    else if (trimmedFullName.length > 255) {
-      errors.push("Повне імʼя має містити не більше 255 символів");
-    }
-
     if (!trimmedPhone) {
       errors.push("Номер телефону є обовʼязковим");
     }
@@ -290,14 +284,6 @@ export default function SettingsScreen() {
       setter: setMiddleName,
       placeholder: "Введіть по-батькові",
       maxLength: 50,
-      required: false,
-    },
-    {
-      label: "Відображаєме імʼя",
-      value: fullName,
-      setter: setFullName,
-      placeholder: "Введіть відображаєме імʼя",
-      maxLength: 255,
       required: false,
     },
     {
