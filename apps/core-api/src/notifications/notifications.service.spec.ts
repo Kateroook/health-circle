@@ -63,7 +63,7 @@ describe('NotificationsService', () => {
       expect(sendSpy).toHaveBeenCalledWith(
         tokens,
         'Перекличка! 📢',
-        'Адміністратор кола "Family" просить підтвердити ваш статус безпеки.',
+        'Учасник кола "Family" просить підтвердити ваш статус безпеки.',
         expect.objectContaining({
           type: 'ROLL_CALL',
           notificationType: NotificationType.ROLL_CALL,

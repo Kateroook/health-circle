@@ -65,12 +65,10 @@ export default function CircleDetailsView({
       <View style={styles.statsCard}>
         <View style={styles.statsHeader}>
           <Text style={styles.membersCountText}>{members.length} учасників</Text>
-          {isOwner && (
-            <TouchableOpacity onPress={onRollCallPress} style={styles.rollCallButton}>
-              <Text style={styles.rollCallButtonText}>Перекличка</Text>
-              <Feather name="rss" size={16} color="#FFF" />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity onPress={onRollCallPress} style={styles.rollCallButton}>
+            <Text style={styles.rollCallButtonText}>Перекличка</Text>
+            <Feather name="rss" size={16} color="#FFF" />
+          </TouchableOpacity>
         </View>
         <Text style={styles.statsSummaryText}>
           {unknownCount} не відповіли,{"\n"}

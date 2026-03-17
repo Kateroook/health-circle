@@ -227,13 +227,15 @@ export default function DashboardScreen() {
 
   const { canRollCall, rollCallGroupId } = useMemo(() => {
     if (!selectedMember || !user) return { canRollCall: false, rollCallGroupId: null };
-    // Find a group where current user is owner AND selectedMember is a member
-    const ownedGroup = groups.find(
-      (g) => g.owner?.id === user.id && g.members.some((m) => m.id === selectedMember.id),
+    // Find a group where both current user AND selectedMember are members
+    const sharedGroup = groups.find(
+      (g) =>
+        (g.owner?.id === user.id || g.members.some((m) => m.id === user.id)) &&
+        g.members.some((m) => m.id === selectedMember.id),
     );
     return {
-      canRollCall: !!ownedGroup,
-      rollCallGroupId: ownedGroup?.id || null,
+      canRollCall: !!sharedGroup,
+      rollCallGroupId: sharedGroup?.id || null,
     };
   }, [selectedMember, groups, user]);
 

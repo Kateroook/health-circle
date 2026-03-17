@@ -660,27 +660,27 @@ export default function SettingsScreen() {
               {[
                 {
                   label: "Повітряна тривога",
-                  value: notifSettings?.airAlerts ?? false,
+                  value: notifSettings?.airAlerts ?? true,
                   key: "airAlerts",
                 },
                 {
                   label: "Оновлення статусів у Колі",
-                  value: notifSettings?.statusUpdates ?? false,
+                  value: notifSettings?.statusUpdates ?? true,
                   key: "statusUpdates",
                 },
                 {
                   label: "Статус «Невідомо» під час тривоги",
-                  value: notifSettings?.unknownStatusAlerts ?? false,
+                  value: notifSettings?.unknownStatusAlerts ?? true,
                   key: "unknownStatusAlerts",
                 },
                 {
                   label: "Нагадування про статус",
-                  value: notifSettings?.statusUpdateReminders ?? false,
+                  value: notifSettings?.statusUpdateReminders ?? true,
                   key: "statusUpdateReminders",
                 },
                 {
                   label: "Нагадування про настрій",
-                  value: notifSettings?.moodReminders ?? false,
+                  value: notifSettings?.moodReminders ?? true,
                   key: "moodReminders",
                 },
                 {
