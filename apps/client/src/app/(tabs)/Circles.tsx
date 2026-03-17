@@ -1,30 +1,23 @@
 import { apiFetch } from "@/src/api/api";
+import { initiateRollCall } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
-import CircleItem, { Member } from "@/src/components/circle/CircleItem";
+import { Member, Circle } from "@/src/types";
+import CircleItem from "@/src/components/circle/CircleItem";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import CircleDetailsModal from "@/src/components/circle/actions/CircleDetailsModal";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { AntDesign } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { BackHandler, Platform, ScrollView, StyleSheet, Text, UIManager, View } from "react-native";
+import { BackHandler, Platform, ScrollView, StyleSheet, UIManager, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-import { Typography } from "@/src/components/typography/Typography";
+import { Typography } from "@/src/components/typography";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-interface Circle {
-  id: string;
-  name: string;
-  inviteCode: string;
-  owner: { id: string; firstName?: string; lastName?: string };
-  members: Member[];
 }
 
 export default function CirclesScreen() {
@@ -91,15 +84,87 @@ export default function CirclesScreen() {
     return () => sub.remove();
   }, [isAddModalVisible, isActionsVisible, isDetailsVisible]);
 
-  function openActionsModal(circle: typeof activeCircle) {
+  function openActionsModal(circle: Circle) {
     setActiveCircle(circle);
     setIsActionsVisible(true);
   }
 
-  function openDetailsModal(circle: typeof activeCircle) {
+  function openDetailsModal(circle: Circle) {
     setActiveCircle(circle);
     setIsDetailsVisible(true);
   }
+
+  const handleSaveMembers = async (updatedMembers: { id: string }[]) => {
+    if (!activeCircle) return;
+    try {
+      await apiFetch("/groups", {
+        method: "PUT",
+        body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
+      });
+      fetchCircles();
+    } catch (error) {
+      console.error("Failed to save members:", error);
+    }
+  };
+
+  const handleRename = async (newName: string) => {
+    if (!activeCircle) return;
+    try {
+      await apiFetch("/groups", {
+        method: "PUT",
+        body: JSON.stringify({ id: activeCircle.id, name: newName }),
+      });
+      setIsActionsVisible(false);
+      fetchCircles();
+    } catch (error) {
+      console.error("Failed to rename circle:", error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!activeCircle) return;
+    try {
+      await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
+      setIsActionsVisible(false);
+      setIsDetailsVisible(false);
+      fetchCircles();
+    } catch (error) {
+      console.error("Failed to delete circle:", error);
+    }
+  };
+
+  const handleLeave = async () => {
+    if (!activeCircle) return;
+    try {
+      await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
+      setIsActionsVisible(false);
+      setIsDetailsVisible(false);
+      fetchCircles();
+    } catch (error) {
+      console.error("Failed to leave circle:", error);
+    }
+  };
+
+  const handleRegenerateInvite = async () => {
+    if (!activeCircle) return;
+    try {
+      const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, { method: "POST" });
+      setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+      fetchCircles();
+    } catch (error) {
+      console.error("Failed to regenerate invite:", error);
+    }
+  };
+
+  const handleRollCall = async () => {
+    if (!activeCircle) return;
+    try {
+      await initiateRollCall(activeCircle.id);
+      fetchCircles();
+    } catch (error) {
+      console.error("Failed to initiate roll call:", error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -118,15 +183,16 @@ export default function CirclesScreen() {
         </View>
 
         {circles.length === 0 ? (
-          <Text
+          <Typography
+            variant="body1"
+            tone="onColor"
             style={{
               textAlign: "center",
               marginTop: 20,
-              color: "#FFF",
             }}
           >
             Кола не знайдені
-          </Text>
+          </Typography>
         ) : (
           circles.map((circle) => (
             <CircleItem
@@ -156,50 +222,12 @@ export default function CirclesScreen() {
         inviteCode={activeCircle?.inviteCode || ""}
         members={activeCircle?.members || []}
         circleId={activeCircle ? activeCircle.id : ""}
-        onSaveMembers={async (updatedMembers) => {
-          if (!activeCircle) return;
-          await apiFetch("/groups", {
-            method: "PUT",
-            body: JSON.stringify({
-              id: activeCircle.id,
-              members: updatedMembers,
-            }),
-          });
-          setIsActionsVisible(false);
-          fetchCircles();
-        }}
-        onRename={async (newName) => {
-          if (!activeCircle) return;
-          await apiFetch("/groups", {
-            method: "PUT",
-            body: JSON.stringify({ id: activeCircle.id, name: newName }),
-          });
-          setIsActionsVisible(false);
-          fetchCircles();
-        }}
-        onDelete={async () => {
-          if (!activeCircle) return;
-          await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
-          setIsActionsVisible(false);
-          fetchCircles();
-        }}
-        onLeave={async () => {
-          if (!activeCircle) return;
-          await apiFetch(`/groups/${activeCircle.id}/leave`, {
-            method: "POST",
-          });
-          console.log(1);
-          setIsActionsVisible(false);
-          fetchCircles();
-        }}
-        onRegenerateInvite={async () => {
-          if (!activeCircle) return;
-          const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
-            method: "POST",
-          });
-          setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
-          fetchCircles();
-        }}
+        onSaveMembers={handleSaveMembers}
+        onRename={handleRename}
+        onDelete={handleDelete}
+        onLeave={handleLeave}
+        onRegenerateInvite={handleRegenerateInvite}
+        onRollCall={handleRollCall}
       />
 
       {/* Circle Details Modal */}
@@ -220,46 +248,18 @@ export default function CirclesScreen() {
         }
         inviteCode={activeCircle?.inviteCode || ""}
         members={activeCircle?.members || []}
-        onSaveMembers={async (updatedMembers: { id: string }[]) => {
-          if (!activeCircle) return;
-          await apiFetch("/groups", {
-            method: "PUT",
-            body: JSON.stringify({
-              id: activeCircle.id,
-              members: updatedMembers,
-            }),
-          });
-          fetchCircles();
-        }}
+        onSaveMembers={handleSaveMembers}
         onEdit={() => {
           setIsDetailsVisible(false);
           setTimeout(() => {
             setIsActionsVisible(true);
           }, 300);
         }}
-        onDelete={async () => {
-          if (!activeCircle) return;
-          await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
-          setIsDetailsVisible(false);
-          fetchCircles();
-        }}
-        onLeave={async () => {
-          if (!activeCircle) return;
-          await apiFetch(`/groups/${activeCircle.id}/leave`, {
-            method: "POST",
-          });
-          setIsDetailsVisible(false);
-          fetchCircles();
-        }}
-        onRegenerateInvite={async () => {
-          if (!activeCircle) return;
-          const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
-            method: "POST",
-          });
-          setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
-        }}
+        onDelete={handleDelete}
+        onLeave={handleLeave}
+        onRegenerateInvite={handleRegenerateInvite}
         onMemberUpdated={fetchCircles}
-        onRollCall={fetchCircles}
+        onRollCall={handleRollCall}
       />
     </SafeAreaView>
   );

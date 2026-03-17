@@ -5,22 +5,16 @@ import { ModalContainer } from "@/src/components/modal/ModalContainer";
 import { useAnalytics } from "@/src/hooks/useAnalytics";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
-import { AntDesign } from "@expo/vector-icons";
-import Feather from "@expo/vector-icons/Feather";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Typography } from "@/src/components/typography";
 import ConfirmationModal from "../../ConfirmationModal";
 import { TextField } from "../../fields/TextField";
 import { BottomSheetContainer } from "../../modal/BottomSheetContainer";
 import { RenameModal } from "./RenameModal";
-interface Member {
-  id: string;
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  active?: boolean;
-}
+import { Member } from "@/src/types";
 
 interface Props {
   visible: boolean;
@@ -34,6 +28,7 @@ interface Props {
   onSaveMembers: (updated: { id: string }[]) => void;
   onDelete: () => void;
   onLeave: () => void;
+  onRollCall: () => void;
   onRegenerateInvite: () => Promise<void>;
 }
 
@@ -49,6 +44,7 @@ export default function CircleActionsModal({
   onSaveMembers,
   onDelete,
   onLeave,
+  onRollCall,
   onRegenerateInvite,
 }: Props) {
   const { logEvent } = useAnalytics();
@@ -98,57 +94,6 @@ export default function CircleActionsModal({
     logEvent("copy_invite_code");
   };
 
-  interface RenameCircleModalProps {
-    isVisible: boolean;
-    newName: string;
-    onChangeName: (name: string) => void;
-    onCancel: () => void;
-    onSave: () => void;
-  }
-
-  const RenameCircleModal: React.FC<RenameCircleModalProps> = ({
-    isVisible,
-    newName,
-    onChangeName,
-    onCancel,
-    onSave,
-  }) => {
-    if (!isVisible) return null;
-
-    return (
-      <ModalContainer isVisible={isVisible} onClose={onCancel}>
-        <ModalHeader title="Редагуй назву Кола" />
-        <ModalContent noMarginBottom>
-          <TextField
-            label=""
-            placeholder="Введи нову назву"
-            value={newName}
-            onChangeText={onChangeName}
-            autoFocus
-            required
-            caption="Назва зміниться для всіх членів Кола"
-          />
-        </ModalContent>
-        <ModalActions>
-          <Button
-            label="Скасувати"
-            hierarchy="secondary"
-            shape="rectangle"
-            size="medium"
-            onPress={onCancel}
-          />
-          <Button
-            label="Зберегти"
-            hierarchy="primary"
-            shape="rectangle"
-            size="medium"
-            disabled={newName.trim() === ""}
-            onPress={onSave}
-          />
-        </ModalActions>
-      </ModalContainer>
-    );
-  };
   return (
     <BottomSheetContainer isVisible={visible} onClose={onClose}>
       <ConfirmationModal
@@ -208,10 +153,12 @@ export default function CircleActionsModal({
             onPress={() => setIsEditingMembers(false)}
             style={{ alignSelf: "flex-start" }}
           />
-          <Text style={styles.sectionTitle}>Редагуй склад кола</Text>
-          <Text style={styles.sectionSubtitle}>
+          <Typography variant="h3" weight="bold" style={styles.sectionTitle}>
+            Редагуй склад кола
+          </Typography>
+          <Typography variant="body2" tone="secondary" style={styles.sectionSubtitle}>
             Видали учасників, яких більше не потрібно відстежувати
-          </Text>
+          </Typography>
 
           <ScrollView style={styles.memberScroll} showsVerticalScrollIndicator={false}>
             {localMembers.map((m, index) => (
@@ -241,13 +188,21 @@ export default function CircleActionsModal({
       {/* ===== MAIN MENU ===== */}
       {!isEditingMembers && (
         <View style={styles.section}>
-          <Text style={styles.modalTitle} numberOfLines={1} ellipsizeMode="tail">
+          <Typography
+            variant="h3"
+            weight="bold"
+            style={styles.modalTitle}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {currentName}
-          </Text>
+          </Typography>
 
           {isOwner && (
             <View style={styles.inviteContainer}>
-              <Text style={styles.inviteText}>Код: {inviteCode}</Text>
+              <Typography variant="subtitle1" weight="semibold" style={styles.inviteText}>
+                Код: {inviteCode}
+              </Typography>
               <Button
                 shape="round"
                 hierarchy="primary"
@@ -298,17 +253,37 @@ export default function CircleActionsModal({
                   style={{ width: "100%" }}
                   textStyle={{ color: theme.colors.negative }}
                 />
+                <Button
+                  label="Перекличка"
+                  hierarchy="accent"
+                  shape="rectangle"
+                  size="medium"
+                  leadingIcon={<Feather name="rss" size={16} color="#FFF" />}
+                  onPress={onRollCall}
+                  style={{ width: "100%", marginTop: theme.spacing[8] }}
+                />
               </>
             ) : (
-              <Button
-                label="Покинути коло"
-                hierarchy="tertiary"
-                shape="rectangle"
-                size="medium"
-                onPress={() => setIsLeaveVisible(true)}
-                style={{ width: "100%" }}
-                textStyle={{ color: theme.colors.negative }}
-              />
+              <>
+                <Button
+                  label="Покинути коло"
+                  hierarchy="tertiary"
+                  shape="rectangle"
+                  size="medium"
+                  onPress={() => setIsLeaveVisible(true)}
+                  style={{ width: "100%" }}
+                  textStyle={{ color: theme.colors.negative }}
+                />
+                <Button
+                  label="Перекличка"
+                  hierarchy="accent"
+                  shape="rectangle"
+                  size="medium"
+                  leadingIcon={<Feather name="rss" size={16} color="#FFF" />}
+                  onPress={onRollCall}
+                  style={{ width: "100%", marginTop: theme.spacing[8] }}
+                />
+              </>
             )}
           </View>
         </View>
