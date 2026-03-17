@@ -100,8 +100,6 @@ export const test = workerTest.extend<MyFixture>({
 
       const code = (await confirmationCodeRepository.findBy({ userId: user.id }))[0];
 
-      console.log(code);
-
       baseExpect(code).not.toBeUndefined();
       baseExpect(code).not.toBeNull();
   
