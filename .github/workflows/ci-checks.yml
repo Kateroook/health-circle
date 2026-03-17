@@ -3,8 +3,16 @@ name: CI Checks
 on:
   push:
     branches: [ "main", "dev" ]
+    paths:
+      - 'apps/**'
+      - 'package*.json'
   pull_request:
     branches: [ "main", "dev" ]
+    paths:
+      - 'apps/client/**'
+      - 'apps/core-api/**'
+      - 'package*.json'
+      - '.github/workflows/ci-checks.yml' # Still run if this file itself changes
 
 jobs:
   lint-and-typecheck:
