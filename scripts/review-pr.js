@@ -1,12 +1,25 @@
 #!/usr/bin/env node
 
-// Using built-in fetch available in Node.js 18+
+const fs = require('fs');
+const path = require('path');
 
 const { GITHUB_TOKEN, GITHUB_REPOSITORY, PR_NUMBER, LLM7_API_KEY, COMMENT_ID } = process.env;
 
 if (!GITHUB_TOKEN || !GITHUB_REPOSITORY || !PR_NUMBER || !LLM7_API_KEY) {
   console.error('Missing required environment variables');
   process.exit(1);
+}
+
+function getProjectContext() {
+  try {
+    const contextPath = path.join(__dirname, '../docs/pr-review-guidelines.md');
+    if (fs.existsSync(contextPath)) {
+      return fs.readFileSync(contextPath, 'utf8');
+    }
+  } catch (error) {
+    console.error('Error reading project context:', error);
+  }
+  return '';
 }
 
 async function addReaction(commentId, content) {
@@ -65,28 +78,61 @@ async function submitReview(body) {
   });
 }
 
-async function getReview(diff, details) {
+async function getReview(diff, details, context) {
   const prompt = `
-    You are an expert software engineer performing a code review for a project.
+    You are a Senior Software Engineer acting as a mentor for a developer. 
+    The developer is relatively new to React Native and Expo and relies heavily on AI assistance.
+    Your goal is to provide a detailed, educational, and STRICT code review based on our project guidelines.
+
+    ### PROJECT CONTEXT & GUIDELINES:
+    // Important: The following content is the project context read from docs/pr-review-guidelines.md
+    ${context}
+
+    ### PR INFORMATION:
     PR Title: ${details.title}
     PR Number: #${PR_NUMBER}
     Description: ${details.body || 'No description provided.'}
 
-    Instructions:
-    Focus your review on:
-    1. **Reusing existing components**: Are there new components that could be replaced by existing ones in the project?
-    2. **Theme styles**: Is the code using predefined theme variables/styles or hardcoded values?
-    3. **Bugs & Edge cases**: Are there any obvious bugs, race conditions, or unhandled error cases?
-    4. **Best practices**: Is the code following clean code principles?
-    5. **Performance**: Are there any potential performance bottlenecks?
+    ### CORE FOCUS AREAS & RULES:
 
-    Please format your review as a friendly, constructive comment. Use Markdown.
-    Start with a brief summary of the changes.
-    Then list specific observations/suggestions.
-    If everything looks great, say so!
+    1. **SECURITY & SECRETS (FATAL IF FOUND)**:
+       - Check for "google-services.json" or "GoogleService-Info.plist" being added to the codebase. 
+       - Check for hardcoded API keys, tokens, or sensitive URLs.
+       - If found, stop everything and warn the user immediately with a 🚨 CRITICAL warning.
+
+    2. **STRICT COMPONENT REUSE**:
+       - Refer to the "Key Components" section in the project context.
+       - If the user writes custom TouchableOpacity, View, or Text components for elements that should be Button, ListItem, or Typography, you MUST reject the change and show them which component to use.
+       - DO NOT allow any "one-off" UI elements that violate our design system.
+
+    3. **THEME ADHERENCE**:
+       - Refer to the "Theme & Styling" section in the project context.
+       - Reject ANY hardcoded HEX colors, hardcoded spacing (e.g., 20, 15), or ad-hoc radius values.
+       - Ensure \`StyleSheet.create\` is used. Do not accept inline styles for anything more than a simple conditional.
+
+    4. **AI MISTAKES & DELTA NOISE**:
+       - **Unnecessary Moves**: If the AI moved a function but didn't change it, identify it as "Noise" and ask to revert it.
+       - **Accidental Deletions**: Check if helper functions, unrelated comments, or exports were deleted by mistake.
+       - **AI Hallucinations**: Look for imaginary props or inconsistently named variables.
+
+    5. **EXPO & RN BEST PRACTICES**:
+       - Ensure dependency arrays in hooks like \`useMemo\`, \`useCallback\`, and \`useEffect\` are present and accurate.
+       - Suggest \`expo-image\` for performance-critical image loading.
+
+    ### YOUR OUTPUT FORMAT:
+
+    1. **Overall Impression**: A 1-2 sentence summary.
+    2. **🚨 Mandatory Checklist**:
+       - [ ] No secrets found
+       - [ ] Component reuse verified
+       - [ ] Theme adherence verified
+    3. **Mentorship Findings**:
+       - Group by category (Security, Components, Styling, etc.).
+       - For each finding: Cite file/line, explain the mistake, and provide the correct code snippet from our project.
+    4. **AI Noise Check**: List any unnecessary moves or deletions.
 
     PR Diff:
-    ${diff.substring(0, 10000)} // Limiting diff size for context limits
+    ${diff.substring(0, 15000)} 
   `;
 
   try {
@@ -121,8 +167,9 @@ async function main() {
   }
 
   const [diff, details] = await Promise.all([getPRDiff(), getPRDetails()]);
+  const context = getProjectContext();
 
-  const reviewContent = await getReview(diff, details);
+  const reviewContent = await getReview(diff, details, context);
 
   const finalComment = `
 🤖 **AI Assistant PR Review** (triggered by /review)
