@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -65,12 +67,70 @@ jobs:
           path: apps/client/${{ steps.artifact_name.outputs.NAME }}.apk
           retention-days: 7
 
+      - name: Get Last Successful Head SHA
+        id: last_sha
+        if: success()
+        run: |
+          SHA=$(gh run list --workflow "Build Android APK" --branch ${GITHUB_REF_NAME} --status success --limit 1 --json headSha --jq '.[0].headSha' || echo "")
+          echo "SHA=$SHA" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Get Commits since last success
+        id: get_commits
+        if: success()
+        run: |
+          if [ -z "${{ steps.last_sha.outputs.SHA }}" ]; then
+            # If no previous success, get last 20 commits
+            JSON_COMMITS=$(git log --pretty=format:'%s' -n 20 | jq -R -s -c 'split("\n") | map(select(length > 0) | {message: .})')
+          else
+            JSON_COMMITS=$(git log ${{ steps.last_sha.outputs.SHA }}..HEAD --pretty=format:'%s' | jq -R -s -c 'split("\n") | map(select(length > 0) | {message: .})')
+          fi
+          echo "COMMITS_JSON=$JSON_COMMITS" >> $GITHUB_ENV
+
+      - name: Generate Build Summary
+        id: build_summary
+        if: success()
+        env:
+          LLM7_API_KEY: ${{ secrets.LLM7_API_KEY }}
+          COMMITS_JSON: ${{ env.COMMITS_JSON }}
+        run: |
+          SUMMARY=$(node scripts/generate-build-summary.js)
+          {
+            echo "SUMMARY<<EOF"
+            echo "$SUMMARY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Send Build Notification to Telegram
         if: success()
         run: |
+          SUMMARY="${{ steps.build_summary.outputs.SUMMARY }}"
+          if [ -z "$SUMMARY" ]; then
+            SUMMARY="No summary available."
+          fi
+
+          TEXT="✅ *Android Build Success*
+
+          📦 *Artifact:* ${{ steps.artifact_name.outputs.NAME }}.apk
+          🔢 *Run:* ${{ github.run_number }}
+          🔗 [Download Artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+          ✨ *What's Changed:*
+          $SUMMARY
+
+          _Note: The artifact is available for download at the bottom of the run page._"
+
+          # Convert to JSON and send using jq safely
+          PAYLOAD=$(jq -n \
+            --arg chat_id "${{ secrets.TELEGRAM_CHAT_ID }}" \
+            --arg text "$TEXT" \
+            --arg parse_mode "Markdown" \
+            '{chat_id: $chat_id, text: $text, parse_mode: $parse_mode}')
+          
           curl -X POST \
                -H 'Content-Type: application/json' \
-               -d '{"chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}", "text": "✅ *Android Build Success*\n\n📦 *Artifact:* ${{ steps.artifact_name.outputs.NAME }}.apk\n🔢 *Run:* ${{ github.run_number }}\n🔗 [Download Artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n_Note: The artifact is available for download at the bottom of the run page._", "parse_mode": "Markdown"}' \
+               -d "$PAYLOAD" \
                https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
 
       - name: Notify Failure to Telegram
