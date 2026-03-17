@@ -2,11 +2,29 @@
 
 // Using built-in fetch available in Node.js 18+
 
-const { GITHUB_TOKEN, GITHUB_REPOSITORY, PR_NUMBER, LLM7_API_KEY } = process.env;
+const { GITHUB_TOKEN, GITHUB_REPOSITORY, PR_NUMBER, LLM7_API_KEY, COMMENT_ID } = process.env;
 
 if (!GITHUB_TOKEN || !GITHUB_REPOSITORY || !PR_NUMBER || !LLM7_API_KEY) {
   console.error('Missing required environment variables');
   process.exit(1);
+}
+
+async function addReaction(commentId, content) {
+  if (!commentId) return;
+  const url = `https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/comments/${commentId}/reactions`;
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `token ${GITHUB_TOKEN}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/vnd.github.bolt-preview+json', // Required for reactions API
+      },
+      body: JSON.stringify({ content }),
+    });
+  } catch (error) {
+    console.error('Error adding reaction:', error);
+  }
 }
 
 async function getPRDiff() {
@@ -98,6 +116,10 @@ async function getReview(diff, details) {
 
 async function main() {
   console.log(`Starting review for PR #${PR_NUMBER}...`);
+  if (COMMENT_ID) {
+    await addReaction(COMMENT_ID, 'eyes');
+  }
+
   const [diff, details] = await Promise.all([getPRDiff(), getPRDetails()]);
 
   const reviewContent = await getReview(diff, details);
@@ -109,6 +131,11 @@ ${reviewContent}
   `.trim();
 
   await submitReview(finalComment);
+
+  if (COMMENT_ID) {
+    await addReaction(COMMENT_ID, 'rocket');
+  }
+
   console.log('Review submitted successfully!');
 }
 
