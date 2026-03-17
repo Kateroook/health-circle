@@ -104,26 +104,28 @@ jobs:
 
       - name: Send Build Notification to Telegram
         if: success()
+        env:
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          SUMMARY: ${{ steps.build_summary.outputs.SUMMARY }}
+          ARTIFACT_NAME: ${{ steps.artifact_name.outputs.NAME }}
         run: |
-          SUMMARY="${{ steps.build_summary.outputs.SUMMARY }}"
-          if [ -z "$SUMMARY" ]; then
-            SUMMARY="No summary available."
-          fi
-
+          SAFE_SUMMARY="${SUMMARY:-No summary available.}"
+          
           TEXT="✅ *Android Build Success*
 
-          📦 *Artifact:* ${{ steps.artifact_name.outputs.NAME }}.apk
+          📦 *Artifact:* ${ARTIFACT_NAME}.apk
           🔢 *Run:* ${{ github.run_number }}
           🔗 [Download Artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
           ✨ *What's Changed:*
-          $SUMMARY
+          $SAFE_SUMMARY
 
           _Note: The artifact is available for download at the bottom of the run page._"
 
           # Convert to JSON and send using jq safely
           PAYLOAD=$(jq -n \
-            --arg chat_id "${{ secrets.TELEGRAM_CHAT_ID }}" \
+            --arg chat_id "$TELEGRAM_CHAT_ID" \
             --arg text "$TEXT" \
             --arg parse_mode "Markdown" \
             '{chat_id: $chat_id, text: $text, parse_mode: $parse_mode}')
@@ -131,7 +133,7 @@ jobs:
           curl -X POST \
                -H 'Content-Type: application/json' \
                -d "$PAYLOAD" \
-               https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage
+               https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage
 
       - name: Notify Failure to Telegram
         if: failure()
