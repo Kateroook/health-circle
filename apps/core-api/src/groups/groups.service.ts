@@ -308,7 +308,8 @@ export class GroupService {
       relations: ['members'],
     });
     if (!group) throw new NotFoundException('Коло не знайдено');
-    if (group.ownerId !== userId) throw new ForbiddenException('Тільки власник може ініціювати перекличку');
+    const isMember = group.members.some((m) => m.userId === userId) || group.ownerId === userId;
+    if (!isMember) throw new ForbiddenException('Тільки учасники можуть ініціювати перекличку');
 
     group.lastRollCallAt = new Date();
     await this.repository.save(group);
@@ -338,7 +339,8 @@ export class GroupService {
     });
 
     if (!group) throw new NotFoundException('Коло не знайдено');
-    if (group.ownerId !== requesterId) throw new ForbiddenException('Тільки власник може ініціювати перекличку');
+    const isMemberRequester = group.members.some((m) => m.userId === requesterId) || group.ownerId === requesterId;
+    if (!isMemberRequester) throw new ForbiddenException('Тільки учасники можуть ініціювати перекличку');
 
     const isMember = group.members.find((m) => m.userId === targetUserId);
     if (!isMember) throw new NotFoundException('Користувач не є учасником цього кола');

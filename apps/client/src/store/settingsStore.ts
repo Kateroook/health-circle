@@ -18,7 +18,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      isPushEnabled: false,
+      isPushEnabled: true,
       hasPromptedForNotifications: false,
       setPushEnabled: (enabled) => set({ isPushEnabled: enabled }),
       setHasPromptedForNotifications: (prompted) => set({ hasPromptedForNotifications: prompted }),

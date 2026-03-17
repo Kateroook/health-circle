@@ -431,9 +431,21 @@ describe('GroupService', () => {
       expect(result.message).toContain('розпочато');
     });
 
-    it('should throw Forbidden if not owner', async () => {
+    it('should allow members to initiate', async () => {
+      const mockMemberWithToken = { id: 'user-1', fcmToken: 'token-1' } as UserEntity;
       groupRepository.findOne.mockResolvedValue(mockGroup);
-      await expect(service.initiateRollCall('group-1', 'user-1')).rejects.toThrow(ForbiddenException);
+      usersService.findByIds.mockResolvedValue([mockMemberWithToken]);
+      groupRepository.save.mockResolvedValue(mockGroup);
+
+      const result = await service.initiateRollCall('group-1', 'user-1');
+
+      expect(groupRepository.save).toHaveBeenCalled();
+      expect(result.message).toContain('розпочато');
+    });
+
+    it('should throw Forbidden if not member or owner', async () => {
+      groupRepository.findOne.mockResolvedValue(mockGroup);
+      await expect(service.initiateRollCall('group-1', 'stranger')).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFound if group missing', async () => {

@@ -240,6 +240,13 @@ export class UsersService {
             id: existingUser.id,
           });
           if (updated.email) {
+            await this.notificationSettingsRepository.upsert(
+              {
+                userId: updated.id,
+                prefs: UserNotificationSettingsEntity.DEFAULT_PREFS,
+              },
+              ['userId'],
+            );
             await this.confirmationsService.setupPasswordCode(updated.email, updated.id, ConfirmationTypes.REGISTRATION);
           }
           await this.userActivitiesService.logActivity(UserActivityTypes.createUser, metadata, { userId: updated.id });
@@ -259,7 +266,9 @@ export class UsersService {
     }
 
     if (isNew) {
-      (item as any).notificationSettings = this.notificationSettingsRepository.create();
+      (item as any).notificationSettings = this.notificationSettingsRepository.create({
+        prefs: UserNotificationSettingsEntity.DEFAULT_PREFS,
+      });
     }
 
     const saved = await this.repository.save(item);

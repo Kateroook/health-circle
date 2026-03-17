@@ -27,13 +27,13 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   },
   [NotificationType.ROLL_CALL]: {
     title: 'Перекличка! 📢',
-    body: (data) => `Адміністратор кола "${data.groupName}" просить підтвердити ваш статус безпеки.`,
+    body: (data) => `Учасник кола "${data.groupName}" просить підтвердити ваш статус безпеки.`,
     permissionKey: 'statusUpdateReminders',
     fcmType: 'ROLL_CALL',
   },
   [NotificationType.PERSONAL_ROLL_CALL]: {
     title: 'Особиста перекличка! 📢',
-    body: (data) => `Адміністратор кола "${data.groupName}" просить особисто підтвердити ваш статус.`,
+    body: (data) => `Учасник кола "${data.groupName}" просить особисто підтвердити ваш статус.`,
     permissionKey: 'statusUpdateReminders',
     fcmType: 'PERSONAL_ROLL_CALL',
   },
