@@ -1,0 +1,3 @@
+// | AUTH-E2E-001 | Повний registration flow    | `createUser` → `resendCode` → `setupPassword` → `login` → `getProfile` → порівняти дані           |
+// | AUTH-E2E-002 | Повний forgot-password flow | `login` → `forgotPassword` → отримати код з БД → `resetPassword` → `login` з новим паролем        |
+// | AUTH-E2E-003 | Refresh token flow          | `login` → `refreshToken` → `getProfile` зі старим access token (401) → `getProfile` з новим (200) |
