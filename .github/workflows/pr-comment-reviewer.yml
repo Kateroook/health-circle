@@ -1,0 +1,43 @@
+name: PR Comment Reviewer
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  review:
+    if: |
+      github.event.issue.pull_request != null &&
+      startsWith(github.event.comment.body, '/review')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Get PR Information
+        id: pr_info
+        run: |
+          PR_NUMBER=${{ github.event.issue.number }}
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # We need the scripts from the PR branch if possible, 
+          # but for now we checkout the default branch or the PR head.
+          # Since it's a comment on a PR, we'll checkout the PR head.
+          ref: refs/pull/${{ github.event.issue.number }}/head
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run Review Script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ env.PR_NUMBER }}
+          LLM7_API_KEY: ${{ secrets.LLM7_API_KEY || secrets.DEEPSEEK_API_KEY }} 
+        run: node scripts/review-pr.js
