@@ -26,8 +26,8 @@ jobs:
       - name: Get Commits
         id: get_commits
         run: |
-          COMMITS=$(git log --pretty=format:'{"message": "%s", "author": "%an"}' ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | jq -s '.')
-          echo "COMMITS_JSON=$COMMITS" >> $GITHUB_ENV
+          JSON_COMMITS=$(git log ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} --pretty=format:'%s' | jq -R -s -c 'split("\n") | map(select(length > 0) | {message: .})')
+          echo "COMMITS_JSON=$JSON_COMMITS" >> $GITHUB_ENV
 
       - name: Run Notifier Script
         env:
