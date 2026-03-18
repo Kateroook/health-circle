@@ -16,7 +16,7 @@ import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DashboardHeader } from "../../components/dashboard/DashboardHeader";
 import { GroupFilters } from "../../components/dashboard/GroupFilters";
-import { MainStatusIndicator } from "../../components/dashboard/MainStatusIndicator";
+import { MainStatusButton } from "../../components/dashboard/MainStatusButton";
 import { MemberList } from "../../components/dashboard/MemberList";
 
 // --- DashboardScreen ---
@@ -130,7 +130,7 @@ export default function DashboardScreen() {
           onUpdateLocation={updateCurrentLocation}
         />
 
-        <MainStatusIndicator
+        <MainStatusButton
           currentStatus={user?.status || "UNKNOWN"}
           onUpdateStatus={handleStatusUpdate}
         />

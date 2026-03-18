@@ -1,9 +1,9 @@
 import { UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
+import { theme } from "@/src/theme/theme";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Animated, Pressable, StyleSheet, Vibration, View } from "react-native";
-import { theme } from "../theme/theme";
 
 const VIDEO_SOURCE: Record<UserStatus, any> = {
   SAFE: require("@/src/assets/animations/status-safe.mp4"),
