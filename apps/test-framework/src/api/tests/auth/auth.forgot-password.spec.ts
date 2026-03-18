@@ -1,11 +1,4 @@
-// | ID | Назва | Вхідні дані | Очікуваний результат |
-// |---|---|---|---|
-
-
-
 import { UserFactory } from '../../../core/data/factories/user-factory';
-import { UserEntity } from '../../../core/types/entites/user-interface';
-import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe('api/auth/change-password tests', async () => {
