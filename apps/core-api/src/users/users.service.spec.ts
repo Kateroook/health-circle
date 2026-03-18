@@ -9,10 +9,13 @@ import { UserStatus } from 'src/common/enums/user-status';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ExternalFilesEntity } from 'src/external-files/entities/external-files.entity';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { GroupMemberEntity } from 'src/groups/entities/group-member.entity';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
+import { NotificationType } from 'src/notifications/notification-types';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { UserEntity } from 'src/users/entities/user.entity';
+import { UserNotificationSettingsEntity } from 'src/users/entities/user-notification-settings.entity';
 import { UserPasswordEntity } from 'src/users/entities/user-password.entity';
 import { EntityManager, Repository, UpdateResult } from 'typeorm';
 
@@ -123,6 +126,7 @@ describe('UsersService', () => {
 
   const mockNotificationsService = () => ({
     sendMulticast: jest.fn(),
+    sendMulticastByType: jest.fn(),
   });
 
   const mockFirestoreSyncService = () => ({
@@ -140,10 +144,12 @@ describe('UsersService', () => {
         { provide: getRepositoryToken(UserPasswordEntity), useValue: createRepoMock() },
         { provide: ConfirmationsService, useValue: mockConfirmationsService() },
         { provide: UserActivitiesService, useValue: mockUserActivitiesService() },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: ExternalFilesService, useValue: mockExternalFilesService() },
+        { provide: getRepositoryToken(GroupMemberEntity), useValue: createRepoMock() },
+        { provide: getRepositoryToken(UserNotificationSettingsEntity), useValue: createRepoMock() },
         { provide: NotificationsService, useValue: mockNotificationsService() },
         { provide: FirestoreSyncService, useValue: mockFirestoreSyncService() },
-        { provide: ConfigService, useValue: {} },
         { provide: SessionActivityService, useValue: { trackActivity: jest.fn() } },
       ],
     }).compile();
@@ -169,10 +175,13 @@ describe('UsersService', () => {
       await service.updateStatus('user1', UserStatus.SAFE, ['user2']);
 
       expect(repository.save).toHaveBeenCalled();
-      expect(notificationsService.sendMulticast).toHaveBeenCalledWith(
+      expect(notificationsService.sendMulticastByType).toHaveBeenCalledWith(
         ['token-abc'],
-        expect.any(String),
-        expect.any(String),
+        NotificationType.STATUS_UPDATE,
+        expect.objectContaining({
+          firstName: mockUser.firstName,
+          statusName: 'у безпеці',
+        }),
         expect.objectContaining({
           userId: mockUser.id,
           status: UserStatus.SAFE,
@@ -185,6 +194,36 @@ describe('UsersService', () => {
 
       const res = await service.updateStatus('x', UserStatus.SAFE);
       expect(res).toBeUndefined();
+    });
+
+    it('includes the sender in notifications if DEV_SEND_PUSH_TO_SENDER is enabled', async () => {
+      const sender = { id: 'sender', fcmToken: 'sender-token', status: UserStatus.SAFE, firstName: 'Sender' } as UserEntity;
+      repository.findOne.mockResolvedValue(sender);
+      repository.save.mockResolvedValue(sender);
+
+      const targetMemberIds = ['m1'];
+      const memberRepo = (service as any).memberRepository;
+      memberRepo.find.mockResolvedValue([{ userId: 'm1' }]);
+
+      const configService = (service as any).configService;
+      configService.get.mockImplementation((key: string) => {
+        if (key === 'DEV_SEND_PUSH_TO_SENDER') return true;
+        return false;
+      });
+
+      // Mock getTokensForUsers to return target tokens
+      const getTokensSpy = jest.spyOn(service, 'getTokensForUsers').mockResolvedValue(['m1-token']);
+
+      await service.updateStatus('sender', UserStatus.SAFE, ['m1']);
+
+      expect(notificationsService.sendMulticastByType).toHaveBeenCalledWith(
+        expect.arrayContaining(['m1-token', 'sender-token']),
+        expect.any(String),
+        expect.any(Object),
+        expect.any(Object),
+      );
+
+      getTokensSpy.mockRestore();
     });
   });
 
@@ -389,6 +428,42 @@ describe('UsersService', () => {
       await expect(service.save({ id: 'wrong' } as any, {} as any, false, { id: 'wrong' } as any)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('getTokensForUsers', () => {
+    it('returns tokens for users with enabled notifications', async () => {
+      const users = [
+        { id: 'u1', fcmToken: 't1', notificationSettings: { enabled: true, prefs: { k: true } } },
+        { id: 'u2', fcmToken: 't2', notificationSettings: { enabled: true, prefs: { k: false } } },
+        { id: 'u3', fcmToken: 't3', notificationSettings: { enabled: false } },
+        { id: 'u4', fcmToken: null },
+        { id: 'u5', fcmToken: 't5', notificationSettings: null },
+      ] as any[];
+
+      repository.find.mockResolvedValue(users);
+
+      const tokens = await service.getTokensForUsers(['u1', 'u2', 'u3', 'u4', 'u5'], 'k');
+
+      // u1: has token, enabled, pref k is true -> YES
+      // u2: has token, enabled, pref k is false -> NO
+      // u3: has token, disabled -> NO
+      // u4: no token -> NO
+      // u5: has token, no settings record (defaults to true) -> YES
+      expect(tokens).toEqual(['t1', 't5']);
+    });
+
+    it('returns all tokens if no settingKey provided and enabled', async () => {
+      const users = [
+        { id: 'u1', fcmToken: 't1', notificationSettings: { enabled: true } },
+        { id: 'u2', fcmToken: 't2', notificationSettings: null },
+      ] as any[];
+
+      repository.find.mockResolvedValue(users);
+
+      const tokens = await service.getTokensForUsers(['u1', 'u2']);
+
+      expect(tokens).toEqual(['t1', 't2']);
     });
   });
 

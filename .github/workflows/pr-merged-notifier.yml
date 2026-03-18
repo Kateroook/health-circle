@@ -1,0 +1,43 @@
+name: PR Merged Notifier
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - dev
+      - main
+      - master
+
+jobs:
+  notify:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Get Commits
+        id: get_commits
+        run: |
+          JSON_COMMITS=$(git log ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} --pretty=format:'%s' | jq -R -s -c 'split("\n") | map(select(length > 0) | {message: .})')
+          echo "COMMITS_JSON=$JSON_COMMITS" >> $GITHUB_ENV
+
+      - name: Run Notifier Script
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          LLM7_API_KEY: ${{ secrets.LLM7_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BRANCH_NAME: ${{ github.event.pull_request.base.ref }}
+          COMMITS_JSON: ${{ env.COMMITS_JSON }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/notify-pr-merged.js

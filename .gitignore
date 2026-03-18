@@ -29,6 +29,12 @@ web-build/
 *.expo.ts
 *.expo.js
 
+# Firebase / Mobile Secrets
+google-services.json
+GoogleService-Info.plist
+**/google-services.json
+**/GoogleService-Info.plist
+
 # TypeScript
 *.tsbuildinfo
 *.tscache

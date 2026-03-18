@@ -12,6 +12,7 @@ import {
 
 import { UserStatus } from '../../common/enums/user-status';
 import { ExternalFilesEntity } from '../../external-files/entities/external-files.entity';
+import { UserNotificationSettingsEntity } from './user-notification-settings.entity';
 import { UserSessionEntity } from './user-sessions.entity';
 
 @Entity({ name: 'users' })
@@ -87,6 +88,9 @@ export class UserEntity {
 
   @OneToMany(() => UserSessionEntity, (session) => session.user)
   sessions: UserSessionEntity[];
+
+  @OneToOne(() => UserNotificationSettingsEntity, (settings) => settings.user, { cascade: true })
+  notificationSettings: UserNotificationSettingsEntity;
 
   @Column({ type: 'boolean', default: false })
   isRegistered: boolean;

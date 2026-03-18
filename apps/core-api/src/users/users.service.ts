@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, StreamableFile } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
@@ -10,17 +10,21 @@ import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
+import { NotificationTemplates, NotificationType } from 'src/notifications/notification-types';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { EntityManager, In, QueryRunner, Repository } from 'typeorm';
 
+import { GroupMemberEntity } from '../groups/entities/group-member.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ModifyUserDto } from './dto/modify-user.dto';
 import { UserEntity } from './entities/user.entity';
+import { UserNotificationSettingsEntity } from './entities/user-notification-settings.entity';
 import { UserPasswordEntity } from './entities/user-password.entity';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
   constructor(
     @InjectRepository(UserEntity)
     protected readonly repository: Repository<UserEntity>,
@@ -30,9 +34,65 @@ export class UsersService {
     protected readonly userActivitiesService: UserActivitiesService,
     protected readonly configService: ConfigService,
     protected readonly externalFilesService: ExternalFilesService,
+    @InjectRepository(GroupMemberEntity)
+    protected readonly memberRepository: Repository<GroupMemberEntity>,
+    @InjectRepository(UserNotificationSettingsEntity)
+    protected readonly notificationSettingsRepository: Repository<UserNotificationSettingsEntity>,
     private notificationsService: NotificationsService,
     private firestoreSyncService: FirestoreSyncService,
   ) {}
+
+  async getNotificationSettingsInternal(userId: string): Promise<UserNotificationSettingsEntity> {
+    let settings = await this.notificationSettingsRepository.findOne({ where: { userId } });
+    if (!settings) {
+      settings = this.notificationSettingsRepository.create({
+        userId,
+        prefs: UserNotificationSettingsEntity.DEFAULT_PREFS,
+      });
+      await this.notificationSettingsRepository.save(settings as any);
+    }
+    settings.prefs = { ...UserNotificationSettingsEntity.DEFAULT_PREFS, ...settings.prefs };
+    return settings;
+  }
+
+  async getNotificationSettings(userId: string): Promise<UserNotificationSettingsEntity> {
+    const settings = await this.getNotificationSettingsInternal(userId);
+    return { ...settings, ...settings.prefs } as any;
+  }
+
+  async updateNotificationSettings(userId: string, dto: any): Promise<UserNotificationSettingsEntity> {
+    const settings = await this.getNotificationSettingsInternal(userId);
+    const { enabled, ...prefs } = dto;
+
+    if (enabled !== undefined) {
+      settings.enabled = enabled;
+    }
+
+    settings.prefs = { ...settings.prefs, ...prefs };
+    const saved = await this.notificationSettingsRepository.save(settings as any);
+    return { ...saved, ...saved.prefs };
+  }
+
+  async getTokensForUsers(userIds: string[], settingKey?: string): Promise<string[]> {
+    const users = await this.repository.find({
+      where: { id: In(userIds) },
+      select: ['id', 'fcmToken'],
+      relations: ['notificationSettings'],
+    });
+
+    return users
+      .filter((u) => {
+        if (!u.fcmToken) return false;
+        const settings = u.notificationSettings;
+        if (!settings) return true;
+        if (!settings.enabled) return false;
+        if (settingKey && settings.prefs && settings.prefs[settingKey] === false) {
+          return false;
+        }
+        return true;
+      })
+      .map((u) => u.fcmToken as string);
+  }
 
   async updateStatus(userId: string, status: UserStatus, groupMemberIds?: string[]) {
     const user = await this.repository.findOne({
@@ -44,37 +104,58 @@ export class UsersService {
     user.lastStatusUpdate = new Date();
     await this.repository.save(user);
 
-    // In a truly decoupled system, groupMemberIds would come from an event listener or a dedicated service call
-    if (groupMemberIds && groupMemberIds.length > 0) {
-      const membersWithTokens = await this.repository.find({
-        where: { id: In(groupMemberIds), fcmToken: In([...groupMemberIds]) }, // Simplistic filter for tokens
-        select: ['id', 'fcmToken'],
+    // If groupMemberIds are not provided, find all members from all groups the user belongs to
+    let targetMemberIds = groupMemberIds;
+    if (!targetMemberIds || targetMemberIds.length === 0) {
+      const memberships = await this.memberRepository.find({
+        where: { userId },
+        select: ['groupId'],
       });
+      const groupIds = memberships.map((m) => m.groupId);
 
-      const tokens = membersWithTokens.filter((m) => m.id !== userId && m.fcmToken).map((m) => m.fcmToken as string);
-
-      if (tokens.length > 0) {
-        let title = 'Оновлення статусу';
-        let body = `${user.firstName} оновив статус`;
-
-        if (status === UserStatus.DANGER) {
-          title = '🆘 ПОТРІБНА ДОПОМОГА!';
-          body = `${user.firstName} ${user.lastName} потребує допомоги!`;
-        } else if (status === UserStatus.SAFE) {
-          title = '✅ У безпеці';
-          body = `${user.firstName} ${user.lastName} зараз у безпеці.`;
-        } else if (status === UserStatus.WAS_SAFE) {
-          title = '💡 Був у безпеці';
-          body = `Статус ${user.firstName} ${user.lastName} змінено на "Був у безпеці".`;
-        }
-
-        await this.notificationsService.sendMulticast(tokens, title, body, {
-          userId: user.id,
-          status: status,
+      if (groupIds.length > 0) {
+        const allMemberships = await this.memberRepository.find({
+          where: { groupId: In(groupIds) },
+          select: ['userId'],
         });
+        targetMemberIds = Array.from(new Set(allMemberships.map((m) => m.userId)));
+      }
+    }
+
+    if (targetMemberIds && targetMemberIds.length > 0) {
+      const isUnknown = status === UserStatus.UNKNOWN;
+      const type = isUnknown ? NotificationType.UNKNOWN_STATUS : NotificationType.STATUS_UPDATE;
+      const template = NotificationTemplates[type];
+      const tokens = await this.getTokensForUsers(targetMemberIds, template.permissionKey);
+
+      const devSendToSelf = this.configService.get<boolean>('DEV_SEND_PUSH_TO_SENDER', false);
+      if (devSendToSelf && !tokens.includes(user.fcmToken as string) && user.fcmToken) {
+        this.logger.log(`Dev Mode: Including sender ${userId} in notifications`);
+        tokens.push(user.fcmToken);
       }
 
-      await this.firestoreSyncService.sendSyncSignal([...groupMemberIds, userId]);
+      if (tokens.length > 0) {
+        let statusName = 'невідомий';
+        if (status === UserStatus.SAFE) statusName = 'у безпеці';
+        else if (status === UserStatus.DANGER) statusName = 'у небезпеці';
+        else if (status === UserStatus.WAS_SAFE) statusName = 'був у безпеці';
+
+        await this.notificationsService.sendMulticastByType(
+          tokens,
+          type,
+          {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            statusName,
+          },
+          {
+            userId,
+            status,
+          },
+        );
+      }
+
+      await this.firestoreSyncService.sendSyncSignal(Array.from(new Set([...targetMemberIds, userId])));
     } else {
       await this.firestoreSyncService.sendSyncSignal([userId]);
     }
@@ -159,6 +240,13 @@ export class UsersService {
             id: existingUser.id,
           });
           if (updated.email) {
+            await this.notificationSettingsRepository.upsert(
+              {
+                userId: updated.id,
+                prefs: UserNotificationSettingsEntity.DEFAULT_PREFS,
+              },
+              ['userId'],
+            );
             await this.confirmationsService.setupPasswordCode(updated.email, updated.id, ConfirmationTypes.REGISTRATION);
           }
           await this.userActivitiesService.logActivity(UserActivityTypes.createUser, metadata, { userId: updated.id });
@@ -177,9 +265,17 @@ export class UsersService {
       item.fullName = `${item.firstName} ${item.lastName}`.trim();
     }
 
+    if (isNew) {
+      (item as any).notificationSettings = this.notificationSettingsRepository.create({
+        prefs: UserNotificationSettingsEntity.DEFAULT_PREFS,
+      });
+    }
+
     const saved = await this.repository.save(item);
     const userActivityType = isNew ? UserActivityTypes.createUser : UserActivityTypes.modifyUser;
-    if (isNew) await this.confirmationsService.setupPasswordCode(saved.email, saved.id, ConfirmationTypes.REGISTRATION);
+    if (isNew) {
+      await this.confirmationsService.setupPasswordCode(saved.email, saved.id, ConfirmationTypes.REGISTRATION);
+    }
     await this.userActivitiesService.logActivity(userActivityType, metadata, { userId: saved.id });
     return saved;
   }

@@ -1,18 +1,21 @@
 import { Button } from "@/src/components/Button";
+import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { Alert, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import { Avatar } from "@/src/components/Avatar";
 import { ListItem } from "@/src/components/ListItem";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
+import { useFcmToken } from "../../hooks/useFcmToken";
 import { useAuthStore } from "../../store/authStore";
 import { useLocationStore } from "../../store/locationStore";
+import { useSettingsStore } from "../../store/settingsStore";
 import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
 
@@ -22,6 +25,8 @@ export default function SettingsScreen() {
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
   const updateUser = useAuthStore((s) => s.updateUser);
   const { updateCurrentLocation, loading: locationLoading } = useLocationStore();
+  const { isPushEnabled, setPushEnabled } = useSettingsStore();
+  const { requestPermission } = useFcmToken();
 
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [middleName, setMiddleName] = useState(user?.middleName || "");
@@ -56,6 +61,40 @@ export default function SettingsScreen() {
   const [toggle5, setToggle5] = useState(false);
   const [toggle6, setToggle6] = useState(false);
   const [toggle7, setToggle7] = useState(false);
+  const [isLogoutVisible, setIsLogoutVisible] = useState(false);
+  const [notifSettings, setNotifSettings] = useState<any>(null);
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  useEffect(() => {
+    if (isNotificationsModalVisible) {
+      fetchNotifSettings();
+    }
+  }, [isNotificationsModalVisible]);
+
+  const fetchNotifSettings = async () => {
+    setNotifLoading(true);
+    try {
+      const data = await apiFetch("/users/notifications/settings");
+      setNotifSettings(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+
+  const updateNotifSetting = async (key: string, value: boolean) => {
+    setNotifSettings((prev: any) => (prev ? { ...prev, [key]: value } : prev));
+    try {
+      await apiFetch("/users/notifications/settings", {
+        method: "PUT",
+        body: JSON.stringify({ [key]: value }),
+      });
+    } catch (e) {
+      Alert.alert("Помилка", "Не вдалося зберегти налаштування");
+      fetchNotifSettings();
+    }
+  };
 
   const [securityToggle1, setSecurityToggle1] = useState(false);
   const [securityToggle2, setSecurityToggle2] = useState(false);
@@ -101,12 +140,6 @@ export default function SettingsScreen() {
       } else if (trimmedMiddle.length > 50) {
         errors.push("По-батькові має містити не більше 50 символів");
       }
-    }
-
-    const trimmedFullName = fullName.trim();
-    if (!trimmedFullName) errors.push("Не можна зберегти порожнє повне імʼя");
-    else if (trimmedFullName.length > 255) {
-      errors.push("Повне імʼя має містити не більше 255 символів");
     }
 
     if (!trimmedPhone) {
@@ -267,14 +300,6 @@ export default function SettingsScreen() {
       required: false,
     },
     {
-      label: "Відображаєме імʼя",
-      value: fullName,
-      setter: setFullName,
-      placeholder: "Введіть відображаєме імʼя",
-      maxLength: 255,
-      required: false,
-    },
-    {
       label: "Номер телефону",
       value: phone,
       setter: setPhone,
@@ -335,15 +360,35 @@ export default function SettingsScreen() {
 
               {fields.map((field) => (
                 <View key={field.label} style={styles.block}>
-                  <TextField
-                    label={field.label}
-                    required={field.required}
-                    value={field.value}
-                    onChangeText={field.setter}
-                    placeholder={field.placeholder}
-                    keyboardType={field.keyboardType as any}
-                    maxLength={field.maxLength}
-                  />
+                  {field.label === "Номер телефону" ? (
+                    <View>
+                      <Typography variant="body2" tone="primary" style={{ marginBottom: 4 }}>
+                        {field.label}
+                        {field.required && (
+                          <Typography variant="body2" tone="negative">
+                            {" "}
+                            *
+                          </Typography>
+                        )}
+                      </Typography>
+                      <PhoneInput
+                        value={field.value}
+                        onChangeText={field.setter}
+                        placeholder={field.placeholder}
+                        showClearButton={false}
+                      />
+                    </View>
+                  ) : (
+                    <TextField
+                      label={field.label}
+                      required={field.required}
+                      value={field.value}
+                      onChangeText={field.setter}
+                      placeholder={field.placeholder}
+                      keyboardType={field.keyboardType as any}
+                      maxLength={field.maxLength}
+                    />
+                  )}
                 </View>
               ))}
 
@@ -473,10 +518,24 @@ export default function SettingsScreen() {
               style={{ marginRight: 12 }}
             />
           }
-          onPress={logout}
+          onPress={() => setIsLogoutVisible(true)}
           style={styles.logoutButton}
         />
       </ScrollView>
+
+      <ConfirmationModal
+        isVisible={isLogoutVisible}
+        onCancel={() => setIsLogoutVisible(false)}
+        onConfirm={async () => {
+          setIsLogoutVisible(false);
+          logout();
+        }}
+        title="Вийти"
+        message="Ти впевнений, що хочеш вийти?"
+        confirmText="Вийти"
+        cancelText="Назад"
+        confirmStyle="default"
+      />
 
       {/* Change Password Modal */}
       <Modal
@@ -545,8 +604,42 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Notifications Modal */}
+      <ConfirmationModal
+        isVisible={isDeleteAccountVisible}
+        onCancel={() => setIsDeleteAccountVisible(false)}
+        onConfirm={async () => {
+          setIsDeleteAccountVisible(false);
+          try {
+            await apiFetch("/users", { method: "DELETE" });
+            logout();
+          } catch (e) {
+            Alert.alert("Помилка", "Не вдалося видалити акаунт");
+          }
+        }}
+        title="Видалити акаунт?"
+        message="Після видалення акаунта всі кола та контакти будуть безповоротно видалені"
+        confirmText="Видалити"
+        cancelText="Назад"
+        confirmStyle="default"
+      />
+      <ConfirmationModal
+        isVisible={isDeleteAvatarVisible}
+        onCancel={() => setIsDeleteAvatarVisible(false)}
+        onConfirm={async () => {
+          setIsDeleteAvatarVisible(false);
+          try {
+            await apiFetch(`/users/${user?.id}/avatar`, { method: "DELETE" });
+            updateUser({ avatarUpdatedAt: undefined });
+            setAvatarUrl(null);
+          } catch (e) {
+            Alert.alert("Помилка", "Не вдалося видалити аватар");
+          }
+        }}
+        title="Видалити аватар?"
+        message="Ви впевнені, що хочете видалити фото профілю?"
+        confirmText="Видалити"
+        cancelText="Скасувати"
+      />
       <Modal
         visible={isNotificationsModalVisible}
         animationType="slide"
@@ -581,42 +674,63 @@ export default function SettingsScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={notifStyles.listSection}>
+              <ListItem
+                layout="switch"
+                artworkSize="none"
+                label="Push-сповіщення"
+                subLabel="Дозвіл на надсилання сповіщень"
+                switchValue={notifSettings?.enabled ?? isPushEnabled}
+                showDivider={true}
+                onSwitchChange={async (val) => {
+                  if (val) {
+                    const granted = await requestPermission();
+                    if (!granted) {
+                      Alert.alert(
+                        "Дозвіл не отримано",
+                        "Будь ласка, дозвольте сповіщення у налаштуваннях пристрою.",
+                      );
+                      return;
+                    }
+                  }
+                  setPushEnabled(val);
+                  updateNotifSetting("enabled", val);
+                }}
+              />
               {[
                 {
-                  label: "Отримувати сповіщення, коли у вашому районі повітряна тривога",
-                  value: toggle1,
-                  setter: setToggle1,
+                  label: "Повітряна тривога",
+                  value: notifSettings?.airAlerts ?? true,
+                  key: "airAlerts",
                 },
                 {
-                  label: "Отримувати сповіщення про статус членів Кола",
-                  value: toggle2,
-                  setter: setToggle2,
+                  label: "Оновлення статусів у Колі",
+                  value: notifSettings?.statusUpdates ?? true,
+                  key: "statusUpdates",
                 },
                 {
-                  label:
-                    'Отримувати сповіщення, коли у когось стан залишається "Невідомо" під час тривоги',
-                  value: toggle3,
-                  setter: setToggle3,
+                  label: "Статус «Невідомо» під час тривоги",
+                  value: notifSettings?.unknownStatusAlerts ?? true,
+                  key: "unknownStatusAlerts",
                 },
                 {
-                  label: "Нагадувати оновити статус під час тривоги",
-                  value: toggle4,
-                  setter: setToggle4,
+                  label: "Нагадування про статус",
+                  value: notifSettings?.statusUpdateReminders ?? true,
+                  key: "statusUpdateReminders",
                 },
                 {
-                  label: "Нагадувати позначити настрій",
-                  value: toggle5,
-                  setter: setToggle5,
+                  label: "Нагадування про настрій",
+                  value: notifSettings?.moodReminders ?? true,
+                  key: "moodReminders",
                 },
                 {
-                  label: "Отримувати SMS лише тоді, коли немає інтернету, але є важливе сповіщення",
-                  value: toggle6,
-                  setter: setToggle6,
+                  label: "SMS-сповіщення без інтернету",
+                  value: notifSettings?.smsFallover ?? false,
+                  key: "smsFallover",
                 },
                 {
-                  label: "SMS для статусу безпеки",
-                  value: toggle7,
-                  setter: setToggle7,
+                  label: "SMS про безпеку",
+                  value: notifSettings?.smsSafetyStatus ?? false,
+                  key: "smsSafetyStatus",
                 },
               ].map((item, index, arr) => (
                 <ListItem
@@ -625,7 +739,7 @@ export default function SettingsScreen() {
                   artworkSize="none"
                   label={item.label}
                   switchValue={item.value}
-                  onSwitchChange={item.setter}
+                  onSwitchChange={(val) => updateNotifSetting(item.key, val)}
                   showDivider={index < arr.length - 1}
                 />
               ))}

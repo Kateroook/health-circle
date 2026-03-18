@@ -167,8 +167,8 @@ export default function DashboardScreen() {
       (g) => g.owner?.id === user.id && g.members.some((m) => m.id === selectedMember.id),
     );
     return {
-      canRollCall: !!ownedGroup,
-      rollCallGroupId: ownedGroup?.id || null,
+      canRollCall: !!sharedGroup,
+      rollCallGroupId: sharedGroup?.id || null,
     };
   }, [selectedMember, groups, user]);
 
