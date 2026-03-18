@@ -1,13 +1,16 @@
 import { apiFetch, updateMyStatus } from "@/src/api/api";
 import { initiatePersonalRollCall } from "@/src/api/groups";
-import { STATUS_CONFIG, UserStatus } from "@/src/components/StatusBadge";
+import MemberDetailModal from "@/src/components/MemberDetailModal";
+import { UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { useLocationStore } from "@/src/store/locationStore";
 import { theme } from "@/src/theme/theme";
-import { useAnalytics } from "../../hooks/useAnalytics";
 import { useFocusEffect } from "expo-router";
+import { useAnalytics } from "../../hooks/useAnalytics";
+
+import { Circle, Member } from "@/src/types";
 import React, { useCallback, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -15,8 +18,6 @@ import { DashboardHeader } from "../../components/dashboard/DashboardHeader";
 import { GroupFilters } from "../../components/dashboard/GroupFilters";
 import { MainStatusIndicator } from "../../components/dashboard/MainStatusIndicator";
 import { MemberList } from "../../components/dashboard/MemberList";
-import { MemberProfileModal } from "../../components/dashboard/MemberProfileModal";
-import { Member, Circle } from "@/src/types";
 
 // --- DashboardScreen ---
 export default function DashboardScreen() {
@@ -67,12 +68,7 @@ export default function DashboardScreen() {
 
   const { canRollCall, rollCallGroupId } = useMemo(() => {
     if (!selectedMember || !user) return { canRollCall: false, rollCallGroupId: null };
-    // Find a group where both current user AND selectedMember are members
-    const sharedGroup = groups.find(
-      (g) =>
-        (g.owner?.id === user.id || g.members.some((m) => m.id === user.id)) &&
-        g.members.some((m) => m.id === selectedMember.id),
-    );
+    const sharedGroup = groups.find((g) => g.members.some((m) => m.id === selectedMember.id));
     return {
       canRollCall: !!sharedGroup,
       rollCallGroupId: sharedGroup?.id || null,
@@ -157,7 +153,7 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
-      <MemberProfileModal
+      <MemberDetailModal
         member={selectedMember}
         visible={modalVisible}
         onClose={handleCloseModal}
