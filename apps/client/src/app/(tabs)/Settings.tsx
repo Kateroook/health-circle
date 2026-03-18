@@ -1,6 +1,8 @@
+import { Avatar } from "@/src/components/Avatar";
 import { Button } from "@/src/components/Button";
 import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { PasswordField, TextField } from "@/src/components/fields/TextField";
+import { ListItem } from "@/src/components/ListItem";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -8,10 +10,8 @@ import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { Alert, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import ConfirmationModal from "../../components/ConfirmationModal";
-import { Avatar } from "@/src/components/Avatar";
-import { ListItem } from "@/src/components/ListItem";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
+import ConfirmationModal from "../../components/ConfirmationModal";
 import { useFcmToken } from "../../hooks/useFcmToken";
 import { useAuthStore } from "../../store/authStore";
 import { useLocationStore } from "../../store/locationStore";
@@ -31,11 +31,9 @@ export default function SettingsScreen() {
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [middleName, setMiddleName] = useState(user?.middleName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
-  const [fullName, setFullName] = useState(user?.fullName || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
-  const defaultAvatar = require("../../assets/images/default-avatar.png");
 
   // Change password state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -51,16 +49,8 @@ export default function SettingsScreen() {
 
   // Modal / section states
   const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
-  const [isSecurityModalVisible, setIsSecurityModalVisible] = useState(false);
   const [isSecurityOpen, setIsSecurityOpen] = useState(false);
 
-  const [toggle1, setToggle1] = useState(false);
-  const [toggle2, setToggle2] = useState(false);
-  const [toggle3, setToggle3] = useState(false);
-  const [toggle4, setToggle4] = useState(false);
-  const [toggle5, setToggle5] = useState(false);
-  const [toggle6, setToggle6] = useState(false);
-  const [toggle7, setToggle7] = useState(false);
   const [isLogoutVisible, setIsLogoutVisible] = useState(false);
   const [notifSettings, setNotifSettings] = useState<any>(null);
   const [notifLoading, setNotifLoading] = useState(false);
@@ -96,21 +86,10 @@ export default function SettingsScreen() {
     }
   };
 
-  const [securityToggle1, setSecurityToggle1] = useState(false);
-  const [securityToggle2, setSecurityToggle2] = useState(false);
-  const [securityToggle3, setSecurityToggle3] = useState(false);
-  const [securityToggle4, setSecurityToggle4] = useState(false);
-
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [smsEnabled, setSmsEnabled] = useState(false);
-  const [locationEnabled, setLocationEnabled] = useState(false);
-  const [contactsEnabled, setContactsEnabled] = useState(false);
-
   useEffect(() => {
     setFirstName(user?.firstName || "");
     setMiddleName(user?.middleName || "");
     setLastName(user?.lastName || "");
-    setFullName(user?.fullName || "");
     setPhone(user?.phone || "");
     if (user?.id) setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
   }, [user]);
