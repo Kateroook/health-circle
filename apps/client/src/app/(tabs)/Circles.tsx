@@ -1,4 +1,5 @@
 import { apiFetch } from "@/src/api/api";
+import { initiateRollCall } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
@@ -7,11 +8,12 @@ import { TextField } from "@/src/components/fields/TextField";
 import { MemberAvatar } from "@/src/components/MemberAvatar";
 import MemberDetailModal from "@/src/components/MemberDetailModal";
 import { ModalContainer } from "@/src/components/modal/ModalContainer";
-import { StatusBadge, UserStatus } from "@/src/components/StatusBadge";
-import { Typography } from "@/src/components/typography/Typography";
+import { StatusBadge } from "@/src/components/StatusBadge";
+import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
+import { Circle, Member } from "@/src/types";
 import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -31,29 +33,11 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export interface Member {
-  id: string;
-  firstName: string;
-  lastName: string;
-  avatarUpdatedAt?: string;
-  status: UserStatus;
-  active: boolean;
-}
-
-interface Circle {
-  id: string;
-  name: string;
-  inviteCode: string;
-  owner: { id: string; firstName?: string; lastName?: string };
-  members: Member[];
-}
-
 export default function CirclesScreen() {
   const user = useAuthStore().user;
 
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
-  const [isDetailsVisible, setIsDetailsVisible] = useState(false);
   const [activeCircle, setActiveCircle] = useState<Circle | null>(null);
   const [circles, setCircles] = useState<Circle[]>([]);
   const [showCircleDetail, setShowCircleDetail] = useState(false);
@@ -88,7 +72,12 @@ export default function CirclesScreen() {
   }, []);
 
   useSyncSignal(fetchCircles);
-  useFocusEffect(useCallback(() => {}, []));
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchCircles();
+    }, [fetchCircles]),
+  );
 
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -104,10 +93,6 @@ export default function CirclesScreen() {
         setIsActionsVisible(false);
         return true;
       }
-      if (isDetailsVisible) {
-        setIsDetailsVisible(false);
-        return true;
-      }
       if (showCircleDetail) {
         setShowCircleDetail(false);
         setActiveCircle(null);
@@ -116,13 +101,7 @@ export default function CirclesScreen() {
       return false;
     });
     return () => sub.remove();
-  }, [
-    isAddModalVisible,
-    isActionsVisible,
-    isDetailsVisible,
-    showCircleDetail,
-    isRenameModalVisible,
-  ]);
+  }, [isAddModalVisible, isActionsVisible, showCircleDetail, isRenameModalVisible]);
 
   function openActionsModal(circle: Circle | null) {
     setActiveCircle(circle);
@@ -167,6 +146,18 @@ export default function CirclesScreen() {
       fetchCircles();
     } catch {
       Alert.alert("Помилка", "Не вдалося перейменувати");
+    }
+  };
+
+  const handleRollCall = async () => {
+    if (!activeCircle) return;
+    try {
+      await initiateRollCall(activeCircle.id);
+      Alert.alert("Успіх", "Перекличку розпочато");
+      fetchCircles();
+    } catch (error) {
+      console.error("Failed to initiate roll call:", error);
+      Alert.alert("Помилка", "Не вдалося розпочати перекличку");
     }
   };
 
@@ -286,17 +277,6 @@ export default function CirclesScreen() {
               </Pressable>
             ))}
           </View>
-
-          {!isOwner && (
-            <Button
-              label="Покинути коло"
-              hierarchy="secondary"
-              shape="rectangle"
-              size="medium"
-              onPress={handleLeave}
-              style={styles.leaveButton}
-            />
-          )}
         </ScrollView>
 
         <CircleActionsModal
@@ -345,7 +325,9 @@ export default function CirclesScreen() {
               method: "POST",
             });
             setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+            fetchCircles();
           }}
+          onRollCall={handleRollCall}
         />
 
         <MemberDetailModal
@@ -444,6 +426,7 @@ export default function CirclesScreen() {
           setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
           fetchCircles();
         }}
+        onRollCall={handleRollCall}
       />
     </SafeAreaView>
   );

@@ -2,7 +2,7 @@ import { theme } from "@/src/theme/theme";
 import React from "react";
 import { StyleProp, ViewStyle } from "react-native";
 import { Avatar, AvatarSize } from "./Avatar";
-import { Member } from "./circle/CircleItem";
+import { Member } from "../types";
 
 export const STATUS_COLORS: Record<Member["status"], string> = {
   SAFE: theme.colors.state.safe,

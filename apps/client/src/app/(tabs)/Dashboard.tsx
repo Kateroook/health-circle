@@ -1,10 +1,7 @@
 import { apiFetch, updateMyStatus } from "@/src/api/api";
 import { initiatePersonalRollCall } from "@/src/api/groups";
-import { Avatar } from "@/src/components/Avatar";
-import { Button } from "@/src/components/Button";
-import { ListItem } from "@/src/components/ListItem";
 import MemberDetailModal from "@/src/components/MemberDetailModal";
-import { STATUS_CONFIG, UserStatus } from "@/src/components/StatusBadge";
+import { UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
@@ -13,34 +10,20 @@ import { theme } from "@/src/theme/theme";
 import { useFocusEffect } from "expo-router";
 import { useAnalytics } from "../../hooks/useAnalytics";
 
-import { MainStatusButton } from "@/src/components/MainStatusButton";
+import { Circle, Member } from "@/src/types";
 import React, { useCallback, useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-interface Member {
-  id: string;
-  firstName: string;
-  lastName: string;
-  avatarUpdatedAt?: string;
-  status: UserStatus;
-  active: boolean;
-}
-
-interface Group {
-  id: string;
-  name: string;
-  owner?: { id: string };
-  members: Member[];
-}
-
-const PRIMARY_COLOR = theme.colors.accent;
+import { DashboardHeader } from "../../components/dashboard/DashboardHeader";
+import { GroupFilters } from "../../components/dashboard/GroupFilters";
+import { MainStatusButton } from "../../components/dashboard/MainStatusButton";
+import { MemberList } from "../../components/dashboard/MemberList";
 
 // --- DashboardScreen ---
 export default function DashboardScreen() {
   const { logEvent } = useAnalytics();
   const user = useAuthStore((s) => s.user);
-  const [groups, setGroups] = useState<Group[]>([]);
+  const [groups, setGroups] = useState<Circle[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -137,30 +120,16 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Typography variant="h2" tone="primary" style={styles.greeting} numberOfLines={1}>
-          Привіт, {user?.firstName || "Користувач"}!
-        </Typography>
+        <DashboardHeader
+          firstName={user?.firstName}
+          coords={coords}
+          region={region}
+          district={district}
+          locationError={locationError}
+          locationLoading={locationLoading}
+          onUpdateLocation={updateCurrentLocation}
+        />
 
-        {coords ? (
-          <View style={styles.locationInfo}>
-            <Typography variant="caption" tone="secondary">
-              Локація: {coords.latitude.toFixed(4)}, {coords.longitude.toFixed(4)}
-              {region ? ` (${region}${district ? `, ${district}` : ""})` : ""}
-            </Typography>
-          </View>
-        ) : locationError ? (
-          <Pressable onPress={updateCurrentLocation} style={styles.locationInfo}>
-            <Typography variant="caption" style={{ color: theme.colors.state.emergency }}>
-              Помилка геолокації. Натисніть для повтору.
-            </Typography>
-          </Pressable>
-        ) : locationLoading ? (
-          <View style={styles.locationInfo}>
-            <Typography variant="caption" tone="secondary">
-              Визначаємо місцезнаходження...
-            </Typography>
-          </View>
-        ) : null}
         <MainStatusButton
           currentStatus={user?.status || "UNKNOWN"}
           onUpdateStatus={handleStatusUpdate}
@@ -170,58 +139,17 @@ export default function DashboardScreen() {
             СТАТУС КОЛА
           </Typography>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.statusFilters}
-            contentContainerStyle={{ paddingRight: 16 }}
-          >
-            <Button
-              label="Усі"
-              hierarchy={selectedGroupId === "ALL" ? "primary" : "secondary"}
-              shape="pill"
-              size="small"
-              onPress={() => setSelectedGroupId("ALL")}
-              style={{ marginRight: theme.spacing[8] }}
-            />
+          <GroupFilters
+            groups={groups}
+            selectedGroupId={selectedGroupId}
+            onSelectGroup={setSelectedGroupId}
+          />
 
-            {groups.map((group) => (
-              <Button
-                key={group.id}
-                label={group.name}
-                hierarchy={selectedGroupId === group.id ? "primary" : "secondary"}
-                shape="pill"
-                size="small"
-                onPress={() => setSelectedGroupId(group.id)}
-                style={{ marginRight: theme.spacing[8] }}
-              />
-            ))}
-          </ScrollView>
-
-          <View style={styles.contactList}>
-            {displayedMembers.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Typography variant="body2" tone="secondary" style={styles.emptyStateText}>
-                  {groups.length === 0 ? "У вас ще немає кіл" : "Немає контактів у цьому колі"}
-                </Typography>
-              </View>
-            ) : (
-              displayedMembers.map((member) => (
-                <ListItem
-                  key={member.id}
-                  layout="stateBadge"
-                  artworkSize="small"
-                  label={`${member.firstName} ${member.lastName}`}
-                  subLabel={STATUS_CONFIG[member.status]?.label ?? "Невідомо"}
-                  status={member.status}
-                  onPress={() => handleMemberPress(member)}
-                  renderAvatar={() => (
-                    <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="sm" />
-                  )}
-                />
-              ))
-            )}
-          </View>
+          <MemberList
+            members={displayedMembers}
+            hasGroups={groups.length > 0}
+            onMemberPress={handleMemberPress}
+          />
         </View>
       </ScrollView>
 
@@ -236,53 +164,6 @@ export default function DashboardScreen() {
   );
 }
 
-// --- Stylesheets ---
-const modalStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: theme.colors.background.overlay,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: theme.spacing[16],
-  },
-  card: {
-    width: "100%",
-    backgroundColor: theme.colors.background.secondary,
-    borderRadius: theme.radius.xl,
-    paddingTop: theme.spacing[16],
-    paddingBottom: theme.spacing[24],
-    paddingHorizontal: theme.spacing[16],
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  name: {
-    marginTop: theme.spacing[8],
-    marginBottom: theme.spacing[16],
-  },
-  buttonsColumn: {
-    width: "100%",
-    marginTop: theme.spacing[32],
-    gap: theme.spacing[8],
-  },
-  actionButton: {
-    width: "100%",
-    paddingVertical: 14,
-    borderRadius: 50,
-    backgroundColor: theme.colors.background.tertiary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionButtonText: {
-    color: theme.colors.content.primary,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-});
-
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -292,64 +173,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing[16],
     paddingBottom: 140,
   },
-  greeting: {
-    marginTop: theme.spacing[24],
-    marginBottom: theme.spacing[8],
-  },
-  locationInfo: {
-    marginBottom: theme.spacing[24],
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  mainStatusContainer: {
-    alignItems: "center",
-    marginTop: theme.spacing[32],
-    marginBottom: theme.spacing[40],
-  },
-  mainStatusGlowBackground: {
-    width: 200,
-    height: 200,
-    borderRadius: theme.radius.circle,
-    backgroundColor: PRIMARY_COLOR,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: PRIMARY_COLOR,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 50,
-    elevation: 10,
-  },
-  mainStatusText: {
-    textAlign: "center",
-  },
-  mainStatusHelperText: {
-    marginTop: theme.spacing[20],
-    textAlign: "center",
-  },
   statusCircleSection: {
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.radius.xl,
     padding: theme.spacing[16],
   },
-  statusFilters: {
-    flexDirection: "row",
-    gap: theme.spacing[8],
-  },
   sectionHeader: {
     marginBottom: theme.spacing[16],
     letterSpacing: 0.5,
-  },
-  contactList: {
-    backgroundColor: theme.colors.background.secondary,
-    minHeight: 50,
-    marginTop: theme.spacing[8],
-  },
-  emptyState: {
-    padding: theme.spacing[20],
-    alignItems: "center",
-  },
-  emptyStateText: {
-    color: theme.colors.content.secondary,
-    fontStyle: "italic",
   },
 });

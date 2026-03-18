@@ -1,6 +1,6 @@
 import { getAvatarUrl } from "@/src/api/api";
 import { theme } from "@/src/theme/theme";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Image, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 
 export type AvatarSize = "sm" | "md" | "lg" | "xl";
@@ -37,7 +37,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   style,
 }) => {
   const [imageError, setImageError] = useState(false);
-  const avatarUrl = getAvatarUrl(userId, avatarUpdatedAt);
+  const avatarUrl = useMemo(() => getAvatarUrl(userId, avatarUpdatedAt), [userId, avatarUpdatedAt]);
   const { outer, inner } = SIZE_MAP[size];
 
   const image = (

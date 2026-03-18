@@ -131,7 +131,6 @@ export function getAvatarUrl(userId: string, timestamp?: string | number | Date)
   if (timestamp) {
     url += `?t=${new Date(timestamp).getTime()}`;
   }
-  if (__DEV__) console.log(`[getAvatarUrl] → ${url}`);
   return url;
 }
 

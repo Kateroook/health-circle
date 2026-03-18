@@ -5,8 +5,10 @@ import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Typography } from "./typography/Typography";
 
+import { UserStatus } from "../types";
+export { UserStatus };
+
 export type StatusBadgeVariant = "round" | "pill";
-export type UserStatus = "SAFE" | "DANGER" | "UNKNOWN" | "WAS_SAFE";
 type IconConfig =
   | { iconLib: "fa6"; mcIcon: keyof typeof FontAwesome6.glyphMap }
   | { iconLib: "mci"; mcIcon: keyof typeof MaterialCommunityIcons.glyphMap };

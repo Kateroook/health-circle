@@ -1,22 +1,10 @@
-import { COLORS } from "@/src/theme/colors";
 import { theme } from "@/src/theme/theme";
+import { Member } from "@/src/types";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { MemberAvatar } from "../MemberAvatar";
 import { Typography } from "../typography";
-
-export interface Member {
-  id: string;
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  fullName?: string;
-  isAlias?: boolean;
-  avatarUpdatedAt?: string;
-  status: "SAFE" | "DANGER" | "UNKNOWN" | "WAS_SAFE";
-  active?: boolean;
-}
 
 interface CircleItemProps {
   title: string;
@@ -46,7 +34,11 @@ const CircleItem: React.FC<CircleItemProps> = ({
           onPress={onMenuPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <MaterialCommunityIcons name="dots-horizontal" size={24} color={COLORS.TEXT_GRAY} />
+          <MaterialCommunityIcons
+            name="dots-horizontal"
+            size={24}
+            color={theme.colors.content.tertiary}
+          />
         </TouchableOpacity>
       </View>
 
