@@ -3,7 +3,7 @@ import { UserEntity } from '../../../core/types/entites/user-interface';
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
-test.describe.only('api/auth/reset-password tests', async () => {
+test.describe('api/auth/reset-password tests', async () => {
     let user: UserEntity;
     let confirmationCode: ConfirmationCodeDbEntity;
     test.beforeEach(async ({api, spawnUser, confirmationCodeRepository}) => {
