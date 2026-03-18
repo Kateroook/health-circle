@@ -1,7 +1,7 @@
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
-test.describe.only('api/groups/creation tests', async () => {
+test.describe('api/groups/creation tests', async () => {
   let user: any;
 
   test.beforeEach('Authenticate user', async ({ api, spawnUser }) => {
