@@ -1,18 +1,20 @@
 import { apiFetch } from "@/src/api/api";
 import { Button } from "@/src/components/Button";
+import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
-import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
-import MemberDetailModal from "@/src/components/MemberDetailModal";
+import { TextField } from "@/src/components/fields/TextField";
 import { MemberAvatar } from "@/src/components/MemberAvatar";
+import MemberDetailModal from "@/src/components/MemberDetailModal";
+import { ModalContainer } from "@/src/components/modal/ModalContainer";
 import { StatusBadge, UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography/Typography";
-import { TextField } from "@/src/components/fields/TextField";
-import { ModalContainer } from "@/src/components/modal/ModalContainer";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
+import { useAuthStore } from "@/src/store/authStore";
+import { theme } from "@/src/theme/theme";
 import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   BackHandler,
@@ -24,8 +26,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuthStore } from "@/src/store/authStore";
-import { theme } from "@/src/theme/theme";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -168,26 +168,6 @@ export default function CirclesScreen() {
     } catch {
       Alert.alert("Помилка", "Не вдалося перейменувати");
     }
-  };
-
-  const handleDelete = () => {
-    Alert.alert("Видалити коло?", "Дію не можна скасувати", [
-      { text: "Скасувати", style: "cancel" },
-      {
-        text: "Видалити",
-        style: "destructive",
-        onPress: async () => {
-          if (!activeCircle) return;
-          try {
-            await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
-            setShowCircleDetail(false);
-            fetchCircles();
-          } catch {
-            Alert.alert("Помилка", "Не вдалося видалити");
-          }
-        },
-      },
-    ]);
   };
 
   // ─── Detail view ────────────────────────────────
