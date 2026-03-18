@@ -277,17 +277,6 @@ export default function CirclesScreen() {
               </Pressable>
             ))}
           </View>
-
-          {!isOwner && (
-            <Button
-              label="Покинути коло"
-              hierarchy="secondary"
-              shape="rectangle"
-              size="medium"
-              onPress={handleLeave}
-              style={styles.leaveButton}
-            />
-          )}
         </ScrollView>
 
         <CircleActionsModal

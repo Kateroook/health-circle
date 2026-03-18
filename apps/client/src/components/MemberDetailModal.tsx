@@ -56,14 +56,6 @@ export default function MemberDetailModal({
           <StatusBadge status={member.status} variant="pill" />
 
           <View style={styles.buttonsColumn}>
-            <Button
-              label="Написати"
-              hierarchy="secondary"
-              shape="rectangle"
-              size="medium"
-              onPress={() => console.log("Написати", member.id)}
-            />
-
             {canRollCall && onRollCall && (
               <Button
                 label="Перекличка"
@@ -73,6 +65,14 @@ export default function MemberDetailModal({
                 onPress={onRollCall}
               />
             )}
+
+            <Button
+              label="Написати"
+              hierarchy="secondary"
+              shape="rectangle"
+              size="medium"
+              onPress={() => console.log("Написати", member.id)}
+            />
           </View>
         </>
       )}

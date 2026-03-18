@@ -1,20 +1,17 @@
 import { Button } from "@/src/components/Button";
 import { ListItem } from "@/src/components/ListItem";
-import { ModalActions, ModalContent, ModalHeader } from "@/src/components/modal";
-import { ModalContainer } from "@/src/components/modal/ModalContainer";
+import { Typography } from "@/src/components/typography";
 import { useAnalytics } from "@/src/hooks/useAnalytics";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
+import { Member } from "@/src/types";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Typography } from "@/src/components/typography";
 import ConfirmationModal from "../../ConfirmationModal";
-import { TextField } from "../../fields/TextField";
 import { BottomSheetContainer } from "../../modal/BottomSheetContainer";
 import { RenameModal } from "./RenameModal";
-import { Member } from "@/src/types";
 
 interface Props {
   visible: boolean;
@@ -226,6 +223,16 @@ export default function CircleActionsModal({
           )}
 
           <View style={styles.actionButtons}>
+            <Button
+              label="Перекличка"
+              hierarchy="accent"
+              shape="rectangle"
+              size="medium"
+              leadingIcon={<Feather name="rss" size={16} color="#FFF" />}
+              onPress={onRollCall}
+              style={{ width: "100%", marginBottom: theme.spacing[8] }}
+            />
+
             {isOwner ? (
               <>
                 <Button
@@ -253,15 +260,6 @@ export default function CircleActionsModal({
                   style={{ width: "100%" }}
                   textStyle={{ color: theme.colors.negative }}
                 />
-                <Button
-                  label="Перекличка"
-                  hierarchy="accent"
-                  shape="rectangle"
-                  size="medium"
-                  leadingIcon={<Feather name="rss" size={16} color="#FFF" />}
-                  onPress={onRollCall}
-                  style={{ width: "100%", marginTop: theme.spacing[8] }}
-                />
               </>
             ) : (
               <>
@@ -273,15 +271,6 @@ export default function CircleActionsModal({
                   onPress={() => setIsLeaveVisible(true)}
                   style={{ width: "100%" }}
                   textStyle={{ color: theme.colors.negative }}
-                />
-                <Button
-                  label="Перекличка"
-                  hierarchy="accent"
-                  shape="rectangle"
-                  size="medium"
-                  leadingIcon={<Feather name="rss" size={16} color="#FFF" />}
-                  onPress={onRollCall}
-                  style={{ width: "100%", marginTop: theme.spacing[8] }}
                 />
               </>
             )}
