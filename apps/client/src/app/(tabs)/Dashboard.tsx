@@ -10,11 +10,13 @@ import { useAuthStore } from "@/src/store/authStore";
 import { useLocationStore } from "@/src/store/locationStore";
 import { theme } from "@/src/theme/theme";
 import AntDesign from "@expo/vector-icons/build/AntDesign";
-import { useAnalytics } from "../../hooks/useAnalytics";
 import { useFocusEffect } from "expo-router";
+
+import { MainStatusButton } from "@/src/components/MainStatusButton";
 import React, { useCallback, useMemo, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Vibration, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAnalytics } from "../../hooks/useAnalytics";
 
 interface Member {
   id: string;
@@ -33,85 +35,6 @@ interface Group {
 }
 
 const PRIMARY_COLOR = theme.colors.accent;
-
-// --- MainStatusIndicator ---
-const MainStatusIndicator = ({
-  currentStatus,
-  onUpdateStatus,
-}: {
-  currentStatus: UserStatus;
-  onUpdateStatus: (s: UserStatus) => void;
-}) => {
-  const [isPressed, setIsPressed] = useState(false);
-
-  const getBackgroundColor = () => {
-    switch (currentStatus) {
-      case "SAFE":
-        return theme.colors.state.safe;
-      case "DANGER":
-        return theme.colors.state.emergency;
-      case "WAS_SAFE":
-        return theme.colors.state.safe; // Or a variation if we have a specific color for WAS_SAFE
-      default:
-        return PRIMARY_COLOR;
-    }
-  };
-
-  const handleShortPress = () => {
-    Vibration.vibrate(50);
-    Alert.alert("Оновити статус?", "Ви повідомите іншим, що ви в безпеці.", [
-      { text: "Скасувати", style: "cancel" },
-      { text: "Так, я в безпеці", onPress: () => onUpdateStatus("SAFE") },
-    ]);
-  };
-
-  const handleLongPress = () => {
-    Vibration.vibrate([0, 100, 50, 100]);
-    Alert.alert(
-      "🆘 ПОТРІБНА ДОПОМОГА",
-      "Ви збираєтесь відправити сигнал тривоги всім учасникам ваших кіл. Продовжити?",
-      [
-        { text: "Скасувати", style: "cancel" },
-        {
-          text: "ТАК, ПОТРІБНА ДОПОМОГА",
-          style: "destructive",
-          onPress: () => onUpdateStatus("DANGER"),
-        },
-      ],
-    );
-  };
-
-  return (
-    <View style={styles.mainStatusContainer}>
-      <Pressable
-        onPressIn={() => setIsPressed(true)}
-        onPressOut={() => setIsPressed(false)}
-        onPress={handleShortPress}
-        onLongPress={handleLongPress}
-        delayLongPress={800}
-        style={({ pressed }) => [
-          styles.mainStatusGlowBackground,
-          { backgroundColor: getBackgroundColor() },
-          pressed && { transform: [{ scale: 0.96 }] },
-        ]}
-      >
-        <Typography variant="h2" tone="onColor" style={styles.mainStatusText}>
-          {currentStatus === "SAFE"
-            ? "В безпеці"
-            : currentStatus === "DANGER"
-              ? "Потрібна допомога!"
-              : currentStatus === "WAS_SAFE"
-                ? "Був у безпеці"
-                : "Невідомо"}
-        </Typography>
-      </Pressable>
-      <Typography variant="caption" tone="secondary" style={styles.mainStatusHelperText}>
-        Натисніть — якщо в безпеці{"\n"}
-        Затисніть — якщо потрібна допомога
-      </Typography>
-    </View>
-  );
-};
 
 // --- MemberProfileModal ---
 const MemberProfileModal = ({
@@ -308,8 +231,7 @@ export default function DashboardScreen() {
             </Typography>
           </View>
         ) : null}
-
-        <MainStatusIndicator
+        <MainStatusButton
           currentStatus={user?.status || "UNKNOWN"}
           onUpdateStatus={handleStatusUpdate}
         />
