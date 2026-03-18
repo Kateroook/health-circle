@@ -12,4 +12,16 @@ export class ConfirmationCodeRepository extends BaseRepository<ConfirmationCodeD
       dbCleaner: dbCleaner,
     });
   }
+
+  async getAllUserCodes(userId: string) : Promise<ConfirmationCodeDbEntity[]> {
+    return await this.findBy({userId: userId});
+  }
+
+  async getLastUserCode(userId: string) : Promise<ConfirmationCodeDbEntity> {
+    return (await this.getAllUserCodes(userId))[0];
+  }
+
+  async getUserCodeCount(userId: string) : Promise<number> {
+    return (await this.getAllUserCodes(userId)).length;
+  }
 }

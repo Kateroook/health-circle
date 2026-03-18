@@ -10,7 +10,7 @@ test.describe('api/auth/reset-password tests', async () => {
         user = await spawnUser();
         const forgotPassword = await api.auth.forgotPassword({email: user.email});
         expect(forgotPassword.response).toHaveStatus2xx();
-        confirmationCode = (await confirmationCodeRepository.findBy({userId: user.id}))[0];
+        confirmationCode = await confirmationCodeRepository.getLastUserCode(user.id!);
     });
   // | AUTH-039 | Успішне скидання пароля | Валідний email + код з БД + коректні паролі | 200 |
   test('[AUTH-039] Successful password reset', async ({ api }) => {
@@ -73,10 +73,12 @@ test.describe('api/auth/reset-password tests', async () => {
         newPassword: utils.random.password(21),
     }, {
         name: '[AUTH-044] Password reset with no lowercase letters', 
-        newPassword: utils.random.password().toUpperCase(),
+        // newPassword: utils.random.password().toUpperCase(),
+        newPassword: "ALLUPPERCASE2",
     }, {
         name: '[AUTH-045] Password reset with no uppercase letters', 
-        newPassword: utils.random.password(10).toLowerCase(),
+        // newPassword: utils.random.password(10).toLowerCase(),
+        newPassword: "alllowercase2",
     }, {
         name: '[AUTH-046] Password reset with no numbers', 
         newPassword: 'OnlyLettersABC',

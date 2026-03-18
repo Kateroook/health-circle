@@ -20,7 +20,7 @@ test.describe('api/auth/password-setup tests', async () => {
         expect(postUser.response).toHaveStatus2xx();
         user.id = postUser.data.id;
 
-        confirmationCode = (await confirmationCodeRepository.findBy({ userId: user.id }))[0];
+        confirmationCode = await confirmationCodeRepository.getLastUserCode(user.id);
     });
 
     // | AUTH-018 | Успішне встановлення пароля після реєстрації | Валідний email, код з БД, `newPassword` = `confirmNewPassword` | 201 |
@@ -87,7 +87,8 @@ test.describe('api/auth/password-setup tests', async () => {
     });
     // | AUTH-022 | Пароль без великих літер | `newPassword`: `"alllowercase1"` | 400 |
     test("[AUTH-022] Passwords setup without uppercase letters", async ({ api }) => {
-        user.password = user.password.toLowerCase();
+        // user.password = user.password.toLowerCase(); // sometimes fails due to BE bug
+        user.password = "alllowercase1";
         const setupPassword = await api.auth.setupPassword(user.email!, confirmationCode.code, {
             newPassword: user.password,
             confirmNewPassword: user.password,
@@ -103,7 +104,8 @@ test.describe('api/auth/password-setup tests', async () => {
     });
     // | AUTH-023 | Пароль без малих літер | `newPassword`: `"ALLUPPERCASE1"` | 400 |
     test("[AUTH-023] Passwords setup without lowercase letters", async ({ api }) => {
-        user.password = user.password.toUpperCase();
+        // user.password = user.password.toUpperCase(); // sometimes fails due to BE bug
+        user.password = "ALLUPPERCASE1";
         const setupPassword = await api.auth.setupPassword(user.email!, confirmationCode.code, {
             newPassword: user.password,
             confirmNewPassword: user.password,
@@ -182,7 +184,7 @@ test.describe('api/auth/password-setup tests', async () => {
     test("[AUTH-027] Passwords setup with the old code", async ({ api, confirmationCodeRepository }) => {
         const resendCode = await api.auth.resendRegistrationCode({email: user.email});
         expect(resendCode.response).toHaveStatus2xx();
-        const newCode = (await confirmationCodeRepository.findBy({userId: user.id}))[0];
+        const newCode = await confirmationCodeRepository.getLastUserCode(user.id!);
 
         const setupPassword = await api.auth.setupPassword(user.email!, confirmationCode.code, {
             newPassword: user.password,

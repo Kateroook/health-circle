@@ -27,7 +27,7 @@ test.describe('api/auth/refresh tests', async () => {
         });
         expect(resendCode.response).toHaveStatus2xx();
 
-        const code = (await confirmationCodeRepository.findBy({userId: user.id}))[0].code;
+        const code = (await confirmationCodeRepository.getLastUserCode(user.id)).code;
 
         const setupPassword = await api.auth.setupPassword(
             user.email,

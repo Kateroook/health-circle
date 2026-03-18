@@ -66,7 +66,7 @@ test.describe('New user example tests', async () => {
     expect(postUser.response).toHaveStatus2xx();
     newUser.id = postUser.data.id;
 
-    const code = (await confirmationCodeRepository.findBy({ userId: newUser.id }))[0];
+    const code = await confirmationCodeRepository.getLastUserCode(newUser.id);
 
     await api.auth.setupPassword(newUser.email!, code.code, {
       newPassword: newUser.password,
@@ -104,7 +104,7 @@ test.describe('New user example tests', async () => {
     user.id = postUser.data.id;
 
     expect(postUser.response).toHaveStatus2xx();
-    const code = (await confirmationCodeRepository.findBy({userId: user.id}))[0];
+    const code = await confirmationCodeRepository.getLastUserCode(user.id);
     const setupPassword = await api.auth.setupPassword(
       user.email,
       code.code,

@@ -13,7 +13,7 @@ test.describe('api/auth/refresh tests', async () => {
         expect(postUser.response).toHaveStatus2xx();
         user.id = postUser.data.id;
 
-        const oldCode = (await confirmationCodeRepository.findBy({userId: user.id}))[0].code;
+        const oldCode = (await confirmationCodeRepository.getLastUserCode(user.id)).code;
 
         const resendCode = await api.auth.resendRegistrationCode({
             email: user.email,
@@ -21,7 +21,7 @@ test.describe('api/auth/refresh tests', async () => {
 
         expect(resendCode.response).toHaveStatus2xx();
 
-        const newCode = (await confirmationCodeRepository.findBy({userId: user.id}))[0].code;
+        const newCode = (await confirmationCodeRepository.getLastUserCode(user.id)).code;
 
         expect(oldCode).not.toEqual(newCode);
     });

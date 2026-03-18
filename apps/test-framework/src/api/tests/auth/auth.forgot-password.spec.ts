@@ -5,14 +5,14 @@ test.describe('api/auth/change-password tests', async () => {
   // | AUTH-035 | Запит на скидання для існуючого email | Зареєстрований email | 200 |
   test('[AUTH-035] Forgot password request for existing email', async ({ api, spawnUser, confirmationCodeRepository }) => {
     const user = await spawnUser();
-    const codeCountBefore = (await confirmationCodeRepository.findBy({userId: user.id})).length;
+    const codeCountBefore = await confirmationCodeRepository.getUserCodeCount(user.id!);
     const forgotPassword = await api.auth.forgotPassword({
         email: user.email,
     });
     
     expect(forgotPassword.response).toHaveStatus2xx();
 
-    const codeCountAfter = (await confirmationCodeRepository.findBy({userId: user.id})).length;
+    const codeCountAfter = await confirmationCodeRepository.getUserCodeCount(user.id!);
     expect(codeCountAfter - codeCountBefore).toEqual(1);
   });
   // | AUTH-036 | Запит на скидання для незареєстрованого email | Випадковий email | 400 |
