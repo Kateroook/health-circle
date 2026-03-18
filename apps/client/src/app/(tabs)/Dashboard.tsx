@@ -3,20 +3,20 @@ import { initiatePersonalRollCall } from "@/src/api/groups";
 import { Avatar } from "@/src/components/Avatar";
 import { Button } from "@/src/components/Button";
 import { ListItem } from "@/src/components/ListItem";
-import { STATUS_CONFIG, StatusBadge, UserStatus } from "@/src/components/StatusBadge";
+import MemberDetailModal from "@/src/components/MemberDetailModal";
+import { STATUS_CONFIG, UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { useLocationStore } from "@/src/store/locationStore";
 import { theme } from "@/src/theme/theme";
-import AntDesign from "@expo/vector-icons/build/AntDesign";
 import { useFocusEffect } from "expo-router";
+import { useAnalytics } from "../../hooks/useAnalytics";
 
 import { MainStatusButton } from "@/src/components/MainStatusButton";
 import React, { useCallback, useMemo, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAnalytics } from "../../hooks/useAnalytics";
 
 interface Member {
   id: string;
@@ -35,71 +35,6 @@ interface Group {
 }
 
 const PRIMARY_COLOR = theme.colors.accent;
-
-// --- MemberProfileModal ---
-const MemberProfileModal = ({
-  member,
-  visible,
-  onClose,
-  onRollCall,
-  canRollCall,
-}: {
-  member: Member | null;
-  visible: boolean;
-  onClose: () => void;
-  onRollCall: () => void;
-  canRollCall: boolean;
-}) => {
-  if (!member) return null;
-
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={modalStyles.overlay} onPress={onClose}>
-        <Pressable style={modalStyles.card} onPress={(e) => e.stopPropagation()}>
-          {/* Close button */}
-          <Button
-            shape="round"
-            hierarchy="tertiary"
-            size="medium"
-            leadingIcon={<AntDesign name="close" size={16} color={theme.colors.content.primary} />}
-            onPress={onClose}
-            style={{ alignSelf: "flex-start" }}
-          />
-          {/* Avatar */}
-          <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="xl" />
-
-          {/* Name */}
-          <Typography variant="h2" tone="primary" style={modalStyles.name}>
-            {member.firstName} {member.lastName}
-          </Typography>
-
-          {/* Status row */}
-          <StatusBadge variant="pill" status={member.status} />
-
-          {/* Buttons — one under another */}
-          <View style={modalStyles.buttonsColumn}>
-            <Button
-              label="Написати"
-              hierarchy="secondary"
-              shape="rectangle"
-              size="medium"
-              onPress={() => {}}
-            />
-            {canRollCall && (
-              <Button
-                label="Перекличка"
-                hierarchy="secondary"
-                shape="rectangle"
-                size="medium"
-                onPress={onRollCall}
-              />
-            )}
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-};
 
 // --- DashboardScreen ---
 export default function DashboardScreen() {
@@ -150,12 +85,7 @@ export default function DashboardScreen() {
 
   const { canRollCall, rollCallGroupId } = useMemo(() => {
     if (!selectedMember || !user) return { canRollCall: false, rollCallGroupId: null };
-    // Find a group where both current user AND selectedMember are members
-    const sharedGroup = groups.find(
-      (g) =>
-        (g.owner?.id === user.id || g.members.some((m) => m.id === user.id)) &&
-        g.members.some((m) => m.id === selectedMember.id),
-    );
+    const sharedGroup = groups.find((g) => g.members.some((m) => m.id === selectedMember.id));
     return {
       canRollCall: !!sharedGroup,
       rollCallGroupId: sharedGroup?.id || null,
@@ -295,7 +225,7 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
-      <MemberProfileModal
+      <MemberDetailModal
         member={selectedMember}
         visible={modalVisible}
         onClose={handleCloseModal}
