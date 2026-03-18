@@ -13,7 +13,7 @@ test.describe('api/groups/creation tests', async () => {
     });
   });
 
-  test('[GROUPS-001] Valid groups creation', async ({ api, groupRepository }) => {
+  test('[GRP-001] Valid groups creation', async ({ api, groupRepository }) => {
     const validGoupName = utils.random.groupName();
 
     const createGroupResult = await api.groups.createGroup({
@@ -31,7 +31,7 @@ test.describe('api/groups/creation tests', async () => {
     expect(dbData!.inviteCode).not.toBeNull();
   });
 
-  test('[GROUPS-002] Group name less then 3', async ({ api, groupRepository }) => {
+  test('[GRP-002] Group name less then 3', async ({ api, groupRepository }) => {
     const validGroupName = 'AB';
 
     const createGroupResult = await api.groups.createGroup({
@@ -42,7 +42,7 @@ test.describe('api/groups/creation tests', async () => {
     expect(createGroupResult.data).toBeNull();
   });
 
-  test('[GROUPS-003] Group name more then 100', async ({ api }) => {
+  test('[GRP-003] Group name more then 100', async ({ api }) => {
     const invalidGroupName = utils.random.shortId(101);
 
     const createGroupResult = await api.groups.createGroup({
@@ -53,7 +53,7 @@ test.describe('api/groups/creation tests', async () => {
     expect(createGroupResult.data).toBeNull();
   });
 
-  test('[GROUPS-004] Group with empty name', async ({ api }) => {
+  test('[GRP-004] Group with empty name', async ({ api }) => {
     const emptyGroupName = '';
 
     const createGroupResult = await api.groups.createGroup({
@@ -64,7 +64,7 @@ test.describe('api/groups/creation tests', async () => {
     expect(createGroupResult.data).toBeNull();
   });
 
-  test.fixme('[GROUPS-004-BUG] Group name with whitespaces', async ({ api }) => {
+  test.fixme('[GRP-004-BUG] Group name with whitespaces', async ({ api }) => {
     const whitespacesGroupName = '        ';
 
     const createGroupResult = await api.groups.createGroup({
@@ -75,7 +75,7 @@ test.describe('api/groups/creation tests', async () => {
     expect(createGroupResult.data).toBeNull();
   });
 
-  test('[GROUPS-005] Group without name', async ({ api }) => {
+  test('[GRP-005] Group without name', async ({ api }) => {
     await test.step('Name as null', async () => {
       const createGroupResult = await api.groups.createGroup({
         name: null as any,
@@ -93,7 +93,7 @@ test.describe('api/groups/creation tests', async () => {
     });
   });
 
-  test('[GROUPS-006] Response has invite code', async ({ api }) => {
+  test('[GRP-006] Response has invite code', async ({ api }) => {
     const validGroupName = utils.random.groupName();
     const createGroupResult = await api.groups.createGroup({
       name: validGroupName,
@@ -104,7 +104,7 @@ test.describe('api/groups/creation tests', async () => {
     expect(createGroupResult.data.inviteCode).not.toBeNull();
   });
 
-  test('[GROUPS-007] Request without authorization', async ({ api }) => {
+  test('[GRP-007] Request without authorization', async ({ api }) => {
     const cleanApi = api.clone();
 
     const validGroupName = utils.random.groupName();
