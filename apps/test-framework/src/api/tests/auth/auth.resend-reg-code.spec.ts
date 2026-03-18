@@ -13,8 +13,7 @@ test.describe('api/auth/refresh tests', async () => {
         expect(postUser.response).toHaveStatus2xx();
         user.id = postUser.data.id;
 
-        const codeCountBefore = (await confirmationCodeRepository.findBy({userId: user.id})).length;
-
+        const oldCode = (await confirmationCodeRepository.findBy({userId: user.id}))[0].code;
 
         const resendCode = await api.auth.resendRegistrationCode({
             email: user.email,
@@ -22,9 +21,9 @@ test.describe('api/auth/refresh tests', async () => {
 
         expect(resendCode.response).toHaveStatus2xx();
 
-        const codeCountAfter = (await confirmationCodeRepository.findBy({userId: user.id})).length;
+        const newCode = (await confirmationCodeRepository.findBy({userId: user.id}))[0].code;
 
-        expect(codeCountAfter - codeCountBefore).toEqual(1);
+        expect(oldCode).not.toEqual(newCode);
     });
 
     // | AUTH-050 | Запит для незареєстрованого емейлу | Без токена | 401 |
