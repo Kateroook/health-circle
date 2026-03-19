@@ -17,7 +17,7 @@ export class UserChangePasswordDto {
   @IsDefined({ message: 'Новий пароль обовʼязковий' })
   @MinLength(12, { message: 'Новий пароль має містити щонайменше 12 символів' })
   @MaxLength(20, { message: 'Новий пароль не може перевищувати 20 символів' })
-  @PasswordComplexity(3, { message: 'Пароль має містити великі, малі літери, цифри та символи' })
+  @PasswordComplexity(4, { message: 'Пароль має містити великі, малі літери, цифри та символи' })
   @Transform(({ value }) => typeof value === 'string' && value.trim())
   newPassword: string;
 
