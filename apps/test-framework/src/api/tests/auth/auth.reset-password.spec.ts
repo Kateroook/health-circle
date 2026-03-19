@@ -13,7 +13,7 @@ test.describe('api/auth/reset-password tests', async () => {
         confirmationCode = await confirmationCodeRepository.getLastUserCode(user.id!);
     });
   // | AUTH-039 | Успішне скидання пароля | Валідний email + код з БД + коректні паролі | 200 |
-  test('[AUTH-039] Successful password reset', async ({ api }) => {
+  test('[AUTH-045] Successful password reset', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const resetPassword = await api.auth.resetPassword(
         user.email,
@@ -27,7 +27,7 @@ test.describe('api/auth/reset-password tests', async () => {
     expect(resetPassword.response).toHaveStatus2xx();
   });
   // TODO: | AUTH-040 | Невірний код | Валідний email + неправильний код | 400 або 401 |
-  test('[AUTH-040] Wrong code for password reset', async ({ api }) => {
+  test('[AUTH-046] Wrong code for password reset', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const resetPassword = await api.auth.resetPassword(
         user.email,
@@ -50,7 +50,7 @@ test.describe('api/auth/reset-password tests', async () => {
     
   });
   // TODO: | AUTH-041 | Паролі не збігаються | — | 400 |
-  test('[AUTH-041] Password mismatch in password reset', async ({ api }) => {
+  test('[AUTH-047] Password mismatch in password reset', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const resetPassword = await api.auth.resetPassword(
         user.email,
@@ -66,22 +66,23 @@ test.describe('api/auth/reset-password tests', async () => {
 
   // TODO: | AUTH-042 - AUTH-046 | Пароль не відповідає вимогам | — | 400 |
   [{
-        name: '[AUTH-042] Password reset with too short password', 
+        name: '[AUTH-048] Password reset with too short password', 
         newPassword: utils.random.password(11),
     }, {
-        name: '[AUTH-043] Password reset with too long password', 
+        name: '[AUTH-049] Password reset with too long password', 
         newPassword: utils.random.password(21),
     }, {
-        name: '[AUTH-044] Password reset with no lowercase letters', 
-        // newPassword: utils.random.password().toUpperCase(),
-        newPassword: "ALLUPPERCASE2",
+        name: '[AUTH-050] Password reset with no lowercase letters', 
+        newPassword: utils.random.string({length: 12, includeLower: false}),
     }, {
-        name: '[AUTH-045] Password reset with no uppercase letters', 
-        // newPassword: utils.random.password(10).toLowerCase(),
-        newPassword: "alllowercase2",
+        name: '[AUTH-051] Password reset with no uppercase letters', 
+        newPassword: utils.random.string({length: 12, includeUpper: false}),
     }, {
-        name: '[AUTH-046] Password reset with no numbers', 
-        newPassword: 'OnlyLettersABC',
+        name: '[AUTH-052] Password reset with no numbers', 
+        newPassword: utils.random.string({length: 12, includeNumbers: false}),
+    }, {
+        name: '[AUTH-053] Password reset with no special symbols', 
+        newPassword: utils.random.string({length: 12, includeSpecial: false}),
     }].forEach(options => test(options.name, async ({ api }) => {
         const resetPassword = await api.auth.resetPassword(
             user.email,
@@ -103,8 +104,7 @@ test.describe('api/auth/reset-password tests', async () => {
     }));
 
 
-  // TODO: | AUTH-047 | Логін зі старим паролем після скидання | Успішне reset-password | 401 |
-  test('[AUTH-047] Login with old password after successful password reset', async ({ api }) => {
+  test('[AUTH-054] Login with old password after successful password reset', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const resetPassword = await api.auth.resetPassword(
         user.email,
@@ -124,8 +124,8 @@ test.describe('api/auth/reset-password tests', async () => {
 
     expect(login.response).toHaveStatus4xx();
   });
-  // TODO: | AUTH-048 | Логін з новим паролем після скидання | Успішне reset-password | 200 |
-  test('[AUTH-048] Login with new password after successful password reset', async ({ api }) => {
+
+  test('[AUTH-055] Login with new password after successful password reset', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const resetPassword = await api.auth.resetPassword(
         user.email,

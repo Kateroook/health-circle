@@ -23,7 +23,7 @@ test.describe('api/auth/password-setup tests', async () => {
         confirmationCode = await confirmationCodeRepository.getLastUserCode(user.id);
     });
 
-    // | AUTH-018 | Успішне встановлення пароля після реєстрації | Валідний email, код з БД, `newPassword` = `confirmNewPassword` | 201 |
+
     test('[AUTH-018] Successful password setup after registration', async ({ api }) => {
         const setupPassword = await api.auth.setupPassword(user.email!, confirmationCode.code, {
             newPassword: user.password,
@@ -39,7 +39,7 @@ test.describe('api/auth/password-setup tests', async () => {
         expect(login.response).toHaveStatus2xx();
     });
 
-    // | AUTH-019 | Невірний код підтвердження | Валідний email + неправильний код | 400 або 401 |
+
     test('[AUTH-019] Wrong confirmation code for password setup', async ({ api }) => {
         const setupPassword = await api.auth.setupPassword(user.email!, '000000', {
             newPassword: user.password,
@@ -54,7 +54,7 @@ test.describe('api/auth/password-setup tests', async () => {
         });
         expect(login.response).toHaveStatus4xx();
     });
-    // | AUTH-020 | Паролі не збігаються | `newPassword` ≠ `confirmNewPassword` | 400 |
+
     test("[AUTH-020] Passwords don't match in password setup", async ({ api }) => {
         const setupPassword = await api.auth.setupPassword(user.email!, confirmationCode.code, {
             newPassword: user.password,
@@ -108,7 +108,7 @@ test.describe('api/auth/password-setup tests', async () => {
         });
         expect(login.response).toHaveStatus4xx();
     }));
-    // | AUTH-027 | Повторне використання вже використаного коду | Старий код після успішного password-setup | 400 або 401 |
+
     test("[AUTH-027] Passwords setup with the same code twice", async ({ api }) => {
         const setupPassword = await api.auth.setupPassword(user.email!, confirmationCode.code, {
             newPassword: user.password,
@@ -137,7 +137,7 @@ test.describe('api/auth/password-setup tests', async () => {
         });
         expect(loginWithOldPassword.response).toHaveStatus2xx();
     });
-    // | AUTH-028 | Старий код після відправки нового | `resendRegistrationCode` → спроба зі старим кодом | 400 або 401 |
+
     test("[AUTH-028] Passwords setup with the old code", async ({ api, confirmationCodeRepository }) => {
         const resendCode = await api.auth.resendRegistrationCode({email: user.email});
         expect(resendCode.response).toHaveStatus2xx();
