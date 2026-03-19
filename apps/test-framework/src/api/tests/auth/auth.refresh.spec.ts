@@ -86,5 +86,4 @@ test.describe('api/auth/refresh tests', async () => {
 
         expect(repeatRefresh.response).toHaveStatus4xx();
     });
-
 })
