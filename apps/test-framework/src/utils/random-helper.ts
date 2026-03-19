@@ -19,7 +19,7 @@ export class RandomHelper {
     includeUpper = true,
     includeLower = true,
     includeNumbers = true,
-    includeSpecial = false,
+    includeSpecial = true,
   }: {
     length?: number;
     charset?: string;
