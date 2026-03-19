@@ -12,8 +12,7 @@ test.describe('api/auth/change-password tests', async () => {
     });
   });
 
-  // | AUTH-028 | Успішна зміна пароля | Авторизований, коректні `oldPassword`, `newPassword`, `confirmNewPassword` | 200 |
-  test('[AUTH-028] Successfull password change', async ({ api }) => {
+  test('[AUTH-029] Successfull password change', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const changePassword = await api.auth.changePassword({
         oldPassword: user.password,
@@ -23,8 +22,8 @@ test.describe('api/auth/change-password tests', async () => {
 
     expect(changePassword.response).toHaveStatus2xx();
   });
-  // | AUTH-029 | Невірний поточний пароль | Авторизований, некоректний `oldPassword` | 401 |
-  test('[AUTH-029] Wrong old password for password change', async ({ api }) => {
+
+  test('[AUTH-030] Wrong old password for password change', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const changePassword = await api.auth.changePassword({
         oldPassword: user.password+'1',
@@ -34,8 +33,8 @@ test.describe('api/auth/change-password tests', async () => {
 
     expect(changePassword.response).toHaveStatus4xx();
   });
-  // | AUTH-030 | Паролі не збігаються | Авторизований, `newPassword` ≠ `confirmNewPassword` | 400 |
-  test('[AUTH-030] Password mismatch in password change', async ({ api }) => {
+
+  test('[AUTH-031] Password mismatch in password change', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const changePassword = await api.auth.changePassword({
         oldPassword: user.password,
@@ -45,19 +44,36 @@ test.describe('api/auth/change-password tests', async () => {
 
     expect(changePassword.response).toHaveStatus4xx();
   });
-  // | AUTH-031 | Новий пароль не відповідає вимогам | Авторизований, короткий `newPassword` | 400 |
-  test('[AUTH-031] Short new password in password change', async ({ api }) => {
-    const newPassword = utils.random.password(11);
+
+  [{
+        testName: '[AUTH-032] Change password with short password',
+        newPasword: utils.random.password(11),
+    }, {
+        testName: '[AUTH-033] Change password without uppercase letters',
+        newPasword: utils.random.string({length: 12, includeUpper: false}),
+    }, {
+        testName: '[AUTH-034] Change password without lowercase letters',
+        newPasword: utils.random.string({length: 12, includeLower: false}),
+    }, {
+        testName: '[AUTH-035] Change password without numbers',
+        newPasword: utils.random.string({length: 12, includeNumbers: false}),
+    }, {
+        testName: '[AUTH-036] Change password with password longer than 20 symbols',
+        newPasword: utils.random.password(21),
+    }, {
+        testName: '[AUTH-037] Change password without special symbols',
+        newPasword: utils.random.string({length: 12, includeSpecial: false}),
+    }].forEach(options => test(options.testName, async({ api }) => {
     const changePassword = await api.auth.changePassword({
         oldPassword: user.password,
-        newPassword: newPassword,
-        confirmNewPassword: newPassword,
+        newPassword: options.newPasword,
+        confirmNewPassword: options.newPasword,
     });
 
     expect(changePassword.response).toHaveStatus4xx();
-  });
-  // | AUTH-032 | Запит без авторизації | Без токена | 401 |
-  test('[AUTH-032] Password change without access token', async ({ api }) => {
+  }));
+
+  test('[AUTH-038] Password change without access token', async ({ api }) => {
     const logout = await api.auth.logout();
     expect(logout.response).toHaveStatus2xx();
 
@@ -70,8 +86,8 @@ test.describe('api/auth/change-password tests', async () => {
 
     expect(changePassword.response).toHaveStatus4xx();
   });
-  // | AUTH-033 | Старий пароль не працює після зміни | Виконано change-password | 401 при логіні зі старим паролем |
-  test("[AUTH-033] Old password doesn't work after successfull password change", async ({ api }) => {
+
+  test("[AUTH-039] Old password doesn't work after successfull password change", async ({ api }) => {
     const newPassword = utils.random.password(12);
     const changePassword = await api.auth.changePassword({
         oldPassword: user.password,
@@ -91,8 +107,8 @@ test.describe('api/auth/change-password tests', async () => {
     expect(api.getContext().accessToken).toBeUndefined();
     expect(api.getContext().refreshToken).toBeUndefined();
   });
-  // | AUTH-034 | Новий пароль працює після зміни | Виконано change-password | 200 при логіні з новим паролем |
-  test('[AUTH-034] New password works after successfull password change', async ({ api }) => {
+
+  test('[AUTH-040] New password works after successfull password change', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const changePassword = await api.auth.changePassword({
         oldPassword: user.password,
