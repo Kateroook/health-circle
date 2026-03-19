@@ -9,7 +9,7 @@ export class UserBuilder {
       lastName: utils.random.lastName(),
       email: utils.random.email(),
       phone: utils.random.phone(),
-      password: utils.random.shortId(12),
+      password: utils.random.password(12),
       ...overrides,
     };
   }

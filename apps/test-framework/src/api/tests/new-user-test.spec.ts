@@ -3,8 +3,8 @@ import { test } from '../fixtures/api-fixture';
 import { UserFactory } from '../../core/data/factories/user-factory';
 import { utils } from '../../utils/utils';
 
-test.describe.skip('New user example tests', async () => {
-  test('post user with non-ukrainian phone number', async ({ api }) => {
+test.describe('New user example tests', async () => {
+  test.skip('post user with non-ukrainian phone number', async ({ api }) => {
     let user = UserFactory.createUserForTest({
       testId: 'PhoneTest',
       overrides: {
@@ -25,7 +25,7 @@ test.describe.skip('New user example tests', async () => {
     expect(postUser.response).toHaveStatus2xx();
   });
 
-  test('post user with no middlename phone number', async ({ api }) => {
+  test.skip('post user with no middlename and ukrainian phone number', async ({ api }) => {
     let user = UserFactory.createRandomUser({
       phone: utils.random.phone('ua'),
     }); //no middlename as default
@@ -44,7 +44,7 @@ test.describe.skip('New user example tests', async () => {
   });
 
   //PASS
-  test('Create new user and delete him', async ({ api, confirmationCodeRepository }) => {
+  test.skip('Create new user and delete him', async ({ api, confirmationCodeRepository }) => {
     let newUser = UserFactory.createUserForTest({
       testId: 'middleNameTest',
       overrides: {
@@ -66,7 +66,7 @@ test.describe.skip('New user example tests', async () => {
     expect(postUser.response).toHaveStatus2xx();
     newUser.id = postUser.data.id;
 
-    const code = (await confirmationCodeRepository.findBy({ userId: newUser.id }))[0];
+    const code = await confirmationCodeRepository.getLastUserCode(newUser.id);
 
     await api.auth.setupPassword(newUser.email!, code.code, {
       newPassword: newUser.password,
@@ -88,5 +88,33 @@ test.describe.skip('New user example tests', async () => {
         phone: profile.phone,
       }),
     );
+  });
+
+  test.fixme('post user with funny password', async ({ api, confirmationCodeRepository }) => {
+    let user = UserFactory.createRandomUser({
+      password: utils.random.pick<string>(['o__________O', 'o__________0', 'O__________0']),
+    }); //no middlename as default
+    const postUser = await api.users.createUser({
+      email: user.email,
+      phone: user.phone,
+      firstName: user.firstName,
+      middleName: user.middleName,
+      lastName: user.lastName,
+    });
+    user.id = postUser.data.id;
+
+    expect(postUser.response).toHaveStatus2xx();
+    const code = await confirmationCodeRepository.getLastUserCode(user.id);
+    const setupPassword = await api.auth.setupPassword(
+      user.email,
+      code.code,
+      {
+        newPassword: user.password,
+        confirmNewPassword: user.password,
+      }
+    );
+
+    console.log(setupPassword.response);
+    expect(setupPassword.response).toHaveStatus4xx();
   });
 });

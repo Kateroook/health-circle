@@ -1,10 +1,14 @@
+import { UserEntity } from '../../../core/types/entites/user-interface';
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe('api/auth/login tests', async () => {
+  let user: UserEntity;
+  test.beforeEach(async ( { spawnUser } ) => {
+    user = await spawnUser();
+  });
+  
   test('[AUTH-001] Successfull login via email', async ({ api, spawnUser }) => {
-    const user = await spawnUser(); //problem is here, let's see if it's been resolved
-
     const login = await api.auth.login({
       identifier: user.email,
       password: user.password,
@@ -18,8 +22,6 @@ test.describe('api/auth/login tests', async () => {
   });
 
   test('[AUTH-002] Successfull login via phone', async ({ api, spawnUser }) => {
-    const user = await spawnUser();
-
     const login = await api.auth.login({
       identifier: user.phone,
       password: user.password,
@@ -33,8 +35,6 @@ test.describe('api/auth/login tests', async () => {
   });
 
   test('[AUTH-003] Log in with email in upper case', async ({ api, spawnUser }) => {
-    const user = await spawnUser();
-
     const login = await api.auth.login({
       identifier: user.email.toUpperCase(),
       password: user.password,
@@ -57,8 +57,6 @@ test.describe('api/auth/login tests', async () => {
   });
 
   test('[AUTH-005] Log in with wrong password', async ({ api, spawnUser }) => {
-    const user = await spawnUser();
-
     const login = await api.auth.login({
       identifier: user.phone,
       password: user.password + '1',
@@ -68,8 +66,6 @@ test.describe('api/auth/login tests', async () => {
   });
 
   test('[AUTH-006] Log in with empty password', async ({ api, spawnUser }) => {
-    const user = await spawnUser();
-
     const login = await api.auth.login({
       identifier: user.email,
       password: '',
@@ -79,8 +75,6 @@ test.describe('api/auth/login tests', async () => {
   });
 
   test('[AUTH-007] Log in with empty identifier and valid password', async ({ api, spawnUser }) => {
-    const user = await spawnUser();
-
     const login = await api.auth.login({
       identifier: '',
       password: user.password,

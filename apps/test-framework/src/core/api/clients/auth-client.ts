@@ -7,6 +7,7 @@ import {
   ChangePasswordRequest,
   ForgotPasswordRequest,
   ProfileResponse,
+  ResendRegistrationCodeRequest,
 } from '../../types/api';
 import { checkResponse } from '../helpers/response-checker';
 import { test } from '../../../api/fixtures/api-fixture';
@@ -21,15 +22,17 @@ export class AuthClient extends BaseClient {
    * Вхід користувача з автоматичним збереженням токенів
    */
   public async login(data: LoginRequest): Promise<ApiResult<LoginResponse>> {
-    const result = await this.post<LoginResponse>('/api/auth/login', { data });
-
-    // Автоматично зберігаємо токени
-    if (checkResponse.is2xx(result.response)) {
-      this.setAccessToken(result.data.accessToken!);
-      this.setRefreshToken(result.data.refreshToken!);
-    }
-
-    return result;
+    return test.step(`Login with identifier: "${data.identifier}", password: "${data.password}"`, async() => {
+      const result = await this.post<LoginResponse>('/api/auth/login', { data });
+  
+      // Автоматично зберігаємо токени
+      if (checkResponse.is2xx(result.response)) {
+        this.setAccessToken(result.data.accessToken!);
+        this.setRefreshToken(result.data.refreshToken!);
+      }
+  
+      return result;
+    });
   }
 
   /**
@@ -37,12 +40,14 @@ export class AuthClient extends BaseClient {
    * Вихід користувача з автоматичним очищенням токенів
    */
   public async logout(): Promise<ApiResult<void>> {
-    const result = await this.post<void>('/api/auth/logout');
-
-    // Очищаємо токени після логауту
-    this.clearTokens();
-
-    return result;
+    return test.step(`Logout`, async() => {
+      const result = await this.post<void>('/api/auth/logout');
+  
+      // Очищаємо токени після логауту
+      this.clearTokens();
+  
+      return result;
+    });
   }
 
   /**
@@ -58,35 +63,38 @@ export class AuthClient extends BaseClient {
       noToken?: boolean;
     } = {}
   ): Promise<ApiResult<LoginResponse>> {
-
-    const oldAccessToken = this.context.accessToken;
-
-    const token = customToken ?? this.context.refreshToken;
-
-    const result = await this.post<LoginResponse>('/api/auth/refresh', {
-      headers: noToken ? {} : { Authorization: `Bearer ${token}` },
-    });
-
-    if (result.response.ok()) {
-      const accessToken = result.data.accessToken;
-      const refreshToken = result.data.refreshToken;
-
-      if (accessToken) this.setAccessToken(accessToken);
-      if (refreshToken) this.setRefreshToken(refreshToken);
-    } else {
-      if (oldAccessToken) {
-        this.setAccessToken(oldAccessToken);
+    return test.step(`Refresh tokens`, async() => {
+      const oldAccessToken = this.context.accessToken;
+  
+      const token = customToken ?? this.context.refreshToken;
+  
+      const result = await this.post<LoginResponse>('/api/auth/refresh', {
+        headers: noToken ? {} : { Authorization: `Bearer ${token}` },
+      });
+  
+      if (result.response.ok()) {
+        const accessToken = result.data.accessToken;
+        const refreshToken = result.data.refreshToken;
+  
+        if (accessToken) this.setAccessToken(accessToken);
+        if (refreshToken) this.setRefreshToken(refreshToken);
+      } else {
+        if (oldAccessToken) {
+          this.setAccessToken(oldAccessToken);
+        }
       }
-    }
-
-    return result;
+  
+      return result;
+    });
   }
   /**
    * GET /api/auth/profile
    * Отримати профіль користувача
    */
   public async getProfile(): Promise<ApiResult<ProfileResponse>> {
-    return await this.get<ProfileResponse>('/api/auth/profile');
+    return test.step(`Get user profile`, async() => {
+      return await this.get<ProfileResponse>('/api/auth/profile');
+    });
   }
 
   /**
@@ -98,7 +106,7 @@ export class AuthClient extends BaseClient {
     code: string,
     body: SetupPasswordRequest['body'],
   ): Promise<ApiResult<void>> {
-    return test.step(`Setup password "${body.newPassword}" for "${email}" email with code "${code}"`, async() => {
+    return test.step(`Setup password for "${email}". Password: "${body.newPassword}", confirm: "${body.confirmNewPassword}", code: "${code}"`, async() => {
       return await this.post<void>('/api/auth/password-setup', {
         params: { email, code },
         data: body,
@@ -111,7 +119,9 @@ export class AuthClient extends BaseClient {
    * Змінити пароль (авторизований)
    */
   public async changePassword(data: ChangePasswordRequest): Promise<ApiResult<void>> {
-    return await this.post<void>('/api/auth/change-password', { data });
+    return test.step(`Change password. Old password: "${data.oldPassword}", new pasword: "${data.newPassword}", confirm: "${data.confirmNewPassword}"`, async() => {
+      return await this.post<void>('/api/auth/change-password', { data });
+    });
   }
 
   /**
@@ -119,7 +129,9 @@ export class AuthClient extends BaseClient {
    * Запитати код скидання пароля
    */
   public async forgotPassword(data: ForgotPasswordRequest): Promise<ApiResult<void>> {
-    return await this.post<void>('/api/auth/forgot-password', { data });
+    return test.step(`Send forgot password code to "${data.email}"`, async() => {
+      return await this.post<void>('/api/auth/forgot-password', { data });
+    });
   }
 
   /**
@@ -131,9 +143,11 @@ export class AuthClient extends BaseClient {
     code: string,
     body: ResetPasswordRequest['body'],
   ): Promise<ApiResult<void>> {
-    return await this.post<void>('/api/auth/reset-password', {
-      params: { email, code },
-      data: body,
+    return test.step(`Reset password for "${email}". Code: "${code}", password: "${body.newPassword}", confirm: "${body.confirmNewPassword}".`, async() => {
+      return await this.post<void>('/api/auth/reset-password', {
+        params: { email, code },
+        data: body,
+      });
     });
   }
 
@@ -141,15 +155,19 @@ export class AuthClient extends BaseClient {
    * POST /api/auth/resend-registration-code
    * Повторно відправити код реєстрації
    */
-  public async resendRegistrationCode(): Promise<ApiResult<void>> {
-    return await this.post<void>('/api/auth/resend-registration-code');
+  public async resendRegistrationCode(data: ResendRegistrationCodeRequest): Promise<ApiResult<void>> {
+    return test.step(`Resend registration code to "${data.email}"`, async() => {
+      return await this.post<void>('/api/auth/resend-registration-code', {
+        data: data,
+      });
+    });
   }
 
   /**
    * Хелпер: швидкий логін з автоматичним збереженням userId
    */
-  public async quickLogin(email: string, password: string): Promise<ApiResult<LoginResponse>> {
-    const result = await this.login({ identifier: email, password });
+  public async quickLogin(identifier: string, password: string): Promise<ApiResult<LoginResponse>> {
+    const result = await this.login({ identifier: identifier, password });
 
     // Зберігаємо userId якщо логін успішний
     if (result.response.ok()) {
