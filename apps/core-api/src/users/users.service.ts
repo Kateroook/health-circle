@@ -1,17 +1,15 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, StreamableFile } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
 import { ensureSameUser } from 'src/common/helpers/ensure-same-user.util';
+import { QueueService } from 'src/common/queue/queue.service';
 import { RequestMetadata } from 'src/common/types/request-metadata';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
-import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
-import { NotificationTemplates, NotificationType } from 'src/notifications/notification-types';
-import { NotificationsService } from 'src/notifications/notifications.service';
+import { STATUS_UPDATE_SIDE_EFFECTS_QUEUE } from 'src/notifications/status-update.queue.constants';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { EntityManager, In, QueryRunner, Repository } from 'typeorm';
 
@@ -32,14 +30,12 @@ export class UsersService {
     protected readonly passwordRepository: Repository<UserPasswordEntity>,
     protected readonly confirmationsService: ConfirmationsService,
     protected readonly userActivitiesService: UserActivitiesService,
-    protected readonly configService: ConfigService,
     protected readonly externalFilesService: ExternalFilesService,
+    private readonly queueService: QueueService,
     @InjectRepository(GroupMemberEntity)
     protected readonly memberRepository: Repository<GroupMemberEntity>,
     @InjectRepository(UserNotificationSettingsEntity)
     protected readonly notificationSettingsRepository: Repository<UserNotificationSettingsEntity>,
-    private notificationsService: NotificationsService,
-    private firestoreSyncService: FirestoreSyncService,
   ) {}
 
   async getNotificationSettingsInternal(userId: string): Promise<UserNotificationSettingsEntity> {
@@ -94,7 +90,21 @@ export class UsersService {
       .map((u) => u.fcmToken as string);
   }
 
-  async updateStatus(userId: string, status: UserStatus, groupMemberIds?: string[]) {
+  private async isAvatarViewAllowed(targetUserId: string, requesterUserId: string): Promise<boolean> {
+    if (targetUserId === requesterUserId) return true;
+
+    // Allow avatar access only when requester and target share at least one group.
+    // We use a single query with a self-join on group_members to check for common groupIds.
+    return this.memberRepository
+      .createQueryBuilder('m1')
+      .innerJoin(GroupMemberEntity, 'm2', 'm1.groupId = m2.groupId')
+      .where('m1.userId = :requesterUserId', { requesterUserId })
+      .andWhere('m2.userId = :targetUserId', { targetUserId })
+      .limit(1)
+      .getExists();
+  }
+
+  async updateStatus(userId: string, status: UserStatus, options?: { memberUserIds?: string[] }) {
     const user = await this.repository.findOne({
       where: { id: userId },
     });
@@ -104,8 +114,8 @@ export class UsersService {
     user.lastStatusUpdate = new Date();
     await this.repository.save(user);
 
-    // If groupMemberIds are not provided, find all members from all groups the user belongs to
-    let targetMemberIds = groupMemberIds;
+    // If memberUserIds are not provided, find all members from all groups the user belongs to
+    let targetMemberIds = options?.memberUserIds;
     if (!targetMemberIds || targetMemberIds.length === 0) {
       const memberships = await this.memberRepository.find({
         where: { userId },
@@ -122,45 +132,28 @@ export class UsersService {
       }
     }
 
-    if (targetMemberIds && targetMemberIds.length > 0) {
-      const isUnknown = status === UserStatus.UNKNOWN;
-      const type = isUnknown ? NotificationType.UNKNOWN_STATUS : NotificationType.STATUS_UPDATE;
-      const template = NotificationTemplates[type];
-      const tokens = await this.getTokensForUsers(targetMemberIds, template.permissionKey);
-
-      const devSendToSelf = this.configService.get<boolean>('DEV_SEND_PUSH_TO_SENDER', false);
-      if (devSendToSelf && !tokens.includes(user.fcmToken as string) && user.fcmToken) {
-        this.logger.log(`Dev Mode: Including sender ${userId} in notifications`);
-        tokens.push(user.fcmToken);
-      }
-
-      if (tokens.length > 0) {
-        let statusName = 'невідомий';
-        if (status === UserStatus.SAFE) statusName = 'у безпеці';
-        else if (status === UserStatus.DANGER) statusName = 'у небезпеці';
-        else if (status === UserStatus.WAS_SAFE) statusName = 'був у безпеці';
-
-        await this.notificationsService.sendMulticastByType(
-          tokens,
-          type,
-          {
-            firstName: user.firstName,
-            lastName: user.lastName,
-            statusName,
-          },
-          {
-            userId,
-            status,
-          },
-        );
-      }
-
-      await this.firestoreSyncService.sendSyncSignal(Array.from(new Set([...targetMemberIds, userId])));
-    } else {
-      await this.firestoreSyncService.sendSyncSignal([userId]);
-    }
+    // Offload FCM + Firestore sync to pg-boss worker to keep API latency low.
+    const memberUserIds = targetMemberIds ?? [];
+    void this.queueService
+      .send(STATUS_UPDATE_SIDE_EFFECTS_QUEUE, {
+        senderUserId: userId,
+        status,
+        memberUserIds,
+      })
+      .catch((error: unknown) => {
+        this.logger.error({ error }, 'Failed to enqueue status side-effects');
+      });
 
     return { status: user.status, message: 'Status updated' };
+  }
+
+  async getUserForStatusNotifications(
+    userId: string,
+  ): Promise<Pick<UserEntity, 'id' | 'firstName' | 'lastName' | 'fcmToken'> | null> {
+    return this.repository.findOne({
+      where: { id: userId },
+      select: ['id', 'firstName', 'lastName', 'fcmToken'],
+    });
   }
 
   async saveFcmToken(userId: string, token: string) {
@@ -168,7 +161,13 @@ export class UsersService {
     return { message: 'Token updated' };
   }
 
-  async upsertFile(userId: string, file: Express.Multer.File, queryRunner?: QueryRunner): Promise<UserEntity> {
+  async upsertFile(
+    userId: string,
+    file: Express.Multer.File,
+    currentUserId: string,
+    queryRunner?: QueryRunner,
+  ): Promise<UserEntity> {
+    ensureSameUser(userId, currentUserId);
     const manager = queryRunner?.manager || this.repository.manager;
     return manager.transaction(async (trx) => {
       const user = await trx.findOne(UserEntity, { where: { id: userId }, relations: ['file'] });
@@ -187,13 +186,17 @@ export class UsersService {
     });
   }
 
-  async getFile(userId: string): Promise<StreamableFile> {
+  async getFile(userId: string, currentUserId: string): Promise<StreamableFile> {
+    const allowed = await this.isAvatarViewAllowed(userId, currentUserId);
+    if (!allowed) throw new NotFoundException('Користувача або файл не знайдено');
+
     const user = await this.repository.findOne({ where: { id: userId }, relations: ['file'] });
     if (!user || !user.file) throw new NotFoundException('Користувача або файл не знайдено');
     return this.externalFilesService.getStreamableFile(user.file);
   }
 
-  async removeFile(userId: string, manager?: EntityManager): Promise<void> {
+  async removeFile(userId: string, currentUserId: string, manager?: EntityManager): Promise<void> {
+    ensureSameUser(userId, currentUserId);
     const entityManager = manager || this.repository.manager;
     const user = await entityManager.findOne(UserEntity, {
       where: { id: userId },
