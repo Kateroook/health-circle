@@ -1,17 +1,15 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, StreamableFile } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
 import { ensureSameUser } from 'src/common/helpers/ensure-same-user.util';
+import { QueueService } from 'src/common/queue/queue.service';
 import { RequestMetadata } from 'src/common/types/request-metadata';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
-import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
-import { NotificationTemplates, NotificationType } from 'src/notifications/notification-types';
-import { NotificationsService } from 'src/notifications/notifications.service';
+import { STATUS_UPDATE_SIDE_EFFECTS_QUEUE } from 'src/notifications/status-update.queue.constants';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { EntityManager, In, QueryRunner, Repository } from 'typeorm';
 
@@ -32,14 +30,12 @@ export class UsersService {
     protected readonly passwordRepository: Repository<UserPasswordEntity>,
     protected readonly confirmationsService: ConfirmationsService,
     protected readonly userActivitiesService: UserActivitiesService,
-    protected readonly configService: ConfigService,
     protected readonly externalFilesService: ExternalFilesService,
+    private readonly queueService: QueueService,
     @InjectRepository(GroupMemberEntity)
     protected readonly memberRepository: Repository<GroupMemberEntity>,
     @InjectRepository(UserNotificationSettingsEntity)
     protected readonly notificationSettingsRepository: Repository<UserNotificationSettingsEntity>,
-    private notificationsService: NotificationsService,
-    private firestoreSyncService: FirestoreSyncService,
   ) {}
 
   async getNotificationSettingsInternal(userId: string): Promise<UserNotificationSettingsEntity> {
@@ -141,45 +137,28 @@ export class UsersService {
       }
     }
 
-    if (targetMemberIds && targetMemberIds.length > 0) {
-      const isUnknown = status === UserStatus.UNKNOWN;
-      const type = isUnknown ? NotificationType.UNKNOWN_STATUS : NotificationType.STATUS_UPDATE;
-      const template = NotificationTemplates[type];
-      const tokens = await this.getTokensForUsers(targetMemberIds, template.permissionKey);
-
-      const devSendToSelf = this.configService.get<boolean>('DEV_SEND_PUSH_TO_SENDER', false);
-      if (devSendToSelf && !tokens.includes(user.fcmToken as string) && user.fcmToken) {
-        this.logger.log(`Dev Mode: Including sender ${userId} in notifications`);
-        tokens.push(user.fcmToken);
-      }
-
-      if (tokens.length > 0) {
-        let statusName = 'невідомий';
-        if (status === UserStatus.SAFE) statusName = 'у безпеці';
-        else if (status === UserStatus.DANGER) statusName = 'у небезпеці';
-        else if (status === UserStatus.WAS_SAFE) statusName = 'був у безпеці';
-
-        await this.notificationsService.sendMulticastByType(
-          tokens,
-          type,
-          {
-            firstName: user.firstName,
-            lastName: user.lastName,
-            statusName,
-          },
-          {
-            userId,
-            status,
-          },
-        );
-      }
-
-      await this.firestoreSyncService.sendSyncSignal(Array.from(new Set([...targetMemberIds, userId])));
-    } else {
-      await this.firestoreSyncService.sendSyncSignal([userId]);
-    }
+    // Offload FCM + Firestore sync to pg-boss worker to keep API latency low.
+    const memberUserIds = targetMemberIds ?? [];
+    void this.queueService
+      .send(STATUS_UPDATE_SIDE_EFFECTS_QUEUE, {
+        senderUserId: userId,
+        status,
+        memberUserIds,
+      })
+      .catch((error: unknown) => {
+        this.logger.error({ error }, 'Failed to enqueue status side-effects');
+      });
 
     return { status: user.status, message: 'Status updated' };
+  }
+
+  async getUserForStatusNotifications(
+    userId: string,
+  ): Promise<Pick<UserEntity, 'id' | 'firstName' | 'lastName' | 'fcmToken'> | null> {
+    return this.repository.findOne({
+      where: { id: userId },
+      select: ['id', 'firstName', 'lastName', 'fcmToken'],
+    });
   }
 
   async saveFcmToken(userId: string, token: string) {

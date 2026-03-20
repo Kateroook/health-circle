@@ -1,18 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
 import { NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
+import { QueueService } from 'src/common/queue/queue.service';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ExternalFilesEntity } from 'src/external-files/entities/external-files.entity';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
 import { GroupMemberEntity } from 'src/groups/entities/group-member.entity';
-import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
-import { NotificationType } from 'src/notifications/notification-types';
-import { NotificationsService } from 'src/notifications/notifications.service';
+import { STATUS_UPDATE_SIDE_EFFECTS_QUEUE } from 'src/notifications/status-update.queue.constants';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { UserNotificationSettingsEntity } from 'src/users/entities/user-notification-settings.entity';
@@ -44,7 +42,7 @@ describe('UsersService', () => {
   let repository: jest.Mocked<Repository<UserEntity>>;
   let userActivitiesService: jest.Mocked<UserActivitiesService>;
   let externalFilesService: jest.Mocked<ExternalFilesService>;
-  let notificationsService: jest.Mocked<NotificationsService>;
+  let queueService: jest.Mocked<QueueService>;
 
   const mockUser = {
     id: 'user1',
@@ -124,13 +122,8 @@ describe('UsersService', () => {
     delete: jest.fn(),
   });
 
-  const mockNotificationsService = () => ({
-    sendMulticast: jest.fn(),
-    sendMulticastByType: jest.fn(),
-  });
-
-  const mockFirestoreSyncService = () => ({
-    sendSyncSignal: jest.fn(),
+  const mockQueueService = () => ({
+    send: jest.fn().mockResolvedValue(undefined),
   });
 
   //
@@ -144,12 +137,10 @@ describe('UsersService', () => {
         { provide: getRepositoryToken(UserPasswordEntity), useValue: createRepoMock() },
         { provide: ConfirmationsService, useValue: mockConfirmationsService() },
         { provide: UserActivitiesService, useValue: mockUserActivitiesService() },
-        { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: ExternalFilesService, useValue: mockExternalFilesService() },
         { provide: getRepositoryToken(GroupMemberEntity), useValue: createRepoMock() },
         { provide: getRepositoryToken(UserNotificationSettingsEntity), useValue: createRepoMock() },
-        { provide: NotificationsService, useValue: mockNotificationsService() },
-        { provide: FirestoreSyncService, useValue: mockFirestoreSyncService() },
+        { provide: QueueService, useValue: mockQueueService() },
         { provide: SessionActivityService, useValue: { trackActivity: jest.fn() } },
       ],
     }).compile();
@@ -159,7 +150,7 @@ describe('UsersService', () => {
     repository = module.get(getRepositoryToken(UserEntity));
     userActivitiesService = module.get(UserActivitiesService);
     externalFilesService = module.get(ExternalFilesService);
-    notificationsService = module.get(NotificationsService);
+    queueService = module.get(QueueService);
   });
 
   //
@@ -167,26 +158,18 @@ describe('UsersService', () => {
   //
 
   describe('updateStatus', () => {
-    it('updates status and sends push', async () => {
+    it('updates status and enqueues side-effects', async () => {
       repository.findOne.mockResolvedValue(mockUser);
-      repository.find.mockResolvedValue([{ id: 'user2', fcmToken: 'token-abc' } as UserEntity]);
       repository.save.mockResolvedValue(mockUser);
 
       await service.updateStatus('user1', UserStatus.SAFE, { memberUserIds: ['user2'] });
 
       expect(repository.save).toHaveBeenCalled();
-      expect(notificationsService.sendMulticastByType).toHaveBeenCalledWith(
-        ['token-abc'],
-        NotificationType.STATUS_UPDATE,
-        expect.objectContaining({
-          firstName: mockUser.firstName,
-          statusName: 'у безпеці',
-        }),
-        expect.objectContaining({
-          userId: mockUser.id,
-          status: UserStatus.SAFE,
-        }),
-      );
+      expect(queueService.send).toHaveBeenCalledWith(STATUS_UPDATE_SIDE_EFFECTS_QUEUE, {
+        senderUserId: mockUser.id,
+        status: UserStatus.SAFE,
+        memberUserIds: ['user2'],
+      });
     });
 
     it('returns undefined if user not found', async () => {
@@ -194,36 +177,7 @@ describe('UsersService', () => {
 
       const res = await service.updateStatus('x', UserStatus.SAFE);
       expect(res).toBeUndefined();
-    });
-
-    it('includes the sender in notifications if DEV_SEND_PUSH_TO_SENDER is enabled', async () => {
-      const sender = { id: 'sender', fcmToken: 'sender-token', status: UserStatus.SAFE, firstName: 'Sender' } as UserEntity;
-      repository.findOne.mockResolvedValue(sender);
-      repository.save.mockResolvedValue(sender);
-
-      const targetMemberIds = ['m1'];
-      const memberRepo = (service as any).memberRepository;
-      memberRepo.find.mockResolvedValue([{ userId: 'm1' }]);
-
-      const configService = (service as any).configService;
-      configService.get.mockImplementation((key: string) => {
-        if (key === 'DEV_SEND_PUSH_TO_SENDER') return true;
-        return false;
-      });
-
-      // Mock getTokensForUsers to return target tokens
-      const getTokensSpy = jest.spyOn(service, 'getTokensForUsers').mockResolvedValue(['m1-token']);
-
-      await service.updateStatus('sender', UserStatus.SAFE, { memberUserIds: ['m1'] });
-
-      expect(notificationsService.sendMulticastByType).toHaveBeenCalledWith(
-        expect.arrayContaining(['m1-token', 'sender-token']),
-        expect.any(String),
-        expect.any(Object),
-        expect.any(Object),
-      );
-
-      getTokensSpy.mockRestore();
+      expect(queueService.send).not.toHaveBeenCalled();
     });
   });
 
