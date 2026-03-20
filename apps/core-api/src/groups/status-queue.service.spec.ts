@@ -107,7 +107,7 @@ describe('StatusQueueService', () => {
         id: 'group-1',
         name: 'Test Group',
         lastRollCallAt: twoHoursAgo,
-        members: [mockUser],
+        members: [{ userId: mockUser.id }],
       } as unknown as GroupEntity;
 
       groupRepository.find.mockResolvedValue([mockGroup]);
@@ -116,7 +116,7 @@ describe('StatusQueueService', () => {
 
       await service.handleStatusTransitions();
 
-      expect(usersService.updateStatus).toHaveBeenCalledWith('user-1', UserStatus.UNKNOWN, ['group-1']);
+      expect(usersService.updateStatus).toHaveBeenCalledWith('user-1', UserStatus.UNKNOWN, { memberUserIds: ['user-1'] });
     });
 
     it('should respect ROLL_CALL_TIMEOUT_MINUTES from config', async () => {
@@ -140,7 +140,7 @@ describe('StatusQueueService', () => {
         id: 'group-1',
         name: 'Test Group',
         lastRollCallAt: fortyMinutesAgo,
-        members: [mockUser],
+        members: [{ userId: mockUser.id }],
       } as unknown as GroupEntity;
 
       groupRepository.find.mockResolvedValue([mockGroup]);
@@ -150,7 +150,7 @@ describe('StatusQueueService', () => {
       await service.handleStatusTransitions();
 
       // Should timeout because 40m > 30m threshold
-      expect(usersService.updateStatus).toHaveBeenCalledWith('user-1', UserStatus.UNKNOWN, ['group-1']);
+      expect(usersService.updateStatus).toHaveBeenCalledWith('user-1', UserStatus.UNKNOWN, { memberUserIds: ['user-1'] });
 
       // Reset mock for other tests
       configService.get.mockImplementation((key) => {
@@ -174,7 +174,7 @@ describe('StatusQueueService', () => {
         id: 'group-1',
         name: 'Test Group',
         lastRollCallAt: twoHoursAgo,
-        members: [mockUser],
+        members: [{ userId: mockUser.id }],
       } as unknown as GroupEntity;
 
       groupRepository.find.mockResolvedValue([mockGroup]);

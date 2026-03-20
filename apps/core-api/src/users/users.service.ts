@@ -94,7 +94,26 @@ export class UsersService {
       .map((u) => u.fcmToken as string);
   }
 
-  async updateStatus(userId: string, status: UserStatus, groupMemberIds?: string[]) {
+  private async isAvatarViewAllowed(targetUserId: string, requesterUserId: string): Promise<boolean> {
+    if (targetUserId === requesterUserId) return true;
+
+    // Allow avatar access only when requester and target share at least one group.
+    // (If both users are in the same group, that group has >= 2 members by definition.)
+    const requesterMemberships = await this.memberRepository.find({
+      where: { userId: requesterUserId },
+      select: ['groupId'],
+    });
+    const requesterGroupIds = requesterMemberships.map((m) => m.groupId);
+    if (requesterGroupIds.length === 0) return false;
+
+    const targetMemberships = await this.memberRepository.find({
+      where: { userId: targetUserId, groupId: In(requesterGroupIds) },
+      select: ['groupId'],
+    });
+    return targetMemberships.length > 0;
+  }
+
+  async updateStatus(userId: string, status: UserStatus, options?: { memberUserIds?: string[] }) {
     const user = await this.repository.findOne({
       where: { id: userId },
     });
@@ -104,8 +123,8 @@ export class UsersService {
     user.lastStatusUpdate = new Date();
     await this.repository.save(user);
 
-    // If groupMemberIds are not provided, find all members from all groups the user belongs to
-    let targetMemberIds = groupMemberIds;
+    // If memberUserIds are not provided, find all members from all groups the user belongs to
+    let targetMemberIds = options?.memberUserIds;
     if (!targetMemberIds || targetMemberIds.length === 0) {
       const memberships = await this.memberRepository.find({
         where: { userId },
@@ -168,7 +187,13 @@ export class UsersService {
     return { message: 'Token updated' };
   }
 
-  async upsertFile(userId: string, file: Express.Multer.File, queryRunner?: QueryRunner): Promise<UserEntity> {
+  async upsertFile(
+    userId: string,
+    file: Express.Multer.File,
+    currentUserId: string,
+    queryRunner?: QueryRunner,
+  ): Promise<UserEntity> {
+    ensureSameUser(userId, currentUserId);
     const manager = queryRunner?.manager || this.repository.manager;
     return manager.transaction(async (trx) => {
       const user = await trx.findOne(UserEntity, { where: { id: userId }, relations: ['file'] });
@@ -187,13 +212,17 @@ export class UsersService {
     });
   }
 
-  async getFile(userId: string): Promise<StreamableFile> {
+  async getFile(userId: string, currentUserId: string): Promise<StreamableFile> {
+    const allowed = await this.isAvatarViewAllowed(userId, currentUserId);
+    if (!allowed) throw new NotFoundException('Користувача або файл не знайдено');
+
     const user = await this.repository.findOne({ where: { id: userId }, relations: ['file'] });
     if (!user || !user.file) throw new NotFoundException('Користувача або файл не знайдено');
     return this.externalFilesService.getStreamableFile(user.file);
   }
 
-  async removeFile(userId: string, manager?: EntityManager): Promise<void> {
+  async removeFile(userId: string, currentUserId: string, manager?: EntityManager): Promise<void> {
+    ensureSameUser(userId, currentUserId);
     const entityManager = manager || this.repository.manager;
     const user = await entityManager.findOne(UserEntity, {
       where: { id: userId },

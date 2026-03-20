@@ -172,7 +172,7 @@ describe('UsersService', () => {
       repository.find.mockResolvedValue([{ id: 'user2', fcmToken: 'token-abc' } as UserEntity]);
       repository.save.mockResolvedValue(mockUser);
 
-      await service.updateStatus('user1', UserStatus.SAFE, ['user2']);
+      await service.updateStatus('user1', UserStatus.SAFE, { memberUserIds: ['user2'] });
 
       expect(repository.save).toHaveBeenCalled();
       expect(notificationsService.sendMulticastByType).toHaveBeenCalledWith(
@@ -214,7 +214,7 @@ describe('UsersService', () => {
       // Mock getTokensForUsers to return target tokens
       const getTokensSpy = jest.spyOn(service, 'getTokensForUsers').mockResolvedValue(['m1-token']);
 
-      await service.updateStatus('sender', UserStatus.SAFE, ['m1']);
+      await service.updateStatus('sender', UserStatus.SAFE, { memberUserIds: ['m1'] });
 
       expect(notificationsService.sendMulticastByType).toHaveBeenCalledWith(
         expect.arrayContaining(['m1-token', 'sender-token']),
@@ -253,11 +253,15 @@ describe('UsersService', () => {
 
       externalFilesService.replaceFile.mockResolvedValue({ id: 'file123' } as ExternalFilesEntity);
 
-      await service.upsertFile('user1', {
-        originalname: 'a.png',
-        buffer: Buffer.from('123'),
-        mimetype: 'image/png',
-      } as Express.Multer.File);
+      await service.upsertFile(
+        'user1',
+        {
+          originalname: 'a.png',
+          buffer: Buffer.from('123'),
+          mimetype: 'image/png',
+        } as Express.Multer.File,
+        'user1',
+      );
 
       expect(externalFilesService.replaceFile).toHaveBeenCalled();
 
@@ -279,7 +283,7 @@ describe('UsersService', () => {
 
       (repository.manager.transaction as jest.Mock).mockImplementation((fn) => fn(trx));
 
-      await expect(service.upsertFile('x', {} as Express.Multer.File)).rejects.toThrow(NotFoundException);
+      await expect(service.upsertFile('x', {} as Express.Multer.File, 'x')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -288,13 +292,13 @@ describe('UsersService', () => {
       repository.findOne.mockResolvedValue({ file: { id: 'f1' } } as UserEntity);
       externalFilesService.getStreamableFile.mockReturnValue('STREAM' as any);
 
-      const res = await service.getFile('u1');
+      const res = await service.getFile('u1', 'u1');
       expect(res).toBe('STREAM');
     });
 
     it('throws if no user', async () => {
       repository.findOne.mockResolvedValue(null);
-      await expect(service.getFile('x')).rejects.toThrow(NotFoundException);
+      await expect(service.getFile('x', 'x')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -307,7 +311,7 @@ describe('UsersService', () => {
         queryRunner: {},
       } as unknown as EntityManager;
 
-      await service.removeFile('u1', manager);
+      await service.removeFile('u1', 'u1', manager);
 
       expect(externalFilesService.delete).toHaveBeenCalledWith('f1', manager.queryRunner);
 
@@ -322,7 +326,7 @@ describe('UsersService', () => {
         queryRunner: {},
       } as unknown as EntityManager;
 
-      await expect(service.removeFile('x', manager)).rejects.toThrow(NotFoundException);
+      await expect(service.removeFile('x', 'x', manager)).rejects.toThrow(NotFoundException);
     });
   });
 

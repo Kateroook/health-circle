@@ -66,7 +66,7 @@ export class StatusQueueService implements OnModuleInit {
       if (usersToUpdate.length > 0) {
         this.logger.log(`Timed out ${usersToUpdate.length} users in group ${group.name} due to roll call`);
         for (const u of usersToUpdate) {
-          await this.usersService.updateStatus(u.id, UserStatus.UNKNOWN, [group.id]);
+          await this.usersService.updateStatus(u.id, UserStatus.UNKNOWN, { memberUserIds: memberIds });
         }
       }
     }
