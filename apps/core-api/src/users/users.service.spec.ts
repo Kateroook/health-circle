@@ -40,6 +40,7 @@ describe('UsersService', () => {
   let service: UsersService;
 
   let repository: jest.Mocked<Repository<UserEntity>>;
+  let memberRepository: jest.Mocked<Repository<GroupMemberEntity>>;
   let userActivitiesService: jest.Mocked<UserActivitiesService>;
   let externalFilesService: jest.Mocked<ExternalFilesService>;
   let queueService: jest.Mocked<QueueService>;
@@ -74,6 +75,18 @@ describe('UsersService', () => {
   // MOCK FACTORIES
   //
   const createRepoMock = () => {
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      innerJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getExists: jest.fn(),
+      getOne: jest.fn(),
+      getRawOne: jest.fn(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
     return {
       findOne: jest.fn(),
       findOneBy: jest.fn(),
@@ -86,26 +99,27 @@ describe('UsersService', () => {
 
       manager: {
         transaction: jest.fn().mockImplementation((fn) => {
-          // Create a mock transaction manager
           const trx = {
             findOne: jest.fn(),
             save: jest.fn(),
             remove: jest.fn(),
             queryRunner: {},
-          } as unknown as EntityManager; // Force cast to EntityManager
+            getRepository: jest.fn().mockImplementation((entity) => {
+              if (entity === UserEntity) return repository;
+              if (entity === GroupMemberEntity) return memberRepository;
+              return createRepoMock();
+            }),
+          } as unknown as EntityManager;
           return fn(trx);
         }),
+        getRepository: jest.fn().mockImplementation((entity) => {
+          if (entity === UserEntity) return repository;
+          if (entity === GroupMemberEntity) return memberRepository;
+          return createRepoMock();
+        }),
       },
-      createQueryBuilder: jest.fn(() => ({
-        select: jest.fn().mockReturnThis(),
-        innerJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-        getOne: jest.fn(),
-        getMany: jest.fn().mockResolvedValue([]),
-      })),
-    } as unknown as jest.Mocked<Repository<UserEntity>>;
+      createQueryBuilder: jest.fn(() => qb),
+    } as unknown as jest.Mocked<Repository<any>>;
   };
 
   const mockConfirmationsService = () => ({
@@ -146,8 +160,8 @@ describe('UsersService', () => {
     }).compile();
 
     service = module.get<UsersService>(UsersService);
-
     repository = module.get(getRepositoryToken(UserEntity));
+    memberRepository = module.get(getRepositoryToken(GroupMemberEntity));
     userActivitiesService = module.get(UserActivitiesService);
     externalFilesService = module.get(ExternalFilesService);
     queueService = module.get(QueueService);
@@ -242,7 +256,7 @@ describe('UsersService', () => {
   });
 
   describe('getFile', () => {
-    it('returns stream', async () => {
+    it('returns stream if same user', async () => {
       repository.findOne.mockResolvedValue({ file: { id: 'f1' } } as UserEntity);
       externalFilesService.getStreamableFile.mockReturnValue('STREAM' as any);
 
@@ -250,9 +264,29 @@ describe('UsersService', () => {
       expect(res).toBe('STREAM');
     });
 
+    it('returns stream if users share a group', async () => {
+      repository.findOne.mockResolvedValue({ file: { id: 'f1' } } as UserEntity);
+      externalFilesService.getStreamableFile.mockReturnValue('STREAM' as any);
+
+      const qb = memberRepository.createQueryBuilder();
+      (qb.getExists as jest.Mock).mockResolvedValue(true);
+
+      const res = await service.getFile('target-user', 'requester-user');
+      expect(res).toBe('STREAM');
+      expect(qb.getExists).toHaveBeenCalled();
+    });
+
     it('throws if no user', async () => {
       repository.findOne.mockResolvedValue(null);
       await expect(service.getFile('x', 'x')).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws if not same user and no shared group', async () => {
+      repository.findOne.mockResolvedValue({ file: { id: 'f1' } } as UserEntity);
+      const qb = memberRepository.createQueryBuilder();
+      (qb.getExists as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.getFile('u1', 'u2')).rejects.toThrow(NotFoundException);
     });
   });
 

@@ -94,19 +94,14 @@ export class UsersService {
     if (targetUserId === requesterUserId) return true;
 
     // Allow avatar access only when requester and target share at least one group.
-    // (If both users are in the same group, that group has >= 2 members by definition.)
-    const requesterMemberships = await this.memberRepository.find({
-      where: { userId: requesterUserId },
-      select: ['groupId'],
-    });
-    const requesterGroupIds = requesterMemberships.map((m) => m.groupId);
-    if (requesterGroupIds.length === 0) return false;
-
-    const targetMemberships = await this.memberRepository.find({
-      where: { userId: targetUserId, groupId: In(requesterGroupIds) },
-      select: ['groupId'],
-    });
-    return targetMemberships.length > 0;
+    // We use a single query with a self-join on group_members to check for common groupIds.
+    return this.memberRepository
+      .createQueryBuilder('m1')
+      .innerJoin(GroupMemberEntity, 'm2', 'm1.groupId = m2.groupId')
+      .where('m1.userId = :requesterUserId', { requesterUserId })
+      .andWhere('m2.userId = :targetUserId', { targetUserId })
+      .limit(1)
+      .getExists();
   }
 
   async updateStatus(userId: string, status: UserStatus, options?: { memberUserIds?: string[] }) {

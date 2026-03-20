@@ -11,6 +11,7 @@ import { In, IsNull, Not, Repository } from 'typeorm';
 
 import config from '../../../config';
 import { ExternalFilesEntity } from '../entities/external-files.entity';
+import { ExternalFilesService } from '../external-files.service';
 
 const cronConfig = config().cron;
 
@@ -23,6 +24,7 @@ export class ExternalFilesQueueService implements OnModuleInit {
     private readonly repository: Repository<ExternalFilesEntity>,
     private readonly configService: ConfigService,
     private readonly queueService: QueueService,
+    private readonly externalFilesService: ExternalFilesService,
     @InjectPinoLogger(ExternalFilesQueueService.name)
     private readonly logger: PinoLogger,
   ) {
@@ -46,12 +48,7 @@ export class ExternalFilesQueueService implements OnModuleInit {
   public async processMissingFiles() {
     const type = LoggingTypes.cleanupMissingFiles;
     try {
-      const dirFiles = await fs.promises.readdir(this.basePath);
-      const dbFiles = await this.repository.find();
-
-      const onlyInDir = dirFiles.filter((dirFile) => !dbFiles.some((dbFile) => dbFile.externalId === dirFile));
-      const onlyInDb = dbFiles.filter((dbFile) => !dirFiles.includes(dbFile.externalId));
-      const onlyInDbIds = onlyInDb.map((e) => e.id);
+      const { onlyInDir, onlyInDbIds } = await this.externalFilesService.cleanup();
 
       if (onlyInDir.length > 0 || onlyInDbIds.length > 0) {
         await Promise.all(
