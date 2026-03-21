@@ -1,5 +1,16 @@
 import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  Linking,
+  Modal,
+  Pressable,
+  ToastAndroid,
+  Platform,
+} from "react-native";
+import * as Clipboard from "expo-clipboard";
+import { Feather, FontAwesome6, AntDesign } from "@expo/vector-icons";
 import { Member } from "../types";
 import { theme } from "../theme/theme";
 import { MemberAvatar } from "./MemberAvatar";
@@ -28,9 +39,78 @@ export const MemberProfileView = ({
   isOwner,
 }: MemberProfileViewProps) => {
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleContact = () => {
+    if (member.phone) {
+      Linking.openURL(`tel:${member.phone}`);
+    } else {
+      Linking.openURL("tel:");
+    }
+  };
+
+  const handleCopyLocation = async (copyStr?: string) => {
+    const coords = copyStr || `${member.latitude || ""}, ${member.longitude || ""}`;
+    if (coords !== ", " && coords !== "") {
+      await Clipboard.setStringAsync(coords);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      if (Platform.OS === "android") {
+        ToastAndroid.show("Координати скопійовано!", ToastAndroid.SHORT);
+      }
+    }
+  };
+
+  const renderLocation = () => {
+    if (member.status !== "DANGER") return null;
+
+    const hasCoords = !!(member.latitude && member.longitude);
+    const hasAddress = !!(member.region || member.district);
+
+    if (!hasCoords && !hasAddress) return null;
+
+    let locationText = "";
+    if (hasAddress) {
+      locationText = `${member.region || ""}${member.region && member.district ? ", " : ""}${member.district || ""}`;
+    } else if (hasCoords) {
+      locationText = `${member.latitude?.toFixed(4)}, ${member.longitude?.toFixed(4)}`;
+    }
+
+    const copyCoords = `${member.latitude || ""}, ${member.longitude || ""}`;
+
+    return (
+      <TouchableOpacity
+        onPress={() => handleCopyLocation(copyCoords)}
+        style={styles.locationContainer}
+        hitSlop={10}
+      >
+        <FontAwesome6 name="location-dot" size={16} color={theme.colors.content.primary} />
+        <Typography variant="body1" style={styles.locationText} weight="semibold">
+          {locationText}
+        </Typography>
+        {copied ? (
+          <Feather
+            name="check"
+            size={16}
+            color={theme.colors.state.safe}
+            style={{ marginLeft: 8 }}
+          />
+        ) : (
+          <AntDesign
+            name="copy"
+            size={16}
+            color={theme.colors.content.primary}
+            style={{ marginLeft: 8 }}
+          />
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
+      {/* Rename Modal */}
       <RenameModal
         isVisible={isRenaming}
         title="Редагування імʼя"
@@ -55,31 +135,97 @@ export const MemberProfileView = ({
         }
       />
 
+      {/* Roll Call Modal */}
+      <Modal
+        visible={isRollCallModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsRollCallModalVisible(false)}
+      >
+        <Pressable style={styles.rcOverlay} onPress={() => setIsRollCallModalVisible(false)}>
+          <Pressable style={styles.rcCard} onPress={(e) => e.stopPropagation()}>
+            <Typography
+              variant="h2"
+              weight="bold"
+              style={styles.rcTitle}
+            >{`Запитати "Як ти?"`}</Typography>
+
+            <View style={styles.rcMessageBubble}>
+              <MemberAvatar member={member} size="sm" />
+              <View style={styles.rcMessageTextContainer}>
+                <Typography
+                  variant="body2"
+                  weight="bold"
+                  style={{ color: theme.colors.content.primary }}
+                >
+                  Як ти?
+                </Typography>
+                <Typography
+                  variant="caption"
+                  style={{ color: theme.colors.content.primary, marginTop: 2 }}
+                >
+                  Відміть, будь ласка, свій стан
+                </Typography>
+              </View>
+              <Typography variant="caption" style={styles.rcTimeText}>
+                9:41
+              </Typography>
+            </View>
+
+            <View style={styles.rcActions}>
+              <Button
+                label="Скасувати"
+                hierarchy="secondary"
+                shape="rectangle"
+                size="medium"
+                onPress={() => setIsRollCallModalVisible(false)}
+                style={{ flex: 1, marginRight: theme.spacing[8] }}
+              />
+              <Button
+                label="Запитати"
+                hierarchy="primary"
+                shape="rectangle"
+                size="medium"
+                onPress={() => {
+                  setIsRollCallModalVisible(false);
+                  onRollCall?.();
+                }}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <View style={styles.profileSection}>
         <MemberAvatar member={member} size="xl" />
         <Typography variant="h2" tone="primary" style={styles.name}>
           {member.fullName || `${member.firstName} ${member.lastName}`}
         </Typography>
-        <StatusBadge variant="pill" status={member.status} />
+
+        <View style={styles.statusContainer}>
+          <StatusBadge variant="pill" status={member.status} />
+          {onRollCall && (
+            <TouchableOpacity
+              onPress={() => setIsRollCallModalVisible(true)}
+              style={styles.rollCallIconButton}
+            >
+              <Feather name="rss" size={18} color={theme.colors.content.primary} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {renderLocation()}
       </View>
 
       <View style={styles.actionsColumn}>
         {onMessage && (
           <Button
-            label="Написати"
+            label="Зв'язатися"
             hierarchy="secondary"
             shape="rectangle"
             size="medium"
-            onPress={onMessage}
-          />
-        )}
-        {onRollCall && (
-          <Button
-            label="Перекличка"
-            hierarchy="secondary"
-            shape="rectangle"
-            size="medium"
-            onPress={onRollCall}
+            onPress={handleContact}
           />
         )}
         {onRename && (
@@ -129,8 +275,81 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing[16],
     textAlign: "center",
   },
+  statusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rollCallIconButton: {
+    marginLeft: theme.spacing[8],
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.colors.background.secondary,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: theme.spacing[20],
+    paddingTop: theme.spacing[8],
+    paddingHorizontal: theme.spacing[16],
+  },
+  locationText: {
+    marginLeft: theme.spacing[8],
+    color: theme.colors.content.primary,
+    marginBottom: 0,
+  },
   actionsColumn: {
     width: "100%",
     gap: theme.spacing[8],
+  },
+  rcOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing[16],
+  },
+  rcCard: {
+    width: "100%",
+    backgroundColor: theme.colors.background.primary,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing[24],
+    alignItems: "center",
+  },
+  rcTitle: {
+    marginBottom: theme.spacing[24],
+  },
+  rcMessageBubble: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: theme.colors.background.secondary,
+    padding: theme.spacing[12],
+    borderRadius: theme.radius.lg,
+    width: "100%",
+    marginBottom: theme.spacing[24],
+    borderBottomLeftRadius: 4,
+  },
+  rcMessageTextContainer: {
+    flex: 1,
+    marginLeft: theme.spacing[12],
+  },
+  rcTimeText: {
+    color: theme.colors.content.secondary,
+    marginLeft: theme.spacing[8],
+    alignSelf: "flex-end",
+  },
+  rcActions: {
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "space-between",
   },
 });
