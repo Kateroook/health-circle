@@ -73,9 +73,9 @@ describe('UsersController', () => {
       service.getFile.mockResolvedValue(stream);
 
       const params = { id: 'user-id-123' };
-      const response = await controller.getAvatar(params);
+      const response = await controller.getAvatar(params, mockRequest);
 
-      expect(service.getFile).toHaveBeenCalledWith(params.id);
+      expect(service.getFile).toHaveBeenCalledWith(params.id, mockRequest.user.id);
       expect(response).toBe(stream);
     });
   });
@@ -168,9 +168,9 @@ describe('UsersController', () => {
       const result = new UserEntity();
       service.upsertFile.mockResolvedValue(result);
 
-      const response = await controller.uploadAvatar(params, mockFile);
+      const response = await controller.uploadAvatar(params, mockFile, mockRequest);
 
-      expect(service.upsertFile).toHaveBeenCalledWith(params.id, mockFile);
+      expect(service.upsertFile).toHaveBeenCalledWith(params.id, mockFile, mockRequest.user.id);
       expect(response).toBe(result);
     });
   });
@@ -192,9 +192,9 @@ describe('UsersController', () => {
       const params = { id: 'user-id-123' };
       service.removeFile.mockResolvedValue(undefined);
 
-      await controller.removeLogo(params);
+      await controller.removeLogo(params, mockRequest);
 
-      expect(service.removeFile).toHaveBeenCalledWith(params.id);
+      expect(service.removeFile).toHaveBeenCalledWith(params.id, mockRequest.user.id);
     });
   });
 });

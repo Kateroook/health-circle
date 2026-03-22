@@ -11,7 +11,7 @@ export default {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.vlad-risenhin.health-circle",
+      bundleIdentifier: "com.healthcircle.app",
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "Allow Health Circle to access your location to share your safety status with your circles.",
@@ -20,7 +20,7 @@ export default {
       },
     },
     android: {
-      package: "com.vlad_risenhin.health_circle",
+      package: "com.healthcircle.app",
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
       adaptiveIcon: {
         backgroundColor: "#f5f7fa",

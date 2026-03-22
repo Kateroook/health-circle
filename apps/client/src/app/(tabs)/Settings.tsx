@@ -1,6 +1,8 @@
+import { Avatar } from "@/src/components/Avatar";
 import { Button } from "@/src/components/Button";
 import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { PasswordField, TextField } from "@/src/components/fields/TextField";
+import { ListItem } from "@/src/components/ListItem";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -8,11 +10,8 @@ import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { Alert, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import ConfirmationModal from "../../components/ConfirmationModal";
-
-import { Avatar } from "@/src/components/Avatar";
-import { ListItem } from "@/src/components/ListItem";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
+import ConfirmationModal from "../../components/ConfirmationModal";
 import { useFcmToken } from "../../hooks/useFcmToken";
 import { useAuthStore } from "../../store/authStore";
 import { useLocationStore } from "../../store/locationStore";
@@ -32,11 +31,9 @@ export default function SettingsScreen() {
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [middleName, setMiddleName] = useState(user?.middleName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
-  const [fullName, setFullName] = useState(user?.fullName || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
-  const defaultAvatar = require("../../assets/images/default-avatar.png");
 
   // Change password state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -45,19 +42,15 @@ export default function SettingsScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
+
   const [isDeleteAccountVisible, setIsDeleteAccountVisible] = useState(false);
   const [isDeleteAvatarVisible, setIsDeleteAvatarVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
-  const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
 
-  const [toggle1, setToggle1] = useState(false);
-  const [toggle2, setToggle2] = useState(false);
-  const [toggle3, setToggle3] = useState(false);
-  const [toggle4, setToggle4] = useState(false);
-  const [toggle5, setToggle5] = useState(false);
-  const [toggle6, setToggle6] = useState(false);
-  const [toggle7, setToggle7] = useState(false);
+  // Modal / section states
+  const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
+  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
+
   const [isLogoutVisible, setIsLogoutVisible] = useState(false);
   const [notifSettings, setNotifSettings] = useState<any>(null);
   const [notifLoading, setNotifLoading] = useState(false);
@@ -94,11 +87,9 @@ export default function SettingsScreen() {
   };
 
   useEffect(() => {
-    // Ensure text fields stay in sync when the user object changes (e.g., after refreshProfile)
     setFirstName(user?.firstName || "");
     setMiddleName(user?.middleName || "");
     setLastName(user?.lastName || "");
-    setFullName(user?.fullName || "");
     setPhone(user?.phone || "");
     if (user?.id) setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
   }, [user]);
@@ -160,7 +151,7 @@ export default function SettingsScreen() {
       });
       Alert.alert("Успіх", "Дані оновлено");
       await refreshProfile();
-      setIsEditMode(false); // ← ховаємо форму після успіху
+      setIsEditMode(false);
     } catch (e: any) {
       Alert.alert("Помилка", e?.message || "Не вдалося оновити дані");
     }
@@ -219,6 +210,7 @@ export default function SettingsScreen() {
       setPasswordError("Новий пароль та підтвердження не співпадають");
       return;
     }
+
     setPasswordLoading(true);
     try {
       await apiFetch("/auth/change-password", {
@@ -311,7 +303,6 @@ export default function SettingsScreen() {
             {user?.firstName}
           </Typography>
 
-          {/* Нова кнопка "Редагувати" */}
           {!isEditMode && (
             <Button
               label="Редагувати"
@@ -324,7 +315,6 @@ export default function SettingsScreen() {
             />
           )}
 
-          {/* Блок редагування — показується тільки в режимі isEditMode */}
           {isEditMode && (
             <View style={styles.editContainer}>
               <View style={styles.avatarButtons}>
@@ -390,7 +380,6 @@ export default function SettingsScreen() {
                 style={styles.save}
               />
 
-              {/* Опціонально: кнопка "Скасувати" */}
               <Button
                 label="Скасувати"
                 hierarchy="secondary"
@@ -409,6 +398,7 @@ export default function SettingsScreen() {
           )}
         </View>
 
+        {/* 1. Сповіщення */}
         <View style={styles.settingsSection}>
           <ListItem
             layout="compact"
@@ -422,7 +412,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* 2. Кнопка "Приватність та безпека"*/}
+        {/* 2. Приватність та безпека */}
         <View style={styles.settingsSection}>
           <TouchableOpacity
             style={styles.settingsRow}
@@ -493,6 +483,7 @@ export default function SettingsScreen() {
             showDivider={false}
           />
         </View>
+        {/* 3. Вихід */}
         <Button
           label="Вихід"
           hierarchy="tertiary"
@@ -635,9 +626,7 @@ export default function SettingsScreen() {
         onRequestClose={() => setIsNotificationsModalVisible(false)}
       >
         <View style={{ flex: 1, backgroundColor: theme.colors.background.primary }}>
-          {/* Safe area spacer — handles Dynamic Island on iOS and status bar on Android */}
           <View style={{ height: insets.top, backgroundColor: theme.colors.background.primary }} />
-          {/* Header */}
           <View style={notifStyles.header}>
             <Typography variant="h3" tone="primary" style={{ flex: 1, textAlign: "center" }}>
               Сповіщення
@@ -658,7 +647,6 @@ export default function SettingsScreen() {
             />
           </View>
 
-          {/* Content */}
           <ScrollView
             style={{ flex: 1 }}
             contentContainerStyle={notifStyles.scrollContent}
@@ -738,6 +726,42 @@ export default function SettingsScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      <ConfirmationModal
+        isVisible={isDeleteAccountVisible}
+        onCancel={() => setIsDeleteAccountVisible(false)}
+        onConfirm={async () => {
+          setIsDeleteAccountVisible(false);
+          try {
+            await apiFetch("/users", { method: "DELETE" });
+            logout();
+          } catch (e) {
+            Alert.alert("Помилка", "Не вдалося видалити акаунт");
+          }
+        }}
+        title="Видалити акаунт?"
+        message="Цю дію не можна скасувати."
+        confirmText="Видалити"
+        cancelText="Скасувати"
+      />
+      <ConfirmationModal
+        isVisible={isDeleteAvatarVisible}
+        onCancel={() => setIsDeleteAvatarVisible(false)}
+        onConfirm={async () => {
+          setIsDeleteAvatarVisible(false);
+          try {
+            await apiFetch(`/users/${user?.id}/avatar`, { method: "DELETE" });
+            updateUser({ avatarUpdatedAt: undefined });
+            setAvatarUrl(null);
+          } catch (e) {
+            Alert.alert("Помилка", "Не вдалося видалити аватар");
+          }
+        }}
+        title="Видалити аватар?"
+        message="Ви впевнені, що хочете видалити фото профілю?"
+        confirmText="Видалити"
+        cancelText="Скасувати"
+      />
     </SafeAreaView>
   );
 }
@@ -773,7 +797,7 @@ const styles = StyleSheet.create({
   settingsSection: {
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.radius.lg,
-    overflow: "hidden", // clips ListItem rows to rounded corners
+    overflow: "hidden",
     marginBottom: theme.spacing[8],
   },
   settingsRow: {
@@ -795,7 +819,7 @@ const styles = StyleSheet.create({
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-start", // вміст зліва
+    justifyContent: "flex-start",
     backgroundColor: theme.colors.background.secondary,
     marginTop: theme.spacing[8],
   },
@@ -808,7 +832,6 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing[8],
     alignItems: "center",
   },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -822,22 +845,34 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
   },
+  sectionHeader: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#666666",
+    marginTop: 24,
+    marginBottom: 8,
+    paddingLeft: 4,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
   modalTitle: {
     fontSize: 22,
     fontWeight: "700",
     marginBottom: 20,
     textAlign: "center",
     color: "#1A1A1A",
-  },
-  modalInput: {
-    height: 50,
-    backgroundColor: "#F5F5F5",
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
   },
   modalPasswordContainer: {
     flexDirection: "row",
@@ -870,7 +905,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
-// ──────────────────────────────────────────────
+
 const notifStyles = StyleSheet.create({
   header: {
     height: 56,
@@ -888,6 +923,6 @@ const notifStyles = StyleSheet.create({
   listSection: {
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.radius.xl,
-    overflow: "hidden", // clips the ListItem dividers to rounded corners
+    overflow: "hidden",
   },
 });

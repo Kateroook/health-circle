@@ -120,4 +120,18 @@ export class ExternalFilesService {
 
     return await repository.softDelete(id);
   }
+
+  public async cleanup() {
+    const dirFiles = await fs.promises.readdir(this.basePath);
+    const dbFiles = await this.repository.find({ select: ['id', 'externalId'] });
+
+    const dbExternalIds = new Set(dbFiles.map((f) => f.externalId));
+    const dirFilesSet = new Set(dirFiles);
+
+    const onlyInDir = dirFiles.filter((dirFile) => !dbExternalIds.has(dirFile));
+    const onlyInDb = dbFiles.filter((dbFile) => !dirFilesSet.has(dbFile.externalId));
+    const onlyInDbIds = onlyInDb.map((e) => e.id);
+
+    return { onlyInDir, onlyInDbIds };
+  }
 }

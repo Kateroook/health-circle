@@ -1,18 +1,18 @@
+import { useAnalytics } from "@/src/hooks/useAnalytics";
 import { useAuthStore } from "@/src/store/authStore";
 import { AntDesign } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { useAnalytics } from "@/src/hooks/useAnalytics";
 import { StyleSheet, View } from "react-native";
 
 import { setContactAlias } from "@/src/api/contacts";
 import { blockUser, initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
-import { BottomSheetContainer, ModalActions } from "@/src/components/modal";
+import { BottomSheetContainer, ModalActions, ModalContainer } from "@/src/components/modal";
 import { theme } from "@/src/theme/theme";
+import { Member } from "@/src/types";
 import ConfirmationModal from "../../ConfirmationModal";
-import { Member } from "../CircleItem";
+import { MemberProfileView } from "../../MemberProfileView";
 import CircleDetailsView from "./CircleDetailsView";
-import MemberDetailsView from "./MemberDetailsView";
 
 interface Props {
   visible: boolean;
@@ -54,6 +54,7 @@ export default function CircleDetailsModal({
   const [isDeleteVisible, setIsDeleteVisible] = useState(false);
   const [isLeaveVisible, setIsLeaveVisible] = useState(false);
   const [isBlockConfirmVisible, setIsBlockConfirmVisible] = useState(false);
+  const [isRemoveConfirmVisible, setIsRemoveConfirmVisible] = useState(false);
 
   const user = useAuthStore().user;
   const isOwner = user?.id === ownerId;
@@ -130,42 +131,8 @@ export default function CircleDetailsModal({
   };
 
   return (
-    <BottomSheetContainer
-      isVisible={visible}
-      onClose={() => {
-        if (view !== "details") {
-          setView("details");
-        } else {
-          onClose();
-        }
-      }}
-    >
-      {/* ===== MEMBER DETAILS MODE ===== */}
-      {view === "member" && selectedMember && (
-        <View style={styles.section}>
-          <Button
-            shape="round"
-            hierarchy="tertiary"
-            size="xsmall"
-            leadingIcon={<AntDesign name="arrow-left" size={16} color={theme.colors.accent} />}
-            onPress={() => setView("details")}
-            style={{ alignSelf: "flex-start" }}
-          />
-
-          <MemberDetailsView
-            member={selectedMember}
-            onInternalRename={handleInternalMemberRename}
-            onClose={() => setView("details")}
-            onRemoveMember={handleRemoveMember}
-            onBlock={isOwner ? () => setIsBlockConfirmVisible(true) : undefined}
-            onRollCall={handlePersonalRollCall}
-            isOwner={isOwner}
-          />
-        </View>
-      )}
-
-      {/* ===== DETAILS VIEW (Main) ===== */}
-      {view === "details" && (
+    <>
+      <ModalContainer isVisible={visible} onClose={onClose} fullScreen>
         <View style={styles.section}>
           <CircleDetailsView
             name={currentName}
@@ -178,46 +145,25 @@ export default function CircleDetailsModal({
             onMemberPress={handleMemberPress}
             onRollCallPress={handleRollCall}
           />
-
-          {/* Footer Actions (Delete/Leave) */}
-          <ModalActions direction="column" style={styles.footer}>
-            {isOwner ? (
-              <>
-                <Button
-                  label="Згенерувати нове запрошення"
-                  hierarchy="tertiary"
-                  shape="rectangle"
-                  size="medium"
-                  onPress={async () => {
-                    await onRegenerateInvite();
-                    logEvent("regenerate_invite_code");
-                  }}
-                  style={{ width: "100%" }}
-                />
-                <Button
-                  label="Видалити коло"
-                  hierarchy="tertiary"
-                  shape="rectangle"
-                  size="medium"
-                  onPress={() => setIsDeleteVisible(true)}
-                  style={{ width: "100%" }}
-                  textStyle={{ color: theme.colors.negative }}
-                />
-              </>
-            ) : (
-              <Button
-                label="Покинути коло"
-                hierarchy="tertiary"
-                shape="rectangle"
-                size="medium"
-                onPress={() => setIsLeaveVisible(true)}
-                style={{ width: "100%" }}
-                textStyle={{ color: theme.colors.negative }}
-              />
-            )}
-          </ModalActions>
         </View>
-      )}
+      </ModalContainer>
+
+      {/* ===== MEMBER DETAILS BOTTOM SHEET ===== */}
+      <BottomSheetContainer
+        isVisible={view === "member" && !!selectedMember}
+        onClose={() => setView("details")}
+      >
+        <View style={styles.memberSection}>
+          <MemberProfileView
+            member={selectedMember!}
+            onRollCall={handlePersonalRollCall}
+            onRename={handleInternalMemberRename}
+            onBlock={isOwner ? () => setIsBlockConfirmVisible(true) : undefined}
+            onRemove={isOwner ? () => setIsRemoveConfirmVisible(true) : undefined}
+            isOwner={isOwner}
+          />
+        </View>
+      </BottomSheetContainer>
 
       <ConfirmationModal
         isVisible={isDeleteVisible}
@@ -228,7 +174,7 @@ export default function CircleDetailsModal({
           setTimeout(() => onDelete(), 300);
         }}
         title="Видалити це Коло?"
-        message="Після видалення ви не зможете стежити за станом його учасників"
+        message="Після видалення ви не зможете стежити за станом його учасників"
         confirmText="Видалити"
         cancelText="Назад"
       />
@@ -251,22 +197,43 @@ export default function CircleDetailsModal({
         isVisible={isBlockConfirmVisible}
         onCancel={() => setIsBlockConfirmVisible(false)}
         onConfirm={handleBlockUser}
-        title={`Заблокувати ${selectedMember?.fullName || selectedMember?.firstName}?`}
+        title={
+          selectedMember
+            ? `Заблокувати ${selectedMember.fullName || selectedMember.firstName}?`
+            : "Заблокувати?"
+        }
         message="Цей користувач буде видалений з кола і не зможе приєднатися знову."
         confirmText="Заблокувати"
         cancelText="Скасувати"
       />
-    </BottomSheetContainer>
+
+      <ConfirmationModal
+        isVisible={isRemoveConfirmVisible}
+        onCancel={() => setIsRemoveConfirmVisible(false)}
+        onConfirm={() => {
+          setIsRemoveConfirmVisible(false);
+          handleRemoveMember();
+        }}
+        title={
+          selectedMember
+            ? `Видалити ${selectedMember.fullName || selectedMember.firstName}?`
+            : "Видалити?"
+        }
+        message="Ви впевнені, що хочете видалити цього учасника з кола?"
+        confirmText="Видалити"
+        cancelText="Скасувати"
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   section: {
-    paddingHorizontal: theme.spacing[16],
-    paddingBottom: theme.spacing[8],
+    flex: 1,
+    backgroundColor: theme.colors.background.primary,
   },
-  footer: {
-    paddingHorizontal: theme.spacing[16],
-    paddingBottom: theme.spacing[10],
+  memberSection: {
+    paddingBottom: theme.spacing[32],
+    alignItems: "center",
   },
 });

@@ -1,13 +1,63 @@
 import { faker } from '@faker-js/faker';
-import { nanoid } from 'nanoid';
+import { nanoid, customAlphabet } from 'nanoid';
 
 export class RandomHelper {
+  public static readonly CHARSETS = {
+    UPPERCASE: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    LOWERCASE: 'abcdefghijklmnopqrstuvwxyz',
+    NUMBERS: '0123456789',
+    SPECIAL: '!@#$%^&*()_+~`|}{[]:;?><,./-=',
+  };
+
   shortId(length = 8) {
     return nanoid(length);
   }
 
+  string({
+    length = 10,
+    charset = '',
+    includeUpper = true,
+    includeLower = true,
+    includeNumbers = true,
+    includeSpecial = true,
+  }: {
+    length?: number;
+    charset?: string;
+    includeUpper?: boolean;
+    includeLower?: boolean;
+    includeNumbers?: boolean;
+    includeSpecial?: boolean;
+  } = {}): string {
+    let combinedCharset = charset;
+
+    if (includeUpper) combinedCharset += RandomHelper.CHARSETS.UPPERCASE;
+    if (includeLower) combinedCharset += RandomHelper.CHARSETS.LOWERCASE;
+    if (includeNumbers) combinedCharset += RandomHelper.CHARSETS.NUMBERS;
+    if (includeSpecial) combinedCharset += RandomHelper.CHARSETS.SPECIAL;
+
+    if (!combinedCharset) {
+      throw new Error('At least one character set must be selected or provided via charset.');
+    }
+
+    const generator = customAlphabet(combinedCharset, length);
+    return generator();
+  }
+
   password(length = 12) {
-    return nanoid(length)+String(this.number({min: 10, max: 99}));
+    const mandatory = [
+      this.pick(RandomHelper.CHARSETS.UPPERCASE.split('')),
+      this.pick(RandomHelper.CHARSETS.LOWERCASE.split('')),
+      this.pick(RandomHelper.CHARSETS.NUMBERS.split('')),
+      this.pick(RandomHelper.CHARSETS.SPECIAL.split('')),
+    ];
+
+    const remainingLength = length - mandatory.length;
+    const remaining = this.string({
+      length: remainingLength,
+      includeSpecial: true,
+    }).split('');
+
+    return faker.helpers.shuffle([...mandatory, ...remaining]).join('');
   }
 
   firstName() {
@@ -146,10 +196,7 @@ export class RandomHelper {
   }
 
   number({ min = 1, max = 100 }) {
-    return faker.number.bigInt({
-      min: min,
-      max: max,
-    });
+    return Number(faker.number.bigInt({ min, max }));
   }
 
   pick<T>(array: T[]): T {

@@ -59,6 +59,8 @@ export interface ChangePasswordRequest extends UserChangePasswordDto {}
 
 export interface ForgotPasswordRequest extends ForgotPasswordDto {}
 
+export interface ResendRegistrationCodeRequest extends ForgotPasswordDto {}
+
 // ============ Response Types ============
 
 export interface LoginResponse extends LoginResponseDto {}
