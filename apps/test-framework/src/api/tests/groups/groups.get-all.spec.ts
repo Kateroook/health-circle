@@ -22,8 +22,8 @@ test.describe('api/groups/get-all tests', async () => {
     expect(userGroups).not.toBeNull();
     expect(userGroups.data.length).toBe(0);
 
-    const dbData = await groupRepository.findBy({ ownerId: user.id });
-    expect(dbData.length).toBe(0);
+    const groupDbRow = await groupRepository.findBy({ ownerId: user.id });
+    expect(groupDbRow.length).toBe(0);
   });
 
   test("[GRP-009] User's list contains newly created group", async ({ api, groupRepository }) => {
@@ -44,9 +44,9 @@ test.describe('api/groups/get-all tests', async () => {
     expect(returnedGroup.id).toBe(createdGroupId);
     expect(returnedGroup.name).toBe(userGroup.name);
 
-    const dbData = await groupRepository.findBy({ ownerId: user.id });
-    expect(dbData).toHaveLength(1);
-    expect(dbData[0].id).toBe(createdGroupId);
+    const groupDbRow = await groupRepository.findBy({ ownerId: user.id });
+    expect(groupDbRow).toHaveLength(1);
+    expect(groupDbRow[0].id).toBe(createdGroupId);
   });
 
   test('[GRP-010] Request without authorization', async ({ api }) => {
