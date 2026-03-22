@@ -1,3 +1,4 @@
+import { GroupFactory } from '../../../core/data/factories/group-factory';
 import { UserEntity } from '../../../core/types/entites/user-interface';
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
@@ -15,11 +16,9 @@ test.describe('api/groups/creation tests', async () => {
   });
 
   test('[GRP-001] Valid groups creation', async ({ api, groupRepository }) => {
-    const validGroupName = utils.random.groupName();
+    const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
 
-    const createGroupResult = await api.groups.createGroup({
-      name: validGroupName,
-    });
+    const createGroupResult = await api.groups.createGroup(validGroup);
 
     expect(createGroupResult.response).toHaveStatus(201);
     expect(createGroupResult.data.members.length).toBe(1);
@@ -27,18 +26,16 @@ test.describe('api/groups/creation tests', async () => {
     const groupDbRow = await groupRepository.getById(createGroupResult.data.id);
 
     expect(groupDbRow).not.toBeNull();
-    expect(groupDbRow!.name).toBe(validGroupName);
+    expect(groupDbRow!.name).toBe(validGroup.name);
     expect(groupDbRow!.ownerId).toBe(user.id);
     expect(groupDbRow!.inviteCode).not.toBeNull();
     expect(groupDbRow!).not.toBeUndefined();
   });
 
   test.fixme('[GRP-004-BUG] Group name with whitespaces', async ({ api }) => {
-    const whitespacesGroupName = '        ';
+    const whitespacesNameGroup = GroupFactory.createEmptyGroup('        ');
 
-    const createGroupResult = await api.groups.createGroup({
-      name: whitespacesGroupName,
-    });
+    const createGroupResult = await api.groups.createGroup(whitespacesNameGroup);
 
     expect(createGroupResult.response).toHaveStatus(400);
     expect(createGroupResult.data).toBeNull();
@@ -73,10 +70,8 @@ test.describe('api/groups/creation tests', async () => {
   );
 
   test('[GRP-006] Response has invite code', async ({ api }) => {
-    const validGroupName = utils.random.groupName();
-    const createGroupResult = await api.groups.createGroup({
-      name: validGroupName,
-    });
+    const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
+    const createGroupResult = await api.groups.createGroup(validGroup);
 
     expect(createGroupResult.response).toHaveStatus2xx();
     expect(createGroupResult.data).not.toBeNull();
@@ -86,10 +81,8 @@ test.describe('api/groups/creation tests', async () => {
   test('[GRP-007] Request without authorization', async ({ api }) => {
     api.groups.clearTokens();
 
-    const validGroupName = utils.random.groupName();
-    const createGroupResult = await api.groups.createGroup({
-      name: validGroupName,
-    });
+    const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
+    const createGroupResult = await api.groups.createGroup(validGroup);
 
     expect(createGroupResult.response).toHaveStatus(401);
     expect(createGroupResult.data).toBeNull();

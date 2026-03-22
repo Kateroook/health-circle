@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { GroupFactory } from '../../../core/data/factories/group-factory';
 import { UserEntity } from '../../../core/types/entites/user-interface';
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
@@ -16,10 +17,8 @@ test.describe('api/groups/get-by-id tests', async () => {
   });
 
   test('[GRP-011] Get existing group by ID', async ({ api, groupRepository }) => {
-    const validGroupName = utils.random.groupName();
-    const createGroupResult = await api.groups.createGroup({
-      name: validGroupName,
-    });
+    const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
+    const createGroupResult = await api.groups.createGroup(validGroup);
 
     const groupId = createGroupResult.data.id;
     const group = await api.groups.getGroup(groupId);
@@ -38,10 +37,8 @@ test.describe('api/groups/get-by-id tests', async () => {
   });
 
   test('[GRP-013] Request without authorization', async ({ api }) => {
-    const validGroupName = utils.random.groupName();
-    const createGroupResult = await api.groups.createGroup({
-      name: validGroupName,
-    });
+    const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
+    const createGroupResult = await api.groups.createGroup(validGroup);
 
     const groupId = createGroupResult.data.id;
 

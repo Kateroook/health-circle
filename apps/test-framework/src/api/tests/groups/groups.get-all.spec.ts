@@ -33,9 +33,7 @@ test.describe('api/groups/get-all tests', async () => {
 
     const userGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
 
-    const createGroupResult = await api.groups.createGroup({
-      name: userGroup.name,
-    });
+    const createGroupResult = await api.groups.createGroup(userGroup);
     const createdGroupId = createGroupResult.data.id;
 
     const userNewGroups = await api.groups.getAllGroups();
