@@ -1,5 +1,6 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 
+import { UserEntity } from '../../users/entities/user.entity';
 import { GroupEntity } from './group.entity';
 
 @Entity({ name: 'group_block_list' })
@@ -18,8 +19,16 @@ export class GroupBlockListEntity {
   @Column({ name: 'user_id', type: 'uuid' })
   userId: string;
 
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user: UserEntity;
+
   @Column({ name: 'created_by', type: 'uuid', nullable: true })
   createdBy: string;
+
+  @ManyToOne(() => UserEntity, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'created_by' })
+  creator: UserEntity;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

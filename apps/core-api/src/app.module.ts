@@ -5,6 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import Joi from 'joi';
 import { SecurityModule } from 'src/security/security.module';
 
+import { AlertsModule } from './alerts/alerts.module';
 import { AuthModule } from './auth/auth.module';
 import { entities } from './common/entities';
 import { GlobalThrottlerGuard } from './common/guards/global-throttler.guard';
@@ -92,6 +93,9 @@ import { UsersModule } from './users/users.module';
         STATUS_EXPIRY_HOURS: Joi.number().default(8),
         ROLL_CALL_TIMEOUT_MINUTES: Joi.number().default(60),
         PERSONAL_ROLL_CALL_GRACE_MINUTES: Joi.number().default(15),
+
+        // Alerts.in.ua
+        ALERTS_TOKEN: Joi.string().required(),
       }),
     }),
     PostgresModule.register(entities, migrations, subscribers),
@@ -106,6 +110,7 @@ import { UsersModule } from './users/users.module';
     ContactsModule,
     NotificationsModule,
     HealthModule,
+    AlertsModule,
     ThrottlerModule.forRoot([
       {
         name: 'short',

@@ -73,4 +73,9 @@ export class CreateUserDto {
   @IsOptional()
   @IsNumber()
   longitude?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  alertRegionUid?: number;
 }
