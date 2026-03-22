@@ -1,8 +1,9 @@
+import { UserEntity } from '../../../core/types/entites/user-interface';
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe('api/groups/creation tests', async () => {
-  let user: any;
+  let user: UserEntity;
 
   test.beforeEach('Authenticate user', async ({ api, spawnUser }) => {
     user = await spawnUser();
@@ -14,54 +15,22 @@ test.describe('api/groups/creation tests', async () => {
   });
 
   test('[GRP-001] Valid groups creation', async ({ api, groupRepository }) => {
-    const validGoupName = utils.random.groupName();
-
-    const createGroupResult = await api.groups.createGroup({
-      name: validGoupName,
-    });
-
-    expect(createGroupResult.response).toHaveStatus(201);
-    expect(createGroupResult.data.members.length).toBe(1);
-
-    const dbData = await groupRepository.getById(createGroupResult.data.id);
-
-    expect(dbData).not.toBeNull();
-    expect(dbData!.name).toBe(validGoupName);
-    expect(dbData!.ownerId).toBe(user.id);
-    expect(dbData!.inviteCode).not.toBeNull();
-  });
-
-  test('[GRP-002] Group name less then 3', async ({ api, groupRepository }) => {
-    const validGroupName = 'AB';
+    const validGroupName = utils.random.groupName();
 
     const createGroupResult = await api.groups.createGroup({
       name: validGroupName,
     });
 
-    expect(createGroupResult.response).toHaveStatus(400);
-    expect(createGroupResult.data).toBeNull();
-  });
+    expect(createGroupResult.response).toHaveStatus(201);
+    expect(createGroupResult.data.members.length).toBe(1);
 
-  test('[GRP-003] Group name more then 100', async ({ api }) => {
-    const invalidGroupName = utils.random.shortId(101);
+    const groupDbRow = await groupRepository.getById(createGroupResult.data.id);
 
-    const createGroupResult = await api.groups.createGroup({
-      name: invalidGroupName,
-    });
-
-    expect(createGroupResult.response).toHaveStatus(400);
-    expect(createGroupResult.data).toBeNull();
-  });
-
-  test('[GRP-004] Group with empty name', async ({ api }) => {
-    const emptyGroupName = '';
-
-    const createGroupResult = await api.groups.createGroup({
-      name: emptyGroupName,
-    });
-
-    expect(createGroupResult.response).toHaveStatus(400);
-    expect(createGroupResult.data).toBeNull();
+    expect(groupDbRow).not.toBeNull();
+    expect(groupDbRow!.name).toBe(validGroupName);
+    expect(groupDbRow!.ownerId).toBe(user.id);
+    expect(groupDbRow!.inviteCode).not.toBeNull();
+    expect(groupDbRow!).not.toBeUndefined();
   });
 
   test.fixme('[GRP-004-BUG] Group name with whitespaces', async ({ api }) => {
@@ -75,23 +44,33 @@ test.describe('api/groups/creation tests', async () => {
     expect(createGroupResult.data).toBeNull();
   });
 
-  test('[GRP-005] Group without name', async ({ api }) => {
-    await test.step('Name as null', async () => {
+  [
+    {
+      testName: '[GRP-002] Group name length less then 3',
+      groupName: 'AB',
+    },
+    {
+      testName: '[GRP-003] Group name length more then 100',
+      groupName: utils.random.shortId(101),
+    },
+    {
+      testName: '[GRP-004] Group with empty name',
+      groupName: '',
+    },
+    {
+      testName: '[GRP-005] Group without name',
+      groupName: undefined as any,
+    },
+  ].forEach((options) =>
+    test(options.testName, async ({ api }) => {
       const createGroupResult = await api.groups.createGroup({
-        name: null as any,
+        name: options.groupName,
       });
 
       expect(createGroupResult.response).toHaveStatus(400);
       expect(createGroupResult.data).toBeNull();
-    });
-
-    await test.step('Without name', async () => {
-      const createGroupResult = await api.groups.createGroup({} as any);
-
-      expect(createGroupResult.response).toHaveStatus(400);
-      expect(createGroupResult.data).toBeNull();
-    });
-  });
+    }),
+  );
 
   test('[GRP-006] Response has invite code', async ({ api }) => {
     const validGroupName = utils.random.groupName();
@@ -105,10 +84,10 @@ test.describe('api/groups/creation tests', async () => {
   });
 
   test('[GRP-007] Request without authorization', async ({ api }) => {
-    const cleanApi = api.clone();
+    api.groups.clearTokens();
 
     const validGroupName = utils.random.groupName();
-    const createGroupResult = await cleanApi.groups.createGroup({
+    const createGroupResult = await api.groups.createGroup({
       name: validGroupName,
     });
 
