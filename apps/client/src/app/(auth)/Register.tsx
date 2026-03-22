@@ -84,9 +84,9 @@ export default function Register() {
 
       if (form.middleName.trim()) {
         if (form.middleName.length < 2) {
-          newErrors.middleName = "По-батькові має містити не менше 2 символів";
+          newErrors.middleName = "По батькові має містити не менше 2 символів";
         } else if (form.middleName.length > 50) {
-          newErrors.middleName = "По-батькові має містити не більше 50 символів";
+          newErrors.middleName = "По батькові має містити не більше 50 символів";
         }
       }
     }
