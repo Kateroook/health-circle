@@ -15,7 +15,7 @@ test.describe('api/groups/creation tests', async () => {
     });
   });
 
-  test('[GRP-001] Valid groups creation', async ({ api, groupRepository }) => {
+  test('[GRP-001] Successful group creation', async ({ api, groupRepository }) => {
     const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
 
     const createGroupResult = await api.groups.createGroup(validGroup);
@@ -32,7 +32,7 @@ test.describe('api/groups/creation tests', async () => {
     expect(groupDbRow!).not.toBeUndefined();
   });
 
-  test.fixme('[GRP-004-BUG] Group name with whitespaces', async ({ api }) => {
+  test.fixme('[GRP-004-BUG] Group creation with whitespaces only in name', async ({ api }) => {
     const whitespacesNameGroup = GroupFactory.createEmptyGroup('        ');
 
     const createGroupResult = await api.groups.createGroup(whitespacesNameGroup);
@@ -43,19 +43,19 @@ test.describe('api/groups/creation tests', async () => {
 
   [
     {
-      testName: '[GRP-002] Group name length less then 3',
+      testName: '[GRP-002] Group creation with name shorter than 3 chars',
       groupName: 'AB',
     },
     {
-      testName: '[GRP-003] Group name length more then 100',
+      testName: '[GRP-003] Group creation with name longer than 100 chars',
       groupName: utils.random.shortId(101),
     },
     {
-      testName: '[GRP-004] Group with empty name',
+      testName: '[GRP-004] Group creation with empty name',
       groupName: '',
     },
     {
-      testName: '[GRP-005] Group without name',
+      testName: '[GRP-005] Group creation without name field',
       groupName: undefined as any,
     },
   ].forEach((options) =>
@@ -69,7 +69,7 @@ test.describe('api/groups/creation tests', async () => {
     }),
   );
 
-  test('[GRP-006] Response has invite code', async ({ api }) => {
+  test('[GRP-006] Successful group creation returns invite code', async ({ api }) => {
     const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
     const createGroupResult = await api.groups.createGroup(validGroup);
 
@@ -78,7 +78,7 @@ test.describe('api/groups/creation tests', async () => {
     expect(createGroupResult.data.inviteCode).not.toBeNull();
   });
 
-  test('[GRP-007] Request without authorization', async ({ api }) => {
+  test('[GRP-007] Group creation without authorization', async ({ api }) => {
     api.groups.clearTokens();
 
     const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());

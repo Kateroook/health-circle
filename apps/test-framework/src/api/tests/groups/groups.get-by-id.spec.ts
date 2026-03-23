@@ -16,7 +16,7 @@ test.describe('api/groups/get-by-id tests', async () => {
     });
   });
 
-  test('[GRP-011] Get existing group by ID', async ({ api, groupRepository }) => {
+  test('[GRP-011] Successful get group by existing ID', async ({ api, groupRepository }) => {
     const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
     const createGroupResult = await api.groups.createGroup(validGroup);
 
@@ -28,7 +28,7 @@ test.describe('api/groups/get-by-id tests', async () => {
     expect(group.data.owner.id).toBe(user.id);
   });
 
-  test('[GRP-012] Get group by non-existing Id', async ({ api, spawnUser }) => {
+  test('[GRP-012] Get group by non-existing ID', async ({ api, spawnUser }) => {
     const nonExistingId = crypto.randomUUID();
     const group = await api.groups.getGroup(nonExistingId);
 
@@ -36,7 +36,7 @@ test.describe('api/groups/get-by-id tests', async () => {
     expect(group.data).toBeNull();
   });
 
-  test('[GRP-013] Request without authorization', async ({ api }) => {
+  test('[GRP-013] Get group by ID without authorization', async ({ api }) => {
     const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
     const createGroupResult = await api.groups.createGroup(validGroup);
 

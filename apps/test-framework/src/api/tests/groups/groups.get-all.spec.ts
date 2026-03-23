@@ -15,7 +15,7 @@ test.describe('api/groups/get-all tests', async () => {
     });
   });
 
-  test("[GRP-008] Get list of user's groups", async ({ api, groupRepository }) => {
+  test("[GRP-008] Successful get list of user's groups", async ({ api, groupRepository }) => {
     const userGroups = await api.groups.getAllGroups();
 
     expect(userGroups.response).toHaveStatus(200);
@@ -26,7 +26,7 @@ test.describe('api/groups/get-all tests', async () => {
     expect(groupDbRow.length).toBe(0);
   });
 
-  test("[GRP-009] User's list contains newly created group", async ({ api, groupRepository }) => {
+  test("[GRP-009] Get list of user's groups contains newly created group", async ({ api, groupRepository }) => {
     const userOldGroups = await api.groups.getAllGroups();
     expect(userOldGroups.response).toHaveStatus(200);
     expect(userOldGroups.data).toHaveLength(0);
@@ -49,7 +49,7 @@ test.describe('api/groups/get-all tests', async () => {
     expect(groupDbRow[0].id).toBe(createdGroupId);
   });
 
-  test('[GRP-010] Request without authorization', async ({ api }) => {
+  test("[GRP-010] Get list of user's groups without authorization", async ({ api }) => {
     api.groups.clearTokens();
     const result = await api.groups.getAllGroups();
 

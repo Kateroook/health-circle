@@ -1,13 +1,12 @@
-import { ApiResult } from '../../../core/api/clients/base-client';
 import { GroupFactory } from '../../../core/data/factories/group-factory';
-import { CreateGroupResponse } from '../../../core/types/api';
+import { GroupEntity } from '../../../core/types/entites/group-interface';
 import { UserEntity } from '../../../core/types/entites/user-interface';
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe('api/groups/update tests', async () => {
   let groupOwner: UserEntity;
-  let initialGroupResult: ApiResult<CreateGroupResponse>;
+  let userGroup: GroupEntity;
 
   test.beforeEach('Setup user and group', async ({ api, spawnUser }) => {
     groupOwner = await spawnUser();
@@ -17,18 +16,17 @@ test.describe('api/groups/update tests', async () => {
       password: groupOwner.password,
     });
 
-    const userGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
-
+    userGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
     const createGroupResult = await api.groups.createGroup(userGroup);
-    initialGroupResult = createGroupResult;
+    userGroup.id = createGroupResult.data.id;
+    userGroup.inviteCode = createGroupResult.data.inviteCode;
   });
 
-  test('[GRP-014] Successful group rename', async ({ api }) => {
+  test('[GRP-014] Successful group rename by owner', async ({ api }) => {
     const groupNewName = utils.random.groupName();
-    const groupId = initialGroupResult.data.id;
 
     const updateResult = await api.groups.updateGroup({
-      id: groupId,
+      id: userGroup.id!,
       members: [],
       name: groupNewName,
     });
@@ -37,40 +35,35 @@ test.describe('api/groups/update tests', async () => {
     expect(updateResult.data.name).toBe(groupNewName);
   });
 
-  test.fixme('[GRP-015] Update member list', async ({ api, spawnUser }) => {
+  test.fixme('[GRP-015-BUG] Successful member list update by owner', async ({ api, spawnUser }) => {
     const secondUser = await spawnUser();
-    const groupId = initialGroupResult.data.id;
-    const membersList = initialGroupResult.data.members;
     const updateResult = await api.groups.updateGroup({
-      id: groupId,
+      id: userGroup.id!,
       members: [{ id: groupOwner.id! }, { id: secondUser.id! }],
     });
 
     expect(updateResult.response).toHaveStatus(200);
-    expect(updateResult.data.members.length).not.toBe(membersList.length);
+    expect(updateResult.data.members.length).not.toBe(userGroup.members.length);
   });
 
   [
     {
-      testName: '[GRP-016] Name shorter than 3 chars',
+      testName: '[GRP-016] Update group with name shorter than 3 chars',
       payloadOverride: { name: 'AB' },
     },
     {
-      testName: '[GRP-017] Name longer than 100 chars',
+      testName: '[GRP-017] Update group with name longer than 100 chars',
       payloadOverride: { name: utils.random.shortId(101) },
     },
     {
-      testName: '[GRP-018] Missing id field',
+      testName: '[GRP-018] Update group without ID field',
       payloadOverride: { id: undefined },
     },
   ].forEach(({ testName, payloadOverride }) => {
     test(testName, async ({ api }) => {
-      const groupId = initialGroupResult.data.id;
-      const initialGroupName = initialGroupResult.data.name;
-
       const basePayload = {
-        id: groupId,
-        name: initialGroupName,
+        id: userGroup.id!,
+        name: userGroup.name,
         members: [],
       };
 
@@ -82,17 +75,15 @@ test.describe('api/groups/update tests', async () => {
     });
   });
 
-  test.fixme('[GRP-019] Missing members field', async ({ api }) => {
-    const groupId = initialGroupResult.data.id;
-
+  test.fixme('[GRP-019-BUG] Update group without members field', async ({ api }) => {
     const updateResult = await api.groups.updateGroup({
-      id: groupId,
+      id: userGroup.id!,
       members: undefined as any,
     });
     expect(updateResult.response).toHaveStatus(400);
   });
 
-  test('[GRP-020] Member try to update group', async ({ api, spawnUser }) => {
+  test('[GRP-020] Update group by non-owner member', async ({ api, spawnUser }) => {
     const secondUser = await spawnUser();
     const loginResult = await api.auth.login({
       identifier: secondUser.email,
@@ -100,15 +91,13 @@ test.describe('api/groups/update tests', async () => {
     });
 
     const joinResult = await api.groups.joinGroup({
-      code: initialGroupResult.data.inviteCode,
+      code: userGroup.inviteCode!,
     });
 
     expect(joinResult.response).toHaveStatus2xx();
 
-    const groupId = initialGroupResult.data.id;
-
     const updateResult = await api.groups.updateGroup({
-      id: groupId,
+      id: userGroup.id!,
       members: [],
       name: 'New name',
     });
@@ -117,12 +106,11 @@ test.describe('api/groups/update tests', async () => {
     expect(updateResult.data).toBeNull();
   });
 
-  test('[GRP-021] Request without authorization', async ({ api }) => {
+  test('[GRP-021] Update group without authorization', async ({ api }) => {
     await api.groups.clearTokens();
 
-    const groupId = initialGroupResult.data.id;
     const updateResult = await api.groups.updateGroup({
-      id: groupId,
+      id: userGroup.id!,
       members: [],
       name: 'New name',
     });
