@@ -12,7 +12,7 @@ import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { Circle, Member } from "@/src/types";
-import { AntDesign, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { AntDesign, Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -163,6 +163,12 @@ export default function CirclesScreen() {
 
   // ─── Detail view ────────────────────────────────
   if (showCircleDetail && activeCircle) {
+    const unknownCount = activeCircle.members.filter(
+      (m) => m.status === "UNKNOWN" || !m.status,
+    ).length;
+    const safeCount = activeCircle.members.filter((m) => m.status === "SAFE").length;
+    const wasSafeCount = activeCircle.members.filter((m) => m.status === "WAS_SAFE").length;
+
     return (
       <SafeAreaView style={styles.screen}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -218,9 +224,25 @@ export default function CirclesScreen() {
           </View>
 
           <ScrollView contentContainerStyle={styles.detailContent}>
-            <Typography variant="subtitle1" tone="primary" style={styles.membersCount}>
-              Учасників: {activeCircle.members.length}
-            </Typography>
+            <View style={styles.statsCard}>
+              <View style={styles.statsHeader}>
+                <Typography variant="subtitle1">{activeCircle.members.length} учасників</Typography>
+                <Button
+                  label="Перекличка"
+                  hierarchy="accent"
+                  shape="pill"
+                  size="small"
+                  trailingIcon={
+                    <Feather name="rss" size={16} color={theme.colors.content.onColor} />
+                  }
+                  onPress={handleRollCall}
+                />
+              </View>
+              <Typography variant="body2">
+                {unknownCount} не відповіли,{"\n"}
+                {wasSafeCount} нещодавно в безпеці, {safeCount} в безпеці
+              </Typography>
+            </View>
 
             <View style={styles.membersList}>
               {activeCircle.members.map((member) => (
@@ -447,7 +469,19 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing[2],
   },
   detailContent: {
+    paddingTop: theme.spacing[16],
+    gap: theme.spacing[8],
+  },
+  statsCard: {
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.xl,
     padding: theme.spacing[16],
+    gap: theme.spacing[8],
+  },
+  statsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   membersCount: {
     marginBottom: theme.spacing[16],
