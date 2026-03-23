@@ -1,16 +1,16 @@
 import { APIRequestContext, test as base, expect as baseExpect, mergeExpects } from '@playwright/test';
-import { DbManager } from '../../core/db/db-manager';
-import { UserRepository } from '../../core/db/repositories/user-repository';
-import { GroupRepository } from '../../core/db/repositories/group-repository';
-import { ContactRepository } from '../../core/db/repositories/contact-repository';
-import { ConfirmationCodeRepository } from '../../core/db/repositories/confirmation-code-repository';
-import { DbCleaner } from '../../core/db/db-cleaner';
-import { ApiClientFactory } from '../../core/api/api-client-factory';
 import { Kysely } from 'kysely';
+import { ApiClientFactory } from '../../core/api/api-client-factory';
+import { expect as statusExpect } from '../../core/api/helpers/response-checker';
+import { UserFactory } from '../../core/data/factories/user-factory';
+import { DbCleaner } from '../../core/db/db-cleaner';
+import { DbManager } from '../../core/db/db-manager';
+import { ConfirmationCodeRepository } from '../../core/db/repositories/confirmation-code-repository';
+import { ContactRepository } from '../../core/db/repositories/contact-repository';
+import { GroupRepository } from '../../core/db/repositories/group-repository';
+import { UserRepository } from '../../core/db/repositories/user-repository';
 import { Database } from '../../core/db/schema';
 import { UserEntity } from '../../core/types/entites/user-interface';
-import { UserFactory } from '../../core/data/factories/user-factory';
-import { expect as statusExpect } from '../../core/api/helpers/response-checker';
 export type ApiFixture = {
   db: Kysely<Database>;
 };
@@ -95,14 +95,14 @@ export const test = workerTest.extend<MyFixture>({
         lastName: user.lastName,
       });
       statusExpect(postUser.response).toHaveStatus2xx();
-  
+
       user.id = postUser.data.id;
 
       const code = (await confirmationCodeRepository.findBy({ userId: user.id }))[0];
 
       baseExpect(code).not.toBeUndefined();
       baseExpect(code).not.toBeNull();
-  
+
       const setupPassword = await api.auth.setupPassword(user.email!, code.code, {
         newPassword: user.password,
         confirmNewPassword: user.password,
