@@ -40,7 +40,7 @@ test.describe('api/groups/leave tests', async () => {
     expect(group.data.members).toHaveLength(1);
   });
 
-  test('[GRP-028] Group disappears from GET /api/groups after leaving', async ({ api }) => {
+  test('[GRP-028] Group disappears from GET /api/groups after leaving', async () => {
     const leaveResult = await secondApi.groups.leaveGroup(userGroup.id!);
     const allGroup = await secondApi.groups.getAllGroups();
     expect(allGroup.data).toHaveLength(0);
@@ -65,9 +65,9 @@ test.describe('api/groups/leave tests', async () => {
     expect(leaveResult.response).toHaveStatus(403);
   });
 
-  test('[GRP-031] Leave group without authorization', async ({ api }) => {
-    api.groups.clearTokens();
-    const leaveResult = await api.groups.leaveGroup(userGroup.id!);
+  test('[GRP-031] Leave group without authorization', async () => {
+    secondApi.groups.clearTokens();
+    const leaveResult = await secondApi.groups.leaveGroup(userGroup.id!);
 
     expect(leaveResult.response).toHaveStatus(401);
   });
