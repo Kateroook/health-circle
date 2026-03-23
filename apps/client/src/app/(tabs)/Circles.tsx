@@ -210,17 +210,15 @@ export default function CirclesScreen() {
                 />
               )}
             </View>
-            {isOwner && (
-              <Button
-                shape="round"
-                hierarchy="accent"
-                size="medium"
-                leadingIcon={
-                  <MaterialIcons name="edit" size={20} color={theme.colors.content.onColor} />
-                }
-                onPress={() => setIsActionsVisible(true)}
-              />
-            )}
+            <Button
+              shape="round"
+              hierarchy="accent"
+              size="medium"
+              leadingIcon={
+                <MaterialIcons name="edit" size={20} color={theme.colors.content.onColor} />
+              }
+              onPress={() => setIsActionsVisible(true)}
+            />
           </View>
 
           <ScrollView contentContainerStyle={styles.detailContent}>
@@ -495,11 +493,5 @@ const styles = StyleSheet.create({
   },
   leaveButton: {
     marginTop: theme.spacing[24],
-  },
-
-  // Rename modal
-  renameActions: {
-    flexDirection: "row",
-    gap: theme.spacing[12],
   },
 });
