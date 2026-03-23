@@ -4,19 +4,19 @@ import { Button } from "@/src/components/Button";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
-import { TextField } from "@/src/components/fields/TextField";
 import { MemberAvatar } from "@/src/components/MemberAvatar";
 import MemberDetailModal from "@/src/components/MemberDetailModal";
-import { ModalContainer } from "@/src/components/modal/ModalContainer";
 import { StatusBadge } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { Circle, Member } from "@/src/types";
-import { AntDesign, MaterialIcons } from "@expo/vector-icons";
+import { AntDesign, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
+
 import {
   Alert,
   BackHandler,
@@ -165,179 +165,154 @@ export default function CirclesScreen() {
   if (showCircleDetail && activeCircle) {
     return (
       <SafeAreaView style={styles.screen}>
-        {/* Rename Modal */}
-        <ModalContainer
-          isVisible={isRenameModalVisible}
-          onClose={() => setIsRenameModalVisible(false)}
-        >
-          <Typography variant="h3" tone="primary" style={{ textAlign: "center" }}>
-            Перейменувати коло
-          </Typography>
-          <TextField
-            label="Нова назва"
-            value={renameValue}
-            onChangeText={setRenameValue}
-            placeholder="Нова назва"
-            returnKeyType="done"
-            onSubmitEditing={handleRenameSubmit}
-          />
-          <View style={styles.renameActions}>
-            <Button
-              label="Скасувати"
-              hierarchy="secondary"
-              shape="rectangle"
-              size="medium"
-              onPress={() => setIsRenameModalVisible(false)}
-              style={{ flex: 1 }}
-            />
-            <Button
-              label="Зберегти"
-              hierarchy="primary"
-              shape="rectangle"
-              size="medium"
-              onPress={handleRenameSubmit}
-              style={{ flex: 1 }}
-            />
-          </View>
-        </ModalContainer>
-
-        {/* Header */}
-        <View style={styles.detailHeader}>
-          <Button
-            shape="round"
-            hierarchy="tertiary"
-            size="medium"
-            leadingIcon={
-              <AntDesign name="arrow-left" size={24} color={theme.colors.content.primary} />
-            }
-            onPress={() => {
-              setShowCircleDetail(false);
-              setActiveCircle(null);
-            }}
-          />
-          <View style={styles.detailTitleBlock}>
-            <Typography variant="h2" tone="primary">
-              {activeCircle.name}
-            </Typography>
-            {activeCircle.inviteCode && (
-              <View style={styles.inlineInviteRow}>
-                <Typography variant="caption" tone="secondary">
-                  Код:{" "}
-                </Typography>
-                <Typography variant="caption" tone="primary" weight="bold">
-                  {activeCircle.inviteCode}
-                </Typography>
-              </View>
-            )}
-          </View>
-          {isOwner && (
+        <ScrollView contentContainerStyle={styles.content}>
+          {/* Header */}
+          <View style={styles.header}>
             <Button
               shape="round"
-              hierarchy="accent"
+              hierarchy="tertiary"
               size="small"
               leadingIcon={
-                <MaterialIcons name="edit" size={16} color={theme.colors.content.onColor} />
+                <MaterialIcons
+                  name="keyboard-arrow-left"
+                  size={24}
+                  color={theme.colors.content.primary}
+                />
               }
-              onPress={() => setIsActionsVisible(true)}
+              onPress={() => {
+                setShowCircleDetail(false);
+                setActiveCircle(null);
+              }}
             />
-          )}
-        </View>
-
-        <ScrollView contentContainerStyle={styles.detailContent}>
-          <Typography variant="subtitle1" tone="primary" style={styles.membersCount}>
-            Учасників: {activeCircle.members.length}
-          </Typography>
-
-          <View style={styles.membersList}>
-            {activeCircle.members.map((member) => (
-              <Pressable
-                key={member.id}
-                style={styles.memberRow}
-                onPress={() => {
-                  setSelectedMember(member);
-                  setIsMemberModalVisible(true);
-                }}
-              >
-                <MemberAvatar member={member} />
-                <View style={styles.memberInfo}>
-                  <Typography variant="subtitle1" tone="primary">
-                    {member.firstName} {member.lastName}
-                  </Typography>
-                  <Typography variant="body2" tone="secondary">
-                    {member.status === "SAFE"
-                      ? "В безпеці"
-                      : member.status === "DANGER"
-                        ? "Потрібна допомога!"
-                        : member.status === "WAS_SAFE"
-                          ? "Був у безпеці"
-                          : "Невідомо"}
-                  </Typography>
-                </View>
-                <StatusBadge status={member.status} variant="round" />
-              </Pressable>
-            ))}
+            <View style={styles.detailTitleBlock}>
+              <Typography variant="h1" tone="primary">
+                {activeCircle.name}
+              </Typography>
+              {activeCircle.inviteCode && (
+                <Button
+                  label={`Код: ${activeCircle.inviteCode}`}
+                  hierarchy="secondary"
+                  shape="pill"
+                  size="small"
+                  trailingIcon={
+                    <Ionicons name="copy" size={14} color={theme.colors.content.secondary} />
+                  }
+                  onPress={async () => {
+                    await Clipboard.setStringAsync(activeCircle.inviteCode);
+                  }}
+                  style={{ alignSelf: "flex-start" }}
+                />
+              )}
+            </View>
+            {isOwner && (
+              <Button
+                shape="round"
+                hierarchy="accent"
+                size="medium"
+                leadingIcon={
+                  <MaterialIcons name="edit" size={20} color={theme.colors.content.onColor} />
+                }
+                onPress={() => setIsActionsVisible(true)}
+              />
+            )}
           </View>
+
+          <ScrollView contentContainerStyle={styles.detailContent}>
+            <Typography variant="subtitle1" tone="primary" style={styles.membersCount}>
+              Учасників: {activeCircle.members.length}
+            </Typography>
+
+            <View style={styles.membersList}>
+              {activeCircle.members.map((member) => (
+                <Pressable
+                  key={member.id}
+                  style={styles.memberRow}
+                  onPress={() => {
+                    setSelectedMember(member);
+                    setIsMemberModalVisible(true);
+                  }}
+                >
+                  <MemberAvatar member={member} />
+                  <View style={styles.memberInfo}>
+                    <Typography variant="subtitle1" tone="primary">
+                      {member.firstName} {member.lastName}
+                    </Typography>
+                    <Typography variant="body2" tone="secondary">
+                      {member.status === "SAFE"
+                        ? "В безпеці"
+                        : member.status === "DANGER"
+                          ? "Потрібна допомога!"
+                          : member.status === "WAS_SAFE"
+                            ? "Був у безпеці"
+                            : "Невідомо"}
+                    </Typography>
+                  </View>
+                  <StatusBadge status={member.status} variant="round" />
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
+
+          <CircleActionsModal
+            visible={isActionsVisible}
+            onClose={() => setIsActionsVisible(false)}
+            circleId={activeCircle?.id || ""}
+            ownerId={activeCircle?.owner.id || ""}
+            currentName={activeCircle?.name || ""}
+            inviteCode={activeCircle?.inviteCode || ""}
+            members={activeCircle?.members || []}
+            onSaveMembers={async (updatedMembers) => {
+              if (!activeCircle) return;
+              await apiFetch("/groups", {
+                method: "PUT",
+                body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
+              });
+              setIsActionsVisible(false);
+              fetchCircles();
+            }}
+            onRename={async (newName) => {
+              if (!activeCircle) return;
+              await apiFetch("/groups", {
+                method: "PUT",
+                body: JSON.stringify({ id: activeCircle.id, name: newName }),
+              });
+              setIsActionsVisible(false);
+              fetchCircles();
+            }}
+            onDelete={async () => {
+              if (!activeCircle) return;
+              await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
+              setIsActionsVisible(false);
+              setShowCircleDetail(false);
+              fetchCircles();
+            }}
+            onLeave={async () => {
+              if (!activeCircle) return;
+              await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
+              setIsActionsVisible(false);
+              setShowCircleDetail(false);
+              fetchCircles();
+            }}
+            onRegenerateInvite={async () => {
+              if (!activeCircle) return;
+              const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
+                method: "POST",
+              });
+              setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+              fetchCircles();
+            }}
+            onRollCall={handleRollCall}
+          />
+
+          <MemberDetailModal
+            member={selectedMember}
+            visible={isMemberModalVisible}
+            onClose={() => {
+              setIsMemberModalVisible(false);
+              setSelectedMember(null);
+            }}
+          />
         </ScrollView>
-
-        <CircleActionsModal
-          visible={isActionsVisible}
-          onClose={() => setIsActionsVisible(false)}
-          circleId={activeCircle?.id || ""}
-          ownerId={activeCircle?.owner.id || ""}
-          currentName={activeCircle?.name || ""}
-          inviteCode={activeCircle?.inviteCode || ""}
-          members={activeCircle?.members || []}
-          onSaveMembers={async (updatedMembers) => {
-            if (!activeCircle) return;
-            await apiFetch("/groups", {
-              method: "PUT",
-              body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
-            });
-            setIsActionsVisible(false);
-            fetchCircles();
-          }}
-          onRename={async (newName) => {
-            if (!activeCircle) return;
-            await apiFetch("/groups", {
-              method: "PUT",
-              body: JSON.stringify({ id: activeCircle.id, name: newName }),
-            });
-            setIsActionsVisible(false);
-            fetchCircles();
-          }}
-          onDelete={async () => {
-            if (!activeCircle) return;
-            await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
-            setIsActionsVisible(false);
-            setShowCircleDetail(false);
-            fetchCircles();
-          }}
-          onLeave={async () => {
-            if (!activeCircle) return;
-            await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
-            setIsActionsVisible(false);
-            setShowCircleDetail(false);
-            fetchCircles();
-          }}
-          onRegenerateInvite={async () => {
-            if (!activeCircle) return;
-            const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
-              method: "POST",
-            });
-            setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
-            fetchCircles();
-          }}
-          onRollCall={handleRollCall}
-        />
-
-        <MemberDetailModal
-          member={selectedMember}
-          visible={isMemberModalVisible}
-          onClose={() => {
-            setIsMemberModalVisible(false);
-            setSelectedMember(null);
-          }}
-        />
       </SafeAreaView>
     );
   }
@@ -364,15 +339,17 @@ export default function CirclesScreen() {
             Кола не знайдені
           </Typography>
         ) : (
-          circles.map((circle) => (
-            <CircleItem
-              key={circle.id}
-              title={circle.name}
-              members={circle.members}
-              onMenuPress={() => openActionsModal(circle)}
-              onPress={() => openCircleDetail(circle)}
-            />
-          ))
+          <View style={styles.listContainer}>
+            {circles.map((circle) => (
+              <CircleItem
+                key={circle.id}
+                title={circle.name}
+                members={circle.members}
+                onMenuPress={() => openActionsModal(circle)}
+                onPress={() => openCircleDetail(circle)}
+              />
+            ))}
+          </View>
         )}
       </ScrollView>
 
@@ -438,19 +415,21 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginTop: theme.spacing[20],
-    marginBottom: theme.spacing[28],
+    gap: theme.spacing[8],
   },
   emptyText: {
     textAlign: "center",
     marginTop: theme.spacing[20],
   },
-
+  listContainer: {
+    marginTop: theme.spacing[16],
+  },
   // Detail view
   detailHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingHorizontal: theme.spacing[8],
     paddingVertical: theme.spacing[8],
     backgroundColor: theme.colors.background.primary,
@@ -460,6 +439,7 @@ const styles = StyleSheet.create({
   },
   detailTitleBlock: {
     flex: 1,
+    gap: theme.spacing[4],
   },
   inlineInviteRow: {
     flexDirection: "row",
