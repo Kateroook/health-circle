@@ -1,12 +1,13 @@
 import { apiFetch } from "@/src/api/api";
 import { initiateRollCall } from "@/src/api/groups";
+import { Avatar } from "@/src/components/Avatar";
 import { Button } from "@/src/components/Button";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
-import { MemberAvatar } from "@/src/components/MemberAvatar";
+import { ListItem } from "@/src/components/ListItem";
 import MemberDetailModal from "@/src/components/MemberDetailModal";
-import { StatusBadge } from "@/src/components/StatusBadge";
+import { STATUS_CONFIG } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
@@ -21,7 +22,6 @@ import {
   Alert,
   BackHandler,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   UIManager,
@@ -245,32 +245,23 @@ export default function CirclesScreen() {
             </View>
 
             <View style={styles.membersList}>
-              {activeCircle.members.map((member) => (
-                <Pressable
+              {activeCircle.members.map((member, index) => (
+                <ListItem
                   key={member.id}
-                  style={styles.memberRow}
+                  layout="stateBadge"
+                  artworkSize="small"
+                  label={`${member.firstName} ${member.lastName}`}
+                  subLabel={STATUS_CONFIG[member.status]?.label ?? "Невідомо"}
+                  status={member.status}
                   onPress={() => {
                     setSelectedMember(member);
                     setIsMemberModalVisible(true);
                   }}
-                >
-                  <MemberAvatar member={member} />
-                  <View style={styles.memberInfo}>
-                    <Typography variant="subtitle1" tone="primary">
-                      {member.firstName} {member.lastName}
-                    </Typography>
-                    <Typography variant="body2" tone="secondary">
-                      {member.status === "SAFE"
-                        ? "В безпеці"
-                        : member.status === "DANGER"
-                          ? "Потрібна допомога!"
-                          : member.status === "WAS_SAFE"
-                            ? "Був у безпеці"
-                            : "Невідомо"}
-                    </Typography>
-                  </View>
-                  <StatusBadge status={member.status} variant="round" />
-                </Pressable>
+                  renderAvatar={() => (
+                    <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="sm" />
+                  )}
+                  showDivider={index < activeCircle.members.length - 1}
+                />
               ))}
             </View>
           </ScrollView>
@@ -487,7 +478,9 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing[16],
   },
   membersList: {
-    gap: theme.spacing[4],
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing[8],
   },
   memberRow: {
     flexDirection: "row",
