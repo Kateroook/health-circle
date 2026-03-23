@@ -18,6 +18,7 @@ import { Typography } from "./typography";
 import { StatusBadge } from "./StatusBadge";
 import { Button } from "./Button";
 import { RenameModal } from "./circle/actions/RenameModal";
+import { ModalContainer, ModalHeader, ModalActions } from "./modal";
 
 interface MemberProfileViewProps {
   member: Member;
@@ -136,66 +137,55 @@ export const MemberProfileView = ({
       />
 
       {/* Roll Call Modal */}
-      <Modal
-        visible={isRollCallModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsRollCallModalVisible(false)}
+      <ModalContainer
+        isVisible={isRollCallModalVisible}
+        onClose={() => setIsRollCallModalVisible(false)}
       >
-        <Pressable style={styles.rcOverlay} onPress={() => setIsRollCallModalVisible(false)}>
-          <Pressable style={styles.rcCard} onPress={(e) => e.stopPropagation()}>
+        <ModalHeader title={`Запитати "Як ти?"`} />
+
+        <View style={styles.rcMessageBubble}>
+          <MemberAvatar member={member} size="sm" />
+          <View style={styles.rcMessageTextContainer}>
             <Typography
-              variant="h2"
+              variant="body2"
               weight="bold"
-              style={styles.rcTitle}
-            >{`Запитати "Як ти?"`}</Typography>
+              style={{ color: theme.colors.content.primary }}
+            >
+              Як ти?
+            </Typography>
+            <Typography
+              variant="caption"
+              style={{ color: theme.colors.content.primary, marginTop: 2 }}
+            >
+              Відміть, будь ласка, свій стан
+            </Typography>
+          </View>
+          <Typography variant="caption" style={styles.rcTimeText}>
+            9:41
+          </Typography>
+        </View>
 
-            <View style={styles.rcMessageBubble}>
-              <MemberAvatar member={member} size="sm" />
-              <View style={styles.rcMessageTextContainer}>
-                <Typography
-                  variant="body2"
-                  weight="bold"
-                  style={{ color: theme.colors.content.primary }}
-                >
-                  Як ти?
-                </Typography>
-                <Typography
-                  variant="caption"
-                  style={{ color: theme.colors.content.primary, marginTop: 2 }}
-                >
-                  Відміть, будь ласка, свій стан
-                </Typography>
-              </View>
-              <Typography variant="caption" style={styles.rcTimeText}>
-                9:41
-              </Typography>
-            </View>
-
-            <View style={styles.rcActions}>
-              <Button
-                label="Скасувати"
-                hierarchy="secondary"
-                shape="rectangle"
-                size="medium"
-                onPress={() => setIsRollCallModalVisible(false)}
-                style={{ flex: 1, marginRight: theme.spacing[8] }}
-              />
-              <Button
-                label="Запитати"
-                hierarchy="primary"
-                shape="rectangle"
-                size="medium"
-                onPress={() => {
-                  setIsRollCallModalVisible(false);
-                  onRollCall?.();
-                }}
-                style={{ flex: 1 }}
-              />
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        <ModalActions direction="row">
+          <Button
+            label="Скасувати"
+            hierarchy="secondary"
+            shape="rectangle"
+            size="medium"
+            onPress={() => setIsRollCallModalVisible(false)}
+            style={{ marginRight: 8 }}
+          />
+          <Button
+            label="Запитати"
+            hierarchy="primary"
+            shape="rectangle"
+            size="medium"
+            onPress={() => {
+              setIsRollCallModalVisible(false);
+              onRollCall?.();
+            }}
+          />
+        </ModalActions>
+      </ModalContainer>
 
       <View style={styles.profileSection}>
         <MemberAvatar member={member} size="xl" />
@@ -206,12 +196,14 @@ export const MemberProfileView = ({
         <View style={styles.statusContainer}>
           <StatusBadge variant="pill" status={member.status} />
           {onRollCall && (
-            <TouchableOpacity
+            <Button
+              shape="round"
+              hierarchy="tertiary"
+              size="small"
               onPress={() => setIsRollCallModalVisible(true)}
+              leadingIcon={<Feather name="rss" size={18} color={theme.colors.content.primary} />}
               style={styles.rollCallIconButton}
-            >
-              <Feather name="rss" size={18} color={theme.colors.content.primary} />
-            </TouchableOpacity>
+            />
           )}
         </View>
 
@@ -282,17 +274,6 @@ const styles = StyleSheet.create({
   },
   rollCallIconButton: {
     marginLeft: theme.spacing[8],
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.background.secondary,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-    alignItems: "center",
-    justifyContent: "center",
   },
   locationContainer: {
     flexDirection: "row",
@@ -309,32 +290,6 @@ const styles = StyleSheet.create({
   },
   actionsColumn: {
     width: "100%",
-    gap: theme.spacing[8],
-  },
-  rcOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: theme.spacing[16],
-  },
-  rcCard: {
-    width: "100%",
-    backgroundColor: theme.colors.background.primary,
-    borderRadius: theme.radius.xl,
-    padding: theme.spacing[24],
-    alignItems: "center",
-  },
-  rcTitle: {
-    marginBottom: theme.spacing[24],
-  },
-  rcMessageBubble: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: theme.colors.background.secondary,
-    padding: theme.spacing[12],
-    borderRadius: theme.radius.lg,
-    width: "100%",
     marginBottom: theme.spacing[24],
     borderBottomLeftRadius: 4,
   },
@@ -346,10 +301,5 @@ const styles = StyleSheet.create({
     color: theme.colors.content.secondary,
     marginLeft: theme.spacing[8],
     alignSelf: "flex-end",
-  },
-  rcActions: {
-    flexDirection: "row",
-    width: "100%",
-    justifyContent: "space-between",
   },
 });
