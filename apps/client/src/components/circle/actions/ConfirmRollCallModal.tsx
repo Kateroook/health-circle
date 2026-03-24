@@ -31,7 +31,7 @@ export const ConfirmRollCallModal: React.FC<RollCallModalProps> = ({
       <ModalHeader title={title} description={description} />
       <View style={styles.rcMessageBubble}>
         <Avatar
-          source={require("/Users/severyna/CodeProjects/health-circle/apps/client/src/assets/images/Logo-nobackground.png")}
+          source={require("@/src/assets/images/Logo-nobackground.png")}
           size="xs"
         />
         <View style={styles.rcMessageTextContainer}>
