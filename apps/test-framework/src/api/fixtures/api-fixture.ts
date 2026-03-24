@@ -1,4 +1,4 @@
-import { APIRequestContext, test as base, expect as baseExpect, mergeExpects } from '@playwright/test';
+import { test as base, mergeExpects } from '@playwright/test';
 import { DbManager } from '../../core/db/db-manager';
 import { UserRepository } from '../../core/db/repositories/user-repository';
 import { GroupRepository } from '../../core/db/repositories/group-repository';
@@ -9,8 +9,8 @@ import { ApiClientFactory } from '../../core/api/api-client-factory';
 import { Kysely } from 'kysely';
 import { Database } from '../../core/db/schema';
 import { UserEntity } from '../../core/types/entites/user-interface';
-import { UserFactory } from '../../core/data/factories/user-factory';
 import { expect as statusExpect } from '../../core/api/helpers/response-checker';
+import { BackendProvider } from '../../core/backend-provider';
 export type ApiFixture = {
   db: Kysely<Database>;
 };
@@ -26,6 +26,7 @@ export const workerTest = base.extend<{}, ApiFixture>({
 });
 
 export type MyFixture = {
+  backendProvider: BackendProvider;
   userRepository: UserRepository;
   groupRepository: GroupRepository;
   contactRepository: ContactRepository;
@@ -37,83 +38,38 @@ export type MyFixture = {
 };
 
 export const test = workerTest.extend<MyFixture>({
-  dbCleaner: async ({ db: dbClient }, use) => {
-    const dbCleaner = new DbCleaner(dbClient);
-    await use(dbCleaner);
-    await dbCleaner.cleanup();
+  backendProvider: async ({db, request}, use) => {
+    const provider = await BackendProvider.init(db, request);
+    await use(provider);
+    await provider.cleanup();
+    await provider.dispose();
   },
-  userRepository: async ({ db: dbClient, dbCleaner }, use) => {
-    await use(new UserRepository(dbClient, dbCleaner));
+  dbCleaner: async ({ backendProvider }, use) => {
+    await use(backendProvider.dbCleaner);
   },
-  groupRepository: async ({ db: dbClient, dbCleaner }, use) => {
-    await use(new GroupRepository(dbClient, dbCleaner));
+  userRepository: async ({ backendProvider }, use) => {
+    await use(backendProvider.userRepository);
   },
-  contactRepository: async ({ db: dbClient, dbCleaner }, use) => {
-    await use(new ContactRepository(dbClient, dbCleaner));
+  groupRepository: async ({ backendProvider}, use) => {
+    await use(backendProvider.groupRepository);
   },
-  confirmationCodeRepository: async ({ db: dbClient, dbCleaner }, use) => {
-    await use(new ConfirmationCodeRepository(dbClient, dbCleaner));
+  contactRepository: async ({ backendProvider }, use) => {
+    await use(backendProvider.contactRepository);
   },
-
-  api: async ({ dbCleaner, request }, use) => {
-    const api = new ApiClientFactory({
-      request: request,
-      dbCleaner: dbCleaner,
-    });
-    await use(api);
+  confirmationCodeRepository: async ({ backendProvider }, use) => {
+    await use(backendProvider.confirmationCodeRepository);
   },
 
-  spawnApi: async ({ playwright, dbCleaner }, use) => {
-    const contexts: APIRequestContext[] = [];
-
-    const spawn = async () => {
-      const context = await playwright.request.newContext();
-      contexts.push(context);
-
-      return new ApiClientFactory({
-        request: context,
-        dbCleaner: dbCleaner,
-      });
-    };
-
-    await use(spawn);
-
-    for (const context of contexts) {
-      await context.dispose();
-    }
+  api: async ({ backendProvider }, use) => {
+    await use(backendProvider.api);
   },
 
-  spawnUser: async ({ api, confirmationCodeRepository }, use) => {
-    const factory = async (overrides?: Partial<UserEntity>) => {
-      let user = UserFactory.createRandomUser(overrides);
+  spawnApi: async ({ backendProvider }, use) => {
+    await use(() => backendProvider.spawnApi());
+  },
 
-      const postUser = await api.users.createUser({
-        email: user.email,
-        phone: user.phone,
-        firstName: user.firstName,
-        middleName: user.middleName,
-        lastName: user.lastName,
-      });
-      statusExpect(postUser.response).toHaveStatus2xx();
-  
-      user.id = postUser.data.id;
-
-      const code = (await confirmationCodeRepository.findBy({ userId: user.id }))[0];
-
-      baseExpect(code).not.toBeUndefined();
-      baseExpect(code).not.toBeNull();
-  
-      const setupPassword = await api.auth.setupPassword(user.email!, code.code, {
-        newPassword: user.password,
-        confirmNewPassword: user.password,
-      });
-
-      statusExpect(setupPassword.response).toHaveStatus2xx();
-
-      return user;
-    };
-
-    await use(factory);
+  spawnUser: async ({ backendProvider }, use) => {
+    await use(() => backendProvider.spawnUser());
   },
 });
 
