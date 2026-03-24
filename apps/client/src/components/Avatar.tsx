@@ -1,113 +1,146 @@
 import { getAvatarUrl } from "@/src/api/api";
 import { theme } from "@/src/theme/theme";
 import React, { useMemo, useState } from "react";
-import { Image, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
+import { Image, ImageSourcePropType, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 
-export type AvatarSize = "sm" | "md" | "lg" | "xl";
+export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 const SIZE_MAP: Record<AvatarSize, { outer: number; inner: number }> = {
+  xs: { outer: 32, inner: 24 },
   sm: { outer: 48, inner: 32 },
   md: { outer: 56, inner: 48 },
   lg: { outer: 64, inner: 52 },
   xl: { outer: 100, inner: 84 },
 };
+
 const BORDER_CONFIG: Record<AvatarSize, { colorBorder: number; whiteBorder: number }> = {
+  xs: { colorBorder: 2, whiteBorder: 1 },
   sm: { colorBorder: 3, whiteBorder: 1.5 },
   md: { colorBorder: 6, whiteBorder: 2 },
   lg: { colorBorder: 7, whiteBorder: 2 },
   xl: { colorBorder: 9, whiteBorder: 3 },
 };
+
 const DEFAULT_AVATAR = require("@/src/assets/images/default-avatar.png");
 
 interface AvatarProps {
-  userId: string;
+  userId?: string;
   avatarUpdatedAt?: string;
+  source?: ImageSourcePropType;
+
   size?: AvatarSize;
-  border?: boolean;
-  borderColor?: string;
+
+  showStatusRing?: boolean;
+  showOuterRing?: boolean;
+  statusColor?: string;
+
   style?: StyleProp<ViewStyle>;
 }
-
 export const Avatar: React.FC<AvatarProps> = ({
   userId,
   avatarUpdatedAt,
+  source,
   size = "md",
-  border = false,
-  borderColor = "white",
+  showStatusRing = false,
+  showOuterRing = false,
+  statusColor = "white",
   style,
 }) => {
   const [imageError, setImageError] = useState(false);
-  const avatarUrl = useMemo(() => getAvatarUrl(userId, avatarUpdatedAt), [userId, avatarUpdatedAt]);
+
   const { outer, inner } = SIZE_MAP[size];
+  const { colorBorder, whiteBorder } = BORDER_CONFIG[size];
+
+  const hasStatus = showStatusRing;
+  const hasOuter = showOuterRing && hasStatus;
+
+  // базовий розмір
+  let containerSize = outer;
+  if (hasOuter) containerSize += whiteBorder * 2;
+
+  const imageContainerSize = hasStatus ? inner : outer;
+  const resolvedSource = useMemo(() => {
+    if (source) return source;
+
+    if (userId) {
+      const url = getAvatarUrl(userId, avatarUpdatedAt);
+      if (url && !imageError) return { uri: url };
+    }
+
+    return DEFAULT_AVATAR;
+  }, [source, userId, avatarUpdatedAt, imageError]);
 
   const image = (
     <Image
-      source={!imageError && avatarUrl ? { uri: avatarUrl } : DEFAULT_AVATAR}
-      style={[
-        styles.image,
-        !border && {
-          width: outer,
-          height: outer,
-          borderRadius: theme.radius.circle,
-        },
-        border && {
-          width: inner,
-          height: inner,
-          borderRadius: theme.radius.circle,
-        },
-      ]}
-      onError={() => setImageError(true)}
+      source={resolvedSource}
+      style={styles.image}
       resizeMode="cover"
+      onError={() => setImageError(true)}
     />
   );
 
-  if (!border) return image;
-
-  const { colorBorder, whiteBorder } = BORDER_CONFIG[size];
-  const totalBorder = colorBorder + whiteBorder;
+  if (!hasStatus) {
+    return <View style={[styles.circle, { width: outer, height: outer }, style]}>{image}</View>;
+  }
 
   return (
-    // White outer ring
     <View
       style={[
-        styles.wrapper,
-        {
+        styles.circle,
+        hasOuter && {
           width: outer + whiteBorder * 2,
           height: outer + whiteBorder * 2,
-          borderRadius: theme.radius.circle,
           borderWidth: whiteBorder,
           borderColor: "white",
-          padding: 0,
+          backgroundColor: "white",
+        },
+        !hasOuter && {
+          width: outer,
+          height: outer,
         },
         style,
       ]}
     >
-      {/* Colored ring */}
       <View
-        style={{
-          width: outer,
-          height: outer,
-          borderRadius: theme.radius.circle,
-          borderWidth: colorBorder,
-          borderColor,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "white",
-        }}
+        style={[
+          styles.circle,
+          {
+            width: outer,
+            height: outer,
+            borderWidth: colorBorder,
+            borderColor: statusColor,
+            backgroundColor: "white",
+          },
+        ]}
       >
-        {image}
+        <View
+          style={[
+            styles.circle,
+            {
+              width: inner,
+              height: inner,
+            },
+          ]}
+        >
+          {image}
+        </View>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    backgroundColor: "white",
+  circle: {
+    borderRadius: theme.radius.circle,
+    overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "white",
   },
   image: {
+    width: "100%",
+    height: "100%",
+    borderRadius: theme.radius.circle,
     backgroundColor: theme.colors.background.tertiary,
   },
 });

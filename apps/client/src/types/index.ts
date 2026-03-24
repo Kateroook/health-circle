@@ -22,6 +22,7 @@ export interface Member {
   status: UserStatus;
   active?: boolean; // Used in selection lists
   isAlias?: boolean; // Used when a custom name is set for a member
+  lastStatusUpdate?: string;
 }
 
 export interface Circle {

@@ -11,8 +11,8 @@ import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import ConfirmationModal from "../../ConfirmationModal";
 import { BottomSheetContainer } from "../../modal/BottomSheetContainer";
+import { ConfirmRollCallModal } from "./ConfirmRollCallModal";
 import { RenameModal } from "./RenameModal";
-
 interface Props {
   visible: boolean;
   currentName: string;
@@ -51,7 +51,7 @@ export default function CircleActionsModal({
   const [localMembers, setLocalMembers] = useState<Member[]>([]);
   const [isDeleteVisible, setIsDeleteVisible] = useState(false);
   const [isLeaveVisible, setIsLeaveVisible] = useState(false);
-
+  const [isRollCallVisible, setIsRollCallVisible] = useState(false);
   const user = useAuthStore().user;
   const isOwner = user?.id === ownerId;
 
@@ -134,6 +134,15 @@ export default function CircleActionsModal({
           logEvent("rename_circle");
           setIsRenaming(false);
           setNewName("");
+        }}
+      />
+
+      <ConfirmRollCallModal
+        isVisible={isRollCallVisible}
+        onCancel={() => setIsRollCallVisible(false)}
+        onConfirm={async () => {
+          setIsRollCallVisible(false);
+          onRollCall();
         }}
       />
 
@@ -229,7 +238,7 @@ export default function CircleActionsModal({
               shape="rectangle"
               size="medium"
               leadingIcon={<Feather name="rss" size={16} color="#FFF" />}
-              onPress={onRollCall}
+              onPress={() => setIsRollCallVisible(true)}
               style={{ width: "100%", marginBottom: theme.spacing[8] }}
             />
 
