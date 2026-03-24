@@ -10,6 +10,10 @@ export interface User {
   phone: string;
   avatarUpdatedAt?: string;
   status: UserStatus;
+  latitude?: number;
+  longitude?: number;
+  region?: string;
+  district?: string;
 }
 
 export interface Member {
@@ -22,6 +26,11 @@ export interface Member {
   status: UserStatus;
   active?: boolean; // Used in selection lists
   isAlias?: boolean; // Used when a custom name is set for a member
+  latitude?: number;
+  longitude?: number;
+  region?: string;
+  district?: string;
+  phone?: string;
   lastStatusUpdate?: string;
 }
 
