@@ -1,5 +1,15 @@
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
+import { UserEntity } from '../../users/entities/user.entity';
 import { GroupMemberEntity } from './group-member.entity';
 
 @Entity({ name: 'group' })
@@ -12,6 +22,10 @@ export class GroupEntity {
 
   @Column({ name: 'owner_id', type: 'uuid' })
   ownerId: string;
+
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'owner_id' })
+  owner: UserEntity;
 
   @OneToMany(() => GroupMemberEntity, (membership) => membership.group, { cascade: true })
   members: GroupMemberEntity[];

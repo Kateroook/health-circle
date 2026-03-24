@@ -7,15 +7,19 @@ import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
 import { QueueService } from 'src/common/queue/queue.service';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
+import { ContactEntity } from 'src/contacts/entities/contact.entity';
 import { ExternalFilesEntity } from 'src/external-files/entities/external-files.entity';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { GroupEntity } from 'src/groups/entities/group.entity';
+import { GroupBlockListEntity } from 'src/groups/entities/group-block-list.entity';
 import { GroupMemberEntity } from 'src/groups/entities/group-member.entity';
+import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { STATUS_UPDATE_SIDE_EFFECTS_QUEUE } from 'src/notifications/status-update.queue.constants';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { UserNotificationSettingsEntity } from 'src/users/entities/user-notification-settings.entity';
 import { UserPasswordEntity } from 'src/users/entities/user-password.entity';
-import { EntityManager, Repository, UpdateResult } from 'typeorm';
+import { EntityManager, In, Repository, UpdateResult } from 'typeorm';
 
 import { SessionActivityService } from './session-activity.service';
 import { UsersService } from './users.service';
@@ -40,10 +44,14 @@ describe('UsersService', () => {
   let service: UsersService;
 
   let repository: jest.Mocked<Repository<UserEntity>>;
+  let groupRepository: jest.Mocked<Repository<GroupEntity>>;
+  let blockListRepository: jest.Mocked<Repository<GroupBlockListEntity>>;
   let memberRepository: jest.Mocked<Repository<GroupMemberEntity>>;
+  let contactRepository: jest.Mocked<Repository<ContactEntity>>;
   let userActivitiesService: jest.Mocked<UserActivitiesService>;
   let externalFilesService: jest.Mocked<ExternalFilesService>;
   let queueService: jest.Mocked<QueueService>;
+  let firestoreSyncService: jest.Mocked<FirestoreSyncService>;
 
   const mockUser = {
     id: 'user1',
@@ -94,6 +102,7 @@ describe('UsersService', () => {
       update: jest.fn(),
       save: jest.fn(),
       remove: jest.fn(),
+      delete: jest.fn(),
       existsBy: jest.fn(),
       create: jest.fn(),
 
@@ -152,7 +161,11 @@ describe('UsersService', () => {
         { provide: ConfirmationsService, useValue: mockConfirmationsService() },
         { provide: UserActivitiesService, useValue: mockUserActivitiesService() },
         { provide: ExternalFilesService, useValue: mockExternalFilesService() },
+        { provide: FirestoreSyncService, useValue: { sendSyncSignal: jest.fn() } },
+        { provide: getRepositoryToken(GroupEntity), useValue: createRepoMock() },
+        { provide: getRepositoryToken(GroupBlockListEntity), useValue: createRepoMock() },
         { provide: getRepositoryToken(GroupMemberEntity), useValue: createRepoMock() },
+        { provide: getRepositoryToken(ContactEntity), useValue: createRepoMock() },
         { provide: getRepositoryToken(UserNotificationSettingsEntity), useValue: createRepoMock() },
         { provide: QueueService, useValue: mockQueueService() },
         { provide: SessionActivityService, useValue: { trackActivity: jest.fn() } },
@@ -161,10 +174,14 @@ describe('UsersService', () => {
 
     service = module.get<UsersService>(UsersService);
     repository = module.get(getRepositoryToken(UserEntity));
+    groupRepository = module.get(getRepositoryToken(GroupEntity));
+    blockListRepository = module.get(getRepositoryToken(GroupBlockListEntity));
     memberRepository = module.get(getRepositoryToken(GroupMemberEntity));
+    contactRepository = module.get(getRepositoryToken(ContactEntity));
     userActivitiesService = module.get(UserActivitiesService);
     externalFilesService = module.get(ExternalFilesService);
     queueService = module.get(QueueService);
+    firestoreSyncService = module.get(FirestoreSyncService);
   });
 
   //
@@ -476,19 +493,63 @@ describe('UsersService', () => {
   });
 
   describe('remove', () => {
-    it('removes user', async () => {
-      repository.findOne.mockResolvedValue({ id: 'u1' } as UserEntity);
-      repository.remove.mockResolvedValue({} as UserEntity);
+    it('removes a member user from groups, contacts, and syncs impacted users', async () => {
+      memberRepository.find
+        .mockResolvedValueOnce([{ groupId: 'g1', userId: 'u1' } as GroupMemberEntity])
+        .mockResolvedValueOnce([
+          { groupId: 'g1', userId: 'u1' } as GroupMemberEntity,
+          { groupId: 'g1', userId: 'u2' } as GroupMemberEntity,
+          { groupId: 'g1', userId: 'u3' } as GroupMemberEntity,
+        ]);
+      groupRepository.find.mockResolvedValueOnce([]);
+      groupRepository.find.mockResolvedValueOnce([]);
+      memberRepository.delete.mockResolvedValue({ affected: 1 } as any);
+      contactRepository.delete.mockResolvedValue({ affected: 2 } as any);
+      repository.delete.mockResolvedValue({ affected: 1 } as any);
 
       const res = await service.remove('u1', { id: 'u1' } as any, {} as any);
 
-      expect(repository.save).toHaveBeenCalled();
+      expect(memberRepository.delete).toHaveBeenCalledWith({ userId: 'u1' });
+      expect(contactRepository.delete).toHaveBeenCalledWith([{ ownerId: 'u1' }, { targetId: 'u1' }]);
+      expect(groupRepository.delete).not.toHaveBeenCalled();
+      expect(repository.delete).toHaveBeenCalledWith('u1');
+      expect(firestoreSyncService.sendSyncSignal).toHaveBeenCalledWith(['u2', 'u3']);
       expect(userActivitiesService.logActivity).toHaveBeenCalled();
       expect(res).toEqual({ success: true });
     });
 
+    it('removes owned groups before deleting the owner and syncs affected members', async () => {
+      memberRepository.find
+        .mockResolvedValueOnce([{ groupId: 'g-owner', userId: 'owner-1' } as GroupMemberEntity])
+        .mockResolvedValueOnce([
+          { groupId: 'g-owner', userId: 'owner-1' } as GroupMemberEntity,
+          { groupId: 'g-owner', userId: 'member-1' } as GroupMemberEntity,
+        ]);
+      groupRepository.find
+        .mockResolvedValueOnce([{ id: 'g-owner', ownerId: 'owner-1' } as GroupEntity])
+        .mockResolvedValueOnce([{ id: 'g-owner', ownerId: 'owner-1' } as GroupEntity]);
+      blockListRepository.delete.mockResolvedValue({ affected: 1 } as any);
+      memberRepository.delete.mockResolvedValue({ affected: 1 } as any);
+      groupRepository.delete.mockResolvedValue({ affected: 1 } as any);
+      contactRepository.delete.mockResolvedValue({ affected: 0 } as any);
+      repository.delete.mockResolvedValue({ affected: 1 } as any);
+
+      await service.remove('owner-1', { id: 'owner-1' } as any, {} as any);
+
+      expect(blockListRepository.delete).toHaveBeenCalledWith({ groupId: In(['g-owner']) });
+      expect(memberRepository.delete).toHaveBeenCalledWith({ groupId: In(['g-owner']) });
+      expect(groupRepository.delete).toHaveBeenCalledWith({ id: In(['g-owner']) });
+      expect(memberRepository.delete).toHaveBeenCalledWith({ userId: 'owner-1' });
+      expect(firestoreSyncService.sendSyncSignal).toHaveBeenCalledWith(['member-1']);
+    });
+
     it('throws if not found', async () => {
-      repository.findOne.mockResolvedValue(null);
+      memberRepository.find.mockResolvedValueOnce([]);
+      groupRepository.find.mockResolvedValueOnce([]);
+      groupRepository.find.mockResolvedValueOnce([]);
+      memberRepository.delete.mockResolvedValue({ affected: 0 } as any);
+      contactRepository.delete.mockResolvedValue({ affected: 0 } as any);
+      repository.delete.mockResolvedValue({ affected: 0 } as any);
 
       await expect(service.remove('x', { id: 'x' } as any, {} as any)).rejects.toThrow(NotFoundException);
     });

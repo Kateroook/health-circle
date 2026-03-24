@@ -27,8 +27,6 @@ export class UserUniqueConstraint implements ValidatorConstraintInterface {
       qb.andWhere('user.id != :id', { id: dto.id });
     }
 
-    qb.andWhere('user.isRegistered = :isRegistered', { isRegistered: true });
-
     const exists = await qb.getExists();
     return !exists;
   }

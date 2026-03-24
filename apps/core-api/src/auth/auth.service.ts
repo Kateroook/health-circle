@@ -348,13 +348,22 @@ export class AuthService {
   async forgotPassword(email: string): Promise<boolean> {
     const normalizedEmail = email.trim().toLowerCase();
     const user = await this.userRepository.findOne({ where: { email: normalizedEmail } });
-    if (!user || user.lockedAt || !user.isRegistered) return false;
+    if (!user) return false;
+
+    if (user.lockedAt) {
+      throw new ForbiddenException('Цей обліковий запис заблоковано');
+    }
+    if (!user.isRegistered) {
+      throw new BadRequestException('Пошта не підтверджена. Повторно надішліть код підтвердження');
+    }
 
     try {
       await this.confirmationService.setupPasswordCode(normalizedEmail, user.id, ConfirmationTypes.PASSWORD_RESET);
     } catch (error: unknown) {
       this.logger.warn(`Password reset code setup failed for userId=${user.id}: ${String(error)}`);
+      return false;
     }
+
     return true;
   }
 

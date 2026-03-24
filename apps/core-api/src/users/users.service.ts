@@ -8,7 +8,11 @@ import { QueueService } from 'src/common/queue/queue.service';
 import { RequestMetadata } from 'src/common/types/request-metadata';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
+import { ContactEntity } from 'src/contacts/entities/contact.entity';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { GroupEntity } from 'src/groups/entities/group.entity';
+import { GroupBlockListEntity } from 'src/groups/entities/group-block-list.entity';
+import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { STATUS_UPDATE_SIDE_EFFECTS_QUEUE } from 'src/notifications/status-update.queue.constants';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import type { FindOptionsWhere } from 'typeorm';
@@ -33,8 +37,15 @@ export class UsersService {
     protected readonly userActivitiesService: UserActivitiesService,
     protected readonly externalFilesService: ExternalFilesService,
     private readonly queueService: QueueService,
+    private readonly firestoreSyncService: FirestoreSyncService,
+    @InjectRepository(GroupEntity)
+    protected readonly groupRepository: Repository<GroupEntity>,
+    @InjectRepository(GroupBlockListEntity)
+    protected readonly blockListRepository: Repository<GroupBlockListEntity>,
     @InjectRepository(GroupMemberEntity)
     protected readonly memberRepository: Repository<GroupMemberEntity>,
+    @InjectRepository(ContactEntity)
+    protected readonly contactRepository: Repository<ContactEntity>,
     @InjectRepository(UserNotificationSettingsEntity)
     protected readonly notificationSettingsRepository: Repository<UserNotificationSettingsEntity>,
   ) {}
@@ -291,21 +302,67 @@ export class UsersService {
     return { success: true, message: 'Код для скидання паролю надіслано на пошту' };
   }
 
+  private async collectImpactedUserIds(userId: string): Promise<Set<string>> {
+    const impactedUserIds = new Set<string>();
+
+    const memberships = await this.memberRepository.find({
+      where: { userId },
+      select: ['groupId'],
+    });
+
+    const ownerGroups = await this.groupRepository.find({
+      where: { ownerId: userId },
+      select: ['id'],
+    });
+
+    const groupIds = Array.from(
+      new Set([...memberships.map((membership) => membership.groupId), ...ownerGroups.map((group) => group.id)]),
+    );
+
+    if (groupIds.length > 0) {
+      const relatedMemberships = await this.memberRepository.find({
+        where: { groupId: In(groupIds) },
+        select: ['userId'],
+      });
+
+      relatedMemberships.forEach((membership) => {
+        if (membership.userId !== userId) {
+          impactedUserIds.add(membership.userId);
+        }
+      });
+    }
+
+    return impactedUserIds;
+  }
+
+  private async cleanupUserRelations(userId: string): Promise<Set<string>> {
+    const impactedUserIds = await this.collectImpactedUserIds(userId);
+
+    const ownerGroups = await this.groupRepository.find({
+      where: { ownerId: userId },
+      select: ['id'],
+    });
+    const ownerGroupIds = ownerGroups.map((group) => group.id);
+
+    if (ownerGroupIds.length > 0) {
+      await this.blockListRepository.delete({ groupId: In(ownerGroupIds) });
+      await this.memberRepository.delete({ groupId: In(ownerGroupIds) });
+      await this.groupRepository.delete({ id: In(ownerGroupIds) });
+    }
+
+    await this.memberRepository.delete({ userId });
+    await this.contactRepository.delete([{ ownerId: userId }, { targetId: userId }]);
+
+    return impactedUserIds;
+  }
+
   public async remove(id: string, user: UserProfileDto, metadata: RequestMetadata): Promise<{ success: boolean }> {
     ensureSameUser(id, user.id);
-    const userToDelete = await this.repository.findOne({ where: { id } });
-    if (!userToDelete) throw new NotFoundException(`Користувача не знайдено`);
-
-    userToDelete.email = null;
-    userToDelete.phone = null;
-    userToDelete.fcmToken = null;
-    userToDelete.firstName = '';
-    userToDelete.lastName = '';
-    userToDelete.middleName = null;
-
-    await this.repository.save(userToDelete);
     await this.userActivitiesService.logActivity(UserActivityTypes.deleteAccount, metadata, { userId: user.id });
-
+    const impactedUserIds = await this.cleanupUserRelations(id);
+    const result = await this.repository.delete(id);
+    if (result.affected === 0) throw new NotFoundException(`Користувача не знайдено`);
+    await this.firestoreSyncService.sendSyncSignal(Array.from(impactedUserIds));
     return { success: true };
   }
 

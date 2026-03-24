@@ -538,10 +538,10 @@ describe('AuthService', () => {
       expect(confirmationService.setupPasswordCode).toHaveBeenCalledWith('test@example.com', 'user-123', expect.anything());
     });
 
-    it('should not throw and should not call setupPasswordCode if user is not registered', async () => {
+    it('should throw BadRequestException if user is not registered', async () => {
       userRepository.findOne.mockResolvedValue({ ...mockUserEntity, isRegistered: false } as UserEntity);
 
-      await expect(service.forgotPassword('test@example.com')).resolves.toBe(false);
+      await expect(service.forgotPassword('test@example.com')).rejects.toThrow(BadRequestException);
       expect(confirmationService.setupPasswordCode).not.toHaveBeenCalled();
     });
 
@@ -552,10 +552,10 @@ describe('AuthService', () => {
       expect(confirmationService.setupPasswordCode).not.toHaveBeenCalled();
     });
 
-    it('should not throw and should not call setupPasswordCode if user is locked', async () => {
+    it('should throw ForbiddenException if user is locked', async () => {
       userRepository.findOne.mockResolvedValue({ ...mockUserEntity, lockedAt: new Date() } as UserEntity);
 
-      await expect(service.forgotPassword('test@example.com')).resolves.toBe(false);
+      await expect(service.forgotPassword('test@example.com')).rejects.toThrow(ForbiddenException);
       expect(confirmationService.setupPasswordCode).not.toHaveBeenCalled();
     });
   });

@@ -24,9 +24,11 @@ export default function ForgotPassword() {
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [showConfirmationCta, setShowConfirmationCta] = useState(false);
 
   async function handleSubmit() {
     setFormError("");
+    setShowConfirmationCta(false);
     if (!email.trim()) {
       setFormError("Введіть email");
       return;
@@ -42,7 +44,15 @@ export default function ForgotPassword() {
       // Navigate to ResetPassword screen with email
       router.push({ pathname: "/ResetPassword", params: { email: email.trim().toLowerCase() } });
     } catch (e: any) {
-      setFormError(formatErrorMessage(e));
+      const errorMessage = formatErrorMessage(e);
+      const isUnconfirmedEmailError = errorMessage.includes("Пошта не підтверджена");
+
+      setFormError(
+        isUnconfirmedEmailError
+          ? "Ця пошта ще не підтверджена. Перейдіть до підтвердження акаунта і надішліть код повторно."
+          : errorMessage,
+      );
+      setShowConfirmationCta(isUnconfirmedEmailError);
     } finally {
       setLoading(false);
     }
@@ -116,6 +126,24 @@ export default function ForgotPassword() {
                 style={{ width: "100%" }}
               />
             </View>
+
+            {showConfirmationCta && (
+              <View style={styles.secondaryAction}>
+                <Button
+                  label="Підтвердити пошту"
+                  hierarchy="secondary"
+                  shape="rectangle"
+                  size="medium"
+                  onPress={() =>
+                    router.push({
+                      pathname: "/PasswordSetup",
+                      params: { email: email.trim().toLowerCase() },
+                    })
+                  }
+                  style={{ width: "100%" }}
+                />
+              </View>
+            )}
           </View>
 
           {/* Footer */}
@@ -170,5 +198,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: theme.spacing[16],
     marginTop: theme.spacing[24],
+  },
+  secondaryAction: {
+    marginTop: theme.spacing[12],
   },
 });
