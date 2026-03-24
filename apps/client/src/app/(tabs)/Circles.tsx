@@ -3,6 +3,8 @@ import { initiateRollCall } from "@/src/api/groups";
 import { Avatar } from "@/src/components/Avatar";
 import { Button } from "@/src/components/Button";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
+import { ConfirmRollCallModal } from "@/src/components/circle/actions/ConfirmRollCallModal";
+
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
 import { ListItem } from "@/src/components/ListItem";
@@ -47,6 +49,8 @@ export default function CirclesScreen() {
 
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+
+  const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
 
   useEffect(() => {
     if (activeCircle) {
@@ -149,7 +153,11 @@ export default function CirclesScreen() {
     }
   };
 
-  const handleRollCall = async () => {
+  const handleRollCall = () => {
+    setIsRollCallModalVisible(true);
+  };
+
+  const handleRollCallConfirmed = async () => {
     if (!activeCircle) return;
     try {
       await initiateRollCall(activeCircle.id);
@@ -161,16 +169,23 @@ export default function CirclesScreen() {
     }
   };
 
-  // ─── Detail view ────────────────────────────────
-  if (showCircleDetail && activeCircle) {
-    const unknownCount = activeCircle.members.filter(
-      (m) => m.status === "UNKNOWN" || !m.status,
-    ).length;
-    const safeCount = activeCircle.members.filter((m) => m.status === "SAFE").length;
-    const wasSafeCount = activeCircle.members.filter((m) => m.status === "WAS_SAFE").length;
+  const unknownCount =
+    activeCircle?.members.filter((m) => m.status === "UNKNOWN" || !m.status).length ?? 0;
+  const safeCount = activeCircle?.members.filter((m) => m.status === "SAFE").length ?? 0;
+  const wasSafeCount = activeCircle?.members.filter((m) => m.status === "WAS_SAFE").length ?? 0;
 
-    return (
-      <SafeAreaView style={styles.screen}>
+  return (
+    <SafeAreaView style={styles.screen}>
+      {/* Roll Call Modal  */}
+      <ConfirmRollCallModal
+        isVisible={isRollCallModalVisible}
+        onCancel={() => setIsRollCallModalVisible(false)}
+        onConfirm={async () => {
+          setIsRollCallModalVisible(false);
+          await handleRollCallConfirmed();
+        }}
+      />
+      {showCircleDetail && activeCircle ? (
         <ScrollView contentContainerStyle={styles.content}>
           {/* Header */}
           <View style={styles.header}>
@@ -312,7 +327,7 @@ export default function CirclesScreen() {
               setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
               fetchCircles();
             }}
-            onRollCall={handleRollCall}
+            onRollCall={handleRollCallConfirmed}
           />
 
           <MemberDetailModal
@@ -324,102 +339,102 @@ export default function CirclesScreen() {
             }}
           />
         </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // ─── List view ────────────────────────────────────
-  return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Typography variant="h1" tone="primary">
-            Кола
-          </Typography>
-          <Button
-            shape="round"
-            hierarchy="accent"
-            size="medium"
-            leadingIcon={<AntDesign name="plus" size={24} color={theme.colors.content.onColor} />}
-            onPress={() => setIsAddModalVisible(true)}
-          />
-        </View>
-
-        {circles.length === 0 ? (
-          <Typography variant="body1" tone="secondary" style={styles.emptyText}>
-            Кола не знайдені
-          </Typography>
-        ) : (
-          <View style={styles.listContainer}>
-            {circles.map((circle) => (
-              <CircleItem
-                key={circle.id}
-                title={circle.name}
-                members={circle.members}
-                onMenuPress={() => openActionsModal(circle)}
-                onPress={() => openCircleDetail(circle)}
+      ) : (
+        <>
+          <ScrollView contentContainerStyle={styles.content}>
+            <View style={styles.header}>
+              <Typography variant="h1" tone="primary">
+                Кола
+              </Typography>
+              <Button
+                shape="round"
+                hierarchy="accent"
+                size="medium"
+                leadingIcon={
+                  <AntDesign name="plus" size={24} color={theme.colors.content.onColor} />
+                }
+                onPress={() => setIsAddModalVisible(true)}
               />
-            ))}
-          </View>
-        )}
-      </ScrollView>
+            </View>
 
-      <AddCircleModal
-        visible={isAddModalVisible}
-        onClose={() => setIsAddModalVisible(false)}
-        onUpdated={fetchCircles}
-      />
+            {circles.length === 0 ? (
+              <Typography variant="body1" tone="secondary" style={styles.emptyText}>
+                Кола не знайдені
+              </Typography>
+            ) : (
+              <View style={styles.listContainer}>
+                {circles.map((circle) => (
+                  <CircleItem
+                    key={circle.id}
+                    title={circle.name}
+                    members={circle.members}
+                    onMenuPress={() => openActionsModal(circle)}
+                    onPress={() => openCircleDetail(circle)}
+                  />
+                ))}
+              </View>
+            )}
+          </ScrollView>
 
-      <CircleActionsModal
-        visible={isActionsVisible}
-        onClose={() => setIsActionsVisible(false)}
-        circleId={activeCircle?.id || ""}
-        ownerId={activeCircle?.owner.id || ""}
-        currentName={activeCircle?.name || ""}
-        inviteCode={activeCircle?.inviteCode || ""}
-        members={activeCircle?.members || []}
-        onSaveMembers={async (updatedMembers) => {
-          if (!activeCircle) return;
-          await apiFetch("/groups", {
-            method: "PUT",
-            body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
-          });
-          setIsActionsVisible(false);
-          fetchCircles();
-        }}
-        onRename={async (newName) => {
-          if (!activeCircle) return;
-          await apiFetch("/groups", {
-            method: "PUT",
-            body: JSON.stringify({ id: activeCircle.id, name: newName }),
-          });
-          setIsActionsVisible(false);
-          fetchCircles();
-        }}
-        onDelete={async () => {
-          if (!activeCircle) return;
-          await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
-          setIsActionsVisible(false);
-          fetchCircles();
-        }}
-        onLeave={async () => {
-          if (!activeCircle) return;
-          await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
-          setIsActionsVisible(false);
-          fetchCircles();
-        }}
-        onRegenerateInvite={async () => {
-          if (!activeCircle) return;
-          const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, { method: "POST" });
-          setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
-          fetchCircles();
-        }}
-        onRollCall={handleRollCall}
-      />
+          <AddCircleModal
+            visible={isAddModalVisible}
+            onClose={() => setIsAddModalVisible(false)}
+            onUpdated={fetchCircles}
+          />
+
+          <CircleActionsModal
+            visible={isActionsVisible}
+            onClose={() => setIsActionsVisible(false)}
+            circleId={activeCircle?.id || ""}
+            ownerId={activeCircle?.owner.id || ""}
+            currentName={activeCircle?.name || ""}
+            inviteCode={activeCircle?.inviteCode || ""}
+            members={activeCircle?.members || []}
+            onSaveMembers={async (updatedMembers) => {
+              if (!activeCircle) return;
+              await apiFetch("/groups", {
+                method: "PUT",
+                body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
+              });
+              setIsActionsVisible(false);
+              fetchCircles();
+            }}
+            onRename={async (newName) => {
+              if (!activeCircle) return;
+              await apiFetch("/groups", {
+                method: "PUT",
+                body: JSON.stringify({ id: activeCircle.id, name: newName }),
+              });
+              setIsActionsVisible(false);
+              fetchCircles();
+            }}
+            onDelete={async () => {
+              if (!activeCircle) return;
+              await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
+              setIsActionsVisible(false);
+              fetchCircles();
+            }}
+            onLeave={async () => {
+              if (!activeCircle) return;
+              await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
+              setIsActionsVisible(false);
+              fetchCircles();
+            }}
+            onRegenerateInvite={async () => {
+              if (!activeCircle) return;
+              const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
+                method: "POST",
+              });
+              setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+              fetchCircles();
+            }}
+            onRollCall={handleRollCallConfirmed}
+          />
+        </>
+      )}
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.background.primary },
   content: { paddingHorizontal: theme.spacing[16], paddingBottom: 140 },
@@ -493,5 +508,29 @@ const styles = StyleSheet.create({
   },
   leaveButton: {
     marginTop: theme.spacing[24],
+  },
+  rcMessageBubble: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: theme.spacing[12],
+    borderRadius: theme.radius.xl,
+    width: "100%",
+
+    backgroundColor: "rgba(255,255,255,0.6)",
+    borderWidth: 1,
+    borderColor: theme.colors.primaryA,
+
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  rcMessageTextContainer: {
+    marginLeft: theme.spacing[8],
+  },
+  rcTimeText: {
+    color: theme.colors.content.secondary,
+    marginLeft: "auto",
   },
 });
