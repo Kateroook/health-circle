@@ -21,6 +21,7 @@ export class UserJwtRefreshStrategy extends PassportStrategy(Strategy, AuthStrat
       ignoreExpiration: false,
       secretOrKey: configService.getOrThrow<string>('REFRESH_TOKEN_SECRET'),
       algorithms: ['HS256'],
+      audience: '/auth/refresh',
     } as StrategyOptionsWithRequest);
   }
 

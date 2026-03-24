@@ -11,6 +11,7 @@ import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
 import { STATUS_UPDATE_SIDE_EFFECTS_QUEUE } from 'src/notifications/status-update.queue.constants';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
+import type { FindOptionsWhere } from 'typeorm';
 import { EntityManager, In, QueryRunner, Repository } from 'typeorm';
 
 import { GroupMemberEntity } from '../groups/entities/group-member.entity';
@@ -224,7 +225,7 @@ export class UsersService {
     user: UserProfileDto,
   ): Promise<UserEntity> {
     if (isNew) {
-      const searchParams: any[] = [];
+      const searchParams: FindOptionsWhere<UserEntity>[] = [];
       if (item.email) searchParams.push({ email: item.email.toLowerCase() });
       if (item.phone) searchParams.push({ phone: item.phone });
 
@@ -311,17 +312,5 @@ export class UsersService {
   async findByIds(ids: string[]): Promise<UserEntity[]> {
     if (ids.length === 0) return [];
     return this.repository.find({ where: { id: In(ids) } });
-  }
-
-  async exists(id: string): Promise<boolean> {
-    return this.repository.existsBy({ id });
-  }
-
-  async findOneInternal(id: string): Promise<UserEntity | null> {
-    return this.repository.findOneBy({ id });
-  }
-
-  async updateLastPersonalRollCallAt(id: string): Promise<void> {
-    await this.repository.update({ id }, { lastPersonalRollCallAt: new Date() });
   }
 }

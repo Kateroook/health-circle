@@ -5,7 +5,6 @@ import { ConfirmationsModule } from 'src/confirmations/confirmations.module';
 import { ExternalFilesModule } from 'src/external-files/external-files.module';
 import { NotificationsModule } from 'src/notifications/notifications.module';
 import { StatusUpdateQueueWorker } from 'src/notifications/status-update-queue.worker';
-import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesModule } from 'src/user-activities/user-activities.module';
 
 import { GroupMemberEntity } from '../groups/entities/group-member.entity';
@@ -31,7 +30,7 @@ import { UsersService } from './users.service';
     ExternalFilesModule,
     NotificationsModule,
   ],
-  providers: [UsersService, SecurityService, UserUniqueConstraint, SessionActivityService, StatusUpdateQueueWorker],
+  providers: [UsersService, UserUniqueConstraint, SessionActivityService, StatusUpdateQueueWorker],
   controllers: [UsersController],
   exports: [UsersService, SessionActivityService],
 })

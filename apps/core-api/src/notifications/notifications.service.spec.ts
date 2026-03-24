@@ -1,30 +1,29 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import * as admin from 'firebase-admin';
 
+import { FIREBASE_MESSAGING } from '../firebase/firebase.constants';
 import { NotificationType } from './notification-types';
 import { NotificationsService } from './notifications.service';
 
-jest.mock('firebase-admin', () => {
-  const sendEachForMulticast = jest.fn().mockResolvedValue({
-    successCount: 1,
-    failureCount: 0,
-    responses: [{ success: true }],
-  });
-  const messaging = () => ({
-    sendEachForMulticast,
-  });
-  return {
-    messaging,
-  };
-});
-
 describe('NotificationsService', () => {
   let service: NotificationsService;
+  const firebaseMessaging = {
+    sendEachForMulticast: jest.fn().mockResolvedValue({
+      successCount: 1,
+      failureCount: 0,
+      responses: [{ success: true }],
+    }),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
-      providers: [NotificationsService],
+      providers: [
+        NotificationsService,
+        {
+          provide: FIREBASE_MESSAGING,
+          useValue: firebaseMessaging,
+        },
+      ],
     }).compile();
 
     service = module.get<NotificationsService>(NotificationsService);
@@ -134,7 +133,7 @@ describe('NotificationsService', () => {
 
       await service.sendMulticast(tokens, title, body, data);
 
-      expect(admin.messaging().sendEachForMulticast).toHaveBeenCalledWith({
+      expect(firebaseMessaging.sendEachForMulticast).toHaveBeenCalledWith({
         tokens,
         notification: { title, body },
         android: expect.any(Object),
@@ -144,9 +143,8 @@ describe('NotificationsService', () => {
     });
 
     it('should not call firebase if tokens are empty', async () => {
-      const spy = jest.spyOn(admin.messaging(), 'sendEachForMulticast');
       await service.sendMulticast([], 't', 'b');
-      expect(spy).not.toHaveBeenCalled();
+      expect(firebaseMessaging.sendEachForMulticast).not.toHaveBeenCalled();
     });
   });
 });

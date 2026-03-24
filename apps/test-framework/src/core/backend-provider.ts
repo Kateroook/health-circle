@@ -24,10 +24,7 @@ export class BackendProvider {
   public dbCleaner: DbCleaner;
   private additionalContexts: APIRequestContext[] = [];
 
-  constructor(
-    db: Kysely<Database>,
-    requestContext: APIRequestContext
-  ) {
+  constructor(db: Kysely<Database>, requestContext: APIRequestContext) {
     this.db = db;
     this.requestContext = requestContext;
     this.dbCleaner = new DbCleaner(db);
@@ -75,13 +72,13 @@ export class BackendProvider {
     return user;
   }
 
-  async spawnApi() : Promise<ApiClientFactory>{
+  async spawnApi(): Promise<ApiClientFactory> {
     const context = await request.newContext();
     this.additionalContexts.push(context);
 
     return new ApiClientFactory({
-        request: context,
-        dbCleaner: this.dbCleaner,
+      request: context,
+      dbCleaner: this.dbCleaner,
     });
   }
 
@@ -91,8 +88,8 @@ export class BackendProvider {
 
   async dispose() {
     await this.requestContext.dispose();
-    for(const context of this.additionalContexts) {
-        await context.dispose();
+    for (const context of this.additionalContexts) {
+      await context.dispose();
     }
   }
 }

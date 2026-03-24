@@ -105,14 +105,10 @@ test.describe('New user example tests', async () => {
 
     expect(postUser.response).toHaveStatus2xx();
     const code = await confirmationCodeRepository.getLastUserCode(user.id);
-    const setupPassword = await api.auth.setupPassword(
-      user.email,
-      code.code,
-      {
-        newPassword: user.password,
-        confirmNewPassword: user.password,
-      }
-    );
+    const setupPassword = await api.auth.setupPassword(user.email, code.code, {
+      newPassword: user.password,
+      confirmNewPassword: user.password,
+    });
 
     console.log(setupPassword.response);
     expect(setupPassword.response).toHaveStatus4xx();

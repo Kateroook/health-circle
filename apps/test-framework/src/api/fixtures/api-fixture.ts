@@ -1,16 +1,16 @@
 import { test as base, mergeExpects } from '@playwright/test';
-import { DbManager } from '../../core/db/db-manager';
-import { UserRepository } from '../../core/db/repositories/user-repository';
-import { GroupRepository } from '../../core/db/repositories/group-repository';
-import { ContactRepository } from '../../core/db/repositories/contact-repository';
-import { ConfirmationCodeRepository } from '../../core/db/repositories/confirmation-code-repository';
-import { DbCleaner } from '../../core/db/db-cleaner';
-import { ApiClientFactory } from '../../core/api/api-client-factory';
 import { Kysely } from 'kysely';
-import { Database } from '../../core/db/schema';
-import { UserEntity } from '../../core/types/entites/user-interface';
+import { ApiClientFactory } from '../../core/api/api-client-factory';
 import { expect as statusExpect } from '../../core/api/helpers/response-checker';
 import { BackendProvider } from '../../core/backend-provider';
+import { DbCleaner } from '../../core/db/db-cleaner';
+import { DbManager } from '../../core/db/db-manager';
+import { ConfirmationCodeRepository } from '../../core/db/repositories/confirmation-code-repository';
+import { ContactRepository } from '../../core/db/repositories/contact-repository';
+import { GroupRepository } from '../../core/db/repositories/group-repository';
+import { UserRepository } from '../../core/db/repositories/user-repository';
+import { Database } from '../../core/db/schema';
+import { UserEntity } from '../../core/types/entites/user-interface';
 export type ApiFixture = {
   db: Kysely<Database>;
 };
@@ -38,7 +38,7 @@ export type MyFixture = {
 };
 
 export const test = workerTest.extend<MyFixture>({
-  backendProvider: async ({db, request}, use) => {
+  backendProvider: async ({ db, request }, use) => {
     const provider = await BackendProvider.init(db, request);
     await use(provider);
     await provider.cleanup();
@@ -50,7 +50,7 @@ export const test = workerTest.extend<MyFixture>({
   userRepository: async ({ backendProvider }, use) => {
     await use(backendProvider.userRepository);
   },
-  groupRepository: async ({ backendProvider}, use) => {
+  groupRepository: async ({ backendProvider }, use) => {
     await use(backendProvider.groupRepository);
   },
   contactRepository: async ({ backendProvider }, use) => {
@@ -68,8 +68,37 @@ export const test = workerTest.extend<MyFixture>({
     await use(() => backendProvider.spawnApi());
   },
 
-  spawnUser: async ({ backendProvider }, use) => {
-    await use(() => backendProvider.spawnUser());
+  spawnUser: async ({ api, confirmationCodeRepository }, use) => {
+    const factory = async (overrides?: Partial<UserEntity>) => {
+      let user = UserFactory.createRandomUser(overrides);
+
+      const postUser = await api.users.createUser({
+        email: user.email,
+        phone: user.phone,
+        firstName: user.firstName,
+        middleName: user.middleName,
+        lastName: user.lastName,
+      });
+      statusExpect(postUser.response).toHaveStatus2xx();
+
+      user.id = postUser.data.id;
+
+      const code = (await confirmationCodeRepository.findBy({ userId: user.id }))[0];
+
+      baseExpect(code).not.toBeUndefined();
+      baseExpect(code).not.toBeNull();
+
+      const setupPassword = await api.auth.setupPassword(user.email!, code.code, {
+        newPassword: user.password,
+        confirmNewPassword: user.password,
+      });
+
+      statusExpect(setupPassword.response).toHaveStatus2xx();
+
+      return user;
+    };
+
+    await use(factory);
   },
 });
 
