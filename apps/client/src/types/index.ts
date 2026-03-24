@@ -31,6 +31,7 @@ export interface Member {
   region?: string;
   district?: string;
   phone?: string;
+  lastStatusUpdate?: string;
 }
 
 export interface Circle {

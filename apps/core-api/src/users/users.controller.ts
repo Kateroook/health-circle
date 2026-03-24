@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  ParseFilePipeBuilder,
   Patch,
   Post,
   Put,
@@ -75,7 +76,6 @@ export class UsersController {
   @UseGuards(UserJwtAccessGuard)
   @ApiOperation({ summary: 'Save user FCM token' })
   @ApiOkResponse({ type: UserEntity, description: 'User FCM token updated successfully' })
-  @ApiOperation({ summary: 'Save FCM Token for push notifications' })
   async saveToken(@Body() body: { token: string }, @Req() req: AuthRequest) {
     return this.service.saveFcmToken(req.user.id, body.token);
   }
@@ -146,8 +146,22 @@ export class UsersController {
     },
   })
   @ApiOkResponse({ type: UserProfileDto, description: 'User avatar uploaded successfully' })
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadAvatar(@Param() params: UUIdParamDto, @UploadedFile() file: Express.Multer.File, @Req() req: AuthRequest) {
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    }),
+  )
+  async uploadAvatar(
+    @Param() params: UUIdParamDto,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addMaxSizeValidator({ maxSize: 5 * 1024 * 1024 })
+        .addFileTypeValidator({ fileType: /^image\/(jpeg|jpg|png|webp)$/ })
+        .build({ fileIsRequired: true }),
+    )
+    file: Express.Multer.File,
+    @Req() req: AuthRequest,
+  ) {
     return this.service.upsertFile(params.id, file, req.user.id);
   }
 

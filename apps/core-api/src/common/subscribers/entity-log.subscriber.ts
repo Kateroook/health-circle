@@ -1,3 +1,4 @@
+import { Logger as NestLogger } from '@nestjs/common';
 import { EntitySubscriberInterface, EventSubscriber, InsertEvent, UpdateEvent } from 'typeorm';
 
 import { DataLogEntity } from '../../logging/entities/data-logs.entity';
@@ -29,6 +30,36 @@ enum LogTypes {
 
 @EventSubscriber()
 export class LoggerSubscriber implements EntitySubscriberInterface {
+  private static readonly logger = new NestLogger(LoggerSubscriber.name);
+
+  private static safeToString(value: unknown): string {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'bigint') return value.toString();
+    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    if (value === null) return 'null';
+    if (value === undefined) return 'undefined';
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(Object.prototype.toString.call(value));
+    }
+  }
+
+  private static logAuditError(
+    methodName: string,
+    error: unknown,
+    event?: { metadata?: { name?: string }; entity?: { id?: unknown } },
+  ) {
+    const entityName = event?.metadata?.name;
+    const entityId = event?.entity?.id;
+    const suffix = entityName ? ` entity=${entityName}` : '';
+    const idPart = entityId !== undefined && entityId !== null ? ` id=${LoggerSubscriber.safeToString(entityId)}` : '';
+    LoggerSubscriber.logger.warn(
+      `${LoggerSubscriber.name} ${methodName}() audit-log failed${suffix}${idPart}: ${getErrorStack(error)}`,
+    );
+  }
+
   private static fillLogObject(
     event: UpdateEvent<LoggableEntity> | InsertEvent<LoggableEntity>,
     fields: string[],
@@ -148,6 +179,7 @@ export class LoggerSubscriber implements EntitySubscriberInterface {
   async afterUpdate(event: UpdateEvent<LoggableEntity>) {
     try {
       if (loggingEntities.includes(event.metadata.name)) {
+        if (!event.entity) return;
         const updatedFields = event.updatedColumns.map((item) => item.propertyName);
         event.updatedRelations.forEach((item) => {
           updatedFields.push(item.propertyName);
@@ -161,7 +193,11 @@ export class LoggerSubscriber implements EntitySubscriberInterface {
         await repository.save(logObj);
       }
     } catch (e) {
-      throw new Error(`${LoggerSubscriber.name} ${this.afterUpdate.name}() error: ${getErrorStack(e)}`);
+      LoggerSubscriber.logAuditError(
+        this.afterUpdate.name,
+        e,
+        event as unknown as { metadata?: { name?: string }; entity?: { id?: unknown } },
+      );
     }
   }
 
@@ -169,6 +205,7 @@ export class LoggerSubscriber implements EntitySubscriberInterface {
     try {
       if (loggingEntities.includes(event.metadata.name)) {
         const entity = event.entity;
+        if (!entity) return;
         const createdFields = Object.keys(entity)
           .filter((item) => !excludedFields.includes(item) && entity[item] !== null && entity[item] !== undefined)
           .filter((item, index, array) => array.indexOf(item) === index);
@@ -178,7 +215,11 @@ export class LoggerSubscriber implements EntitySubscriberInterface {
         await repository.save(logObj);
       }
     } catch (e) {
-      throw new Error(`${LoggerSubscriber.name} ${this.afterInsert.name}() error: ${getErrorStack(e)}`);
+      LoggerSubscriber.logAuditError(
+        this.afterInsert.name,
+        e,
+        event as unknown as { metadata?: { name?: string }; entity?: { id?: unknown } },
+      );
     }
   }
 
@@ -188,7 +229,11 @@ export class LoggerSubscriber implements EntitySubscriberInterface {
         event.entity = LoggerSubscriber.handleManyToManyRelations(event);
       }
     } catch (e) {
-      throw new Error(`${LoggerSubscriber.name} ${this.beforeUpdate.name}() error: ${getErrorStack(e)}`);
+      LoggerSubscriber.logAuditError(
+        this.beforeUpdate.name,
+        e,
+        event as unknown as { metadata?: { name?: string }; entity?: { id?: unknown } },
+      );
     }
   }
 
@@ -198,7 +243,11 @@ export class LoggerSubscriber implements EntitySubscriberInterface {
         event.entity = LoggerSubscriber.handleManyToManyRelations(event);
       }
     } catch (e) {
-      throw new Error(`${LoggerSubscriber.name} ${this.beforeInsert.name}() error: ${getErrorStack(e)}`);
+      LoggerSubscriber.logAuditError(
+        this.beforeInsert.name,
+        e,
+        event as unknown as { metadata?: { name?: string }; entity?: { id?: unknown } },
+      );
     }
   }
 }

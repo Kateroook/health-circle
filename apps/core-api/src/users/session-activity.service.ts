@@ -39,16 +39,21 @@ export class SessionActivityService implements OnModuleDestroy {
 
     this.logger.debug(`Flushing ${entries.length} session activity updates`);
 
-    await Promise.all(
-      entries.map(([id, data]) =>
-        this.sessionRepository
-          .update(id, {
-            lastUsedAt: data.lastUsedAt,
-            ipAddress: data.ipAddress,
-            deviceInfo: data.deviceInfo,
-          })
-          .catch((err) => this.logger.error(`Failed to update session ${id}`, err)),
-      ),
-    );
+    // Process in chunks to avoid spiking database concurrency
+    const chunkSize = 50;
+    for (let i = 0; i < entries.length; i += chunkSize) {
+      const chunk = entries.slice(i, i + chunkSize);
+      await Promise.allSettled(
+        chunk.map(([id, data]) =>
+          this.sessionRepository
+            .update(id, {
+              lastUsedAt: data.lastUsedAt,
+              ipAddress: data.ipAddress,
+              deviceInfo: data.deviceInfo,
+            })
+            .catch((err) => this.logger.error(`Failed to update session ${id}`, err)),
+        ),
+      );
+    }
   }
 }

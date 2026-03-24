@@ -10,7 +10,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { useContainer } from 'class-validator';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import * as admin from 'firebase-admin';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { types } from 'pg';
@@ -24,17 +23,16 @@ async function bootstrap() {
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
   app.setGlobalPrefix('api');
 
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-
   app.useLogger(app.get(Logger));
 
   const configService = app.get(ConfigService);
+
+  const trustProxyEnv = configService.get<string>('TRUST_PROXY');
+  const trustProxyValue = trustProxyEnv ?? (process.env.NODE_ENV === 'production' ? '1' : '0');
+  if (trustProxyValue !== '0' && trustProxyValue !== 'false') {
+    const numeric = Number(trustProxyValue);
+    app.set('trust proxy', Number.isFinite(numeric) ? numeric : trustProxyValue === 'true');
+  }
 
   app.use(cookieParser());
   app.use(helmet());
@@ -46,6 +44,8 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,
       whitelist: true,
+      forbidNonWhitelisted: true,
+      forbidUnknownValues: true,
     }),
   );
 
