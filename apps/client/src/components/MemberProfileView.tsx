@@ -8,6 +8,7 @@ import { Avatar } from "./Avatar";
 import { Button } from "./Button";
 import { ConfirmRollCallModal } from "./circle/actions/ConfirmRollCallModal";
 import { RenameModal } from "./circle/actions/RenameModal";
+import ConfirmationModal from "./ConfirmationModal";
 import { StatusBadge } from "./StatusBadge";
 import { Typography } from "./typography";
 
@@ -33,6 +34,7 @@ export const MemberProfileView = ({
   const [isRenaming, setIsRenaming] = useState(false);
   const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isRemoveModalVisible, setIsRemoveModalVisible] = useState(false);
 
   const handleContact = () => {
     if (member.phone) {
@@ -136,6 +138,22 @@ export const MemberProfileView = ({
           onRollCall?.();
         }}
       />
+
+      {/* Remove Modal */}
+      <ConfirmationModal
+        isVisible={isRemoveModalVisible}
+        onCancel={() => setIsRemoveModalVisible(false)}
+        onConfirm={() => {
+          setIsRemoveModalVisible(false);
+          onRemove?.();
+        }}
+        title="Видалити учасника?"
+        message={`${member.fullName || member.firstName} буде видалено з кола`}
+        confirmText="Видалити"
+        cancelText="Назад"
+        confirmStyle="destructive"
+      />
+
       <View style={styles.profileSection}>
         <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="xl" />
         <Typography variant="h2" tone="primary" style={styles.name}>
@@ -191,7 +209,7 @@ export const MemberProfileView = ({
             hierarchy="tertiary"
             shape="rectangle"
             size="medium"
-            onPress={onRemove}
+            onPress={() => setIsRemoveModalVisible(true)}
             textStyle={{ color: theme.colors.negative }}
           />
         )}

@@ -340,6 +340,24 @@ export default function CirclesScreen() {
             }}
             onRollCall={() => selectedMember && handlePersonalRollCall(selectedMember)}
             canRollCall={canRollCall}
+            isOwner={!!isOwner}
+            onRemove={async () => {
+              if (!activeCircle || !selectedMember) return;
+              try {
+                const updatedMembers = activeCircle.members
+                  .filter((m) => m.id !== selectedMember.id)
+                  .map((m) => ({ id: m.id }));
+                await apiFetch("/groups", {
+                  method: "PUT",
+                  body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
+                });
+                setIsMemberModalVisible(false);
+                setSelectedMember(null);
+                fetchCircles();
+              } catch {
+                Alert.alert("Помилка", "Не вдалося видалити учасника");
+              }
+            }}
           />
         </ScrollView>
       ) : (
