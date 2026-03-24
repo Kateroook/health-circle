@@ -1,24 +1,15 @@
-import React, { useState } from "react";
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Linking,
-  Modal,
-  Pressable,
-  ToastAndroid,
-  Platform,
-} from "react-native";
+import { AntDesign, Feather, FontAwesome6 } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
-import { Feather, FontAwesome6, AntDesign } from "@expo/vector-icons";
-import { Member } from "../types";
+import React, { useState } from "react";
+import { Linking, Platform, StyleSheet, ToastAndroid, TouchableOpacity, View } from "react-native";
 import { theme } from "../theme/theme";
-import { MemberAvatar } from "./MemberAvatar";
-import { Typography } from "./typography";
-import { StatusBadge } from "./StatusBadge";
+import { Member } from "../types";
 import { Button } from "./Button";
+import { ConfirmRollCallModal } from "./circle/actions/ConfirmRollCallModal";
 import { RenameModal } from "./circle/actions/RenameModal";
-import { ModalContainer, ModalHeader, ModalActions } from "./modal";
+import { MemberAvatar } from "./MemberAvatar";
+import { StatusBadge } from "./StatusBadge";
+import { Typography } from "./typography";
 
 interface MemberProfileViewProps {
   member: Member;
@@ -137,56 +128,14 @@ export const MemberProfileView = ({
       />
 
       {/* Roll Call Modal */}
-      <ModalContainer
+      <ConfirmRollCallModal
         isVisible={isRollCallModalVisible}
-        onClose={() => setIsRollCallModalVisible(false)}
-      >
-        <ModalHeader title={`Запитати "Як ти?"`} />
-
-        <View style={styles.rcMessageBubble}>
-          <MemberAvatar member={member} size="sm" />
-          <View style={styles.rcMessageTextContainer}>
-            <Typography
-              variant="body2"
-              weight="bold"
-              style={{ color: theme.colors.content.primary }}
-            >
-              Як ти?
-            </Typography>
-            <Typography
-              variant="caption"
-              style={{ color: theme.colors.content.primary, marginTop: 2 }}
-            >
-              Відміть, будь ласка, свій стан
-            </Typography>
-          </View>
-          <Typography variant="caption" style={styles.rcTimeText}>
-            9:41
-          </Typography>
-        </View>
-
-        <ModalActions direction="row">
-          <Button
-            label="Скасувати"
-            hierarchy="secondary"
-            shape="rectangle"
-            size="medium"
-            onPress={() => setIsRollCallModalVisible(false)}
-            style={{ marginRight: 8 }}
-          />
-          <Button
-            label="Запитати"
-            hierarchy="primary"
-            shape="rectangle"
-            size="medium"
-            onPress={() => {
-              setIsRollCallModalVisible(false);
-              onRollCall?.();
-            }}
-          />
-        </ModalActions>
-      </ModalContainer>
-
+        onCancel={() => setIsRollCallModalVisible(false)}
+        onConfirm={async () => {
+          setIsRollCallModalVisible(false);
+          onRollCall?.();
+        }}
+      />
       <View style={styles.profileSection}>
         <MemberAvatar member={member} size="xl" />
         <Typography variant="h2" tone="primary" style={styles.name}>

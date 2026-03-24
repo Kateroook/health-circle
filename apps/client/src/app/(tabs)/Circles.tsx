@@ -1,5 +1,5 @@
 import { apiFetch } from "@/src/api/api";
-import { initiateRollCall } from "@/src/api/groups";
+import { initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import { ConfirmRollCallModal } from "@/src/components/circle/actions/ConfirmRollCallModal";
@@ -7,7 +7,7 @@ import { ConfirmRollCallModal } from "@/src/components/circle/actions/ConfirmRol
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
 import { MemberList } from "@/src/components/dashboard/MemberList";
-import MemberDetailModal from "@/src/components/MemberDetailModal";
+import { MemberProfileModal } from "@/src/components/dashboard/MemberProfileModal";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
@@ -17,6 +17,7 @@ import { AntDesign, Feather, Ionicons, MaterialIcons } from "@expo/vector-icons"
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
+import { useAnalytics } from "../../hooks/useAnalytics";
 
 import {
   Alert,
@@ -35,6 +36,7 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 
 export default function CirclesScreen() {
   const user = useAuthStore().user;
+  const { logEvent } = useAnalytics();
 
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
@@ -49,7 +51,7 @@ export default function CirclesScreen() {
   const [renameValue, setRenameValue] = useState("");
 
   const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
-
+  const canRollCall = !!selectedMember && !!activeCircle;
   useEffect(() => {
     setActiveCircle((current) => {
       if (!current) return current;
@@ -154,6 +156,16 @@ export default function CirclesScreen() {
 
   const handleRollCall = () => {
     setIsRollCallModalVisible(true);
+  };
+  const handlePersonalRollCall = async (member: Member) => {
+    if (!activeCircle) return;
+    try {
+      await initiatePersonalRollCall(activeCircle.id, member.id);
+      logEvent("initiate_personal_roll_call", { type: "individual" });
+      Alert.alert("Успіх", "Запит на перекличку надіслано");
+    } catch {
+      Alert.alert("Помилка", "Не вдалося надіслати запит");
+    }
   };
 
   const handleRollCallConfirmed = async () => {
@@ -319,13 +331,15 @@ export default function CirclesScreen() {
             onRollCall={handleRollCallConfirmed}
           />
 
-          <MemberDetailModal
+          <MemberProfileModal
             member={selectedMember}
             visible={isMemberModalVisible}
             onClose={() => {
               setIsMemberModalVisible(false);
               setSelectedMember(null);
             }}
+            onRollCall={() => selectedMember && handlePersonalRollCall(selectedMember)}
+            canRollCall={canRollCall}
           />
         </ScrollView>
       ) : (
