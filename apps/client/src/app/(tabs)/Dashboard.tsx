@@ -1,6 +1,5 @@
 import { apiFetch, updateMyStatus } from "@/src/api/api";
 import { initiatePersonalRollCall } from "@/src/api/groups";
-import MemberDetailModal from "@/src/components/MemberDetailModal";
 import { UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
@@ -10,6 +9,7 @@ import { theme } from "@/src/theme/theme";
 import { useFocusEffect } from "expo-router";
 import { useAnalytics } from "../../hooks/useAnalytics";
 
+import { MemberProfileModal } from "@/src/components/dashboard/MemberProfileModal";
 import { Circle, Member } from "@/src/types";
 import React, { useCallback, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
@@ -153,7 +153,7 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
-      <MemberDetailModal
+      <MemberProfileModal
         member={selectedMember}
         visible={modalVisible}
         onClose={handleCloseModal}
