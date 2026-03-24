@@ -115,9 +115,9 @@ export default function SettingsScreen() {
 
     if (trimmedMiddle) {
       if (trimmedMiddle.length < 2) {
-        errors.push("По-батькові має містити не менше 2 символів");
+        errors.push("По батькові має містити не менше 2 символів");
       } else if (trimmedMiddle.length > 50) {
-        errors.push("По-батькові має містити не більше 50 символів");
+        errors.push("По батькові має містити не більше 50 символів");
       }
     }
 
@@ -271,10 +271,10 @@ export default function SettingsScreen() {
       required: true,
     },
     {
-      label: "По-батькові",
+      label: "По батькові",
       value: middleName,
       setter: setMiddleName,
-      placeholder: "Введіть по-батькові",
+      placeholder: "Введіть по батькові",
       maxLength: 50,
       required: false,
     },
