@@ -4,10 +4,10 @@ import React, { useState } from "react";
 import { Linking, Platform, StyleSheet, ToastAndroid, TouchableOpacity, View } from "react-native";
 import { theme } from "../theme/theme";
 import { Member } from "../types";
+import { Avatar } from "./Avatar";
 import { Button } from "./Button";
 import { ConfirmRollCallModal } from "./circle/actions/ConfirmRollCallModal";
 import { RenameModal } from "./circle/actions/RenameModal";
-import { MemberAvatar } from "./MemberAvatar";
 import { StatusBadge } from "./StatusBadge";
 import { Typography } from "./typography";
 
@@ -137,7 +137,7 @@ export const MemberProfileView = ({
         }}
       />
       <View style={styles.profileSection}>
-        <MemberAvatar member={member} size="xl" />
+        <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="xl" />
         <Typography variant="h2" tone="primary" style={styles.name}>
           {member.fullName || `${member.firstName} ${member.lastName}`}
         </Typography>
@@ -147,18 +147,16 @@ export const MemberProfileView = ({
           {onRollCall && (
             <Button
               shape="round"
-              hierarchy="tertiary"
-              size="small"
+              hierarchy="secondary"
+              size="medium"
               onPress={() => setIsRollCallModalVisible(true)}
               leadingIcon={<Feather name="rss" size={18} color={theme.colors.content.primary} />}
               style={styles.rollCallIconButton}
             />
           )}
         </View>
-
         {renderLocation()}
       </View>
-
       <View style={styles.actionsColumn}>
         {onMessage && (
           <Button
@@ -239,8 +237,7 @@ const styles = StyleSheet.create({
   },
   actionsColumn: {
     width: "100%",
-    marginBottom: theme.spacing[24],
-    borderBottomLeftRadius: 4,
+    gap: theme.spacing[8],
   },
   rcMessageTextContainer: {
     flex: 1,
