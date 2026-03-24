@@ -13,7 +13,7 @@ import { NotificationsService } from 'src/notifications/notifications.service';
 import { SecurityService } from 'src/security/security.service';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
@@ -24,6 +24,7 @@ describe('GroupService', () => {
   let groupRepository: jest.Mocked<Repository<GroupEntity>>;
   let blockListRepository: jest.Mocked<Repository<GroupBlockListEntity>>;
   let memberRepository: jest.Mocked<Repository<GroupMemberEntity>>;
+  let userRepository: jest.Mocked<Repository<UserEntity>>;
   let securityService: jest.Mocked<SecurityService>;
   let notificationsService: jest.Mocked<NotificationsService>;
   let usersService: jest.Mocked<UsersService>;
@@ -82,6 +83,8 @@ describe('GroupService', () => {
           useValue: {
             findOneBy: jest.fn(),
             find: jest.fn(),
+            existsBy: jest.fn(),
+            update: jest.fn(),
           },
         },
         {
@@ -147,9 +150,6 @@ describe('GroupService', () => {
         {
           provide: UsersService,
           useValue: {
-            exists: jest.fn().mockResolvedValue(true),
-            getOne: jest.fn(),
-            findByIds: jest.fn(),
             getTokensForUsers: jest.fn().mockResolvedValue(['token-1']),
           },
         },
@@ -158,6 +158,7 @@ describe('GroupService', () => {
 
     service = module.get<GroupService>(GroupService);
     groupRepository = module.get(getRepositoryToken(GroupEntity));
+    userRepository = module.get(getRepositoryToken(UserEntity));
     blockListRepository = module.get(getRepositoryToken(GroupBlockListEntity));
     memberRepository = module.get(getRepositoryToken(GroupMemberEntity));
     securityService = module.get(SecurityService);
@@ -174,9 +175,10 @@ describe('GroupService', () => {
       // Logic in service filters out the requesting user from the members list
       memberRepository.find.mockResolvedValue([{ groupId: 'group-1', userId: 'user-1' } as GroupMemberEntity]);
       groupRepository.find.mockResolvedValue([mockGroup]);
-      usersService.findByIds.mockImplementation(async (ids: string[]) => {
-        return ids.map((id) => ({ id, firstName: id === 'owner-1' ? 'Owner' : 'User' }) as UserEntity);
-      });
+      userRepository.find.mockResolvedValue([
+        { id: 'owner-1', firstName: 'Owner' } as UserEntity,
+        { id: 'user-1', firstName: 'User' } as UserEntity,
+      ]);
 
       const result = await service.findAllForUser('user-1');
       // logic maps members. In findAllForUser, it returns Member Profile objects.
@@ -189,14 +191,14 @@ describe('GroupService', () => {
   describe('findOne', () => {
     it('should return group if user is owner', async () => {
       groupRepository.findOne.mockResolvedValue(mockGroup);
-      usersService.findByIds.mockResolvedValue([mockOwner, mockUser]);
+      userRepository.find.mockResolvedValue([mockOwner, mockUser]);
       const result = await service.findOne('group-1', 'owner-1');
       expect(result.id).toBe('group-1');
     });
 
     it('should return group if user is member', async () => {
       groupRepository.findOne.mockResolvedValue(mockGroup);
-      usersService.findByIds.mockResolvedValue([mockOwner, mockUser]);
+      userRepository.find.mockResolvedValue([mockOwner, mockUser]);
       const result = await service.findOne('group-1', 'user-1');
       expect(result.id).toBe('group-1');
     });
@@ -224,7 +226,7 @@ describe('GroupService', () => {
       } as unknown as GroupEntity;
       groupRepository.save.mockResolvedValue(groupData);
       groupRepository.findOne.mockResolvedValue(groupData);
-      usersService.findByIds.mockResolvedValue([mockOwner]);
+      userRepository.find.mockResolvedValue([mockOwner]);
 
       const dto = { name: 'New Group', members: [] } as CreateGroupDto;
       const result = await service.createGroup('owner-1', dto);
@@ -252,7 +254,7 @@ describe('GroupService', () => {
       } as unknown as GroupEntity;
       groupRepository.save.mockImplementation((g) => Promise.resolve(g as GroupEntity));
       groupRepository.findOne.mockResolvedValue(groupData);
-      usersService.findByIds.mockResolvedValue([mockOwner]);
+      userRepository.find.mockResolvedValue([mockOwner]);
 
       await service.createGroup('owner-1', { name: 'G' } as CreateGroupDto);
 
@@ -267,7 +269,7 @@ describe('GroupService', () => {
 
   describe('regenerateInviteCode', () => {
     it('should regenerate code if user is owner', async () => {
-      groupRepository.findOneBy.mockImplementation((criteria: any) => {
+      groupRepository.findOneBy.mockImplementation((criteria: FindOptionsWhere<GroupEntity>) => {
         if (criteria.id === 'group-1') return Promise.resolve(mockGroup);
         if (criteria.inviteCode === 'XYZ') return Promise.resolve(null as any);
         return Promise.resolve(null as any);
@@ -301,8 +303,8 @@ describe('GroupService', () => {
             { groupId: 'group-1', userId: 'user-1' } as GroupMemberEntity,
           ],
         } as unknown as GroupEntity); // Call in findOne (returning joined group)
-      usersService.exists.mockResolvedValue(true);
-      usersService.findByIds.mockResolvedValue([mockOwner, mockUser]);
+      userRepository.existsBy.mockResolvedValue(true);
+      userRepository.find.mockResolvedValue([mockOwner, mockUser]);
       blockListRepository.findOne.mockResolvedValue(null);
       memberRepository.save.mockResolvedValue({ groupId: 'group-1', userId: 'user-1' } as GroupMemberEntity);
 
@@ -327,7 +329,7 @@ describe('GroupService', () => {
     it('should throw BadRequestException if already member', async () => {
       groupRepository.findOne.mockResolvedValue(mockGroup); // mockGroup has user-1 already
       blockListRepository.findOne.mockResolvedValue(null);
-      usersService.exists.mockResolvedValue(true);
+      userRepository.existsBy.mockResolvedValue(true);
 
       await expect(service.joinByInviteCode('user-1', 'ABC')).rejects.toThrow(BadRequestException);
     });
@@ -336,7 +338,7 @@ describe('GroupService', () => {
   describe('updateGroup', () => {
     it('should update group name and members', async () => {
       groupRepository.findOne.mockResolvedValue(mockGroup);
-      usersService.findByIds.mockResolvedValue([mockOwner, { id: 'new-mem' } as UserEntity]);
+      userRepository.find.mockResolvedValue([mockOwner, { id: 'new-mem' } as UserEntity]);
       groupRepository.save.mockImplementation((g) => Promise.resolve(g as GroupEntity));
 
       const dto = { id: 'group-1', name: 'Updated Name', members: [{ id: 'new-mem' }] } as UpdateGroupDto;
@@ -414,9 +416,8 @@ describe('GroupService', () => {
 
   describe('initiateRollCall', () => {
     it('should set lastRollCallAt and send notifications', async () => {
-      const mockMemberWithToken = { id: 'user-1', fcmToken: 'token-1' } as UserEntity;
       groupRepository.findOne.mockResolvedValue(mockGroup);
-      usersService.findByIds.mockResolvedValue([mockMemberWithToken]);
+      usersService.getTokensForUsers.mockResolvedValue(['token-1']);
       groupRepository.save.mockResolvedValue(mockGroup);
 
       const result = await service.initiateRollCall('group-1', 'owner-1');
@@ -432,9 +433,8 @@ describe('GroupService', () => {
     });
 
     it('should allow members to initiate', async () => {
-      const mockMemberWithToken = { id: 'user-1', fcmToken: 'token-1' } as UserEntity;
       groupRepository.findOne.mockResolvedValue(mockGroup);
-      usersService.findByIds.mockResolvedValue([mockMemberWithToken]);
+      usersService.getTokensForUsers.mockResolvedValue(['token-1']);
       groupRepository.save.mockResolvedValue(mockGroup);
 
       const result = await service.initiateRollCall('group-1', 'user-1');

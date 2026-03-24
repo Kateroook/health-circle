@@ -5,11 +5,9 @@ import { UserStatus } from 'src/common/enums/user-status';
 import { QueueService } from 'src/common/queue/queue.service';
 import { GroupEntity } from 'src/groups/entities/group.entity';
 import { GroupMemberEntity } from 'src/groups/entities/group-member.entity';
-import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
-import { NotificationsService } from 'src/notifications/notifications.service';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 import { StatusQueueService } from './status-queue.service';
 
@@ -17,8 +15,6 @@ describe('StatusQueueService', () => {
   let service: StatusQueueService;
   let userRepository: jest.Mocked<Repository<UserEntity>>;
   let groupRepository: jest.Mocked<Repository<GroupEntity>>;
-  let notificationsService: jest.Mocked<NotificationsService>;
-  let firestoreSyncService: jest.Mocked<FirestoreSyncService>;
   let usersService: jest.Mocked<UsersService>;
 
   beforeEach(async () => {
@@ -45,19 +41,6 @@ describe('StatusQueueService', () => {
           },
         },
         {
-          provide: FirestoreSyncService,
-          useValue: {
-            sendSyncSignal: jest.fn(),
-          },
-        },
-        {
-          provide: UsersService,
-          useValue: {
-            updateStatus: jest.fn(),
-            findByIds: jest.fn(),
-          },
-        },
-        {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockImplementation((key) => {
@@ -68,9 +51,10 @@ describe('StatusQueueService', () => {
           },
         },
         {
-          provide: NotificationsService,
+          provide: UsersService,
           useValue: {
-            sendMulticast: jest.fn(),
+            findByIds: jest.fn(),
+            updateStatus: jest.fn(),
           },
         },
         {
@@ -87,8 +71,6 @@ describe('StatusQueueService', () => {
     service = module.get<StatusQueueService>(StatusQueueService);
     userRepository = module.get(getRepositoryToken(UserEntity));
     groupRepository = module.get(getRepositoryToken(GroupEntity));
-    notificationsService = module.get(NotificationsService);
-    firestoreSyncService = module.get(FirestoreSyncService);
     usersService = module.get(UsersService);
   });
 
@@ -244,10 +226,7 @@ describe('StatusQueueService', () => {
 
       await service.handleStatusTransitions();
 
-      expect(userRepository.update).toHaveBeenCalledWith(
-        { id: In(['user-1']) },
-        expect.objectContaining({ status: UserStatus.WAS_SAFE }),
-      );
+      expect(usersService.updateStatus).toHaveBeenCalledWith('user-1', UserStatus.WAS_SAFE);
     });
   });
 });

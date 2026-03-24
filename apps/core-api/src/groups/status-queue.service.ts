@@ -3,13 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserStatus } from 'src/common/enums/user-status';
 import { QueueService } from 'src/common/queue/queue.service';
-import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 import { In, LessThan, Repository } from 'typeorm';
 
 import { GroupEntity } from './entities/group.entity';
-import { GroupMemberEntity } from './entities/group-member.entity';
 
 @Injectable()
 export class StatusQueueService implements OnModuleInit {
@@ -20,12 +18,9 @@ export class StatusQueueService implements OnModuleInit {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(GroupEntity)
     private readonly groupRepository: Repository<GroupEntity>,
-    @InjectRepository(GroupMemberEntity)
-    private readonly memberRepository: Repository<GroupMemberEntity>,
-    private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     private readonly queueService: QueueService,
-    private readonly firestoreSyncService: FirestoreSyncService,
+    private readonly usersService: UsersService,
   ) {}
 
   async onModuleInit() {
@@ -50,25 +45,44 @@ export class StatusQueueService implements OnModuleInit {
       relations: ['members'],
     });
 
-    for (const group of groupsWithRecentRollCall) {
-      const memberIds = group.members.map((m) => m.userId);
+    const groupChunkSize = 10;
+    for (let i = 0; i < groupsWithRecentRollCall.length; i += groupChunkSize) {
+      const chunk = groupsWithRecentRollCall.slice(i, i + groupChunkSize);
+
+      const memberIds = [...new Set(chunk.flatMap((group) => group.members.map((m) => m.userId)))];
       if (memberIds.length === 0) continue;
 
       const members = await this.usersService.findByIds(memberIds);
+      const membersById = new Map(members.map((user) => [user.id, user]));
 
-      const usersToUpdate = members.filter(
-        (user) =>
-          (user.status === UserStatus.SAFE || user.status === UserStatus.WAS_SAFE) &&
-          group.lastRollCallAt &&
-          user.lastStatusUpdate < group.lastRollCallAt,
+      await Promise.allSettled(
+        chunk.map(async (group) => {
+          try {
+            const groupMemberIds = group.members.map((m) => m.userId);
+            if (groupMemberIds.length === 0) return;
+
+            const groupMembers = groupMemberIds
+              .map((id) => membersById.get(id))
+              .filter((user): user is UserEntity => Boolean(user));
+
+            const usersToUpdate = groupMembers.filter(
+              (user) =>
+                (user.status === UserStatus.SAFE || user.status === UserStatus.WAS_SAFE) &&
+                group.lastRollCallAt &&
+                user.lastStatusUpdate < group.lastRollCallAt,
+            );
+
+            if (usersToUpdate.length > 0) {
+              this.logger.log(`Timed out ${usersToUpdate.length} users in group ${group.name} due to roll call`);
+              for (const user of usersToUpdate) {
+                await this.usersService.updateStatus(user.id, UserStatus.UNKNOWN, { memberUserIds: groupMemberIds });
+              }
+            }
+          } catch (error: unknown) {
+            this.logger.error(`Failed processing roll call timeout for groupId=${group.id}: ${String(error)}`);
+          }
+        }),
       );
-
-      if (usersToUpdate.length > 0) {
-        this.logger.log(`Timed out ${usersToUpdate.length} users in group ${group.name} due to roll call`);
-        for (const u of usersToUpdate) {
-          await this.usersService.updateStatus(u.id, UserStatus.UNKNOWN, { memberUserIds: memberIds });
-        }
-      }
     }
 
     // Handle personal roll calls from individual users
@@ -104,13 +118,9 @@ export class StatusQueueService implements OnModuleInit {
 
     if (expiredUsers.length > 0) {
       this.logger.log(`Expiring status for ${expiredUsers.length} users (SAFE -> WAS_SAFE)`);
-      const userIds = expiredUsers.map((u) => u.id);
-      await this.userRepository.update({ id: In(userIds) }, { status: UserStatus.WAS_SAFE, lastStatusUpdate: new Date() });
-      await this.syncUsers(userIds);
+      for (const u of expiredUsers) {
+        await this.usersService.updateStatus(u.id, UserStatus.WAS_SAFE);
+      }
     }
-  }
-
-  private async syncUsers(userIds: string[]) {
-    await this.firestoreSyncService.sendSyncSignal(userIds);
   }
 }

@@ -34,9 +34,10 @@ const statusMatchers = {
     const pass = is.status(apiResponse, expectedStatus);
     return {
       pass,
-      message: () => pass 
-        ? `Expected response not with status ${expectedStatus}`
-        : `Expected response with status ${expectedStatus}, but got ${apiResponse.status()}. Message: ${apiResponse.statusText()}`,
+      message: () =>
+        pass
+          ? `Expected response not with status ${expectedStatus}`
+          : `Expected response with status ${expectedStatus}, but got ${apiResponse.status()}. Message: ${apiResponse.statusText()}`,
     };
   },
   toHaveStatus2xx(apiResponse: APIResponse) {

@@ -75,7 +75,7 @@ export class UserClient extends BaseClient {
    * Створити нового користувача
    */
   public async createUser(data: CreateUserRequest): Promise<ApiResult<CreateUserResponse>> {
-    return test.step(`Create user. FirstName: "${data.firstName}", LastName: "${data.lastName}", Phone: "${data.phone}", Email: "${data.email}"`, async() => {
+    return test.step(`Create user. FirstName: "${data.firstName}", LastName: "${data.lastName}", Phone: "${data.phone}", Email: "${data.email}"`, async () => {
       const result = await this.post<CreateUserResponse>('/api/users', { data });
       if (result.data && result.data.id) {
         this.dbCleaner?.add('users', result.data.id);

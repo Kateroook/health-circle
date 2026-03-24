@@ -40,6 +40,8 @@ export class GlobalThrottlerGuard extends ThrottlerGuard {
     }
 
     // 3. Fallback to IP address
-    return Promise.resolve(req.ips.length ? req.ips[0] : req.ip || 'unknown');
+    const ip =
+      req.ip || (Array.isArray(req.ips) && req.ips.length ? req.ips[0] : undefined) || req.socket?.remoteAddress || 'unknown';
+    return Promise.resolve(ip);
   }
 }

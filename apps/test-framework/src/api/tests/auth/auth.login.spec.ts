@@ -4,10 +4,10 @@ import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe('api/auth/login tests', async () => {
   let user: UserEntity;
-  test.beforeEach(async ( { spawnUser } ) => {
+  test.beforeEach(async ({ spawnUser }) => {
     user = await spawnUser();
   });
-  
+
   test('[AUTH-001] Successfull login via email', async ({ api, spawnUser }) => {
     const login = await api.auth.login({
       identifier: user.email,
