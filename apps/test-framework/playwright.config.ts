@@ -24,21 +24,11 @@ export default defineConfig({
     extraHTTPHeaders: {
       'Content-Type': 'application/json',
     },
-    isolate: true,
   },
 
   projects: [
     {
-      name: 'API Tests (Chrome)',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'API Tests',
     },
-    // {
-    //   name: 'API Tests (Safari)',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
-    // {
-    //   name: 'API Tests (Firefox)',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
   ],
 });
