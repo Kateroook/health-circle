@@ -22,10 +22,13 @@ test.describe('api/groups/delete tests', async () => {
     userGroup.inviteCode = initialGroupResult.data.inviteCode;
   });
 
-  test('[GRP-022] Successful delete group by owner', async ({ api }) => {
+  test('[GRP-022] Successful delete group by owner', async ({ api, groupRepository }) => {
     const deleteResult = await api.groups.deleteGroup(userGroup.id!);
 
     expect(deleteResult.response).toHaveStatus(200);
+
+    const groupInDb = await groupRepository.getById(userGroup.id!);
+    expect(groupInDb).toBeNull();
   });
 
   test('[GRP-023] Deleted group disappears from GET /api/groups', async ({ api, groupRepository }) => {
@@ -70,5 +73,29 @@ test.describe('api/groups/delete tests', async () => {
     const deleteResult = await api.groups.deleteGroup(userGroup.id!);
 
     expect(deleteResult.response).toHaveStatus(401);
+  });
+
+  test("[GRP-058] Deleted group disappears from member's list", async ({ api, spawnUser, spawnApi }) => {
+    const member = await spawnUser();
+    const memberApi = await spawnApi();
+    await memberApi.auth.login({ identifier: member.email, password: member.password });
+    await memberApi.groups.joinGroup({ code: userGroup.inviteCode! });
+
+    await api.groups.deleteGroup(userGroup.id!);
+
+    const memberGroups = await memberApi.groups.getAllGroups();
+    expect(memberGroups.data).toHaveLength(0);
+  });
+
+  test('[GRP-059] Join deleted group', async ({ api, spawnUser, spawnApi }) => {
+    await api.groups.deleteGroup(userGroup.id!);
+
+    const member = await spawnUser();
+    const memberApi = await spawnApi();
+    await memberApi.auth.login({ identifier: member.email, password: member.password });
+
+    const joinResult = await memberApi.groups.joinGroup({ code: userGroup.inviteCode! });
+
+    expect(joinResult.response).toHaveStatus4xx();
   });
 });

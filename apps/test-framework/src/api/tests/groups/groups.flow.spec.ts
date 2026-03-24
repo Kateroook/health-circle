@@ -33,7 +33,7 @@ test.describe('api/groups/flow tests', async () => {
     userGroup.inviteCode = createGroupResult.data.inviteCode;
 
     expect(createGroupResult.response).toHaveStatus2xx();
-    expect(userGroup.inviteCode).not.toBeUndefined();
+    expect(userGroup.inviteCode).toBeDefined();
 
     const joinResult = await secondApi.groups.joinGroup({ code: userGroup.inviteCode });
 

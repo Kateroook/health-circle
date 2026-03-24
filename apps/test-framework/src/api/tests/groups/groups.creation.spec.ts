@@ -29,7 +29,7 @@ test.describe('api/groups/creation tests', async () => {
     expect(groupDbRow!.name).toBe(validGroup.name);
     expect(groupDbRow!.ownerId).toBe(user.id);
     expect(groupDbRow!.inviteCode).not.toBeNull();
-    expect(groupDbRow!).not.toBeUndefined();
+    expect(groupDbRow!).toBeDefined();
   });
 
   test.fixme('[GRP-004-BUG] Group creation with whitespaces only in name', async ({ api }) => {
