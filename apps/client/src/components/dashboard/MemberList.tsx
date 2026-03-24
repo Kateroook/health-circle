@@ -79,7 +79,6 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: theme.colors.background.secondary,
     minHeight: 50,
-    marginTop: theme.spacing[8],
   },
   emptyState: {
     padding: theme.spacing[20],

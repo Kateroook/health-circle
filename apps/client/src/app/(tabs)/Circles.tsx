@@ -1,15 +1,13 @@
 import { apiFetch } from "@/src/api/api";
 import { initiateRollCall } from "@/src/api/groups";
-import { Avatar } from "@/src/components/Avatar";
 import { Button } from "@/src/components/Button";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import { ConfirmRollCallModal } from "@/src/components/circle/actions/ConfirmRollCallModal";
 
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
-import { ListItem } from "@/src/components/ListItem";
+import { MemberList } from "@/src/components/dashboard/MemberList";
 import MemberDetailModal from "@/src/components/MemberDetailModal";
-import { STATUS_CONFIG } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
@@ -258,24 +256,14 @@ export default function CirclesScreen() {
             </View>
 
             <View style={styles.membersList}>
-              {activeCircle.members.map((member, index) => (
-                <ListItem
-                  key={member.id}
-                  layout="stateBadge"
-                  artworkSize="small"
-                  label={`${member.firstName} ${member.lastName}`}
-                  subLabel={STATUS_CONFIG[member.status]?.label ?? "Невідомо"}
-                  status={member.status}
-                  onPress={() => {
-                    setSelectedMember(member);
-                    setIsMemberModalVisible(true);
-                  }}
-                  renderAvatar={() => (
-                    <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="sm" />
-                  )}
-                  showDivider={index < activeCircle.members.length - 1}
-                />
-              ))}
+              <MemberList
+                members={activeCircle.members}
+                hasGroups={circles.length > 0}
+                onMemberPress={(member) => {
+                  setSelectedMember(member);
+                  setIsMemberModalVisible(true);
+                }}
+              />
             </View>
           </ScrollView>
 

@@ -177,9 +177,10 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.radius.xl,
     padding: theme.spacing[16],
+    gap: theme.spacing[8],
   },
   sectionHeader: {
-    marginBottom: theme.spacing[16],
+    marginBottom: theme.spacing[8],
     letterSpacing: 0.5,
   },
 });
