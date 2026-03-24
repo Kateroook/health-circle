@@ -51,10 +51,11 @@ export default function CirclesScreen() {
   const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
 
   useEffect(() => {
-    if (activeCircle) {
-      const updated = circles.find((c) => c.id === activeCircle.id);
-      if (updated) setActiveCircle(updated);
-    }
+    setActiveCircle((current) => {
+      if (!current) return current;
+      const updated = circles.find((c) => c.id === current.id);
+      return updated ?? current;
+    });
   }, [circles]);
 
   const fetchCircles = useCallback(async () => {
