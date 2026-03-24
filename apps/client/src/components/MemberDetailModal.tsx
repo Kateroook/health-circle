@@ -1,21 +1,12 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { MemberAvatar } from "@/src/components/MemberAvatar";
-import { StatusBadge, UserStatus } from "@/src/components/StatusBadge";
 import { Button } from "@/src/components/Button";
-import { Typography } from "@/src/components/typography/Typography";
 import { ModalContainer } from "@/src/components/modal/ModalContainer";
 import { theme } from "@/src/theme/theme";
 import { AntDesign } from "@expo/vector-icons";
+import { MemberProfileView } from "@/src/components/MemberProfileView";
 
-interface Member {
-  id: string;
-  firstName: string;
-  lastName: string;
-  avatarUpdatedAt?: string;
-  status: UserStatus;
-  active?: boolean;
-}
+import { Member } from "@/src/types";
 
 interface MemberDetailModalProps {
   member: Member | null;
@@ -45,33 +36,11 @@ export default function MemberDetailModal({
             style={styles.closeButton}
           />
 
-          <View style={styles.avatarWrapper}>
-            <MemberAvatar member={member} />
-          </View>
-
-          <Typography variant="h2" tone="primary" style={styles.name}>
-            {member.firstName} {member.lastName}
-          </Typography>
-
-          <StatusBadge status={member.status} variant="pill" />
-
-          <View style={styles.buttonsColumn}>
-            {canRollCall && onRollCall && (
-              <Button
-                label="Перекличка"
-                hierarchy="secondary"
-                shape="rectangle"
-                size="medium"
-                onPress={onRollCall}
-              />
-            )}
-
-            <Button
-              label="Написати"
-              hierarchy="secondary"
-              shape="rectangle"
-              size="medium"
-              onPress={() => console.log("Написати", member.id)}
+          <View style={{ width: "100%", marginTop: theme.spacing[8] }}>
+            <MemberProfileView
+              member={member}
+              onRollCall={canRollCall ? onRollCall : undefined}
+              onMessage={() => {}}
             />
           </View>
         </>

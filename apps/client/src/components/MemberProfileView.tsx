@@ -1,5 +1,16 @@
 import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  Linking,
+  Modal,
+  Pressable,
+  ToastAndroid,
+  Platform,
+} from "react-native";
+import * as Clipboard from "expo-clipboard";
+import { Feather, FontAwesome6, AntDesign } from "@expo/vector-icons";
 import { Member } from "../types";
 import { theme } from "../theme/theme";
 import { MemberAvatar } from "./MemberAvatar";
@@ -7,6 +18,7 @@ import { Typography } from "./typography";
 import { StatusBadge } from "./StatusBadge";
 import { Button } from "./Button";
 import { RenameModal } from "./circle/actions/RenameModal";
+import { ModalContainer, ModalHeader, ModalActions } from "./modal";
 
 interface MemberProfileViewProps {
   member: Member;
@@ -28,9 +40,78 @@ export const MemberProfileView = ({
   isOwner,
 }: MemberProfileViewProps) => {
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleContact = () => {
+    if (member.phone) {
+      Linking.openURL(`tel:${member.phone}`);
+    } else {
+      Linking.openURL("tel:");
+    }
+  };
+
+  const handleCopyLocation = async (copyStr?: string) => {
+    const coords = copyStr || `${member.latitude || ""}, ${member.longitude || ""}`;
+    if (coords !== ", " && coords !== "") {
+      await Clipboard.setStringAsync(coords);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      if (Platform.OS === "android") {
+        ToastAndroid.show("Координати скопійовано!", ToastAndroid.SHORT);
+      }
+    }
+  };
+
+  const renderLocation = () => {
+    if (member.status !== "DANGER") return null;
+
+    const hasCoords = !!(member.latitude && member.longitude);
+    const hasAddress = !!(member.region || member.district);
+
+    if (!hasCoords && !hasAddress) return null;
+
+    let locationText = "";
+    if (hasAddress) {
+      locationText = `${member.region || ""}${member.region && member.district ? ", " : ""}${member.district || ""}`;
+    } else if (hasCoords) {
+      locationText = `${member.latitude?.toFixed(4)}, ${member.longitude?.toFixed(4)}`;
+    }
+
+    const copyCoords = `${member.latitude || ""}, ${member.longitude || ""}`;
+
+    return (
+      <TouchableOpacity
+        onPress={() => handleCopyLocation(copyCoords)}
+        style={styles.locationContainer}
+        hitSlop={10}
+      >
+        <FontAwesome6 name="location-dot" size={16} color={theme.colors.content.primary} />
+        <Typography variant="body1" style={styles.locationText} weight="semibold">
+          {locationText}
+        </Typography>
+        {copied ? (
+          <Feather
+            name="check"
+            size={16}
+            color={theme.colors.state.safe}
+            style={{ marginLeft: 8 }}
+          />
+        ) : (
+          <AntDesign
+            name="copy"
+            size={16}
+            color={theme.colors.content.primary}
+            style={{ marginLeft: 8 }}
+          />
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
+      {/* Rename Modal */}
       <RenameModal
         isVisible={isRenaming}
         title="Редагування імʼя"
@@ -55,31 +136,88 @@ export const MemberProfileView = ({
         }
       />
 
+      {/* Roll Call Modal */}
+      <ModalContainer
+        isVisible={isRollCallModalVisible}
+        onClose={() => setIsRollCallModalVisible(false)}
+      >
+        <ModalHeader title={`Запитати "Як ти?"`} />
+
+        <View style={styles.rcMessageBubble}>
+          <MemberAvatar member={member} size="sm" />
+          <View style={styles.rcMessageTextContainer}>
+            <Typography
+              variant="body2"
+              weight="bold"
+              style={{ color: theme.colors.content.primary }}
+            >
+              Як ти?
+            </Typography>
+            <Typography
+              variant="caption"
+              style={{ color: theme.colors.content.primary, marginTop: 2 }}
+            >
+              Відміть, будь ласка, свій стан
+            </Typography>
+          </View>
+          <Typography variant="caption" style={styles.rcTimeText}>
+            9:41
+          </Typography>
+        </View>
+
+        <ModalActions direction="row">
+          <Button
+            label="Скасувати"
+            hierarchy="secondary"
+            shape="rectangle"
+            size="medium"
+            onPress={() => setIsRollCallModalVisible(false)}
+            style={{ marginRight: 8 }}
+          />
+          <Button
+            label="Запитати"
+            hierarchy="primary"
+            shape="rectangle"
+            size="medium"
+            onPress={() => {
+              setIsRollCallModalVisible(false);
+              onRollCall?.();
+            }}
+          />
+        </ModalActions>
+      </ModalContainer>
+
       <View style={styles.profileSection}>
         <MemberAvatar member={member} size="xl" />
         <Typography variant="h2" tone="primary" style={styles.name}>
           {member.fullName || `${member.firstName} ${member.lastName}`}
         </Typography>
-        <StatusBadge variant="pill" status={member.status} />
+
+        <View style={styles.statusContainer}>
+          <StatusBadge variant="pill" status={member.status} />
+          {onRollCall && (
+            <Button
+              shape="round"
+              hierarchy="tertiary"
+              size="small"
+              onPress={() => setIsRollCallModalVisible(true)}
+              leadingIcon={<Feather name="rss" size={18} color={theme.colors.content.primary} />}
+              style={styles.rollCallIconButton}
+            />
+          )}
+        </View>
+
+        {renderLocation()}
       </View>
 
       <View style={styles.actionsColumn}>
         {onMessage && (
           <Button
-            label="Написати"
+            label="Зв'язатися"
             hierarchy="secondary"
             shape="rectangle"
             size="medium"
-            onPress={onMessage}
-          />
-        )}
-        {onRollCall && (
-          <Button
-            label="Перекличка"
-            hierarchy="secondary"
-            shape="rectangle"
-            size="medium"
-            onPress={onRollCall}
+            onPress={handleContact}
           />
         )}
         {onRename && (
@@ -129,8 +267,39 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing[16],
     textAlign: "center",
   },
+  statusContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rollCallIconButton: {
+    marginLeft: theme.spacing[8],
+  },
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: theme.spacing[20],
+    paddingTop: theme.spacing[8],
+    paddingHorizontal: theme.spacing[16],
+  },
+  locationText: {
+    marginLeft: theme.spacing[8],
+    color: theme.colors.content.primary,
+    marginBottom: 0,
+  },
   actionsColumn: {
     width: "100%",
-    gap: theme.spacing[8],
+    marginBottom: theme.spacing[24],
+    borderBottomLeftRadius: 4,
+  },
+  rcMessageTextContainer: {
+    flex: 1,
+    marginLeft: theme.spacing[12],
+  },
+  rcTimeText: {
+    color: theme.colors.content.secondary,
+    marginLeft: theme.spacing[8],
+    alignSelf: "flex-end",
   },
 });

@@ -27,10 +27,13 @@ const CircleItem: React.FC<CircleItemProps> = ({
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.header}>
-        <Typography variant="h3" weight="bold" numberOfLines={1} ellipsizeMode="tail">
-          {title}
-        </Typography>
+        <View style={styles.titleContainer}>
+          <Typography variant="h3" weight="bold" numberOfLines={1} ellipsizeMode="tail">
+            {title}
+          </Typography>
+        </View>
         <TouchableOpacity
+          style={styles.menuButton}
           onPress={onMenuPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
@@ -73,9 +76,16 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: theme.spacing[8],
+  },
+  titleContainer: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: theme.spacing[8],
+  },
+  menuButton: {
+    flexShrink: 0,
   },
   members: {
     flexDirection: "row",
