@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test:mobile:run": "npx wdio run ./src/mobile/wdio.conf.ts",
+    "start:emulator": "npx tsx ./src/scripts/start-emulator.ts",
+    "test:mobile:run": "npm run start:emulator && npx wdio run ./src/mobile/wdio.conf.ts",
     "test:api": "npx playwright test",
     "build:apk": "cd ../client && rm -rf android && npx expo prebuild --platform android --clean && cd android && ./gradlew assembleRelease",
     "test:mobile:e2e": "npm run build:apk && npm run test:mobile:run"

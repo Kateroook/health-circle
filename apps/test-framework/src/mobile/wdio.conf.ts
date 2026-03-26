@@ -28,8 +28,7 @@ export const config: WebdriverIO.Config = {
         'appium:platformName': 'Android',
         'appium:automationName': 'UiAutomator2',
         'appium:platformVersion': '16.0',
-        'appium:deviceName': 'emulator-5554', // For a real device it's just a label
-        // Enter path to your .apk  (if you already have a build)
+        'appium:deviceName': 'emulator-5554',
         'appium:app': path.join(process.cwd(), '../client/android/app/build/outputs/apk/release/app-release.apk'), 
         'appium:autoGrantPermissions': true,
         'appium:newCommandTimeout': 300,
