@@ -5,14 +5,19 @@ import path from 'path';
 export const config: WebdriverIO.Config = {
     //Where to find tests
     specs: ['./tests/**/*.spec.ts'],
+    protocol: 'http',
+    hostname: '127.0.0.1',
+    port: 4723,
+    path: '/',
     
     //Platform settings
     capabilities: [{
         'appium:platformName': 'Android',
         'appium:automationName': 'UiAutomator2',
-        'appium:deviceName': 'Android_Device', // For a real device it's just a label
+        'appium:platformVersion': '16.0',
+        'appium:deviceName': 'emulator-5554', // For a real device it's just a label
         // Enter path to your .apk  (if you already have a build)
-        'appium:app': path.join(process.cwd(), './mobile/apps/your-app.apk'), 
+        'appium:app': path.join(process.cwd(), '../client/android/app/build/outputs/apk/debug/app-debug.apk'), 
         'appium:autoGrantPermissions': true,
         'appium:newCommandTimeout': 300,
     }],
