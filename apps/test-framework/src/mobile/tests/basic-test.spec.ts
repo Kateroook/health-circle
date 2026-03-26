@@ -1,4 +1,4 @@
-import { $, expect } from '@wdio/globals';
+import { $, expect as wdioExpect } from '@wdio/globals';
 
 describe('Test basic flow', () => {
 
@@ -15,12 +15,14 @@ describe('Test basic flow', () => {
 
         // 3. Знаходимо текст на новій сторінці за точним збігом тексту
         const instructionText = await $('android=new UiSelector().text("Введи номер телефону та електронну пошту")');
-
+        const actualText = await instructionText.getText();
+        console.log(`--- Знайдений текст на екрані: [${actualText}] ---`);
+        
         // 4. Перевіряємо, що текст відображається на екрані
         // WDIO автоматично почекає появи елемента перед асертом
-        await expect(instructionText).toBeDisplayed();
+        await wdioExpect(instructionText).toBeDisplayed();
         
         // Додатково можна перевірити, чи текст саме такий, як ми очікуємо
-        await expect(instructionText).toHaveText('Введи номер телефону та електронну пошту');
+        wdioExpect(actualText).toBe('Введи номер телефону та електронну пошту');
     });
 });
