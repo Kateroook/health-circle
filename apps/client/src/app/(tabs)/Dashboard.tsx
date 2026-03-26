@@ -81,7 +81,6 @@ export default function DashboardScreen() {
       await initiatePersonalRollCall(rollCallGroupId, selectedMember.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
       Alert.alert("Успіх", "Запит на перекличку надіслано");
-      handleCloseModal();
     } catch (e) {
       Alert.alert("Помилка", "Не вдалося надіслати запит");
     }

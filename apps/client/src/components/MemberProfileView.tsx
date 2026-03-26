@@ -1,24 +1,16 @@
-import React, { useState } from "react";
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Linking,
-  Modal,
-  Pressable,
-  ToastAndroid,
-  Platform,
-} from "react-native";
+import { AntDesign, Feather, FontAwesome6 } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
-import { Feather, FontAwesome6, AntDesign } from "@expo/vector-icons";
-import { Member } from "../types";
+import React, { useState } from "react";
+import { Linking, Platform, StyleSheet, ToastAndroid, TouchableOpacity, View } from "react-native";
 import { theme } from "../theme/theme";
-import { MemberAvatar } from "./MemberAvatar";
-import { Typography } from "./typography";
-import { StatusBadge } from "./StatusBadge";
+import { Member } from "../types";
+import { Avatar } from "./Avatar";
 import { Button } from "./Button";
+import { ConfirmRollCallModal } from "./circle/actions/ConfirmRollCallModal";
 import { RenameModal } from "./circle/actions/RenameModal";
-import { ModalContainer, ModalHeader, ModalActions } from "./modal";
+import ConfirmationModal from "./ConfirmationModal";
+import { StatusBadge } from "./StatusBadge";
+import { Typography } from "./typography";
 
 interface MemberProfileViewProps {
   member: Member;
@@ -42,6 +34,7 @@ export const MemberProfileView = ({
   const [isRenaming, setIsRenaming] = useState(false);
   const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isRemoveModalVisible, setIsRemoveModalVisible] = useState(false);
 
   const handleContact = () => {
     if (member.phone) {
@@ -137,58 +130,32 @@ export const MemberProfileView = ({
       />
 
       {/* Roll Call Modal */}
-      <ModalContainer
+      <ConfirmRollCallModal
         isVisible={isRollCallModalVisible}
-        onClose={() => setIsRollCallModalVisible(false)}
-      >
-        <ModalHeader title={`Запитати "Як ти?"`} />
+        onCancel={() => setIsRollCallModalVisible(false)}
+        onConfirm={async () => {
+          setIsRollCallModalVisible(false);
+          onRollCall?.();
+        }}
+      />
 
-        <View style={styles.rcMessageBubble}>
-          <MemberAvatar member={member} size="sm" />
-          <View style={styles.rcMessageTextContainer}>
-            <Typography
-              variant="body2"
-              weight="bold"
-              style={{ color: theme.colors.content.primary }}
-            >
-              Як ти?
-            </Typography>
-            <Typography
-              variant="caption"
-              style={{ color: theme.colors.content.primary, marginTop: 2 }}
-            >
-              Відміть, будь ласка, свій стан
-            </Typography>
-          </View>
-          <Typography variant="caption" style={styles.rcTimeText}>
-            9:41
-          </Typography>
-        </View>
-
-        <ModalActions direction="row">
-          <Button
-            label="Скасувати"
-            hierarchy="secondary"
-            shape="rectangle"
-            size="medium"
-            onPress={() => setIsRollCallModalVisible(false)}
-            style={{ marginRight: 8 }}
-          />
-          <Button
-            label="Запитати"
-            hierarchy="primary"
-            shape="rectangle"
-            size="medium"
-            onPress={() => {
-              setIsRollCallModalVisible(false);
-              onRollCall?.();
-            }}
-          />
-        </ModalActions>
-      </ModalContainer>
+      {/* Remove Modal */}
+      <ConfirmationModal
+        isVisible={isRemoveModalVisible}
+        onCancel={() => setIsRemoveModalVisible(false)}
+        onConfirm={() => {
+          setIsRemoveModalVisible(false);
+          onRemove?.();
+        }}
+        title="Видалити учасника?"
+        message={`${member.fullName || member.firstName} буде видалено з кола`}
+        confirmText="Видалити"
+        cancelText="Назад"
+        confirmStyle="destructive"
+      />
 
       <View style={styles.profileSection}>
-        <MemberAvatar member={member} size="xl" />
+        <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="xl" />
         <Typography variant="h2" tone="primary" style={styles.name}>
           {member.fullName || `${member.firstName} ${member.lastName}`}
         </Typography>
@@ -198,18 +165,16 @@ export const MemberProfileView = ({
           {onRollCall && (
             <Button
               shape="round"
-              hierarchy="tertiary"
-              size="small"
+              hierarchy="secondary"
+              size="medium"
               onPress={() => setIsRollCallModalVisible(true)}
               leadingIcon={<Feather name="rss" size={18} color={theme.colors.content.primary} />}
               style={styles.rollCallIconButton}
             />
           )}
         </View>
-
         {renderLocation()}
       </View>
-
       <View style={styles.actionsColumn}>
         {onMessage && (
           <Button
@@ -244,7 +209,7 @@ export const MemberProfileView = ({
             hierarchy="tertiary"
             shape="rectangle"
             size="medium"
-            onPress={onRemove}
+            onPress={() => setIsRemoveModalVisible(true)}
             textStyle={{ color: theme.colors.negative }}
           />
         )}
@@ -290,8 +255,7 @@ const styles = StyleSheet.create({
   },
   actionsColumn: {
     width: "100%",
-    marginBottom: theme.spacing[24],
-    borderBottomLeftRadius: 4,
+    gap: theme.spacing[8],
   },
   rcMessageTextContainer: {
     flex: 1,
