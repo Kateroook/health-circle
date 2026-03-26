@@ -7,7 +7,7 @@
     "test:mobile:run": "npx wdio run ./src/mobile/wdio.conf.ts",
     "test:api": "npx playwright test",
     "build:apk": "cd ../client && rm -rf android && npx expo prebuild --platform android --clean && cd android && ./gradlew assembleRelease",
-    "test:mobile:e2e": "npm run build:apk && cd ../../test-framework && npm run test:mobile:run"
+    "test:mobile:e2e": "npm run build:apk && npm run test:mobile:run"
   },
   "keywords": [],
   "author": "",
