@@ -9,6 +9,17 @@ export const config: WebdriverIO.Config = {
     hostname: '127.0.0.1',
     port: 4723,
     path: '/',
+
+    services: [
+        ['appium', {
+            args: {
+                address: '127.0.0.1',
+                port: 4723,
+                relaxedSecurity: true, // Корисно для деяких команд ADB
+            },
+            command: 'appium',
+        }]
+    ],
     
     //Platform settings
     capabilities: [{
