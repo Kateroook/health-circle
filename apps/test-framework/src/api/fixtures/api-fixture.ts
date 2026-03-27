@@ -1,16 +1,18 @@
-import { test as base, mergeExpects } from '@playwright/test';
-import { DbManager } from '../../core/db/db-manager';
-import { UserRepository } from '../../core/db/repositories/user-repository';
-import { GroupRepository } from '../../core/db/repositories/group-repository';
-import { ContactRepository } from '../../core/db/repositories/contact-repository';
-import { ConfirmationCodeRepository } from '../../core/db/repositories/confirmation-code-repository';
-import { DbCleaner } from '../../core/db/db-cleaner';
-import { ApiClientFactory } from '../../core/api/api-client-factory';
+import { test as base, expect as baseExpect, mergeExpects } from '@playwright/test';
 import { Kysely } from 'kysely';
-import { Database } from '../../core/db/schema';
-import { UserEntity } from '../../core/types/entites/user-interface';
+import { ApiClientFactory } from '../../core/api/api-client-factory';
 import { expect as statusExpect } from '../../core/api/helpers/response-checker';
 import { BackendProvider } from '../../core/backend-provider';
+import { UserFactory } from '../../core/data/factories/user-factory';
+import { DbCleaner } from '../../core/db/db-cleaner';
+import { DbManager } from '../../core/db/db-manager';
+import { ConfirmationCodeRepository } from '../../core/db/repositories/confirmation-code-repository';
+import { ContactRepository } from '../../core/db/repositories/contact-repository';
+import { GroupRepository } from '../../core/db/repositories/group-repository';
+import { UserRepository } from '../../core/db/repositories/user-repository';
+import { Database } from '../../core/db/schema';
+import { UserEntity } from '../../core/types/entites/user-interface';
+import { UserFactory } from '@core/data/factories/user-factory';
 export type ApiFixture = {
   db: Kysely<Database>;
 };
@@ -38,7 +40,7 @@ export type MyFixture = {
 };
 
 export const test = workerTest.extend<MyFixture>({
-  backendProvider: async ({db, request}, use) => {
+  backendProvider: async ({ db, request }, use) => {
     const provider = await BackendProvider.init(db, request);
     await use(provider);
     await provider.cleanup();
@@ -50,7 +52,7 @@ export const test = workerTest.extend<MyFixture>({
   userRepository: async ({ backendProvider }, use) => {
     await use(backendProvider.userRepository);
   },
-  groupRepository: async ({ backendProvider}, use) => {
+  groupRepository: async ({ backendProvider }, use) => {
     await use(backendProvider.groupRepository);
   },
   contactRepository: async ({ backendProvider }, use) => {
@@ -70,7 +72,7 @@ export const test = workerTest.extend<MyFixture>({
 
   spawnUser: async ({ backendProvider }, use) => {
     await use(() => backendProvider.spawnUser());
-  },
+  }
 });
 
 export const expect = mergeExpects(statusExpect);

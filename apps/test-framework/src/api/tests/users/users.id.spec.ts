@@ -1,21 +1,25 @@
-import { faker } from '@faker-js/faker';
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
-test.describe('Getting a user by id', () => {
-  test('[USR-032] Getting an existing user by id', async ({ api, spawnUser }) => {
-    const user = await spawnUser({ middleName: utils.random.middleName() });
-    const loginUser = await api.auth.quickLogin(user.email, user.password);
+test.describe('Getting an authorized user by id ', () => {
+  let user: any;
+  let loginUser: any;
+
+  test.beforeEach(async ({ api, spawnUser }) => {
+    user = await spawnUser({ middleName: utils.random.middleName() });
+    loginUser = await api.auth.quickLogin(user.email, user.password);
+  });
+
+  test('[USR-032] Getting an existing user by id', async ({ api }) => {
     const userId = await api.getContext().userId!;
     const response = await api.users.getUser(userId);
-    const fullName = `${user.firstName} ${user.lastName}`;
     await expect((await response).response).toHaveStatus(200);
     await expect((await response).data).toMatchObject({
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
       middleName: user.middleName,
-      fullName: fullName,
+      fullName: `${user.firstName} ${user.lastName}`,
       email: user.email.toLowerCase(),
       phone: user.phone,
     });
@@ -23,25 +27,21 @@ test.describe('Getting a user by id', () => {
   });
 
   //має повертати 404
-  test('[USR-033] Getting user by non-existent id', async ({ api, spawnUser }) => {
-    const user = await spawnUser({ middleName: utils.random.middleName() });
-    const loginUser = await api.auth.quickLogin(user.email, user.password);
-    const userId = faker.string.uuid();
+  test('[USR-033] Getting user by non-existent id', async ({ api }) => {
+    const userId = utils.random.uuid();
     const response = await api.users.getUser(userId);
-    await expect((await response).response).toHaveStatus(403);
+    await expect(response.response).toHaveStatus(403);
   });
 
-  test('[USR-034] Getting an existing user by invalid format of id', async ({ api, spawnUser }) => {
-    const user = await spawnUser({ middleName: utils.random.middleName() });
-    const loginUser = await api.auth.quickLogin(user.email, user.password);
+  test('[USR-034] Getting an existing user by invalid format of id', async ({ api }) => {
     const userId = utils.random.shortId(20);
     const response = await api.users.getUser(userId);
-    await expect((await response).response).toHaveStatus(400);
+    await expect(response.response).toHaveStatus(400);
   });
 
-  test('[USR-035] Getting user by id witout authorizaion', async ({ api, spawnUser }) => {
-    const userId = utils.random.shortId(20);
-    const response = await api.users.getUser(userId);
-    await expect((await response).response).toHaveStatus(401);
+  test('[USR-035] Getting a user by id without authorizaion', async ({ api }) => {
+    await api.auth.clearTokens();
+    const response = await api.users.getUser(user.id!);
+    await expect(response.response).toHaveStatus(401);
   });
 });

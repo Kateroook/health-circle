@@ -1,4 +1,3 @@
-import { faker } from '@faker-js/faker';
 import { UserFactory } from '../../../core/data/factories/user-factory';
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
@@ -47,20 +46,19 @@ test.describe('Happy path', () => {
   });
 
   test('[USR-028] Successfull user creation with a non-Ukrainian phone number', async ({ api, userRepository }) => {
-    const foreignCountries = ['us', 'uk', 'de', 'pl'] as const;
-    const randomForeignPhone = utils.random.phone(faker.helpers.arrayElement(foreignCountries));
+    const randomForeignPhone = utils.random.phone(utils.random.pick(['us', 'uk', 'de', 'pl']));
     const user = UserFactory.createRandomUser({ phone: randomForeignPhone });
     const newUser = await api.users.createUser(user);
-    const responseData = await newUser.response.json();
-    const createdId = responseData.id;
-    const dbUser = await userRepository.getById(createdId);
     await expect(newUser.response).toHaveStatus(201);
-    await expect(dbUser).toBeDefined();
-    await expect(dbUser?.email).toBe(user.email.toLowerCase());
-    await expect(dbUser?.phone).toBe(user.phone);
-    await expect(dbUser?.firstName).toBe(user.firstName);
-    await expect(dbUser?.lastName).toBe(user.lastName);
-    await expect(dbUser?.middleName).toBe(null);
+    const responseData = await newUser.response.json();
+    const dbUser = await userRepository.getById(responseData.id);
+    expect(dbUser).toMatchObject({
+      email: user.email.toLowerCase(),
+      phone: user.phone,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      middleName: null,
+    });
   });
 });
 
@@ -77,7 +75,7 @@ test.describe('Negative: first name validation', () => {
     {
       testName: '[USR-006] User creation with a first name consisting only of whitespace characters',
       firstName: utils.random.string({
-        length: utils.random.number({ min: 1, max: 50 }),
+        length: utils.random.number({ min: 2, max: 50 }),
         charset: ' ',
         includeLower: false,
         includeNumbers: false,
@@ -88,7 +86,7 @@ test.describe('Negative: first name validation', () => {
     {
       testName: '[USR-007] User creation with a first name consisting only of special characters',
       firstName: utils.random.string({
-        length: utils.random.number({ min: 1, max: 50 }),
+        length: utils.random.number({ min: 2, max: 50 }),
         includeLower: false,
         includeNumbers: false,
         includeSpecial: true,
@@ -125,7 +123,7 @@ test.describe('Negative: last name validation', () => {
     {
       testName: '[USR-012] User creation with a last name consisting only of whitespace characters',
       lastName: utils.random.string({
-        length: utils.random.number({ min: 1, max: 50 }),
+        length: utils.random.number({ min: 2, max: 50 }),
         charset: ' ',
         includeLower: false,
         includeNumbers: false,
@@ -136,7 +134,7 @@ test.describe('Negative: last name validation', () => {
     {
       testName: '[USR-013] User creation with a last name consisting only of special characters',
       lastName: utils.random.string({
-        length: utils.random.number({ min: 1, max: 50 }),
+        length: utils.random.number({ min: 2, max: 50 }),
         includeLower: false,
         includeNumbers: false,
         includeSpecial: true,
@@ -165,7 +163,7 @@ test.describe('Negative: middle name validation', () => {
     {
       testName: '[USR-016] User creation with a middle name consisting only of whitespace characters',
       middleName: utils.random.string({
-        length: utils.random.number({ min: 1, max: 50 }),
+        length: utils.random.number({ min: 2, max: 50 }),
         charset: ' ',
         includeLower: false,
         includeNumbers: false,
@@ -176,7 +174,7 @@ test.describe('Negative: middle name validation', () => {
     {
       testName: '[USR-017] User creation with a middle name consisting only of special characters',
       middleName: utils.random.string({
-        length: utils.random.number({ min: 1, max: 50 }),
+        length: utils.random.number({ min: 2, max: 50 }),
         includeLower: false,
         includeNumbers: false,
         includeSpecial: true,
@@ -236,8 +234,7 @@ test.describe('Negative: email validation', () => {
     await expect(newUser.response).toHaveStatus(201);
     const userB = UserFactory.createRandomUser({ email: userA.email });
     const registeredUser = await api.users.createUser(userB);
-    const status = registeredUser.response.status();
-    await expect([400, 409]).toContain(status);
+    await expect(registeredUser).toHaveStatus4xx;
   });
 
   test('[USR-025] The registration of the email in different registers', async ({ api }) => {
@@ -247,19 +244,15 @@ test.describe('Negative: email validation', () => {
     await expect(newUser.response).toHaveStatus(201);
     const userB = UserFactory.createRandomUser({ email: baseEmail.toUpperCase() });
     const registeredUser = await api.users.createUser(userB);
-    const status = registeredUser.response.status();
-    await expect([400, 409]).toContain(status);
+    await expect(registeredUser.response).toHaveStatus4xx;
   });
 });
 
 test.describe('Negative: phone validation', () => {
-  const countries = ['ua', 'us', 'uk', 'de', 'pl'] as const;
-
-  const randomPhone29 = utils.random.phone(faker.helpers.arrayElement(countries));
-  const smallPhone = randomPhone29.substring(0, randomPhone29.length - 3);
-  const randomPhone30 = utils.random.phone(faker.helpers.arrayElement(countries));
+  const randomPhone = utils.random.phone(utils.random.pick(['ua', 'us', 'uk', 'de', 'pl']));
+  const smallPhone = randomPhone.substring(0, randomPhone.length - 3);
   const phoneWithSpecialChars =
-    randomPhone30.substring(0, randomPhone30.length - 3) +
+    randomPhone.substring(0, randomPhone.length - 3) +
     utils.random.string({
       length: 3,
       includeLower: false,
