@@ -18,7 +18,7 @@ test.describe('Getting an authorized user by id ', () => {
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
-      middleName: user.middleName,
+      middleName: user.middleName ?? null,
       fullName: `${user.firstName} ${user.lastName}`,
       email: user.email.toLowerCase(),
       phone: user.phone,

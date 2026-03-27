@@ -6,11 +6,10 @@ test.describe('Happy path', () => {
   test('[USR-001] Successfull creation of the user with all filled fields', async ({ api, userRepository }) => {
     const user = UserFactory.createRandomUser({ middleName: utils.random.middleName() });
     const newUser = await api.users.createUser(user);
+    await expect(newUser.response).toHaveStatus(201);
     const responseData = await newUser.response.json();
     const createdId = responseData.id;
     const dbUser = await userRepository.getById(createdId);
-
-    await expect(newUser.response).toHaveStatus(201);
     await expect(dbUser).toBeDefined();
     await expect(dbUser?.email).toBe(user.email.toLowerCase());
     await expect(dbUser?.phone).toBe(user.phone);
@@ -22,11 +21,10 @@ test.describe('Happy path', () => {
   test('[USR-002] Successfull creation of the user without a middle name field', async ({ api, userRepository }) => {
     const user = UserFactory.createRandomUser();
     const newUser = await api.users.createUser(user);
+    await expect(newUser.response).toHaveStatus(201);
     const responseData = await newUser.response.json();
     const createdId = responseData.id;
     const dbUser = await userRepository.getById(createdId);
-
-    await expect(newUser.response).toHaveStatus(201);
     await expect(dbUser).toBeDefined();
     await expect(dbUser?.email).toBe(user.email.toLowerCase());
     await expect(dbUser?.phone).toBe(user.phone);

@@ -1,9 +1,8 @@
-import { test as base, expect as baseExpect, mergeExpects } from '@playwright/test';
+import { test as base, mergeExpects } from '@playwright/test';
 import { Kysely } from 'kysely';
 import { ApiClientFactory } from '../../core/api/api-client-factory';
 import { expect as statusExpect } from '../../core/api/helpers/response-checker';
 import { BackendProvider } from '../../core/backend-provider';
-import { UserFactory } from '../../core/data/factories/user-factory';
 import { DbCleaner } from '../../core/db/db-cleaner';
 import { DbManager } from '../../core/db/db-manager';
 import { ConfirmationCodeRepository } from '../../core/db/repositories/confirmation-code-repository';
@@ -12,7 +11,6 @@ import { GroupRepository } from '../../core/db/repositories/group-repository';
 import { UserRepository } from '../../core/db/repositories/user-repository';
 import { Database } from '../../core/db/schema';
 import { UserEntity } from '../../core/types/entites/user-interface';
-import { UserFactory } from '@core/data/factories/user-factory';
 export type ApiFixture = {
   db: Kysely<Database>;
 };
@@ -72,7 +70,7 @@ export const test = workerTest.extend<MyFixture>({
 
   spawnUser: async ({ backendProvider }, use) => {
     await use(() => backendProvider.spawnUser());
-  }
+  },
 });
 
 export const expect = mergeExpects(statusExpect);
