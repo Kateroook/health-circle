@@ -27,6 +27,7 @@ interface ButtonProps {
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
+  testId?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -41,6 +42,7 @@ export const Button: React.FC<ButtonProps> = ({
   loading = false,
   style,
   textStyle,
+  testId,
 }) => {
   const isRound = shape === "round";
 
@@ -125,11 +127,13 @@ export const Button: React.FC<ButtonProps> = ({
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
+      testID={testId}
+      accessibilityLabel={testId}
       style={({ pressed }) => [
         ...containerStyles,
         pressed && !disabled && !loading && styles.pressed,
       ]}
-    >
+      >
       {renderContent()}
     </Pressable>
   );
