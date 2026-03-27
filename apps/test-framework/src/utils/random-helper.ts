@@ -188,7 +188,7 @@ export class RandomHelper {
   }
 
   groupName() {
-    return `${faker.company.name}`;
+    return faker.company.name();
   }
 
   alias({ count = 1 }) {
