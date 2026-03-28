@@ -43,9 +43,9 @@
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "firebase-admin": "^13.7.0",
-    "handlebars": "^4.7.8",
+    "handlebars": "^4.7.9",
     "helmet": "^8.1.0",
-    "joi": "^18.0.2",
+    "joi": "^18.1.1",
     "nestjs-pino": "^4.6.1",
     "node-device-detector": "^2.2.4",
     "passport": "^0.7.0",
@@ -79,10 +79,10 @@
     "@types/passport": "^1.0.17",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
-    "@types/pg": "^8.18.0",
+    "@types/pg": "^8.20.0",
     "@types/supertest": "^7.2.0",
-    "@typescript-eslint/eslint-plugin": "^8.57.1",
-    "@typescript-eslint/parser": "^8.57.1",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
@@ -98,7 +98,7 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.57.1"
+    "typescript-eslint": "^8.57.2"
   },
   "jest": {
     "moduleFileExtensions": [
