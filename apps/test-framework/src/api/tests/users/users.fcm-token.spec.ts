@@ -15,12 +15,14 @@ test.describe('FCM Token Management', () => {
     await expect(response.response).toHaveStatus(200);
     const dbUser = await userRepository.getById(user.id!);
     await expect(dbUser).toBeDefined();
-    await expect(dbUser?.email).toBe(user.email.toLowerCase());
-    await expect(dbUser?.phone).toBe(user.phone);
-    await expect(dbUser?.firstName).toBe(user.firstName);
-    await expect(dbUser?.lastName).toBe(user.lastName);
-    await expect(dbUser?.middleName).toBe(null);
-    await expect(dbUser?.fcmToken).toBe(randomFcmToken);
+    await expect(dbUser).toMatchObject({
+      email: user.email.toLowerCase(),
+      phone: user.phone,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      middleName: null,
+      fcmToken: randomFcmToken,
+    });
   });
 
   test('[USR-067] Updating an existing FCM token', async ({ api, userRepository }) => {
@@ -34,12 +36,14 @@ test.describe('FCM Token Management', () => {
     const dbUserWithNewFcmToken = await userRepository.getById(user.id!);
     await expect(response.response).toHaveStatus(200);
     await expect(dbUserWithNewFcmToken).toBeDefined();
-    await expect(dbUserWithNewFcmToken?.email).toBe(user.email.toLowerCase());
-    await expect(dbUserWithNewFcmToken?.phone).toBe(user.phone);
-    await expect(dbUserWithNewFcmToken?.firstName).toBe(user.firstName);
-    await expect(dbUserWithNewFcmToken?.lastName).toBe(user.lastName);
-    await expect(dbUserWithNewFcmToken?.middleName).toBe(null);
-    await expect(dbUserWithNewFcmToken?.fcmToken).toBe(newRandomFcmToken);
+    await expect(dbUserWithNewFcmToken).toMatchObject({
+      email: user.email.toLowerCase(),
+      phone: user.phone,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      middleName: null,
+      fcmToken: newRandomFcmToken,
+    });
   });
 
   test('[USR-068] Saving a FCM token without authorization', async ({ api, spawnUser, userRepository }) => {
