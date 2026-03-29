@@ -11,8 +11,6 @@ test.describe('User Avatar Management', () => {
   test('[USR-056] Avatar uploading in PNG format ', async ({ api }) => {
     const avatar = utils.random.avatar('.png');
     const userWithAvatar = await api.users.uploadUserAvatar(user.id!, avatar.buffer);
-    console.log('--- RESPONSE BODY ---');
-    console.log(await userWithAvatar.response.text());
     await expect(userWithAvatar.response).toHaveStatus(200);
     expect(userWithAvatar.data).toMatchObject({
       id: user.id,
