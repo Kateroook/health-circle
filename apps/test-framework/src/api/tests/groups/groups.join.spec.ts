@@ -39,7 +39,7 @@ test.describe('api/groups/join tests', async () => {
   });
 
   test('[GRP-033] Group appears on GET /api/groups after joining', async ({}) => {
-    const joinResult = await secondApi.groups.joinGroup({ code: userGroup.inviteCode! });
+    await secondApi.groups.joinGroup({ code: userGroup.inviteCode! });
     const allGroup = await secondApi.groups.getAllGroups();
     expect(allGroup.data).toHaveLength(1);
   });
@@ -62,7 +62,7 @@ test.describe('api/groups/join tests', async () => {
       code: '',
     },
   ].forEach((options) =>
-    test(options.testName, async ({ api }) => {
+    test(options.testName, async () => {
       const joinResult = await secondApi.groups.joinGroup({ code: options.code });
 
       expect(joinResult.response).toHaveStatus4xx();

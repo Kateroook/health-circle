@@ -2,7 +2,6 @@ import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 import { UserEntity } from '../../../core/types/entites/user-interface';
 import { ApiClientFactory } from '../../../core/api/api-client-factory';
-import crypto from 'crypto';
 
 test.describe('/api/contacts creation tests', async () => {
   let userA: UserEntity;
@@ -43,7 +42,7 @@ test.describe('/api/contacts creation tests', async () => {
   });
 
   test.fixme('[CNT-002-BUG] Contact creation with non-existing ID', async ({ api }) => {
-    const nonExistingId = crypto.randomUUID();
+    const nonExistingId = utils.random.uuid();
     const creationResult = await api.contacts.createContact({
       target: { id: nonExistingId },
       alias: utils.random.alias({ count: 1 }),
@@ -65,7 +64,7 @@ test.describe('/api/contacts creation tests', async () => {
   [
     // {
     //   testName: '[CNT-002] Contact creation with non-existing ID',
-    //   overrides: { target: { id: crypto.randomUUID() } },
+    //   overrides: { target: { id: utils.random.uuid() } },
     // },
     {
       testName: '[CNT-003] Contact creation with empty alias',

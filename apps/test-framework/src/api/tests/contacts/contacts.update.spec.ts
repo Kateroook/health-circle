@@ -2,7 +2,6 @@ import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 import { UserEntity } from '../../../core/types/entites/user-interface';
 import { ApiClientFactory } from '../../../core/api/api-client-factory';
-import crypto from 'crypto';
 
 test.describe('/api/contacts update tests', async () => {
   let userA: UserEntity;
@@ -45,7 +44,7 @@ test.describe('/api/contacts update tests', async () => {
 
   test('[CNT-018] Contact update with non-existing target ID', async ({ api }) => {
     const newAlias = utils.random.alias({ count: 2 });
-    const updateResult = await api.contacts.updateContact(crypto.randomUUID(), { alias: newAlias });
+    const updateResult = await api.contacts.updateContact(utils.random.uuid(), { alias: newAlias });
 
     expect(updateResult.response).toHaveStatus(404);
   });

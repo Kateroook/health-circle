@@ -202,4 +202,8 @@ export class RandomHelper {
   pick<T>(array: T[]): T {
     return faker.helpers.arrayElement(array);
   }
+
+  uuid() {
+    return faker.string.uuid();
+  }
 }

@@ -2,7 +2,6 @@ import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 import { UserEntity } from '../../../core/types/entites/user-interface';
 import { ApiClientFactory } from '../../../core/api/api-client-factory';
-import crypto from 'crypto';
 
 test.describe('/api/contacts alias-setup tests', async () => {
   let userA: UserEntity;
@@ -72,7 +71,7 @@ test.describe('/api/contacts alias-setup tests', async () => {
 
   test.fixme('[CNT-015-BUG] Setup alias with non-existing target ID', async ({ api }) => {
     const newAlias = utils.random.alias({ count: 2 });
-    const setupAliasResult = await api.contacts.setContactAlias(crypto.randomUUID(), { alias: newAlias });
+    const setupAliasResult = await api.contacts.setContactAlias(utils.random.uuid(), { alias: newAlias });
 
     expect(setupAliasResult.response).toHaveStatus(404); // got 500
   });

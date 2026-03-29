@@ -1,7 +1,7 @@
 import { expect, test } from '../../fixtures/api-fixture';
 import { UserEntity } from '../../../core/types/entites/user-interface';
 import { ApiClientFactory } from '../../../core/api/api-client-factory';
-import crypto from 'crypto';
+import { utils } from '../../../utils/utils';
 
 test.describe('/api/contacts delete tests', async () => {
   let userA: UserEntity;
@@ -59,7 +59,7 @@ test.describe('/api/contacts delete tests', async () => {
   });
 
   test('[CNT-023] Delete contact with non-existing target ID', async ({ api }) => {
-    const deleteResult = await api.contacts.deleteContact(crypto.randomUUID());
+    const deleteResult = await api.contacts.deleteContact(utils.random.uuid());
 
     expect(deleteResult.response).toHaveStatus(404);
   });

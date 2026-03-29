@@ -35,7 +35,7 @@ test.describe('api/groups/delete tests', async () => {
     let allGroupsResult = await api.groups.getAllGroups();
     expect(allGroupsResult.data).toHaveLength(1);
 
-    const deleteResult = await api.groups.deleteGroup(userGroup.id!);
+    await api.groups.deleteGroup(userGroup.id!);
 
     allGroupsResult = await api.groups.getAllGroups();
     expect(allGroupsResult.data).toHaveLength(0);
@@ -43,7 +43,7 @@ test.describe('api/groups/delete tests', async () => {
 
   test('[GRP-024] Delete group by non-owner member', async ({ api, spawnUser }) => {
     const secondUser = await spawnUser();
-    const loginResult = await api.auth.login({
+    await api.auth.login({
       identifier: secondUser.email,
       password: secondUser.password,
     });
@@ -60,7 +60,7 @@ test.describe('api/groups/delete tests', async () => {
   });
 
   test('[GRP-025] Delete group by non-existing ID', async ({ api }) => {
-    const nonExistingId = crypto.randomUUID();
+    const nonExistingId = utils.random.uuid();
 
     const deleteResult = await api.groups.deleteGroup(nonExistingId);
 
