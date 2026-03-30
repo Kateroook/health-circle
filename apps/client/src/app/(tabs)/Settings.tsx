@@ -3,12 +3,13 @@ import { Button } from "@/src/components/Button";
 import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { ListItem } from "@/src/components/ListItem";
+import { ModalActions, ModalContainer, ModalHeader } from "@/src/components/modal";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import { Alert, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import ConfirmationModal from "../../components/ConfirmationModal";
@@ -42,6 +43,7 @@ export default function SettingsScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   const [isDeleteAccountVisible, setIsDeleteAccountVisible] = useState(false);
   const [isDeleteAvatarVisible, setIsDeleteAvatarVisible] = useState(false);
@@ -211,7 +213,7 @@ export default function SettingsScreen() {
       return;
     }
 
-    setPasswordLoading(true);
+    // setPasswordLoading(true);
     try {
       await apiFetch("/auth/change-password", {
         method: "POST",
@@ -221,8 +223,8 @@ export default function SettingsScreen() {
           confirmNewPassword: confirmPassword.trim(),
         }),
       });
-      Alert.alert("Успіх", "Пароль успішно змінено");
-      setShowPasswordModal(false);
+      // Alert.alert("Успіх", "Пароль успішно змінено");
+      setPasswordSuccess(true);
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -296,7 +298,7 @@ export default function SettingsScreen() {
             userId={user?.id ?? ""}
             avatarUpdatedAt={user?.avatarUpdatedAt}
             size="xl"
-            border={true}
+            showOuterRing={true}
           />
 
           <Typography variant="h2" tone="primary" style={styles.profileName}>
@@ -517,19 +519,48 @@ export default function SettingsScreen() {
       />
 
       {/* Change Password Modal */}
-      <Modal
-        visible={showPasswordModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowPasswordModal(false)}
+      <ModalContainer
+        isVisible={showPasswordModal}
+        onClose={() => {
+          setShowPasswordModal(false);
+          setPasswordSuccess(false);
+          setPasswordError("");
+          setOldPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+        }}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Typography variant="h3" tone="primary" style={styles.modalTitle}>
-              Змінити пароль
+        {passwordSuccess ? (
+          // ── Success view ──
+          <View style={styles.successContainer}>
+            <Image
+              source={require("@/src/assets/images/penguin-key.png")}
+              style={styles.successMascot}
+              resizeMode="contain"
+            />
+            <Typography variant="h3" tone="primary" style={styles.successTitle}>
+              Пароль змінено!
             </Typography>
+            <Typography variant="body2" tone="secondary" style={styles.successSubtitle}>
+              Твій пароль успішно оновлено. Тепер ти в безпеці
+            </Typography>
+            <Button
+              label="Готово"
+              hierarchy="primary"
+              shape="rectangle"
+              size="medium"
+              onPress={() => {
+                setShowPasswordModal(false);
+                setPasswordSuccess(false);
+              }}
+              style={{ width: "100%", marginTop: theme.spacing[8] }}
+            />
+          </View>
+        ) : (
+          <View>
+            <ModalHeader title="Змінити пароль" description="Введіть поточний та новий пароль" />
 
-            <View style={{ gap: 12 }}>
+            <View style={{ gap: 8, marginVertical: 16 }}>
               <PasswordField
                 label="Поточний пароль"
                 required
@@ -540,7 +571,7 @@ export default function SettingsScreen() {
               <PasswordField
                 label="Новий пароль"
                 required
-                placeholder="Новий пароль (мін. 12 символів)"
+                placeholder="Новий пароль "
                 value={newPassword}
                 onChangeText={setNewPassword}
                 caption="Має містити щонайменше 12 символів"
@@ -554,35 +585,33 @@ export default function SettingsScreen() {
                 errorMessage={passwordError || undefined}
               />
             </View>
-
-            <Button
-              label={passwordLoading ? "Збереження..." : "Змінити пароль"}
-              hierarchy="primary"
-              size="medium"
-              shape="rectangle"
-              onPress={handleChangePassword}
-              disabled={passwordLoading}
-              loading={passwordLoading}
-              style={styles.modalSave}
-            />
-
-            <Button
-              label="Скасувати"
-              hierarchy="tertiary"
-              size="medium"
-              shape="rectangle"
-              onPress={() => {
-                setShowPasswordModal(false);
-                setPasswordError("");
-                setOldPassword("");
-                setNewPassword("");
-                setConfirmPassword("");
-              }}
-              style={styles.modalCancel}
-            />
+            <ModalActions>
+              <Button
+                label="Скасувати"
+                hierarchy="secondary"
+                size="medium"
+                shape="rectangle"
+                onPress={() => {
+                  setShowPasswordModal(false);
+                  setPasswordError("");
+                  setOldPassword("");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                }}
+              />
+              <Button
+                label={passwordLoading ? "Збереження..." : "Змінити"}
+                hierarchy="primary"
+                size="medium"
+                shape="rectangle"
+                onPress={handleChangePassword}
+                disabled={passwordLoading}
+                loading={passwordLoading}
+              />
+            </ModalActions>
           </View>
-        </View>
-      </Modal>
+        )}
+      </ModalContainer>
       <ConfirmationModal
         isVisible={isDeleteAccountVisible}
         onCancel={() => setIsDeleteAccountVisible(false)}
@@ -814,7 +843,7 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     backgroundColor: theme.colors.border.opaque,
-    marginLeft: theme.spacing[16],
+    marginLeft: theme.spacing[56],
   },
   logoutButton: {
     flexDirection: "row",
@@ -839,70 +868,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
-  modalContent: {
-    width: "100%",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
+  successContainer: {
+    alignItems: "center",
+    gap: theme.spacing[12],
+    paddingVertical: theme.spacing[8],
   },
-  sectionHeader: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#666666",
-    marginTop: 24,
-    marginBottom: 8,
-    paddingLeft: 4,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+  successMascot: {
+    width: 140,
+    height: 140,
   },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    marginBottom: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 20,
+  successTitle: {
     textAlign: "center",
-    color: "#1A1A1A",
   },
-  modalPasswordContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F5F5F5",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-    marginBottom: 12,
-  },
-  modalPasswordInput: {
-    flex: 1,
-    height: 50,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    color: "#1A1A1A",
-  },
-  modalSave: {
-    backgroundColor: "#4CAF50",
-    padding: 15,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  modalSaveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  modalCancel: {
-    padding: 15,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8,
+  successSubtitle: {
+    textAlign: "center",
+    paddingHorizontal: theme.spacing[8],
   },
 });
 
