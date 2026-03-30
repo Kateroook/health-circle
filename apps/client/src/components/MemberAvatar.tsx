@@ -1,8 +1,8 @@
 import { theme } from "@/src/theme/theme";
 import React from "react";
 import { StyleProp, ViewStyle } from "react-native";
-import { Avatar, AvatarSize } from "./Avatar";
 import { Member } from "../types";
+import { Avatar, AvatarSize } from "./Avatar";
 
 export const STATUS_COLORS: Record<Member["status"], string> = {
   SAFE: theme.colors.state.safe,
@@ -23,8 +23,9 @@ export const MemberAvatar: React.FC<MemberAvatarProps> = ({ member, size = "md",
       userId={member.id}
       avatarUpdatedAt={member.avatarUpdatedAt}
       size={size}
-      border
-      borderColor={STATUS_COLORS[member.status] ?? theme.colors.state.unknown}
+      showStatusRing
+      showOuterRing
+      statusColor={STATUS_COLORS[member.status] ?? theme.colors.state.unknown}
       style={style}
     />
   );

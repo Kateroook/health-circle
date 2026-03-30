@@ -16,35 +16,57 @@ export class GlobalExceptionFilter extends BaseExceptionFilter {
   }
 
   catch(exception: unknown, host: ArgumentsHost): void {
-    if (exception instanceof HttpException) super.catch(exception, host);
-    else {
-      const { httpAdapter } = this.httpAdapterHost;
-      const ctx = host.switchToHttp();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const request = ctx.getRequest();
+    const { httpAdapter } = this.httpAdapterHost;
+    const ctx = host.switchToHttp();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const request = ctx.getRequest();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const responseRef = ctx.getResponse();
 
-      const isError = exception instanceof Error;
-      const message = isError ? exception.message : (exception as { message?: string })?.message || 'Unknown error';
-      const statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+    if (exception instanceof HttpException) {
+      const statusCode = exception.getStatus();
+      const exceptionResponse = exception.getResponse();
+      const message =
+        typeof exceptionResponse === 'string'
+          ? exceptionResponse
+          : ((exceptionResponse as { message?: string | string[] })?.message ?? exception.message ?? 'HttpException');
 
-      const response = (exception as { response?: { data?: Record<string, unknown> } })?.response;
       const data: CustomLogsParams = {
         statusCode,
         type: (exception as { type?: LoggingTypes })?.type || LoggingTypes.other,
-
-        data: (exception as { data?: Record<string, unknown> })?.data || response?.data,
-
+        data: (exceptionResponse as { data?: Record<string, unknown> })?.data,
         userId: (request as unknown as { user?: { id?: string } })?.user?.id,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         path: httpAdapter.getRequestUrl(request),
-        stack: isError ? { stack: exception.stack } : { message: message },
       };
-      // Extend logs with exception data
-      console.error('Unhandled exception', { ...data, message });
 
-      this.logger.error(data, message);
-      // Send modified response
-      httpAdapter.reply(ctx.getResponse(), { statusCode, message }, statusCode);
+      const msgText = Array.isArray(message) ? message.join(', ') : message;
+      if (statusCode >= 500) this.logger.error(data, msgText);
+      else this.logger.warn(data, msgText);
+
+      super.catch(exception, host);
+      return;
     }
+
+    const isError = exception instanceof Error;
+    const message = isError ? exception.message : (exception as { message?: string })?.message || 'Unknown error';
+    const statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+
+    const response = (exception as { response?: { data?: Record<string, unknown> } })?.response;
+    const data: CustomLogsParams = {
+      statusCode,
+      type: (exception as { type?: LoggingTypes })?.type || LoggingTypes.other,
+
+      data: (exception as { data?: Record<string, unknown> })?.data || response?.data,
+
+      userId: (request as unknown as { user?: { id?: string } })?.user?.id,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      path: httpAdapter.getRequestUrl(request),
+      stack: isError ? { stack: exception.stack } : { message: message },
+    };
+
+    this.logger.error(data, message);
+    // Send modified response
+    httpAdapter.reply(responseRef, { statusCode, message }, statusCode);
   }
 }

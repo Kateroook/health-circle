@@ -43,6 +43,11 @@ export interface UserApiEntity {
   fcmToken: string | null;
   lastStatusUpdate?: Date;
   failedLoginAttempts: number;
+  region?: string;
+  district?: string;
+  latitude?: number;
+  longitude?: number;
+  lastPersonalRollCallAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   lockedAt?: Date;

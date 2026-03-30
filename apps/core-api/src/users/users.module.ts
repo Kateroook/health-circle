@@ -3,11 +3,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AlertsModule } from 'src/alerts/alerts.module';
 import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constraint';
 import { ConfirmationsModule } from 'src/confirmations/confirmations.module';
+import { ContactEntity } from 'src/contacts/entities/contact.entity';
 import { ExternalFilesModule } from 'src/external-files/external-files.module';
 import { NotificationsModule } from 'src/notifications/notifications.module';
-import { SecurityService } from 'src/security/security.service';
+import { StatusUpdateQueueWorker } from 'src/notifications/status-update-queue.worker';
 import { UserActivitiesModule } from 'src/user-activities/user-activities.module';
 
+import { GroupEntity } from '../groups/entities/group.entity';
+import { GroupBlockListEntity } from '../groups/entities/group-block-list.entity';
 import { GroupMemberEntity } from '../groups/entities/group-member.entity';
 import { UserEntity } from './entities/user.entity';
 import { UserNotificationSettingsEntity } from './entities/user-notification-settings.entity';
@@ -23,7 +26,10 @@ import { UsersService } from './users.service';
       UserEntity,
       UserPasswordEntity,
       UserSessionEntity,
+      GroupEntity,
+      GroupBlockListEntity,
       GroupMemberEntity,
+      ContactEntity,
       UserNotificationSettingsEntity,
     ]),
     UserActivitiesModule,
@@ -32,7 +38,7 @@ import { UsersService } from './users.service';
     NotificationsModule,
     AlertsModule,
   ],
-  providers: [UsersService, SecurityService, UserUniqueConstraint, SessionActivityService],
+  providers: [UsersService, UserUniqueConstraint, SessionActivityService, StatusUpdateQueueWorker],
   controllers: [UsersController],
   exports: [UsersService, SessionActivityService],
 })

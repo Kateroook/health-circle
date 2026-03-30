@@ -1,27 +1,28 @@
 import { apiFetch } from "@/src/api/api";
-import { initiateRollCall } from "@/src/api/groups";
+import { initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
+import { ConfirmRollCallModal } from "@/src/components/circle/actions/ConfirmRollCallModal";
+
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
-import { TextField } from "@/src/components/fields/TextField";
-import { MemberAvatar } from "@/src/components/MemberAvatar";
-import MemberDetailModal from "@/src/components/MemberDetailModal";
-import { ModalContainer } from "@/src/components/modal/ModalContainer";
-import { StatusBadge } from "@/src/components/StatusBadge";
+import { MemberList } from "@/src/components/dashboard/MemberList";
+import { MemberProfileModal } from "@/src/components/dashboard/MemberProfileModal";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { Circle, Member } from "@/src/types";
-import { AntDesign, MaterialIcons } from "@expo/vector-icons";
+import { AntDesign, Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
+import { useAnalytics } from "../../hooks/useAnalytics";
+
 import {
   Alert,
   BackHandler,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   UIManager,
@@ -35,6 +36,7 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 
 export default function CirclesScreen() {
   const user = useAuthStore().user;
+  const { logEvent } = useAnalytics();
 
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
@@ -48,11 +50,14 @@ export default function CirclesScreen() {
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
   const [renameValue, setRenameValue] = useState("");
 
+  const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
+  const canRollCall = !!selectedMember && !!activeCircle;
   useEffect(() => {
-    if (activeCircle) {
-      const updated = circles.find((c) => c.id === activeCircle.id);
-      if (updated) setActiveCircle(updated);
-    }
+    setActiveCircle((current) => {
+      if (!current) return current;
+      const updated = circles.find((c) => c.id === current.id);
+      return updated ?? current;
+    });
   }, [circles]);
 
   const fetchCircles = useCallback(async () => {
@@ -149,7 +154,21 @@ export default function CirclesScreen() {
     }
   };
 
-  const handleRollCall = async () => {
+  const handleRollCall = () => {
+    setIsRollCallModalVisible(true);
+  };
+  const handlePersonalRollCall = async (member: Member) => {
+    if (!activeCircle) return;
+    try {
+      await initiatePersonalRollCall(activeCircle.id, member.id);
+      logEvent("initiate_personal_roll_call", { type: "individual" });
+      Alert.alert("Успіх", "Запит на перекличку надіслано");
+    } catch {
+      Alert.alert("Помилка", "Не вдалося надіслати запит");
+    }
+  };
+
+  const handleRollCallConfirmed = async () => {
     if (!activeCircle) return;
     try {
       await initiateRollCall(activeCircle.id);
@@ -161,296 +180,303 @@ export default function CirclesScreen() {
     }
   };
 
-  // ─── Detail view ────────────────────────────────
-  if (showCircleDetail && activeCircle) {
-    return (
-      <SafeAreaView style={styles.screen}>
-        {/* Rename Modal */}
-        <ModalContainer
-          isVisible={isRenameModalVisible}
-          onClose={() => setIsRenameModalVisible(false)}
-        >
-          <Typography variant="h3" tone="primary" style={{ textAlign: "center" }}>
-            Перейменувати коло
-          </Typography>
-          <TextField
-            label="Нова назва"
-            value={renameValue}
-            onChangeText={setRenameValue}
-            placeholder="Нова назва"
-            returnKeyType="done"
-            onSubmitEditing={handleRenameSubmit}
-          />
-          <View style={styles.renameActions}>
-            <Button
-              label="Скасувати"
-              hierarchy="secondary"
-              shape="rectangle"
-              size="medium"
-              onPress={() => setIsRenameModalVisible(false)}
-              style={{ flex: 1 }}
-            />
-            <Button
-              label="Зберегти"
-              hierarchy="primary"
-              shape="rectangle"
-              size="medium"
-              onPress={handleRenameSubmit}
-              style={{ flex: 1 }}
-            />
-          </View>
-        </ModalContainer>
+  const unknownCount =
+    activeCircle?.members.filter((m) => m.status === "UNKNOWN" || !m.status).length ?? 0;
+  const safeCount = activeCircle?.members.filter((m) => m.status === "SAFE").length ?? 0;
+  const wasSafeCount = activeCircle?.members.filter((m) => m.status === "WAS_SAFE").length ?? 0;
 
-        {/* Header */}
-        <View style={styles.detailHeader}>
-          <Button
-            shape="round"
-            hierarchy="tertiary"
-            size="medium"
-            leadingIcon={
-              <AntDesign name="arrow-left" size={24} color={theme.colors.content.primary} />
-            }
-            onPress={() => {
-              setShowCircleDetail(false);
-              setActiveCircle(null);
-            }}
-          />
-          <View style={styles.detailTitleBlock}>
-            <Typography variant="h2" tone="primary">
-              {activeCircle.name}
-            </Typography>
-            {activeCircle.inviteCode && (
-              <View style={styles.inlineInviteRow}>
-                <Typography variant="caption" tone="secondary">
-                  Код:{" "}
-                </Typography>
-                <Typography variant="caption" tone="primary" weight="bold">
-                  {activeCircle.inviteCode}
-                </Typography>
-              </View>
-            )}
-          </View>
-          {isOwner && (
+  return (
+    <SafeAreaView style={styles.screen}>
+      {/* Roll Call Modal  */}
+      <ConfirmRollCallModal
+        isVisible={isRollCallModalVisible}
+        onCancel={() => setIsRollCallModalVisible(false)}
+        onConfirm={async () => {
+          setIsRollCallModalVisible(false);
+          await handleRollCallConfirmed();
+        }}
+      />
+      {showCircleDetail && activeCircle ? (
+        <ScrollView contentContainerStyle={styles.content}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Button
+              shape="round"
+              hierarchy="tertiary"
+              size="small"
+              leadingIcon={
+                <MaterialIcons
+                  name="keyboard-arrow-left"
+                  size={24}
+                  color={theme.colors.content.primary}
+                />
+              }
+              onPress={() => {
+                setShowCircleDetail(false);
+                setActiveCircle(null);
+              }}
+            />
+            <View style={styles.detailTitleBlock}>
+              <Typography variant="h1" tone="primary">
+                {activeCircle.name}
+              </Typography>
+              {activeCircle.inviteCode && (
+                <Button
+                  label={`Код: ${activeCircle.inviteCode}`}
+                  hierarchy="secondary"
+                  shape="pill"
+                  size="small"
+                  trailingIcon={
+                    <Ionicons name="copy" size={14} color={theme.colors.content.secondary} />
+                  }
+                  onPress={async () => {
+                    await Clipboard.setStringAsync(activeCircle.inviteCode);
+                  }}
+                  style={{ alignSelf: "flex-start" }}
+                />
+              )}
+            </View>
             <Button
               shape="round"
               hierarchy="accent"
-              size="small"
+              size="medium"
               leadingIcon={
-                <MaterialIcons name="edit" size={16} color={theme.colors.content.onColor} />
+                <MaterialIcons name="edit" size={20} color={theme.colors.content.onColor} />
               }
               onPress={() => setIsActionsVisible(true)}
             />
-          )}
-        </View>
+          </View>
 
-        <ScrollView contentContainerStyle={styles.detailContent}>
-          <Typography variant="subtitle1" tone="primary" style={styles.membersCount}>
-            Учасників: {activeCircle.members.length}
-          </Typography>
+          <ScrollView contentContainerStyle={styles.detailContent}>
+            <View style={styles.statsCard}>
+              <View style={styles.statsHeader}>
+                <Typography variant="subtitle1">{activeCircle.members.length} учасників</Typography>
+                <Button
+                  label="Перекличка"
+                  hierarchy="accent"
+                  shape="pill"
+                  size="small"
+                  trailingIcon={
+                    <Feather name="rss" size={16} color={theme.colors.content.onColor} />
+                  }
+                  onPress={handleRollCall}
+                />
+              </View>
+              <Typography variant="body2">
+                {unknownCount} не відповіли,{"\n"}
+                {wasSafeCount} нещодавно в безпеці, {safeCount} в безпеці
+              </Typography>
+            </View>
 
-          <View style={styles.membersList}>
-            {activeCircle.members.map((member) => (
-              <Pressable
-                key={member.id}
-                style={styles.memberRow}
-                onPress={() => {
+            <View style={styles.membersList}>
+              <MemberList
+                members={activeCircle.members}
+                hasGroups={circles.length > 0}
+                onMemberPress={(member) => {
                   setSelectedMember(member);
                   setIsMemberModalVisible(true);
                 }}
-              >
-                <MemberAvatar member={member} />
-                <View style={styles.memberInfo}>
-                  <Typography variant="subtitle1" tone="primary">
-                    {member.firstName} {member.lastName}
-                  </Typography>
-                  <Typography variant="body2" tone="secondary">
-                    {member.status === "SAFE"
-                      ? "В безпеці"
-                      : member.status === "DANGER"
-                        ? "Потрібна допомога!"
-                        : member.status === "WAS_SAFE"
-                          ? "Був у безпеці"
-                          : "Невідомо"}
-                  </Typography>
-                </View>
-                <StatusBadge status={member.status} variant="round" />
-              </Pressable>
-            ))}
-          </View>
-        </ScrollView>
+              />
+            </View>
+          </ScrollView>
 
-        <CircleActionsModal
-          visible={isActionsVisible}
-          onClose={() => setIsActionsVisible(false)}
-          circleId={activeCircle?.id || ""}
-          ownerId={activeCircle?.owner.id || ""}
-          currentName={activeCircle?.name || ""}
-          inviteCode={activeCircle?.inviteCode || ""}
-          members={activeCircle?.members || []}
-          onSaveMembers={async (updatedMembers) => {
-            if (!activeCircle) return;
-            await apiFetch("/groups", {
-              method: "PUT",
-              body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
-            });
-            setIsActionsVisible(false);
-            fetchCircles();
-          }}
-          onRename={async (newName) => {
-            if (!activeCircle) return;
-            await apiFetch("/groups", {
-              method: "PUT",
-              body: JSON.stringify({ id: activeCircle.id, name: newName }),
-            });
-            setIsActionsVisible(false);
-            fetchCircles();
-          }}
-          onDelete={async () => {
-            if (!activeCircle) return;
-            await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
-            setIsActionsVisible(false);
-            setShowCircleDetail(false);
-            fetchCircles();
-          }}
-          onLeave={async () => {
-            if (!activeCircle) return;
-            await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
-            setIsActionsVisible(false);
-            setShowCircleDetail(false);
-            fetchCircles();
-          }}
-          onRegenerateInvite={async () => {
-            if (!activeCircle) return;
-            const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
-              method: "POST",
-            });
-            setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
-            fetchCircles();
-          }}
-          onRollCall={handleRollCall}
-        />
-
-        <MemberDetailModal
-          member={selectedMember}
-          visible={isMemberModalVisible}
-          onClose={() => {
-            setIsMemberModalVisible(false);
-            setSelectedMember(null);
-          }}
-        />
-      </SafeAreaView>
-    );
-  }
-
-  // ─── List view ────────────────────────────────────
-  return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Typography variant="h1" tone="primary">
-            Кола
-          </Typography>
-          <Button
-            shape="round"
-            hierarchy="accent"
-            size="medium"
-            leadingIcon={<AntDesign name="plus" size={24} color={theme.colors.content.onColor} />}
-            onPress={() => setIsAddModalVisible(true)}
+          <CircleActionsModal
+            visible={isActionsVisible}
+            onClose={() => setIsActionsVisible(false)}
+            circleId={activeCircle?.id || ""}
+            ownerId={activeCircle?.owner.id || ""}
+            currentName={activeCircle?.name || ""}
+            inviteCode={activeCircle?.inviteCode || ""}
+            members={activeCircle?.members || []}
+            onSaveMembers={async (updatedMembers) => {
+              if (!activeCircle) return;
+              await apiFetch("/groups", {
+                method: "PUT",
+                body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
+              });
+              setIsActionsVisible(false);
+              fetchCircles();
+            }}
+            onRename={async (newName) => {
+              if (!activeCircle) return;
+              await apiFetch("/groups", {
+                method: "PUT",
+                body: JSON.stringify({ id: activeCircle.id, name: newName }),
+              });
+              setIsActionsVisible(false);
+              fetchCircles();
+            }}
+            onDelete={async () => {
+              if (!activeCircle) return;
+              await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
+              setIsActionsVisible(false);
+              setShowCircleDetail(false);
+              fetchCircles();
+            }}
+            onLeave={async () => {
+              if (!activeCircle) return;
+              await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
+              setIsActionsVisible(false);
+              setShowCircleDetail(false);
+              fetchCircles();
+            }}
+            onRegenerateInvite={async () => {
+              if (!activeCircle) return;
+              const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
+                method: "POST",
+              });
+              setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+              fetchCircles();
+            }}
+            onRollCall={handleRollCallConfirmed}
           />
-        </View>
 
-        {circles.length === 0 ? (
-          <Typography variant="body1" tone="secondary" style={styles.emptyText}>
-            Кола не знайдені
-          </Typography>
-        ) : (
-          circles.map((circle) => (
-            <CircleItem
-              key={circle.id}
-              title={circle.name}
-              members={circle.members}
-              onMenuPress={() => openActionsModal(circle)}
-              onPress={() => openCircleDetail(circle)}
-            />
-          ))
-        )}
-      </ScrollView>
+          <MemberProfileModal
+            member={selectedMember}
+            visible={isMemberModalVisible}
+            onClose={() => {
+              setIsMemberModalVisible(false);
+              setSelectedMember(null);
+            }}
+            onRollCall={() => selectedMember && handlePersonalRollCall(selectedMember)}
+            canRollCall={canRollCall}
+            isOwner={!!isOwner}
+            onRemove={async () => {
+              if (!activeCircle || !selectedMember) return;
+              try {
+                const updatedMembers = activeCircle.members
+                  .filter((m) => m.id !== selectedMember.id)
+                  .map((m) => ({ id: m.id }));
+                await apiFetch("/groups", {
+                  method: "PUT",
+                  body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
+                });
+                setIsMemberModalVisible(false);
+                setSelectedMember(null);
+                fetchCircles();
+              } catch {
+                Alert.alert("Помилка", "Не вдалося видалити учасника");
+              }
+            }}
+          />
+        </ScrollView>
+      ) : (
+        <>
+          <ScrollView contentContainerStyle={styles.content}>
+            <View style={styles.header}>
+              <Typography variant="h1" tone="primary">
+                Кола
+              </Typography>
+              <Button
+                shape="round"
+                hierarchy="accent"
+                size="medium"
+                leadingIcon={
+                  <AntDesign name="plus" size={24} color={theme.colors.content.onColor} />
+                }
+                onPress={() => setIsAddModalVisible(true)}
+              />
+            </View>
 
-      <AddCircleModal
-        visible={isAddModalVisible}
-        onClose={() => setIsAddModalVisible(false)}
-        onUpdated={fetchCircles}
-      />
+            {circles.length === 0 ? (
+              <Typography variant="body1" tone="secondary" style={styles.emptyText}>
+                Кола не знайдені
+              </Typography>
+            ) : (
+              <View style={styles.listContainer}>
+                {circles.map((circle) => (
+                  <CircleItem
+                    key={circle.id}
+                    title={circle.name}
+                    members={circle.members}
+                    onMenuPress={() => openActionsModal(circle)}
+                    onPress={() => openCircleDetail(circle)}
+                  />
+                ))}
+              </View>
+            )}
+          </ScrollView>
 
-      <CircleActionsModal
-        visible={isActionsVisible}
-        onClose={() => setIsActionsVisible(false)}
-        circleId={activeCircle?.id || ""}
-        ownerId={activeCircle?.owner.id || ""}
-        currentName={activeCircle?.name || ""}
-        inviteCode={activeCircle?.inviteCode || ""}
-        members={activeCircle?.members || []}
-        onSaveMembers={async (updatedMembers) => {
-          if (!activeCircle) return;
-          await apiFetch("/groups", {
-            method: "PUT",
-            body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
-          });
-          setIsActionsVisible(false);
-          fetchCircles();
-        }}
-        onRename={async (newName) => {
-          if (!activeCircle) return;
-          await apiFetch("/groups", {
-            method: "PUT",
-            body: JSON.stringify({ id: activeCircle.id, name: newName }),
-          });
-          setIsActionsVisible(false);
-          fetchCircles();
-        }}
-        onDelete={async () => {
-          if (!activeCircle) return;
-          await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
-          setIsActionsVisible(false);
-          fetchCircles();
-        }}
-        onLeave={async () => {
-          if (!activeCircle) return;
-          await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
-          setIsActionsVisible(false);
-          fetchCircles();
-        }}
-        onRegenerateInvite={async () => {
-          if (!activeCircle) return;
-          const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, { method: "POST" });
-          setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
-          fetchCircles();
-        }}
-        onRollCall={handleRollCall}
-      />
+          <AddCircleModal
+            visible={isAddModalVisible}
+            onClose={() => setIsAddModalVisible(false)}
+            onUpdated={fetchCircles}
+          />
+
+          <CircleActionsModal
+            visible={isActionsVisible}
+            onClose={() => setIsActionsVisible(false)}
+            circleId={activeCircle?.id || ""}
+            ownerId={activeCircle?.owner.id || ""}
+            currentName={activeCircle?.name || ""}
+            inviteCode={activeCircle?.inviteCode || ""}
+            members={activeCircle?.members || []}
+            onSaveMembers={async (updatedMembers) => {
+              if (!activeCircle) return;
+              await apiFetch("/groups", {
+                method: "PUT",
+                body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
+              });
+              setIsActionsVisible(false);
+              fetchCircles();
+            }}
+            onRename={async (newName) => {
+              if (!activeCircle) return;
+              await apiFetch("/groups", {
+                method: "PUT",
+                body: JSON.stringify({ id: activeCircle.id, name: newName }),
+              });
+              setIsActionsVisible(false);
+              fetchCircles();
+            }}
+            onDelete={async () => {
+              if (!activeCircle) return;
+              await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
+              setIsActionsVisible(false);
+              fetchCircles();
+            }}
+            onLeave={async () => {
+              if (!activeCircle) return;
+              await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
+              setIsActionsVisible(false);
+              fetchCircles();
+            }}
+            onRegenerateInvite={async () => {
+              if (!activeCircle) return;
+              const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
+                method: "POST",
+              });
+              setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+              fetchCircles();
+            }}
+            onRollCall={handleRollCallConfirmed}
+          />
+        </>
+      )}
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.background.primary },
   content: { paddingHorizontal: theme.spacing[16], paddingBottom: 140 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginTop: theme.spacing[20],
-    marginBottom: theme.spacing[28],
+    gap: theme.spacing[8],
   },
   emptyText: {
     textAlign: "center",
     marginTop: theme.spacing[20],
   },
-
+  listContainer: {
+    marginTop: theme.spacing[16],
+  },
   // Detail view
   detailHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     paddingHorizontal: theme.spacing[8],
     paddingVertical: theme.spacing[8],
     backgroundColor: theme.colors.background.primary,
@@ -460,6 +486,7 @@ const styles = StyleSheet.create({
   },
   detailTitleBlock: {
     flex: 1,
+    gap: theme.spacing[4],
   },
   inlineInviteRow: {
     flexDirection: "row",
@@ -467,13 +494,27 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing[2],
   },
   detailContent: {
+    paddingTop: theme.spacing[16],
+    gap: theme.spacing[8],
+  },
+  statsCard: {
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.xl,
     padding: theme.spacing[16],
+    gap: theme.spacing[8],
+  },
+  statsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   membersCount: {
     marginBottom: theme.spacing[16],
   },
   membersList: {
-    gap: theme.spacing[4],
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing[8],
   },
   memberRow: {
     flexDirection: "row",
@@ -489,10 +530,28 @@ const styles = StyleSheet.create({
   leaveButton: {
     marginTop: theme.spacing[24],
   },
-
-  // Rename modal
-  renameActions: {
+  rcMessageBubble: {
     flexDirection: "row",
-    gap: theme.spacing[12],
+    alignItems: "flex-start",
+    padding: theme.spacing[12],
+    borderRadius: theme.radius.xl,
+    width: "100%",
+
+    backgroundColor: "rgba(255,255,255,0.6)",
+    borderWidth: 1,
+    borderColor: theme.colors.primaryA,
+
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  rcMessageTextContainer: {
+    marginLeft: theme.spacing[8],
+  },
+  rcTimeText: {
+    color: theme.colors.content.secondary,
+    marginLeft: "auto",
   },
 });

@@ -9,14 +9,14 @@ export class GroupBlockListEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'group_id', type: 'uuid' })
+  @Column({ name: 'group_id', type: 'uuid', nullable: true })
   groupId: string;
 
   @ManyToOne(() => GroupEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'group_id' })
   group: GroupEntity;
 
-  @Column({ name: 'user_id', type: 'uuid' })
+  @Column({ name: 'user_id', type: 'uuid', nullable: true })
   userId: string;
 
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
@@ -26,7 +26,7 @@ export class GroupBlockListEntity {
   @Column({ name: 'created_by', type: 'uuid', nullable: true })
   createdBy: string;
 
-  @ManyToOne(() => UserEntity, { onDelete: 'SET NULL' })
+  @ManyToOne(() => UserEntity, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'created_by' })
   creator: UserEntity;
 

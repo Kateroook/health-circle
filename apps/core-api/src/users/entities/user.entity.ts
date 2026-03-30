@@ -34,11 +34,11 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   fullName: string | null;
 
-  @Index({ unique: true, where: '"email" IS NOT NULL' })
+  @Index({ unique: true, where: 'email IS NOT NULL' })
   @Column({ type: 'varchar', nullable: true })
   email: string | null;
 
-  @Index({ unique: true, where: '"phone" IS NOT NULL' })
+  @Index({ unique: true, where: 'phone IS NOT NULL' })
   @Column({ type: 'varchar', nullable: true })
   phone: string | null;
 

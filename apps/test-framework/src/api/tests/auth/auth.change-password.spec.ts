@@ -4,7 +4,7 @@ import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe('api/auth/change-password tests', async () => {
   let user: UserEntity;
-  test.beforeEach(async ( { spawnUser, api} ) => {
+  test.beforeEach(async ({ spawnUser, api }) => {
     user = await spawnUser();
     await api.auth.login({
       identifier: user.email,
@@ -15,9 +15,9 @@ test.describe('api/auth/change-password tests', async () => {
   test('[AUTH-029] Successfull password change', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const changePassword = await api.auth.changePassword({
-        oldPassword: user.password,
-        newPassword: newPassword,
-        confirmNewPassword: newPassword,
+      oldPassword: user.password,
+      newPassword: newPassword,
+      confirmNewPassword: newPassword,
     });
 
     expect(changePassword.response).toHaveStatus2xx();
@@ -26,9 +26,9 @@ test.describe('api/auth/change-password tests', async () => {
   test('[AUTH-030] Wrong old password for password change', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const changePassword = await api.auth.changePassword({
-        oldPassword: user.password+'1',
-        newPassword: newPassword,
-        confirmNewPassword: newPassword,
+      oldPassword: user.password + '1',
+      newPassword: newPassword,
+      confirmNewPassword: newPassword,
     });
 
     expect(changePassword.response).toHaveStatus4xx();
@@ -37,41 +37,50 @@ test.describe('api/auth/change-password tests', async () => {
   test('[AUTH-031] Password mismatch in password change', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const changePassword = await api.auth.changePassword({
-        oldPassword: user.password,
-        newPassword: newPassword,
-        confirmNewPassword: newPassword+'2',
+      oldPassword: user.password,
+      newPassword: newPassword,
+      confirmNewPassword: newPassword + '2',
     });
 
     expect(changePassword.response).toHaveStatus4xx();
   });
 
-  [{
-        testName: '[AUTH-032] Change password with short password',
-        newPasword: utils.random.password(11),
-    }, {
-        testName: '[AUTH-033] Change password without uppercase letters',
-        newPasword: utils.random.string({length: 12, includeUpper: false}),
-    }, {
-        testName: '[AUTH-034] Change password without lowercase letters',
-        newPasword: utils.random.string({length: 12, includeLower: false}),
-    }, {
-        testName: '[AUTH-035] Change password without numbers',
-        newPasword: utils.random.string({length: 12, includeNumbers: false}),
-    }, {
-        testName: '[AUTH-036] Change password with password longer than 20 symbols',
-        newPasword: utils.random.password(21),
-    }, {
-        testName: '[AUTH-037] Change password without special symbols',
-        newPasword: utils.random.string({length: 12, includeSpecial: false}),
-    }].forEach(options => test(options.testName, async({ api }) => {
-    const changePassword = await api.auth.changePassword({
+  [
+    {
+      testName: '[AUTH-032] Change password with short password',
+      newPasword: utils.random.password(11),
+    },
+    {
+      testName: '[AUTH-033] Change password without uppercase letters',
+      newPasword: utils.random.string({ length: 12, includeUpper: false }),
+    },
+    {
+      testName: '[AUTH-034] Change password without lowercase letters',
+      newPasword: utils.random.string({ length: 12, includeLower: false }),
+    },
+    {
+      testName: '[AUTH-035] Change password without numbers',
+      newPasword: utils.random.string({ length: 12, includeNumbers: false }),
+    },
+    {
+      testName: '[AUTH-036] Change password with password longer than 20 symbols',
+      newPasword: utils.random.password(21),
+    },
+    {
+      testName: '[AUTH-037] Change password without special symbols',
+      newPasword: utils.random.string({ length: 12, includeSpecial: false }),
+    },
+  ].forEach((options) =>
+    test(options.testName, async ({ api }) => {
+      const changePassword = await api.auth.changePassword({
         oldPassword: user.password,
         newPassword: options.newPasword,
         confirmNewPassword: options.newPasword,
-    });
+      });
 
-    expect(changePassword.response).toHaveStatus4xx();
-  }));
+      expect(changePassword.response).toHaveStatus4xx();
+    }),
+  );
 
   test('[AUTH-038] Password change without access token', async ({ api }) => {
     const logout = await api.auth.logout();
@@ -79,9 +88,9 @@ test.describe('api/auth/change-password tests', async () => {
 
     const newPassword = utils.random.password(12);
     const changePassword = await api.auth.changePassword({
-        oldPassword: user.password,
-        newPassword: newPassword,
-        confirmNewPassword: newPassword,
+      oldPassword: user.password,
+      newPassword: newPassword,
+      confirmNewPassword: newPassword,
     });
 
     expect(changePassword.response).toHaveStatus4xx();
@@ -90,18 +99,18 @@ test.describe('api/auth/change-password tests', async () => {
   test("[AUTH-039] Old password doesn't work after successfull password change", async ({ api }) => {
     const newPassword = utils.random.password(12);
     const changePassword = await api.auth.changePassword({
-        oldPassword: user.password,
-        newPassword: newPassword,
-        confirmNewPassword: newPassword,
+      oldPassword: user.password,
+      newPassword: newPassword,
+      confirmNewPassword: newPassword,
     });
 
     const logout = await api.auth.logout();
     expect(logout.response).toHaveStatus2xx();
 
     const login = await api.auth.login({
-        identifier: user.email,
-        password: user.password,
-    })
+      identifier: user.email,
+      password: user.password,
+    });
 
     expect(login.response).toHaveStatus4xx();
     expect(api.getContext().accessToken).toBeUndefined();
@@ -111,9 +120,9 @@ test.describe('api/auth/change-password tests', async () => {
   test('[AUTH-040] New password works after successfull password change', async ({ api }) => {
     const newPassword = utils.random.password(12);
     const changePassword = await api.auth.changePassword({
-        oldPassword: user.password,
-        newPassword: newPassword,
-        confirmNewPassword: newPassword,
+      oldPassword: user.password,
+      newPassword: newPassword,
+      confirmNewPassword: newPassword,
     });
 
     expect(changePassword.response).toHaveStatus2xx();
@@ -122,9 +131,9 @@ test.describe('api/auth/change-password tests', async () => {
     expect(logout.response).toHaveStatus2xx();
 
     const login = await api.auth.login({
-        identifier: user.email,
-        password: newPassword,
-    })
+      identifier: user.email,
+      password: newPassword,
+    });
 
     expect(login.response).toHaveStatus2xx();
   });

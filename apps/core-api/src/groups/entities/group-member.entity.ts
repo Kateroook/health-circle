@@ -12,13 +12,19 @@ export class GroupMemberEntity {
   @PrimaryColumn('uuid', { name: 'user_id' })
   userId: string;
 
-  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
-  user: UserEntity;
-
-  @ManyToOne(() => GroupEntity, (group) => group.members, { onDelete: 'CASCADE', onUpdate: 'NO ACTION' })
+  @Index()
+  @ManyToOne(() => GroupEntity, (group) => group.members, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+    orphanedRowAction: 'delete',
+  })
   @JoinColumn({ name: 'group_id' })
   group: GroupEntity;
+
+  @Index()
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE', orphanedRowAction: 'delete' })
+  @JoinColumn({ name: 'user_id' })
+  user: UserEntity;
 
   @CreateDateColumn({ type: 'timestamptz' })
   joinedAt: Date;

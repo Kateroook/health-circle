@@ -1,4 +1,11 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,7 +17,7 @@ import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
-import { IsNull, MoreThan, Repository } from 'typeorm';
+import { IsNull, MoreThan, Not, Repository } from 'typeorm';
 
 import { RequestMetadata } from '../common/types/request-metadata';
 import { UserEntity } from '../users/entities/user.entity';
@@ -24,6 +31,8 @@ import { UserTokenPayload } from './types/user-token-payload';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
@@ -41,11 +50,19 @@ export class AuthService {
     return createHash('sha256').update(raw).digest('hex');
   }
 
+  private async revokeAllSessions(userId: string, exceptSessionId?: string): Promise<void> {
+    const criteria: Record<string, unknown> = { user: { id: userId }, revokedAt: IsNull() };
+    if (exceptSessionId) {
+      criteria.id = Not(exceptSessionId);
+    }
+    await this.userSessionRepository.update(criteria, { revokedAt: new Date() });
+  }
+
   private async getAccessToken(userId: string, fingerprint?: string): Promise<UserTokenDto> {
     const jti = randomUUID();
     const issuedAt = new Date();
-    const expiresIn = this.configService.getOrThrow<number>('ACCESS_TOKEN_TTL') * 1000;
-    const expiresAt = new Date(issuedAt.getTime() + expiresIn);
+    const expiresInSeconds = this.configService.getOrThrow<number>('ACCESS_TOKEN_TTL');
+    const expiresAt = new Date(issuedAt.getTime() + expiresInSeconds * 1000);
 
     const tokenPayload: UserTokenPayload = {
       sub: userId,
@@ -55,14 +72,14 @@ export class AuthService {
 
     const token = await this.jwtService.signAsync(tokenPayload, {
       secret: this.configService.getOrThrow<string>('ACCESS_TOKEN_SECRET'),
-      expiresIn,
+      expiresIn: expiresInSeconds,
     });
 
     return {
       jti,
       token,
       tokenType: 'Bearer',
-      expiresIn,
+      expiresIn: expiresInSeconds,
       issuedAt,
       expiresAt,
     };
@@ -70,8 +87,8 @@ export class AuthService {
 
   private async getRefreshToken(userId: string, jti: string, fingerprint?: string): Promise<UserTokenDto> {
     const issuedAt = new Date();
-    const expiresIn = this.configService.getOrThrow<number>('REFRESH_TOKEN_TTL') * 1000;
-    const expiresAt = new Date(issuedAt.getTime() + expiresIn);
+    const expiresInSeconds = this.configService.getOrThrow<number>('REFRESH_TOKEN_TTL');
+    const expiresAt = new Date(issuedAt.getTime() + expiresInSeconds * 1000);
     const scope = '/auth/refresh';
 
     const tokenPayload: UserTokenPayload = {
@@ -83,14 +100,14 @@ export class AuthService {
     const token = await this.jwtService.signAsync(tokenPayload, {
       audience: scope,
       secret: this.configService.getOrThrow<string>('REFRESH_TOKEN_SECRET'),
-      expiresIn,
+      expiresIn: expiresInSeconds,
     });
 
     return {
       jti: randomUUID(),
       token,
       tokenType: 'Bearer',
-      expiresIn,
+      expiresIn: expiresInSeconds,
       issuedAt,
       expiresAt,
     };
@@ -141,6 +158,8 @@ export class AuthService {
 
     // Check if session is not revoked and not expired
     if (!session) throw new UnauthorizedException('Сеанс недійсний або завершений');
+    if (session.revokedAt) throw new UnauthorizedException('Сеанс відкликано');
+    if (!session.expiresAt || session.expiresAt <= new Date()) throw new UnauthorizedException('Сеанс протерміновано');
 
     // Verify fingerprint: allow mismatch if it's a legacy fingerprint (from before IP removal)
     // but only if session fingerprint matches token payload fingerprint AND user agent matches.
@@ -170,9 +189,14 @@ export class AuthService {
       relations: { user: true },
     });
 
-    // Check if session is not revoked and not expired and matches session tokenHash
-    if (!session || !(await this.securityService.validate(token, session.tokenHash)))
+    if (!session) throw new UnauthorizedException('Сеанс недійсний або завершений');
+    if (session.revokedAt) throw new UnauthorizedException('Сеанс відкликано');
+    if (!session.expiresAt || session.expiresAt <= new Date()) throw new UnauthorizedException('Сеанс протерміновано');
+
+    // Check if session matches current refresh token (tokenHash)
+    if (!(await this.securityService.validate(token, session.tokenHash))) {
       throw new UnauthorizedException('Сеанс недійсний або завершений');
+    }
 
     // Verify fingerprint: allow legacy fingerprints if UA matches
     const currentFingerprint = this.generateFingerprint(metadata);
@@ -316,28 +340,44 @@ export class AuthService {
       user: { id: user.id },
       passwordHash,
     });
+
+    // Revoke other sessions but keep current one alive so the client can cleanly logout.
+    await this.revokeAllSessions(user.id, user.sessionId);
   }
 
-  async forgotPassword(email: string): Promise<void> {
-    const user = await this.userRepository.findOne({ where: { email } });
-    if (!user) {
-      throw new NotFoundException('Користувача з таким email не знайдено');
-    }
+  async forgotPassword(email: string): Promise<boolean> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await this.userRepository.findOne({ where: { email: normalizedEmail } });
+    if (!user) return false;
+
     if (user.lockedAt) {
       throw new ForbiddenException('Цей обліковий запис заблоковано');
     }
-    await this.confirmationService.setupPasswordCode(email, user.id, ConfirmationTypes.PASSWORD_RESET);
+    if (!user.isRegistered) {
+      throw new BadRequestException('Пошта не підтверджена. Повторно надішліть код підтвердження');
+    }
+
+    try {
+      await this.confirmationService.setupPasswordCode(normalizedEmail, user.id, ConfirmationTypes.PASSWORD_RESET);
+    } catch (error: unknown) {
+      this.logger.warn(`Password reset code setup failed for userId=${user.id}: ${String(error)}`);
+      return false;
+    }
+
+    return true;
   }
 
-  async resendRegistrationCode(email: string): Promise<void> {
-    const user = await this.userRepository.findOne({ where: { email } });
-    if (!user) {
-      throw new NotFoundException('Користувача з таким email не знайдено');
+  async resendRegistrationCode(email: string): Promise<boolean> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await this.userRepository.findOne({ where: { email: normalizedEmail } });
+    if (!user || user.lockedAt || user.isRegistered) return false;
+
+    try {
+      await this.confirmationService.setupPasswordCode(normalizedEmail, user.id, ConfirmationTypes.REGISTRATION);
+    } catch (error: unknown) {
+      this.logger.warn(`Registration code resend failed for userId=${user.id}: ${String(error)}`);
     }
-    if (user.lockedAt) {
-      throw new ForbiddenException('Цей обліковий запис заблоковано');
-    }
-    await this.confirmationService.setupPasswordCode(email, user.id, ConfirmationTypes.REGISTRATION);
+    return true;
   }
 
   async resetPassword(user: UserProfileDto, data: UserSetupPasswordDto): Promise<void> {
@@ -364,5 +404,7 @@ export class AuthService {
     });
     // Consume the reset token
     await this.confirmationService.consumeToken(user.id);
+
+    await this.revokeAllSessions(user.id);
   }
 }

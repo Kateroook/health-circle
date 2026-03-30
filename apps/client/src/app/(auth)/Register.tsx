@@ -3,12 +3,12 @@ import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { apiFetch } from "../../api/api";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { cleanObj } from "../../utils/clean.util";
@@ -66,27 +66,31 @@ export default function Register() {
     }
 
     if (step === 2) {
-      if (!form.lastName.trim()) {
+      const trimmedLastName = form.lastName.trim();
+      const trimmedFirstName = form.firstName.trim();
+      const trimmedMiddleName = form.middleName.trim();
+
+      if (!trimmedLastName) {
         newErrors.lastName = "Поле прізвища є обовʼязковим";
-      } else if (form.lastName.length < 2) {
+      } else if (trimmedLastName.length < 2) {
         newErrors.lastName = "Прізвище має містити не менше 2 символів";
-      } else if (form.lastName.length > 50) {
+      } else if (trimmedLastName.length > 50) {
         newErrors.lastName = "Прізвище має містити не більше 50 символів";
       }
 
-      if (!form.firstName.trim()) {
+      if (!trimmedFirstName) {
         newErrors.firstName = "Поле імені є обовʼязковим";
-      } else if (form.firstName.length < 2) {
+      } else if (trimmedFirstName.length < 2) {
         newErrors.firstName = "Імʼя має містити не менше 2 символів";
-      } else if (form.firstName.length > 50) {
+      } else if (trimmedFirstName.length > 50) {
         newErrors.firstName = "Імʼя має містити не більше 50 символів";
       }
 
       if (form.middleName.trim()) {
         if (form.middleName.length < 2) {
-          newErrors.middleName = "По-батькові має містити не менше 2 символів";
+          newErrors.middleName = "По батькові має містити не менше 2 символів";
         } else if (form.middleName.length > 50) {
-          newErrors.middleName = "По-батькові має містити не більше 50 символів";
+          newErrors.middleName = "По батькові має містити не більше 50 символів";
         }
       }
     }

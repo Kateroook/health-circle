@@ -10,6 +10,7 @@ A Playwright + TypeScript test automation framework for API testing, with planne
 2. [Project Structure](#project-structure)
 3. [Architecture](#architecture)
 4. [Core Modules](#core-modules)
+   - [BackendProvider](#backendprovider)
    - [API Clients](#api-clients)
    - [Database Layer](#database-layer)
    - [Data Builders & Factories](#data-builders--factories)
@@ -25,6 +26,8 @@ A Playwright + TypeScript test automation framework for API testing, with planne
 ## Overview
 
 This framework is built on top of **Playwright Test** with **TypeScript** and covers API-level testing for a mobile full-stack application. It includes a layered client architecture, direct database access for setup/teardown, typed data builders, and automatic post-test cleanup.
+
+The core of the framework is the **`BackendProvider`** class — a single entry point that owns all API clients, repositories, and the DB cleaner for a given test scope. Playwright fixtures in `api-fixture.ts` act as a thin wrapper around `BackendProvider`, and the same class can be initialised standalone for WebdriverIO mobile tests.
 
 **Tech stack:**
 
@@ -43,14 +46,13 @@ This framework is built on top of **Playwright Test** with **TypeScript** and co
 test-framework/
 ├── .github/
 │   └── workflows/
-│       └── playwright.yml          # CI pipeline
+│       └── playwright.yml              # CI pipeline
 ├── src/
-│   ├── api/                        # API test layer (tests live here)
+│   ├── api/                            # API test layer (tests live here)
 │   │   ├── fixtures/
-│   │   │   └── api-fixture.ts      # Playwright fixture definitions + custom expect
-│   │   ├── helpers/                # (reserved for future helpers)
+│   │   │   └── api-fixture.ts          # Playwright fixture definitions + custom expect
 │   │   └── tests/
-│   │       ├── auth/               # Auth endpoint test files
+│   │       ├── auth/                   # Auth endpoint test files
 │   │       │   ├── auth.change-password.spec.ts
 │   │       │   ├── auth.flow.spec.ts
 │   │       │   ├── auth.forgot-password.spec.ts
@@ -61,64 +63,82 @@ test-framework/
 │   │       │   ├── auth.refresh.spec.ts
 │   │       │   ├── auth.resend-reg-code.spec.ts
 │   │       │   └── auth.reset-password.spec.ts
-│   │       ├── contacts/           # Contact endpoint test files
-│   │       ├── groups/             # Group endpoint test files
-│   │       ├── users/              # User endpoint test files
-│   │       └── test-plan.md        # Test coverage plan
-│   ├── core/                       # Reusable framework internals
+│   │       ├── contacts/               # Contact endpoint test files
+│   │       ├── groups/                 # Group endpoint test files
+│   │       │   ├── groups.block-user.spec.ts
+│   │       │   ├── groups.creation.spec.ts
+│   │       │   ├── groups.delete.spec.ts
+│   │       │   ├── groups.flow.spec.ts
+│   │       │   ├── groups.get-all.spec.ts
+│   │       │   ├── groups.get-blocked-users.spec.ts
+│   │       │   ├── groups.get-by-id.spec.ts
+│   │       │   ├── groups.invite.spec.ts
+│   │       │   ├── groups.join.spec.ts
+│   │       │   ├── groups.leave.spec.ts
+│   │       │   ├── groups.unblock-user.spec.ts
+│   │       │   └── groups.update.spec.ts
+│   │       ├── users/                  # User endpoint test files
+│   │       │   └── users.delete-account.spec.ts
+│   │       └── test-plan.md            # Test coverage plan
+│   ├── core/                           # Reusable framework internals
 │   │   ├── api/
-│   │   │   ├── clients/            # HTTP client implementations
+│   │   │   ├── clients/                # HTTP client implementations
 │   │   │   │   ├── base-client.ts
 │   │   │   │   ├── auth-client.ts
 │   │   │   │   ├── user-client.ts
 │   │   │   │   ├── group-client.ts
 │   │   │   │   └── contact-client.ts
 │   │   │   ├── helpers/
-│   │   │   │   ├── response-checker.ts   # Custom expect matchers + checkResponse helpers
-│   │   │   │   └── test-context.ts       # Auth token & user state container
-│   │   │   └── api-client-factory.ts     # Entry point for API clients
+│   │   │   │   ├── response-checker.ts # Custom expect matchers + checkResponse helpers
+│   │   │   │   └── test-context.ts     # Auth token & user state container
+│   │   │   └── api-client-factory.ts   # Entry point for API clients
 │   │   ├── data/
-│   │   │   ├── builders/           # Fluent object builders
+│   │   │   ├── builders/               # Fluent object builders
 │   │   │   │   ├── user-builder.ts
 │   │   │   │   └── group-builder.ts
-│   │   │   └── factories/          # High-level factory functions
+│   │   │   └── factories/              # High-level factory functions
 │   │   │       ├── user-factory.ts
 │   │   │       ├── group-factory.ts
 │   │   │       └── contact-factory.ts
 │   │   ├── db/
-│   │   │   ├── repositories/       # DB access per entity
+│   │   │   ├── repositories/           # DB access per entity
 │   │   │   │   ├── base-repository.ts
 │   │   │   │   ├── user-repository.ts
 │   │   │   │   ├── group-repository.ts
 │   │   │   │   ├── contact-repository.ts
 │   │   │   │   └── confirmation-code-repository.ts
-│   │   │   ├── db-cleaner.ts       # Post-test cleanup tracker
-│   │   │   ├── db-manager.ts       # Singleton Kysely DB connection
-│   │   │   └── schema.ts           # DB table-to-entity type map
-│   │   └── types/
-│   │       ├── api/                # Request/response TypeScript types
-│   │       │   ├── auth.types.ts
-│   │       │   ├── common.types.ts
-│   │       │   ├── contacts.types.ts
-│   │       │   ├── groups.types.ts
-│   │       │   ├── index.ts
-│   │       │   └── users.types.ts
-│   │       ├── db/                 # DB entity types
-│   │       │   ├── codes-and-files.ts
-│   │       │   ├── groups-and-contacts.ts
-│   │       │   └── user-entities.ts
-│   │       └── entites/            # Domain entity interfaces
-│   │           ├── contact-interface.ts
-│   │           ├── group-interface.ts
-│   │           └── user-interface.ts
-│   ├── mobile/                     # Placeholder for future mobile tests
+│   │   │   ├── db-cleaner.ts           # Post-test cleanup tracker
+│   │   │   ├── db-manager.ts           # Singleton Kysely DB connection
+│   │   │   └── schema.ts               # DB table-to-entity type map
+│   │   ├── types/
+│   │   │   ├── api/                    # Request/response TypeScript types
+│   │   │   │   ├── auth.types.ts
+│   │   │   │   ├── common.types.ts
+│   │   │   │   ├── contacts.types.ts
+│   │   │   │   ├── groups.types.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   └── users.types.ts
+│   │   │   ├── db/                     # DB entity types
+│   │   │   │   ├── codes-and-files.ts
+│   │   │   │   ├── groups-and-contacts.ts
+│   │   │   │   └── user-entities.ts
+│   │   │   └── entites/                # Domain entity interfaces
+│   │   │       ├── contact-interface.ts
+│   │   │       ├── group-interface.ts
+│   │   │       └── user-interface.ts
+│   │   └── backend-provider.ts         # Central provider shared by API and mobile tests
+│   ├── mobile/                         # WebdriverIO mobile tests
+│   │   ├── types/
+│   │   │   └── wdio.d.ts
+│   │   ├── setup-guide.md
+│   │   └── wdio.conf.ts
 │   ├── scripts/
-│   │   └── test-db.ts              # DB connection sanity-check script
+│   │   └── test-db.ts                  # DB connection sanity-check script
 │   └── utils/
-│       ├── utils.ts                # Top-level Utils class (random, date)
-│       ├── random-helper.ts        # Faker/nanoid wrappers
-│       └── date-helper.ts          # Date utilities
-├── .env                            # Local environment variables (not committed)
+│       ├── utils.ts                    # Top-level Utils class (random, date)
+│       ├── random-helper.ts            # Faker/nanoid wrappers
+│       └── date-helper.ts             # Date utilities
+├── .env                                # Local environment variables (not committed)
 ├── playwright.config.ts
 └── package.json
 ```
@@ -127,33 +147,100 @@ test-framework/
 
 ## Architecture
 
-The framework is organized in three clear layers:
+The framework is organized in four clear layers:
 
 ```
-┌──────────────────────────────────────────┐
-│              Test Files (*.spec.ts)       │  ← You write tests here
-├──────────────────────────────────────────┤
-│       Fixtures (api-fixture.ts)           │  ← Dependency injection via Playwright
-├──────────────────────────────────────────┤
-│  ApiClientFactory  │  Repositories        │  ← Test interaction layer
-│  (API clients)     │  (DB direct access)  │
-├──────────────────────────────────────────┤
-│  BaseClient        │  BaseRepository      │  ← Shared abstractions
-├──────────────────────────────────────────┤
-│         Kysely + PostgreSQL               │  ← Database
-└──────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│           Test Files (*.spec.ts / WDIO specs)                │  ← You write tests here
+├──────────────────────────────────────────────────────────────┤
+│  Playwright Fixtures (api-fixture.ts)  │  WDIO hooks/helpers │  ← Runner-specific wiring
+├──────────────────────────────────────────────────────────────┤
+│                    BackendProvider                           │  ← Shared backend layer
+│   (owns API clients, repositories, DbCleaner, spawnUser)    │
+├────────────────────────────┬─────────────────────────────────┤
+│  ApiClientFactory          │  Repositories                   │  ← Interaction layer
+│  (API clients)             │  (DB direct access)             │
+├────────────────────────────┴─────────────────────────────────┤
+│  BaseClient                │  BaseRepository                 │  ← Shared abstractions
+├────────────────────────────┴─────────────────────────────────┤
+│                    Kysely + PostgreSQL                        │  ← Database
+└──────────────────────────────────────────────────────────────┘
 ```
 
 **Key design principles:**
 
-- **Isolation** — each test gets its own `TestContext`, so tokens and user state never leak between tests.
-- **Automatic cleanup** — `DbCleaner` tracks created entities and deletes them after each test in LIFO order.
+- **Single shared backend layer** — `BackendProvider` owns all API clients, repositories, and the `DbCleaner` for a given test scope. Playwright fixtures and WebdriverIO helpers both consume it the same way, so there is no duplication of setup logic.
+- **Runner-agnostic initialisation** — `BackendProvider.init()` accepts an existing Playwright `APIRequestContext` when called from fixtures, and creates its own `request.newContext()` when called standalone from WebdriverIO.
+- **Isolation** — each test gets its own `BackendProvider` instance, so tokens and user state never leak between tests.
+- **Automatic cleanup** — `DbCleaner` tracks created entities and deletes them after each test in LIFO order. `BackendProvider.cleanup()` and `dispose()` are called automatically by Playwright fixtures on teardown.
 - **Typed everywhere** — all API requests and responses, DB entities, and domain objects are typed via TypeScript interfaces.
 - **Single responsibility** — API clients only handle HTTP. Repositories only handle DB queries. Factories only generate data.
 
 ---
 
 ## Core Modules
+
+### BackendProvider
+
+`src/core/backend-provider.ts`
+
+`BackendProvider` is the central class that assembles and owns all backend test dependencies for a single test scope. It is the main reason the framework can be shared between Playwright API tests and WebdriverIO mobile tests without duplicating setup logic.
+
+**Public properties:**
+
+| Property                     | Type                         | Description                             |
+| ---------------------------- | ---------------------------- | --------------------------------------- |
+| `db`                         | `Kysely<Database>`           | Active DB connection                    |
+| `requestContext`             | `APIRequestContext`          | Playwright HTTP request context         |
+| `api`                        | `ApiClientFactory`           | Entry point for all API clients         |
+| `dbCleaner`                  | `DbCleaner`                  | Tracks entities for post-test cleanup   |
+| `userRepository`             | `UserRepository`             | Direct DB access for users              |
+| `groupRepository`            | `GroupRepository`            | Direct DB access for groups             |
+| `contactRepository`          | `ContactRepository`          | Direct DB access for contacts           |
+| `confirmationCodeRepository` | `ConfirmationCodeRepository` | Direct DB access for confirmation codes |
+
+**Initialisation**
+
+Because the constructor cannot be `async`, `BackendProvider` is always created via the static factory method:
+
+```typescript
+// Inside Playwright fixtures — reuse the worker-scoped DB and test-scoped request context:
+const provider = await BackendProvider.init(db, request);
+
+// Standalone (e.g. WebdriverIO) — provider creates its own DB connection and request context:
+const provider = await BackendProvider.init();
+```
+
+**`spawnUser(overrides?)`**
+
+Creates a fully ready user by running the full registration flow: POST user → fetch confirmation code from DB → set up password. Returns a populated `UserEntity`.
+
+```typescript
+const user = await provider.spawnUser();
+// user.email, user.phone, user.password, user.id are all populated
+
+const user = await provider.spawnUser({ email: 'custom@test.com' });
+```
+
+**`spawnApi()`**
+
+Creates an additional isolated `ApiClientFactory` with its own `APIRequestContext`, sharing the same `DbCleaner`. Useful when a single test needs multiple independent authenticated sessions. Additional contexts are tracked internally and disposed on `provider.dispose()`.
+
+```typescript
+const extraApi = await provider.spawnApi();
+await extraApi.auth.quickLogin('userB@test.com', 'password');
+```
+
+**Teardown**
+
+Call both methods at the end of a test scope — Playwright fixtures handle this automatically:
+
+```typescript
+await provider.cleanup(); // runs DbCleaner, deletes tracked entities
+await provider.dispose(); // disposes requestContext and all spawned contexts
+```
+
+---
 
 ### API Clients
 
@@ -164,7 +251,7 @@ All clients extend `BaseClient`, which handles:
 - Safe JSON parsing (returns `null` on empty or failed responses)
 - Typed `get`, `post`, `put`, `patch`, `delete` methods
 
-**`ApiClientFactory`** is the single entry point. It holds a shared `TestContext` and exposes clients as getters:
+**`ApiClientFactory`** is the single entry point for HTTP clients. It holds a shared `TestContext` and exposes clients as getters:
 
 ```typescript
 const api = new ApiClientFactory({ request, dbCleaner });
@@ -277,7 +364,7 @@ expect(response).toHaveJsonContent(); // Content-Type: application/json
 
 ### Database Layer
 
-Direct DB access is used for test setup, cleanup and verification — things that are impractical or slow to do through the API.
+Direct DB access is used for test setup, cleanup, and verification — things that are impractical or slow to do through the API.
 
 **`DbManager`** is a singleton that provides a shared `Kysely<Database>` connection pool. It reads connection parameters from environment variables and uses `CamelCasePlugin` to automatically map `snake_case` DB columns to `camelCase` TypeScript properties.
 
@@ -302,7 +389,7 @@ findBy(criteria: Partial<T>): Promise<T[]>
 ```typescript
 dbCleaner.add('users', createdUser.id);
 // ... test runs ...
-await dbCleaner.cleanup(); // called automatically via fixture teardown
+await dbCleaner.cleanup(); // called automatically via BackendProvider.cleanup()
 ```
 
 Cleanup runs in **reverse insertion order (LIFO)** to respect foreign key constraints — entities created last are deleted first.
@@ -349,7 +436,7 @@ Use factories in tests whenever possible. Use builders directly when you need fi
 
 ### Fixtures
 
-Fixtures are defined in `src/api/fixtures/api-fixture.ts` and extend Playwright's built-in `test` object. They handle the full lifecycle of test dependencies.
+Fixtures are defined in `src/api/fixtures/api-fixture.ts` and extend Playwright's built-in `test` object. They are a thin wrapper around `BackendProvider` and handle the full lifecycle of test dependencies.
 
 The file also exports the custom `expect` — always import both `test` and `expect` from this file:
 
@@ -363,16 +450,17 @@ import { test, expect } from '../fixtures/api-fixture';
 
 **Test-scoped fixtures:**
 
-| Fixture                      | Type                                  | Description                                                                                                                                                                                                              |
-| ---------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `dbCleaner`                  | `DbCleaner`                           | Fresh instance per test; calls `cleanup()` after the test finishes.                                                                                                                                                      |
-| `userRepository`             | `UserRepository`                      | Wired to the test's `db` and `dbCleaner`.                                                                                                                                                                                |
-| `groupRepository`            | `GroupRepository`                     | Wired to the test's `db` and `dbCleaner`.                                                                                                                                                                                |
-| `contactRepository`          | `ContactRepository`                   | Wired to the test's `db` and `dbCleaner`.                                                                                                                                                                                |
-| `confirmationCodeRepository` | `ConfirmationCodeRepository`          | Wired to the test's `db` and `dbCleaner`.                                                                                                                                                                                |
-| `api`                        | `ApiClientFactory`                    | Fresh `TestContext` bound to Playwright's `request` context.                                                                                                                                                             |
-| `spawnApi`                   | `() => Promise<ApiClientFactory>`     | Factory function — call it to create additional isolated `ApiClientFactory` instances with their own `APIRequestContext`. Useful when a single test needs multiple independent authenticated sessions.                   |
-| `spawnUser`                  | `(overrides?) => Promise<UserEntity>` | Creates a fully ready user via API (POST user → fetch confirmation code → setup password) and returns the `UserEntity`. Accepts optional field overrides. The created user is automatically registered with `DbCleaner`. |
+| Fixture                      | Type                                  | Description                                                                                                                                                                                                                 |
+| ---------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backendProvider`            | `BackendProvider`                     | Core fixture. Initialised with the worker `db` and test `request` context. Calls `cleanup()` then `dispose()` on teardown. All other fixtures are derived from this one.                                                    |
+| `dbCleaner`                  | `DbCleaner`                           | Proxy to `backendProvider.dbCleaner`.                                                                                                                                                                                       |
+| `userRepository`             | `UserRepository`                      | Proxy to `backendProvider.userRepository`.                                                                                                                                                                                  |
+| `groupRepository`            | `GroupRepository`                     | Proxy to `backendProvider.groupRepository`.                                                                                                                                                                                 |
+| `contactRepository`          | `ContactRepository`                   | Proxy to `backendProvider.contactRepository`.                                                                                                                                                                               |
+| `confirmationCodeRepository` | `ConfirmationCodeRepository`          | Proxy to `backendProvider.confirmationCodeRepository`.                                                                                                                                                                      |
+| `api`                        | `ApiClientFactory`                    | Proxy to `backendProvider.api`. Fresh `TestContext` per test.                                                                                                                                                               |
+| `spawnApi`                   | `() => Promise<ApiClientFactory>`     | Calls `backendProvider.spawnApi()`. Creates additional isolated `ApiClientFactory` instances with their own `APIRequestContext`. Useful when a single test needs multiple independent authenticated sessions.               |
+| `spawnUser`                  | `(overrides?) => Promise<UserEntity>` | Calls `backendProvider.spawnUser()`. Creates a fully ready user via API (POST user → fetch confirmation code → setup password) and returns the `UserEntity`. The created user is automatically registered with `DbCleaner`. |
 
 **`spawnUser` — quick user creation**
 
@@ -494,7 +582,7 @@ On CI (`process.env.CI` is set), `forbidOnly` is enabled — tests with `.only` 
 ```typescript
 import { test, expect } from '../fixtures/api-fixture';
 
-test('create user and verify profile', async ({ api, spawnUser, confirmationCodeRepository }) => {
+test('create user and verify profile', async ({ api, spawnUser }) => {
   const user = await spawnUser();
 
   // Log in
@@ -559,6 +647,31 @@ test('confirmation code is created on registration', async ({ api, confirmationC
 });
 ```
 
+### Using BackendProvider in WebdriverIO
+
+For mobile tests, initialise `BackendProvider` standalone in a `before` hook and tear it down in `after`:
+
+```typescript
+import { BackendProvider } from '../../core/backend-provider';
+
+let backend: BackendProvider;
+
+before(async () => {
+  backend = await BackendProvider.init(); // no arguments — creates its own DB + request context
+});
+
+after(async () => {
+  await backend.cleanup();
+  await backend.dispose();
+});
+
+it('registers a user and verifies via API', async () => {
+  const user = await backend.spawnUser();
+  await backend.api.auth.login({ identifier: user.email, password: user.password });
+  // ... mobile driver interactions
+});
+```
+
 ---
 
 ## Running Tests
@@ -592,4 +705,4 @@ On CI the run is triggered via `.github/workflows/playwright.yml`. Workers are c
 
 ## Future Plans
 
-The `src/mobile/` directory is reserved for WebdriverIO-based mobile UI and E2E tests, which will be added as the next layer of the framework. The goal is to share the core data builders, factories, and DB utilities across both Playwright API tests and WebdriverIO mobile tests, keeping a single source of truth for test data generation and database access.
+The `src/mobile/` directory contains the WebdriverIO configuration for mobile UI and E2E tests. Because `BackendProvider` is runner-agnostic, mobile tests can share the same data builders, factories, repositories, and `spawnUser` helper as the Playwright API tests — keeping a single source of truth for test data generation and backend setup across both layers of the framework.
