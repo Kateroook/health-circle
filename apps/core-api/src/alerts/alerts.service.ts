@@ -1,6 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as fs from 'fs';
+import * as path from 'path';
 import { In, Repository } from 'typeorm';
 
 import { QueueService } from '../common/queue/queue.service';
@@ -32,6 +34,7 @@ export class AlertsService implements OnModuleInit {
   private activeAlertsByUid: Map<number, Alert> = new Map();
   private hasInitialSyncCompleted = false;
   private readonly apiUrl = 'https://api.alerts.in.ua/v1/alerts/active.json';
+  private regionHierarchy: Map<number, number[]> = new Map(); // parentUid -> childrenUids[]
 
   constructor(
     private readonly configService: ConfigService,
@@ -46,10 +49,61 @@ export class AlertsService implements OnModuleInit {
 
   async onModuleInit() {
     this.logger.log('Initializing AlertsService with pg-boss...');
+    await this.loadRegionHierarchy();
     await this.queueService.schedule('sync-alerts', '* * * * *');
     await this.queueService.work('sync-alerts', () => this.syncAlerts());
     // Do an initial fetch to populate in-memory state (avoid push-spam on restart).
     await this.syncAlerts(true);
+  }
+
+  private async loadRegionHierarchy() {
+    try {
+      // The CSV is ordered: Oblast -> Raions -> Hromadas.
+      // We can infer parents by looking at the last seen Oblast/Raion.
+      const csvPath = path.resolve(__dirname, '../../assets/alerts_regions.csv');
+      if (!fs.existsSync(csvPath)) {
+        this.logger.warn('CSV not found for hierarchy building');
+        return;
+      }
+      const content = fs.readFileSync(csvPath, 'utf8');
+      const lines = content.split('\n');
+
+      let currentOblastUid: number | null = null;
+      let currentRaionUid: number | null = null;
+
+      for (let i = 4; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const [uidStr, , type] = line.split(',');
+        const uid = parseInt(uidStr);
+        if (isNaN(uid)) continue;
+
+        if (type === 'Область' || type === 'Місто з спеціальним статусом') {
+          currentOblastUid = uid;
+          currentRaionUid = null;
+        } else if (type === 'Район') {
+          currentRaionUid = uid;
+          if (currentOblastUid) {
+            this.addChild(currentOblastUid, uid);
+          }
+        } else if (type === 'Громада') {
+          if (currentRaionUid) {
+            this.addChild(currentRaionUid, uid);
+          } else if (currentOblastUid) {
+            this.addChild(currentOblastUid, uid);
+          }
+        }
+      }
+      this.logger.log('Region hierarchy built');
+    } catch (err) {
+      this.logger.error(`Failed to load hierarchy: ${err.message}`);
+    }
+  }
+
+  private addChild(parent: number, child: number) {
+    const children = this.regionHierarchy.get(parent) || [];
+    children.push(child);
+    this.regionHierarchy.set(parent, children);
   }
 
   async syncAlerts(isInitialSync = false) {
@@ -69,15 +123,22 @@ export class AlertsService implements OnModuleInit {
       }
 
       const data = (await response.json()) as { alerts: Alert[] };
-      const currentAlerts = data.alerts;
+      const currentAlerts = data.alerts || [];
       const currentUids = new Set(currentAlerts.map((a) => a.location_uid));
       const currentByUid = new Map(currentAlerts.map((a) => [a.location_uid, a] as const));
 
-      if (!this.hasInitialSyncCompleted || isInitialSync) {
+      if (!this.hasInitialSyncCompleted) {
         this.activeAlertUids = currentUids;
         this.activeAlertsByUid = currentByUid;
         this.hasInitialSyncCompleted = true;
         this.logger.log(`Initial alerts sync completed. Active alerts: ${currentUids.size}`);
+        return;
+      }
+
+      if (isInitialSync) {
+        this.activeAlertUids = currentUids;
+        this.activeAlertsByUid = currentByUid;
+        this.logger.log(`Re-populated alerts state. Active alerts: ${currentUids.size}`);
         return;
       }
 
@@ -121,15 +182,7 @@ export class AlertsService implements OnModuleInit {
   }
 
   private async processNewAlert(alert: Alert) {
-    // 1. Find all regions affected by this alert (the region itself and all its children)
-    const affectedRegionUids = await this.getAllAffectedRegionUids(alert.location_uid);
-
-    // 2. Find users in these regions
-    const users = await this.userRepository.find({
-      where: { alertRegionUid: In(affectedRegionUids) },
-      select: ['id', 'fcmToken', 'firstName', 'lastName'],
-    });
-
+    const users = await this.findUsersInHierarchy(alert.location_uid);
     const tokens = users.map((u) => u.fcmToken).filter(Boolean) as string[];
 
     if (tokens.length > 0) {
@@ -148,13 +201,59 @@ export class AlertsService implements OnModuleInit {
       );
     }
 
-    // Let clients update dashboards in real time (if they listen to Firestore `user_sync/{userId}`).
+    // Let clients update dashboards in real time
     await this.firestoreSyncService.sendSyncSignal(users.map((u) => u.id));
   }
 
   private async getAllAffectedRegionUids(rootUid: number): Promise<number[]> {
-    // Exact match only since the hierarchy from the source CSV was unreliable.
-    return [rootUid];
+    const result: number[] = [rootUid];
+    const queue = [rootUid];
+
+    while (queue.length > 0) {
+      const parent = queue.shift()!;
+      const children = this.regionHierarchy.get(parent) || [];
+      for (const child of children) {
+        if (!result.includes(child)) {
+          result.push(child);
+          queue.push(child);
+        }
+      }
+    }
+    return result;
+  }
+
+  private async findUsersInHierarchy(alertUid: number): Promise<UserEntity[]> {
+    // 1. If alert is for parent (Oblast) -> we must notify users in all children (Raion, Hromada)
+    const descendants = await this.getAllAffectedRegionUids(alertUid);
+
+    // 2. If alert is for child (Hromada) -> we must notify users in all parents (Raion, Oblast)
+    // To do this, we find all UIDs that have this alertUid as a descendant.
+    const ancestors: number[] = [];
+    for (const [parent, children] of this.regionHierarchy.entries()) {
+      if (children.includes(alertUid)) {
+        ancestors.push(parent);
+        // Recursively find parents of this parent
+        let curr = parent;
+        let found = true;
+        while (found) {
+          found = false;
+          for (const [p, c] of this.regionHierarchy.entries()) {
+            if (c.includes(curr)) {
+              ancestors.push(p);
+              curr = p;
+              found = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    const allUids = Array.from(new Set([...descendants, ...ancestors]));
+    return this.userRepository.find({
+      where: { alertRegionUid: In(allUids) },
+      select: ['id', 'fcmToken', 'firstName', 'lastName'],
+    });
   }
 
   private mapAlertType(type: string): string {
@@ -224,11 +323,15 @@ export class AlertsService implements OnModuleInit {
   private async signalUsersInRegions(regionUids: number[]) {
     if (regionUids.length === 0) return;
 
-    const users = await this.userRepository.find({
-      where: { alertRegionUid: In(regionUids) },
-      select: ['id'],
-    });
-    const userIds = users.map((u) => u.id);
-    await this.firestoreSyncService.sendSyncSignal(userIds);
+    const allUsers: UserEntity[] = [];
+    for (const uid of regionUids) {
+      const users = await this.findUsersInHierarchy(uid);
+      allUsers.push(...users);
+    }
+
+    const uniqueUserIds = Array.from(new Set(allUsers.map((u) => u.id)));
+    if (uniqueUserIds.length > 0) {
+      await this.firestoreSyncService.sendSyncSignal(uniqueUserIds);
+    }
   }
 }

@@ -288,8 +288,8 @@ export class UsersService {
       });
     }
 
-    // Auto-resolve alertRegionUid if region or district has changed
-    if (item.region || item.district) {
+    // Auto-resolve alertRegionUid from region/district text only if client didn't send one directly
+    if (!item.alertRegionUid && (item.region || item.district)) {
       const resolvedUid = await this.resolveAlertRegionUid(item.region, item.district);
       if (resolvedUid) {
         item.alertRegionUid = resolvedUid;

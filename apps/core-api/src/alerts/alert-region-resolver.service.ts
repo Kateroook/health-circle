@@ -76,14 +76,17 @@ export class AlertRegionResolverService {
     if (!oblast) return null;
     if (!district) return oblast.uid;
 
+    // Flat name match across all region types — no parent_uid needed
     const normalizedDistrict = this.normalizeDistrictName(district);
     if (!normalizedDistrict) return oblast.uid;
 
-    const raion = await this.findRaion(oblast.uid, normalizedDistrict);
-    if (raion) return raion.uid;
+    const match = await this.alertsRegionRepository
+      .createQueryBuilder('ar')
+      .where('ar.name ILIKE :name', { name: `%${normalizedDistrict}%` })
+      .andWhere('ar.type IN (:...types)', { types: ['Район', 'Громада'] })
+      .getOne();
 
-    const hromada = await this.findHromada(normalizedDistrict, oblast.uid);
-    return hromada ? hromada.uid : oblast.uid;
+    return match ? match.uid : oblast.uid;
   }
 
   private normalizeRegionName(region?: string): string | null {
@@ -110,33 +113,5 @@ export class AlertRegionResolverService {
       .andWhere('ar.type IN (:...types)', { types: ['Область', 'Місто з спеціальним статусом'] })
       .getMany();
     return oblasts[0] ?? null;
-  }
-
-  private async findRaion(oblastUid: number, name: string): Promise<AlertsRegionEntity | null> {
-    const raions = await this.alertsRegionRepository
-      .createQueryBuilder('ar')
-      .where('ar.parentUid = :parentUid', { parentUid: oblastUid })
-      .andWhere('ar.name ILIKE :name', { name: `%${name}%` })
-      .andWhere('ar.type = :type', { type: 'Район' })
-      .getMany();
-    return raions[0] ?? null;
-  }
-
-  private async findHromada(name: string, oblastUid: number): Promise<AlertsRegionEntity | null> {
-    const hromada = await this.alertsRegionRepository
-      .createQueryBuilder('ar')
-      .where('ar.name ILIKE :name', { name: `%${name}%` })
-      .andWhere('ar.type = :type', { type: 'Громада' })
-      .andWhere('ar.parentUid = :parentUid', { parentUid: oblastUid })
-      .getOne();
-    if (hromada) return hromada;
-
-    const directHromada = await this.alertsRegionRepository
-      .createQueryBuilder('ar')
-      .where('ar.parentUid = :parentUid', { parentUid: oblastUid })
-      .andWhere('ar.name ILIKE :name', { name: `%${name}%` })
-      .andWhere('ar.type = :type', { type: 'Громада' })
-      .getOne();
-    return directHromada ?? null;
   }
 }
