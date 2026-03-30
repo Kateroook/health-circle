@@ -1064,15 +1064,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background.secondary,
     marginTop: theme.spacing[8],
   },
-  editContainer: {
-    width: "100%",
-    paddingHorizontal: theme.spacing[16],
-    marginTop: theme.spacing[8],
-  },
-  cancelButton: {
-    marginTop: theme.spacing[8],
-    alignItems: "center",
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
