@@ -4,6 +4,7 @@ import { AddJoinedAtToGroupMembers1773516929000 } from './1773516929000-add-join
 import { NotificationsSettings1773696757253 } from './1773696757253-notifications-settings';
 import { AddRegions1774169922439 } from './1774169922439-add-regions';
 import { Sync1774372858185 } from './1774372858185-sync';
+import { SeedRegionsFix17748970886980 } from './17748970886980-seed-regions-fix';
 
 export const migrations = [
   Baseline1773479991424,
@@ -12,4 +13,5 @@ export const migrations = [
   NotificationsSettings1773696757253,
   AddRegions1774169922439,
   Sync1774372858185,
+  SeedRegionsFix17748970886980,
 ];

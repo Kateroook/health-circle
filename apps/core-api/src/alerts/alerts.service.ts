@@ -89,7 +89,10 @@ export class AlertsService implements OnModuleInit {
       const endedUids = [...previousUids].filter((uid) => !currentUids.has(uid));
       const updatedUids = [...currentUids].filter((uid) => {
         if (!previousUids.has(uid)) return false;
-        return previousByUid.get(uid)?.updated_at !== currentByUid.get(uid)?.updated_at;
+        const prev = previousByUid.get(uid);
+        const curr = currentByUid.get(uid);
+        // Only signal if the actual type changed or updated_at changed significantly
+        return prev?.alert_type !== curr?.alert_type || prev?.updated_at !== curr?.updated_at;
       });
 
       if (newUids.length > 0) {
@@ -98,7 +101,6 @@ export class AlertsService implements OnModuleInit {
           const alert = currentByUid.get(uid);
           if (alert) await this.processNewAlert(alert);
         }
-        await this.signalUsersInRegions(newUids);
       }
 
       if (endedUids.length > 0) {
