@@ -208,7 +208,7 @@ export class RandomHelper {
   pick<T>(array: T[]): T {
     return faker.helpers.arrayElement(array);
   }
-
+  
   avatar(fileType?: '.png' | '.jpg' | '.jpeg') {
     const avatarsDir = path.resolve(__dirname, '../core/data/pictures/avatars');
 

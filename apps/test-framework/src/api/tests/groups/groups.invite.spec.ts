@@ -37,7 +37,7 @@ test.describe('api/groups/invite tests', async () => {
     });
 
     const oldCode = userGroup.inviteCode;
-    const regenCodeResult = await api.groups.regenerateInviteCode(userGroup.id!);
+    await api.groups.regenerateInviteCode(userGroup.id!);
     const joinResult = await secondApi.groups.joinGroup({ code: oldCode! });
     expect(joinResult.response).toHaveStatus(404);
   });

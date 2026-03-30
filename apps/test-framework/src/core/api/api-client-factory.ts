@@ -5,6 +5,7 @@ import { UserClient } from './clients/user-client';
 import { GroupClient } from './clients/group-client';
 import { ContactClient } from './clients/contact-client';
 import { DbCleaner } from '../db/db-cleaner';
+import { HealthClient } from './clients/health-client';
 
 /**
  * ApiClientFactory - фабрика для створення API клієнтів
@@ -53,6 +54,10 @@ export class ApiClientFactory {
    */
   get contacts(): ContactClient {
     return new ContactClient(this.request, this.context, this.dbCleaner);
+  }
+
+  get health(): HealthClient {
+    return new HealthClient(this.request, this.context, this.dbCleaner);
   }
 
   /**

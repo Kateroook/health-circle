@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { GroupFactory } from '../../../core/data/factories/group-factory';
 import { UserEntity } from '../../../core/types/entites/user-interface';
 import { utils } from '../../../utils/utils';
@@ -10,13 +9,13 @@ test.describe('api/groups/get-by-id tests', async () => {
   test.beforeEach('Authenticate user', async ({ api, spawnUser }) => {
     user = await spawnUser();
 
-    const loginResult = await api.auth.login({
+    await api.auth.login({
       identifier: user.email,
       password: user.password,
     });
   });
 
-  test('[GRP-011] Successful get group by existing ID', async ({ api, groupRepository }) => {
+  test('[GRP-011] Successful get group by existing ID', async ({ api }) => {
     const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
     const createGroupResult = await api.groups.createGroup(validGroup);
 
@@ -28,8 +27,8 @@ test.describe('api/groups/get-by-id tests', async () => {
     expect(group.data.owner.id).toBe(user.id);
   });
 
-  test('[GRP-012] Get group by non-existing ID', async ({ api, spawnUser }) => {
-    const nonExistingId = crypto.randomUUID();
+  test('[GRP-012] Get group by non-existing ID', async ({ api }) => {
+    const nonExistingId = utils.random.uuid();
     const group = await api.groups.getGroup(nonExistingId);
 
     expect(group.response).toHaveStatus(404);
