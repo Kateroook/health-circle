@@ -5,11 +5,14 @@ import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { ListItem } from "@/src/components/ListItem";
 import { ModalActions, ModalContainer, ModalHeader } from "@/src/components/modal";
 import { Typography } from "@/src/components/typography";
+import { RegionPicker } from "@/src/components/fields/RegionPicker";
+import { HromadaPicker } from "@/src/components/fields/HromadaPicker";
 import { theme } from "@/src/theme/theme";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
 import { Alert, Image, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import ConfirmationModal from "../../components/ConfirmationModal";
@@ -33,10 +36,14 @@ export default function SettingsScreen() {
   const [middleName, setMiddleName] = useState(user?.middleName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [phone, setPhone] = useState(user?.phone || "");
+  const [region, setRegion] = useState(user?.region || "");
+  const [district, setDistrict] = useState(user?.district || "");
+  const [alertRegionUid, setAlertRegionUid] = useState<number | null>(user?.alertRegionUid ?? null);
+  const [alertRegionName, setAlertRegionName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
 
-  // Change password state
+  // Password
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -45,22 +52,26 @@ export default function SettingsScreen() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
+  // UI state
   const [isDeleteAccountVisible, setIsDeleteAccountVisible] = useState(false);
   const [isDeleteAvatarVisible, setIsDeleteAvatarVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-
-  // Modal / section states
   const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
-  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
-
+  const [isSecurityScreenVisible, setIsSecurityScreenVisible] = useState(false);
   const [isLogoutVisible, setIsLogoutVisible] = useState(false);
+
+  // Notifications
   const [notifSettings, setNotifSettings] = useState<any>(null);
   const [notifLoading, setNotifLoading] = useState(false);
 
+  // Local-only permission toggles (no server call)
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [contactsEnabled, setContactsEnabled] = useState(false);
+
+  const insets = useSafeAreaInsets();
+
   useEffect(() => {
-    if (isNotificationsModalVisible) {
-      fetchNotifSettings();
-    }
+    if (isNotificationsModalVisible) fetchNotifSettings();
   }, [isNotificationsModalVisible]);
 
   const fetchNotifSettings = async () => {
@@ -82,7 +93,7 @@ export default function SettingsScreen() {
         method: "PUT",
         body: JSON.stringify({ [key]: value }),
       });
-    } catch (e) {
+    } catch {
       Alert.alert("Помилка", "Не вдалося зберегти налаштування");
       fetchNotifSettings();
     }
@@ -93,40 +104,26 @@ export default function SettingsScreen() {
     setMiddleName(user?.middleName || "");
     setLastName(user?.lastName || "");
     setPhone(user?.phone || "");
+    setRegion(user?.region || "");
+    setDistrict(user?.district || "");
+    setAlertRegionUid(user?.alertRegionUid ?? null);
     if (user?.id) setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
   }, [user]);
 
   const validate = () => {
     const errors: string[] = [];
-    const trimmedFirst = firstName.trim();
-    const trimmedLast = lastName.trim();
-    const trimmedMiddle = middleName.trim();
-    const trimmedPhone = phone.trim();
-
-    if (!trimmedFirst || trimmedFirst.length < 2) {
-      errors.push("Імʼя має містити не менше 2 символів");
-    } else if (trimmedFirst.length > 50) {
-      errors.push("Імʼя має містити не більше 50 символів");
+    const f = firstName.trim(),
+      l = lastName.trim(),
+      m = middleName.trim();
+    if (!f || f.length < 2) errors.push("Імʼя має містити не менше 2 символів");
+    else if (f.length > 50) errors.push("Імʼя має містити не більше 50 символів");
+    if (!l || l.length < 2) errors.push("Прізвище має містити не менше 2 символів");
+    else if (l.length > 50) errors.push("Прізвище має містити не більше 50 символів");
+    if (m) {
+      if (m.length < 2) errors.push("По батькові має містити не менше 2 символів");
+      else if (m.length > 50) errors.push("По батькові має містити не більше 50 символів");
     }
-
-    if (!trimmedLast || trimmedLast.length < 2) {
-      errors.push("Прізвище має містити не менше 2 символів");
-    } else if (trimmedLast.length > 50) {
-      errors.push("Прізвище має містити не більше 50 символів");
-    }
-
-    if (trimmedMiddle) {
-      if (trimmedMiddle.length < 2) {
-        errors.push("По батькові має містити не менше 2 символів");
-      } else if (trimmedMiddle.length > 50) {
-        errors.push("По батькові має містити не більше 50 символів");
-      }
-    }
-
-    if (!trimmedPhone) {
-      errors.push("Номер телефону є обовʼязковим");
-    }
-
+    if (!phone.trim()) errors.push("Номер телефону є обовʼязковим");
     return errors;
   };
 
@@ -136,7 +133,6 @@ export default function SettingsScreen() {
       Alert.alert("Помилка", errors.join("\n"));
       return;
     }
-
     try {
       await apiFetch("/users", {
         method: "PUT",
@@ -147,7 +143,10 @@ export default function SettingsScreen() {
             middleName: middleName.trim(),
             lastName: lastName.trim(),
             phone: phone.trim(),
+            region: region.trim(),
+            district: district.trim(),
             email: user?.email,
+            ...(alertRegionUid != null ? { alertRegionUid } : {}),
           }),
         ),
       });
@@ -166,36 +165,24 @@ export default function SettingsScreen() {
       allowsEditing: true,
       aspect: [1, 1],
     });
-
     if (!result.canceled) {
       const localUri = result.assets[0].uri;
       const filename = localUri.split("/").pop()!;
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : "image";
-
       try {
         const response = await apiUploadFile(`/users/${user?.id}/avatar`, {
           uri: localUri,
           name: filename,
           type,
         });
-        if (response?.avatarUpdatedAt) {
-          updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
-        }
+        if (response?.avatarUpdatedAt) updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
         await refreshProfile();
         Alert.alert("Успіх", "Аватар оновлено");
       } catch (e: any) {
         Alert.alert("Помилка", e?.message || "Не вдалося оновити аватар");
       }
     }
-  };
-
-  const handleDeleteAccount = () => {
-    setIsDeleteAccountVisible(true);
-  };
-
-  const handleRemoveAvatar = async () => {
-    setIsDeleteAvatarVisible(true);
   };
 
   const handleChangePassword = async () => {
@@ -237,9 +224,24 @@ export default function SettingsScreen() {
 
   const handleLocationUpdate = async () => {
     if (locationLoading) return;
-
     try {
-      await updateCurrentLocation();
+      const info = await updateCurrentLocation();
+      if (info?.region || info?.district) {
+        // Automatically save to profile
+        await apiFetch("/users", {
+          method: "PUT",
+          body: JSON.stringify(
+            cleanObj({
+              id: user?.id,
+              region: info.region,
+              district: info.district,
+              // Preserve manual hromada pick — backend won't auto-resolve if this is set
+              ...(alertRegionUid != null ? { alertRegionUid } : {}),
+            }),
+          ),
+        });
+        await refreshProfile();
+      }
       Alert.alert("Успіх", "Геолокацію оновлено");
     } catch (e: any) {
       if (e.message === "LOCATION_PERMISSION_DENIED") {
@@ -253,10 +255,9 @@ export default function SettingsScreen() {
     }
   };
 
-  const insets = useSafeAreaInsets();
-
   const fields = [
     {
+      id: "lastName",
       label: "Прізвище",
       value: lastName,
       setter: setLastName,
@@ -265,6 +266,7 @@ export default function SettingsScreen() {
       required: true,
     },
     {
+      id: "firstName",
       label: "Імʼя",
       value: firstName,
       setter: setFirstName,
@@ -273,6 +275,7 @@ export default function SettingsScreen() {
       required: true,
     },
     {
+      id: "middleName",
       label: "По батькові",
       value: middleName,
       setter: setMiddleName,
@@ -281,6 +284,7 @@ export default function SettingsScreen() {
       required: false,
     },
     {
+      id: "phone",
       label: "Номер телефону",
       value: phone,
       setter: setPhone,
@@ -288,11 +292,207 @@ export default function SettingsScreen() {
       keyboardType: "phone-pad",
       required: true,
     },
+    {
+      id: "region",
+      label: "Область",
+      value: region,
+      setter: setRegion,
+      placeholder: "Львівська область",
+      required: false,
+    },
   ];
 
+  // ─── Security Screen ─────────────────────────────
+  if (isSecurityScreenVisible) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.screenHeader}>
+          <Button
+            shape="round"
+            hierarchy="tertiary"
+            size="medium"
+            leadingIcon={
+              <MaterialCommunityIcons
+                name="arrow-left"
+                size={24}
+                color={theme.colors.content.primary}
+              />
+            }
+            onPress={() => setIsSecurityScreenVisible(false)}
+          />
+          <Typography variant="h3" tone="primary" style={styles.screenHeaderTitle}>
+            Приватність та безпека
+          </Typography>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* ДОЗВОЛИ СИСТЕМИ */}
+          <Typography variant="subtitle2" tone="secondary" style={styles.sectionLabel}>
+            ДОЗВОЛИ СИСТЕМИ
+          </Typography>
+          <View style={styles.settingsSection}>
+            <ListItem
+              layout="switch"
+              artworkSize="none"
+              label="Push-сповіщення"
+              switchValue={notifSettings?.enabled ?? isPushEnabled}
+              showDivider={true}
+              onSwitchChange={async (val) => {
+                if (val) {
+                  const granted = await requestPermission();
+                  if (!granted) {
+                    Alert.alert(
+                      "Дозвіл не отримано",
+                      "Будь ласка, дозвольте сповіщення у налаштуваннях пристрою.",
+                    );
+                    return;
+                  }
+                }
+                setPushEnabled(val);
+                updateNotifSetting("enabled", val);
+              }}
+            />
+            <ListItem
+              layout="switch"
+              artworkSize="none"
+              label="SMS-сповіщення"
+              subLabel="Може стягуватись тариф твого оператора"
+              switchValue={notifSettings?.smsFallover ?? false}
+              showDivider={true}
+              onSwitchChange={(val) => updateNotifSetting("smsFallover", val)}
+            />
+            <ListItem
+              layout="switch"
+              artworkSize="none"
+              label="Геолокація"
+              subLabel="Локація надсилається лише після натискання «Потрібна допомога»"
+              switchValue={locationEnabled}
+              showDivider={true}
+              onSwitchChange={setLocationEnabled}
+            />
+            <ListItem
+              layout="switch"
+              artworkSize="none"
+              label="Доступ до контактів"
+              switchValue={contactsEnabled}
+              showDivider={false}
+              onSwitchChange={setContactsEnabled}
+            />
+          </View>
+
+          {/* ОБЛІКОВИЙ ЗАПИС */}
+          <Typography variant="subtitle2" tone="secondary" style={styles.sectionLabel}>
+            ОБЛІКОВИЙ ЗАПИС
+          </Typography>
+          <View style={styles.settingsSection}>
+            <ListItem
+              layout="compact"
+              artworkSize="small"
+              label="Змінити пароль"
+              leadingIcon={
+                <MaterialCommunityIcons
+                  name="key-variant"
+                  size={22}
+                  color={theme.colors.content.primary}
+                />
+              }
+              onPress={() => setShowPasswordModal(true)}
+            />
+            <ListItem
+              layout="compact"
+              artworkSize="small"
+              label="Видалити акаунт"
+              leadingIcon={
+                <MaterialCommunityIcons
+                  name="delete-forever"
+                  size={22}
+                  color={theme.colors.negative}
+                />
+              }
+              onPress={() => setIsDeleteAccountVisible(true)}
+              showDivider={false}
+            />
+          </View>
+        </ScrollView>
+
+        <ModalContainer isVisible={showPasswordModal} onClose={() => setShowPasswordModal(false)}>
+          <Typography variant="h3" tone="primary" style={{ textAlign: "center" }}>
+            Змінити пароль
+          </Typography>
+          <PasswordField
+            label="Поточний пароль"
+            required
+            placeholder="Введіть поточний пароль"
+            value={oldPassword}
+            onChangeText={setOldPassword}
+          />
+          <PasswordField
+            label="Новий пароль"
+            required
+            placeholder="Новий пароль (мін. 12 символів)"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            caption="Має містити щонайменше 12 символів"
+          />
+          <PasswordField
+            label="Підтвердіть новий пароль"
+            required
+            placeholder="Повторно введіть новий пароль"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            errorMessage={passwordError || undefined}
+          />
+          <Button
+            label={passwordLoading ? "Збереження..." : "Змінити пароль"}
+            hierarchy="primary"
+            size="medium"
+            shape="rectangle"
+            onPress={handleChangePassword}
+            disabled={passwordLoading}
+            loading={passwordLoading}
+          />
+          <Button
+            label="Скасувати"
+            hierarchy="tertiary"
+            size="medium"
+            shape="rectangle"
+            onPress={() => {
+              setShowPasswordModal(false);
+              setPasswordError("");
+              setOldPassword("");
+              setNewPassword("");
+              setConfirmPassword("");
+            }}
+          />
+        </ModalContainer>
+
+        <ConfirmationModal
+          isVisible={isDeleteAccountVisible}
+          onCancel={() => setIsDeleteAccountVisible(false)}
+          onConfirm={async () => {
+            setIsDeleteAccountVisible(false);
+            try {
+              await apiFetch("/users", { method: "DELETE" });
+              logout();
+            } catch {
+              Alert.alert("Помилка", "Не вдалося видалити акаунт");
+            }
+          }}
+          title="Видалити акаунт?"
+          message="Після видалення акаунта всі кола та контакти будуть безповоротно видалені"
+          confirmText="Видалити"
+          cancelText="Назад"
+          confirmStyle="default"
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Main Settings Screen ────────────────────────
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Profile header */}
         <View style={styles.headerContainer}>
           <Avatar
             userId={user?.id ?? ""}
@@ -306,15 +506,31 @@ export default function SettingsScreen() {
           </Typography>
 
           {!isEditMode && (
-            <Button
-              label="Редагувати"
-              hierarchy="accent"
-              size="medium"
-              shape="rectangle"
-              leadingIcon={<Icon name="edit-2" size={18} color={theme.colors.content.onColor} />}
-              onPress={() => setIsEditMode(true)}
-              style={{ width: "100%" }}
-            />
+            <>
+              {(user?.region || user?.district || alertRegionName) && (
+                <View style={styles.locationView}>
+                  <MaterialCommunityIcons
+                    name="map-marker"
+                    size={16}
+                    color={theme.colors.content.secondary}
+                  />
+                  <Typography variant="body2" tone="secondary">
+                    {alertRegionName
+                      ? alertRegionName
+                      : [user?.region, user?.district].filter(Boolean).join(", ")}
+                  </Typography>
+                </View>
+              )}
+              <Button
+                label="Редагувати"
+                hierarchy="accent"
+                size="medium"
+                shape="rectangle"
+                leadingIcon={<Icon name="edit-2" size={18} color={theme.colors.content.onColor} />}
+                onPress={() => setIsEditMode(true)}
+                style={{ width: "100%" }}
+              />
+            </>
           )}
 
           {isEditMode && (
@@ -327,21 +543,20 @@ export default function SettingsScreen() {
                   shape="rectangle"
                   onPress={handlePickAvatar}
                 />
-
                 {avatarUrl && !imageError && (
                   <Button
                     label="Видалити аватар"
                     hierarchy="secondary"
                     size="small"
                     shape="rectangle"
-                    onPress={handleRemoveAvatar}
+                    onPress={() => setIsDeleteAvatarVisible(true)}
                   />
                 )}
               </View>
 
               {fields.map((field) => (
-                <View key={field.label} style={styles.block}>
-                  {field.label === "Номер телефону" ? (
+                <View key={field.id} style={styles.block}>
+                  {field.id === "phone" ? (
                     <View>
                       <Typography variant="body2" tone="primary" style={{ marginBottom: 4 }}>
                         {field.label}
@@ -359,6 +574,13 @@ export default function SettingsScreen() {
                         showClearButton={false}
                       />
                     </View>
+                  ) : field.id === "region" ? (
+                    <RegionPicker
+                      label={field.label}
+                      value={field.value}
+                      onSelect={field.setter}
+                      placeholder={field.placeholder}
+                    />
                   ) : (
                     <TextField
                       label={field.label}
@@ -373,6 +595,18 @@ export default function SettingsScreen() {
                 </View>
               ))}
 
+              <View style={styles.block}>
+                <HromadaPicker
+                  label="Громада / Населений пункт (для тривог)"
+                  value={alertRegionName}
+                  onSelect={(uid, name) => {
+                    setAlertRegionUid(uid);
+                    setAlertRegionName(name);
+                  }}
+                  placeholder="Оберіть громаду для точних тривог"
+                />
+              </View>
+
               <Button
                 label="Зберегти"
                 hierarchy="primary"
@@ -381,7 +615,6 @@ export default function SettingsScreen() {
                 onPress={handleSave}
                 style={styles.save}
               />
-
               <Button
                 label="Скасувати"
                 hierarchy="secondary"
@@ -400,7 +633,7 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* 1. Сповіщення */}
+        {/* Notifications */}
         <View style={styles.settingsSection}>
           <ListItem
             layout="compact"
@@ -414,60 +647,25 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* 2. Приватність та безпека */}
+        {/* Security */}
         <View style={styles.settingsSection}>
-          <TouchableOpacity
-            style={styles.settingsRow}
-            onPress={() => setIsSecurityOpen(!isSecurityOpen)}
-          >
-            <MaterialCommunityIcons
-              name="shield-lock"
-              size={24}
-              color={theme.colors.content.primary}
-            />
-            <Typography variant="subtitle1" tone="primary" style={styles.settingsRowLabel}>
-              Приватність та безпека
-            </Typography>
-            <MaterialCommunityIcons
-              name={isSecurityOpen ? "chevron-up" : "chevron-down"}
-              size={28}
-              color={theme.colors.content.primary}
-            />
-          </TouchableOpacity>
-
-          {isSecurityOpen && (
-            <>
-              <View style={styles.separator} />
-              <ListItem
-                layout="compact"
-                artworkSize="small"
-                label="Змінити пароль"
-                leadingIcon={
-                  <MaterialCommunityIcons
-                    name="key-variant"
-                    size={22}
-                    color={theme.colors.content.primary}
-                  />
-                }
-                onPress={() => setShowPasswordModal(true)}
+          <ListItem
+            layout="compact"
+            artworkSize="small"
+            label="Приватність та безпека"
+            leadingIcon={
+              <MaterialCommunityIcons
+                name="shield-lock"
+                size={24}
+                color={theme.colors.content.primary}
               />
-              <ListItem
-                layout="compact"
-                artworkSize="small"
-                label="Видалити акаунт"
-                leadingIcon={
-                  <MaterialCommunityIcons
-                    name="delete-forever"
-                    size={22}
-                    color={theme.colors.negative}
-                  />
-                }
-                onPress={handleDeleteAccount}
-                showDivider={false}
-              />
-            </>
-          )}
+            }
+            onPress={() => setIsSecurityScreenVisible(true)}
+            showDivider={false}
+          />
         </View>
+
+        {/* Location */}
         <View style={styles.settingsSection}>
           <ListItem
             layout="compact"
@@ -485,7 +683,8 @@ export default function SettingsScreen() {
             showDivider={false}
           />
         </View>
-        {/* 3. Вихід */}
+
+        {/* Logout */}
         <Button
           label="Вихід"
           hierarchy="tertiary"
@@ -500,23 +699,9 @@ export default function SettingsScreen() {
             />
           }
           onPress={() => setIsLogoutVisible(true)}
-          style={styles.logoutButton}
+          style={[styles.logoutButton, { justifyContent: "flex-start" }]}
         />
       </ScrollView>
-
-      <ConfirmationModal
-        isVisible={isLogoutVisible}
-        onCancel={() => setIsLogoutVisible(false)}
-        onConfirm={async () => {
-          setIsLogoutVisible(false);
-          logout();
-        }}
-        title="Вийти"
-        message="Ти впевнений, що хочеш вийти?"
-        confirmText="Вийти"
-        cancelText="Назад"
-        confirmStyle="default"
-      />
 
       {/* Change Password Modal */}
       <ModalContainer
@@ -675,7 +860,6 @@ export default function SettingsScreen() {
               style={{ position: "absolute", left: theme.spacing[16] }}
             />
           </View>
-
           <ScrollView
             style={{ flex: 1 }}
             contentContainerStyle={notifStyles.scrollContent}
@@ -756,6 +940,20 @@ export default function SettingsScreen() {
         </View>
       </Modal>
 
+      {/* Confirmation modals */}
+      <ConfirmationModal
+        isVisible={isLogoutVisible}
+        onCancel={() => setIsLogoutVisible(false)}
+        onConfirm={async () => {
+          setIsLogoutVisible(false);
+          logout();
+        }}
+        title="Вийти"
+        message="Ти впевнений, що хочеш вийти?"
+        confirmText="Вийти"
+        cancelText="Назад"
+        confirmStyle="default"
+      />
       <ConfirmationModal
         isVisible={isDeleteAccountVisible}
         onCancel={() => setIsDeleteAccountVisible(false)}
@@ -764,14 +962,15 @@ export default function SettingsScreen() {
           try {
             await apiFetch("/users", { method: "DELETE" });
             logout();
-          } catch (e) {
+          } catch {
             Alert.alert("Помилка", "Не вдалося видалити акаунт");
           }
         }}
         title="Видалити акаунт?"
-        message="Цю дію не можна скасувати."
+        message="Після видалення акаунта всі кола та контакти будуть безповоротно видалені"
         confirmText="Видалити"
-        cancelText="Скасувати"
+        cancelText="Назад"
+        confirmStyle="default"
       />
       <ConfirmationModal
         isVisible={isDeleteAvatarVisible}
@@ -782,7 +981,7 @@ export default function SettingsScreen() {
             await apiFetch(`/users/${user?.id}/avatar`, { method: "DELETE" });
             updateUser({ avatarUpdatedAt: undefined });
             setAvatarUrl(null);
-          } catch (e) {
+          } catch {
             Alert.alert("Помилка", "Не вдалося видалити аватар");
           }
         }}
@@ -798,8 +997,23 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: theme.spacing[16],
     backgroundColor: theme.colors.background.primary,
+  },
+  scrollContent: {
+    paddingHorizontal: theme.spacing[16],
+    paddingBottom: 120,
+  },
+  screenHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[8],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.opaque,
+    gap: theme.spacing[8],
+  },
+  screenHeaderTitle: {
+    flex: 1,
   },
   headerContainer: {
     alignItems: "center",
@@ -809,36 +1023,34 @@ const styles = StyleSheet.create({
   avatarButtons: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 16,
-    marginBottom: 16,
+    gap: theme.spacing[16],
+    marginBottom: theme.spacing[16],
     width: "100%",
   },
   block: { marginBottom: theme.spacing[16] },
   profileName: {
     marginTop: theme.spacing[8],
-    marginBottom: theme.spacing[32],
+    marginBottom: theme.spacing[8],
     textAlign: "center",
   },
-  save: {
-    marginTop: theme.spacing[8],
+  locationView: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing[4],
+    marginBottom: theme.spacing[32],
   },
+  save: { marginTop: theme.spacing[8] },
+  editContainer: {
+    width: "100%",
+    marginTop: theme.spacing[8],
+  },
+  cancelButton: { marginTop: theme.spacing[8] },
   settingsSection: {
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.radius.lg,
     overflow: "hidden",
     marginBottom: theme.spacing[8],
-  },
-  settingsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: theme.spacing[10],
-    paddingHorizontal: theme.spacing[16],
-    gap: theme.spacing[16],
-    backgroundColor: theme.colors.background.secondary,
-  },
-  settingsRowLabel: {
-    flex: 1,
   },
   separator: {
     height: 1,

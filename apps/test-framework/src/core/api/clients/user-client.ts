@@ -38,19 +38,28 @@ export class UserClient extends BaseClient {
    * PUT /api/users/{id}/avatar
    * Завантажити аватар користувача
    */
-  public async uploadUserAvatar(id: string, file: Buffer | Blob): Promise<ApiResult<UploadUserAvatarResponse>> {
-    const formData = new FormData();
+  public async uploadUserAvatar(
+    id: string,
+    file: { buffer: Buffer; filename: string; mimeType: string },
+  ): Promise<ApiResult<UploadUserAvatarResponse>> {
+    const boundary = `----FormBoundary${Date.now()}`;
 
-    if (Buffer.isBuffer(file)) {
-      const uint8 = new Uint8Array(file);
-      formData.append('file', new Blob([uint8]));
-    } else {
-      formData.append('file', file);
-    }
+    const body = Buffer.concat([
+      Buffer.from(
+        `--${boundary}\r\n` +
+          `Content-Disposition: form-data; name="file"; filename="${file.filename}"\r\n` +
+          `Content-Type: ${file.mimeType}\r\n\r\n`,
+      ),
+      file.buffer,
+      Buffer.from(`\r\n--${boundary}--\r\n`),
+    ]);
 
     return await this.put<UploadUserAvatarResponse>(`/api/users/${id}/avatar`, {
-      multipart: formData,
-      headers: {}, // Без Content-Type для multipart
+      data: body,
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        accept: 'application/json',
+      },
     });
   }
 
@@ -76,7 +85,15 @@ export class UserClient extends BaseClient {
    */
   public async createUser(data: CreateUserRequest): Promise<ApiResult<CreateUserResponse>> {
     return test.step(`Create user. FirstName: "${data.firstName}", LastName: "${data.lastName}", Phone: "${data.phone}", Email: "${data.email}"`, async () => {
-      const result = await this.post<CreateUserResponse>('/api/users', { data });
+      const result = await this.post<CreateUserResponse>('/api/users', {
+        data: {
+          firstName: data.firstName,
+          middleName: data.middleName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+        },
+      });
       if (result.data && result.data.id) {
         this.dbCleaner?.add('users', result.data.id);
       }
@@ -89,7 +106,16 @@ export class UserClient extends BaseClient {
    * Модифікувати користувача
    */
   public async modifyUser(data: ModifyUserRequest): Promise<ApiResult<ModifyUserResponse>> {
-    return await this.put<ModifyUserResponse>('/api/users', { data });
+    return await this.put<ModifyUserResponse>('/api/users', {
+      data: {
+        id: data.id,
+        firstName: data.firstName,
+        middleName: data.middleName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+      },
+    });
   }
 
   /**

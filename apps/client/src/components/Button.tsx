@@ -27,6 +27,7 @@ interface ButtonProps {
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
+  testId?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -41,6 +42,7 @@ export const Button: React.FC<ButtonProps> = ({
   loading = false,
   style,
   textStyle,
+  testId,
 }) => {
   const [internalLoading, setInternalLoading] = useState(false);
   const isLoading = loading || internalLoading;
@@ -139,6 +141,8 @@ export const Button: React.FC<ButtonProps> = ({
     <Pressable
       onPress={handlePress}
       disabled={disabled || isLoading}
+      testID={testId}
+      accessibilityLabel={testId}
       style={({ pressed }) => [
         ...containerStyles,
         pressed && !disabled && !isLoading && styles.pressed,

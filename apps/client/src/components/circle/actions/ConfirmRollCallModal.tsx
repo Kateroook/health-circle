@@ -30,10 +30,7 @@ export const ConfirmRollCallModal: React.FC<RollCallModalProps> = ({
     <ModalContainer isVisible={isVisible} onClose={onCancel}>
       <ModalHeader title={title} description={description} />
       <View style={styles.rcMessageBubble}>
-        <Avatar
-          source={require("@/src/assets/images/Logo-nobackground.png")}
-          size="xs"
-        />
+        <Avatar source={require("@/src/assets/images/Logo-nobackground.png")} size="xs" />
         <View style={styles.rcMessageTextContainer}>
           <Typography
             variant="body2"

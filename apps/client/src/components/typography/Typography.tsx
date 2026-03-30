@@ -39,6 +39,7 @@ export interface TypographyProps extends Omit<RNTextProps, "style"> {
   tone?: TextTone;
   weight?: TextWeight;
   style?: StyleProp<TextStyle>;
+  testId?: string;
 }
 
 const FONT_FAMILY_BY_CONTEXT: Record<FontContext, Record<TextWeight, string>> = {
@@ -144,6 +145,7 @@ export const Typography: React.FC<TypographyProps> = ({
   weight,
   style,
   children,
+  testId,
   ...rest
 }) => {
   const baseStyle = baseVariantStyles[variant];
@@ -170,6 +172,8 @@ export const Typography: React.FC<TypographyProps> = ({
     <RNText
       {...rest}
       style={StyleSheet.flatten([baseStyle, fontStyle, colorStyle, spacingStyle, style])}
+      testID={testId}
+      accessibilityLabel={testId}
     >
       {children}
     </RNText>

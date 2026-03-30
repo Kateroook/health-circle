@@ -1,3 +1,4 @@
+import { AlertsRegionEntity } from 'src/alerts/entities/alerts-region.entity';
 import { UserNotificationSettingsEntity } from 'src/users/entities/user-notification-settings.entity';
 
 import { ConfirmationCodeEntity } from '../../confirmations/entities/confirmation-code.entity';
@@ -31,4 +32,5 @@ export const entities = [
   GroupBlockListEntity,
   SystemLogEntity,
   UserNotificationSettingsEntity,
+  AlertsRegionEntity,
 ];

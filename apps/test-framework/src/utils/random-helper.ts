@@ -1,5 +1,7 @@
 import { faker } from '@faker-js/faker';
-import { nanoid, customAlphabet } from 'nanoid';
+import * as fs from 'fs';
+import { customAlphabet, nanoid } from 'nanoid';
+import * as path from 'path';
 
 export class RandomHelper {
   public static readonly CHARSETS = {
@@ -8,6 +10,10 @@ export class RandomHelper {
     NUMBERS: '0123456789',
     SPECIAL: '!@#$%^&*()_+~`|}{[]:;?><,./-=',
   };
+
+  uuid() {
+    return faker.string.uuid();
+  }
 
   shortId(length = 8) {
     return nanoid(length);
@@ -188,7 +194,7 @@ export class RandomHelper {
   }
 
   groupName() {
-    return `${faker.company.name}`;
+    return faker.company.name();
   }
 
   alias({ count = 1 }) {
@@ -201,5 +207,36 @@ export class RandomHelper {
 
   pick<T>(array: T[]): T {
     return faker.helpers.arrayElement(array);
+  }
+
+  avatar(fileType?: '.png' | '.jpg' | '.jpeg') {
+    const avatarsDir = path.resolve(__dirname, '../core/data/pictures/avatars');
+
+    const allFiles = fs.readdirSync(avatarsDir);
+
+    const filtered = fileType
+      ? allFiles.filter((f) => f.toLowerCase().endsWith(fileType))
+      : allFiles.filter((f) => /\.(png|jpe?g)$/i.test(f));
+
+    if (!filtered.length) {
+      throw new Error(`No files found in ${avatarsDir}${fileType ? ` with extension ${fileType}` : ''}`);
+    }
+
+    const filename = this.pick(filtered);
+    const filepath = path.join(avatarsDir, filename);
+    const buffer = fs.readFileSync(filepath);
+    const ext = path.extname(filename).toLowerCase();
+
+    const mimeTypes: Record<string, string> = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+    };
+
+    return {
+      buffer,
+      filename,
+      mimeType: mimeTypes[ext] ?? 'application/octet-stream',
+    };
   }
 }

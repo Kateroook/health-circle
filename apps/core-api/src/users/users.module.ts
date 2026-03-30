@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AlertsModule } from 'src/alerts/alerts.module';
 import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constraint';
 import { ConfirmationsModule } from 'src/confirmations/confirmations.module';
 import { ContactEntity } from 'src/contacts/entities/contact.entity';
@@ -35,6 +36,7 @@ import { UsersService } from './users.service';
     ConfirmationsModule,
     ExternalFilesModule,
     NotificationsModule,
+    AlertsModule,
   ],
   providers: [UsersService, UserUniqueConstraint, SessionActivityService, StatusUpdateQueueWorker],
   controllers: [UsersController],

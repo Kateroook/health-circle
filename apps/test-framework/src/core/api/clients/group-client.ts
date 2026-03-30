@@ -38,7 +38,7 @@ export class GroupClient extends BaseClient {
    */
   public async createGroup(data: CreateGroupRequest): Promise<ApiResult<CreateGroupResponse>> {
     const result = await this.post<CreateGroupResponse>('/api/groups', {
-      data,
+      data: { name: data.name },
     });
 
     // Автоматично зберігаємо ID створеної групи

@@ -165,7 +165,7 @@ export class AuthClient extends BaseClient {
    * Хелпер: швидкий логін з автоматичним збереженням userId
    */
   public async quickLogin(identifier: string, password: string): Promise<ApiResult<LoginResponse>> {
-    const result = await this.login({ identifier: identifier, password });
+    const result = await this.login({ identifier: identifier, password: password });
 
     // Зберігаємо userId якщо логін успішний
     if (result.response.ok()) {
