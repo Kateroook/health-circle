@@ -30,6 +30,7 @@ export interface Member {
   longitude?: number;
   region?: string;
   district?: string;
+  phone?: string;
   lastStatusUpdate?: string;
 }
 
