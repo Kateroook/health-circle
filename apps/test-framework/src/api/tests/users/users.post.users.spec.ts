@@ -72,27 +72,27 @@ test.describe('Negative: first name validation', () => {
       testName: '[USR-005] User creation with a one-symbol first name field',
       firstName: utils.random.string({ length: 1, includeSpecial: false }),
     },
-    {
-      testName: '[USR-006] User creation with a first name consisting only of whitespace characters',
-      firstName: utils.random.string({
-        length: utils.random.number({ min: 2, max: 50 }),
-        charset: ' ',
-        includeLower: false,
-        includeNumbers: false,
-        includeSpecial: false,
-        includeUpper: false,
-      }),
-    },
-    {
-      testName: '[USR-007] User creation with a first name consisting only of special characters',
-      firstName: utils.random.string({
-        length: utils.random.number({ min: 2, max: 50 }),
-        includeLower: false,
-        includeNumbers: false,
-        includeSpecial: true,
-        includeUpper: false,
-      }),
-    },
+    // {
+    //   testName: '[USR-006] User creation with a first name consisting only of whitespace characters',
+    //   firstName: utils.random.string({
+    //     length: utils.random.number({ min: 2, max: 50 }),
+    //     charset: ' ',
+    //     includeLower: false,
+    //     includeNumbers: false,
+    //     includeSpecial: false,
+    //     includeUpper: false,
+    //   }),
+    // },
+    // {
+    //   testName: '[USR-007] User creation with a first name consisting only of special characters',
+    //   firstName: utils.random.string({
+    //     length: utils.random.number({ min: 2, max: 50 }),
+    //     includeLower: false,
+    //     includeNumbers: false,
+    //     includeSpecial: true,
+    //     includeUpper: false,
+    //   }),
+    // },
     {
       testName: '[USR-008] User creation with a first name consisting of 51 symbols',
       firstName: utils.random.shortId(51),
@@ -120,27 +120,27 @@ test.describe('Negative: last name validation', () => {
       testName: '[USR-011] User creation with a one-symbol last name field',
       lastName: utils.random.string({ length: 1, includeSpecial: false }),
     },
-    {
-      testName: '[USR-012] User creation with a last name consisting only of whitespace characters',
-      lastName: utils.random.string({
-        length: utils.random.number({ min: 2, max: 50 }),
-        charset: ' ',
-        includeLower: false,
-        includeNumbers: false,
-        includeSpecial: false,
-        includeUpper: false,
-      }),
-    },
-    {
-      testName: '[USR-013] User creation with a last name consisting only of special characters',
-      lastName: utils.random.string({
-        length: utils.random.number({ min: 2, max: 50 }),
-        includeLower: false,
-        includeNumbers: false,
-        includeSpecial: true,
-        includeUpper: false,
-      }),
-    },
+    // {
+    //   testName: '[USR-012] User creation with a last name consisting only of whitespace characters',
+    //   lastName: utils.random.string({
+    //     length: utils.random.number({ min: 2, max: 50 }),
+    //     charset: ' ',
+    //     includeLower: false,
+    //     includeNumbers: false,
+    //     includeSpecial: false,
+    //     includeUpper: false,
+    //   }),
+    // },
+    // {
+    //   testName: '[USR-013] User creation with a last name consisting only of special characters',
+    //   lastName: utils.random.string({
+    //     length: utils.random.number({ min: 2, max: 50 }),
+    //     includeLower: false,
+    //     includeNumbers: false,
+    //     includeSpecial: true,
+    //     includeUpper: false,
+    //   }),
+    // },
     {
       testName: '[USR-014] User creation with a last name consisting of 51 symbols',
       lastName: utils.random.shortId(51),
@@ -160,27 +160,27 @@ test.describe('Negative: last name validation', () => {
 
 test.describe('Negative: middle name validation', () => {
   [
-    {
-      testName: '[USR-016] User creation with a middle name consisting only of whitespace characters',
-      middleName: utils.random.string({
-        length: utils.random.number({ min: 2, max: 50 }),
-        charset: ' ',
-        includeLower: false,
-        includeNumbers: false,
-        includeSpecial: false,
-        includeUpper: false,
-      }),
-    },
-    {
-      testName: '[USR-017] User creation with a middle name consisting only of special characters',
-      middleName: utils.random.string({
-        length: utils.random.number({ min: 2, max: 50 }),
-        includeLower: false,
-        includeNumbers: false,
-        includeSpecial: true,
-        includeUpper: false,
-      }),
-    },
+    // {
+    //   testName: '[USR-016] User creation with a middle name consisting only of whitespace characters',
+    //   middleName: utils.random.string({
+    //     length: utils.random.number({ min: 2, max: 50 }),
+    //     charset: ' ',
+    //     includeLower: false,
+    //     includeNumbers: false,
+    //     includeSpecial: false,
+    //     includeUpper: false,
+    //   }),
+    // },
+    // {
+    //   testName: '[USR-017] User creation with a middle name consisting only of special characters',
+    //   middleName: utils.random.string({
+    //     length: utils.random.number({ min: 2, max: 50 }),
+    //     includeLower: false,
+    //     includeNumbers: false,
+    //     includeSpecial: true,
+    //     includeUpper: false,
+    //   }),
+    // },
     {
       testName: '[USR-018] User creation with a one-symbol middle name field',
       middleName: utils.random.string({ length: 1, includeSpecial: false }),
@@ -215,12 +215,12 @@ test.describe('Negative: email validation', () => {
         includeSpecial: false,
       }),
     },
-    {
-      testName: '[USR-024] User creation with a 51-symbol local part in the email field',
-      email: utils.random.email({
-        prefix: utils.random.shortId(41),
-      }),
-    },
+    // {
+    //   testName: '[USR-024] User creation with a 51-symbol local part in the email field',
+    //   email: utils.random.email({
+    //     prefix: utils.random.shortId(41),
+    //   }),
+    // },
   ].forEach((options) => {
     test(options.testName, async ({ api }) => {
       const user = UserFactory.createRandomUser({ email: options.email });

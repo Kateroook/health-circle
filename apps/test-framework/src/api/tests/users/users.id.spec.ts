@@ -1,20 +1,20 @@
+import { UserEntity } from '@core/types/entites/user-interface';
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe('Getting an authorized user by id ', () => {
-  let user: any;
-  let loginUser: any;
+  let user: UserEntity;
 
   test.beforeEach(async ({ api, spawnUser }) => {
     user = await spawnUser({ middleName: utils.random.middleName() });
-    loginUser = await api.auth.quickLogin(user.email, user.password);
+    await api.auth.quickLogin(user.email, user.password);
   });
 
   test('[USR-032] Getting an existing user by id', async ({ api }) => {
-    const userId = await api.getContext().userId!;
+    const userId = api.getContext().userId!;
     const response = await api.users.getUser(userId);
-    expect((await response).response).toHaveStatus(200);
-    expect((await response).data).toMatchObject({
+    expect(response.response).toHaveStatus(200);
+    expect(response.data).toMatchObject({
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -23,7 +23,7 @@ test.describe('Getting an authorized user by id ', () => {
       email: user.email.toLowerCase(),
       phone: user.phone,
     });
-    await expect(response.data).not.toHaveProperty('password');
+    expect(response.data).not.toHaveProperty('password');
   });
 
   //має повертати 404
@@ -39,7 +39,7 @@ test.describe('Getting an authorized user by id ', () => {
     expect(response.response).toHaveStatus(400);
   });
 
-  test('[USR-035] Getting a user by id without authorizaion', async ({ api }) => {
+  test('[USR-035] Getting a user by id without authorization', async ({ api }) => {
     api.auth.clearTokens();
     const response = await api.users.getUser(user.id!);
     expect(response.response).toHaveStatus(401);
