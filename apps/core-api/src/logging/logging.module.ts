@@ -15,24 +15,27 @@ import { PostgresStream } from './postgres.stream';
         const pino = require('pino');
 
         const logLevel = configService.get<string>('LOG_LEVEL') || 'info';
+        const isDbLoggingEnabled = configService.get<string>('LOG_DB_ENABLED') !== 'false';
 
-        const destinationStreams: any[] = [];
+        const destinationStreams: unknown[] = [];
 
         // Postgres Stream
-        destinationStreams.push({
-          stream: new PostgresStream({
-            connection: {
-              host: configService.getOrThrow<string>('LOG_DB_HOST'),
-              port: configService.getOrThrow<number>('LOG_DB_PORT'),
-              user: configService.getOrThrow<string>('LOG_DB_USER'),
-              password: configService.getOrThrow<string>('LOG_DB_PASS'),
-              database: configService.getOrThrow<string>('LOG_DB_NAME'),
-              ssl: configService.get<string>('LOG_DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
-            },
-            tableName: configService.getOrThrow<string>('LOG_DB_TABLE'),
-          }),
-          level: logLevel,
-        });
+        if (isDbLoggingEnabled) {
+          destinationStreams.push({
+            stream: new PostgresStream({
+              connection: {
+                host: configService.getOrThrow<string>('LOG_DB_HOST'),
+                port: configService.getOrThrow<number>('LOG_DB_PORT'),
+                user: configService.getOrThrow<string>('LOG_DB_USER'),
+                password: configService.getOrThrow<string>('LOG_DB_PASS'),
+                database: configService.getOrThrow<string>('LOG_DB_NAME'),
+                ssl: configService.get<string>('LOG_DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
+              },
+              tableName: configService.getOrThrow<string>('LOG_DB_TABLE'),
+            }),
+            level: logLevel,
+          });
+        }
 
         // Stdout Stream
         if (configService.get<string>('LOG_STD_OUT') === 'true') {
@@ -49,11 +52,13 @@ import { PostgresStream } from './postgres.stream';
           }
         }
 
+        const stream = destinationStreams.length > 0 ? pino.multistream(destinationStreams) : undefined;
+
         return {
           pinoHttp: {
             name: 'health-circle-core-api',
             level: logLevel,
-            stream: pino.multistream(destinationStreams),
+            ...(stream ? { stream } : {}),
             autoLogging: true,
             serializers: {
               req: (req) => ({

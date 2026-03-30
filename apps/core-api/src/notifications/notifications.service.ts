@@ -1,13 +1,21 @@
-import { Injectable, Logger } from '@nestjs/common';
-import * as admin from 'firebase-admin';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import type { messaging } from 'firebase-admin';
 
+import { FIREBASE_MESSAGING } from '../firebase/firebase.constants';
 import { NotificationTemplates, NotificationType } from './notification-types';
 
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  async sendMulticastByType(tokens: string[], type: NotificationType, templateData: any, extraData?: Record<string, string>) {
+  constructor(@Inject(FIREBASE_MESSAGING) private readonly firebaseMessaging: messaging.Messaging) {}
+
+  async sendMulticastByType(
+    tokens: string[],
+    type: NotificationType,
+    templateData: Record<string, unknown>,
+    extraData?: Record<string, string>,
+  ) {
     if (!tokens.length) return;
 
     const template = NotificationTemplates[type];
@@ -30,7 +38,7 @@ export class NotificationsService {
     if (!tokens.length) return;
 
     try {
-      const response = await admin.messaging().sendEachForMulticast({
+      const response = await this.firebaseMessaging.sendEachForMulticast({
         tokens,
         notification: { title, body },
         android: {
@@ -53,9 +61,12 @@ export class NotificationsService {
 
       this.logger.log(`Notifications sent: ${response.successCount} success, ${response.failureCount} failed`);
       if (response.failureCount > 0) {
+        const maskToken = (token: string) => `${token.slice(0, 6)}…${token.slice(-4)}`;
         response.responses.forEach((resp, idx) => {
           if (!resp.success) {
-            this.logger.error(`Failed to send notification to token ${tokens[idx]}: ${resp.error?.message || 'Unknown error'}`);
+            this.logger.error(
+              `Failed to send notification to token ${maskToken(tokens[idx] ?? '')}: ${resp.error?.message || 'Unknown error'}`,
+            );
           }
         });
       }

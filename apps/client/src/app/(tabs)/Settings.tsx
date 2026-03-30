@@ -3,12 +3,13 @@ import { Button } from "@/src/components/Button";
 import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { ListItem } from "@/src/components/ListItem";
+import { ModalContainer } from "@/src/components/modal/ModalContainer";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import { Alert, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import ConfirmationModal from "../../components/ConfirmationModal";
@@ -35,7 +36,7 @@ export default function SettingsScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
 
-  // Change password state
+  // Password
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -43,22 +44,26 @@ export default function SettingsScreen() {
   const [passwordError, setPasswordError] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
 
+  // UI state
   const [isDeleteAccountVisible, setIsDeleteAccountVisible] = useState(false);
   const [isDeleteAvatarVisible, setIsDeleteAvatarVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-
-  // Modal / section states
   const [isNotificationsModalVisible, setIsNotificationsModalVisible] = useState(false);
-  const [isSecurityOpen, setIsSecurityOpen] = useState(false);
-
+  const [isSecurityScreenVisible, setIsSecurityScreenVisible] = useState(false);
   const [isLogoutVisible, setIsLogoutVisible] = useState(false);
+
+  // Notifications
   const [notifSettings, setNotifSettings] = useState<any>(null);
   const [notifLoading, setNotifLoading] = useState(false);
 
+  // Local-only permission toggles (no server call)
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [contactsEnabled, setContactsEnabled] = useState(false);
+
+  const insets = useSafeAreaInsets();
+
   useEffect(() => {
-    if (isNotificationsModalVisible) {
-      fetchNotifSettings();
-    }
+    if (isNotificationsModalVisible) fetchNotifSettings();
   }, [isNotificationsModalVisible]);
 
   const fetchNotifSettings = async () => {
@@ -80,7 +85,7 @@ export default function SettingsScreen() {
         method: "PUT",
         body: JSON.stringify({ [key]: value }),
       });
-    } catch (e) {
+    } catch {
       Alert.alert("Помилка", "Не вдалося зберегти налаштування");
       fetchNotifSettings();
     }
@@ -96,35 +101,18 @@ export default function SettingsScreen() {
 
   const validate = () => {
     const errors: string[] = [];
-    const trimmedFirst = firstName.trim();
-    const trimmedLast = lastName.trim();
-    const trimmedMiddle = middleName.trim();
-    const trimmedPhone = phone.trim();
-
-    if (!trimmedFirst || trimmedFirst.length < 2) {
-      errors.push("Імʼя має містити не менше 2 символів");
-    } else if (trimmedFirst.length > 50) {
-      errors.push("Імʼя має містити не більше 50 символів");
+    const f = firstName.trim(),
+      l = lastName.trim(),
+      m = middleName.trim();
+    if (!f || f.length < 2) errors.push("Імʼя має містити не менше 2 символів");
+    else if (f.length > 50) errors.push("Імʼя має містити не більше 50 символів");
+    if (!l || l.length < 2) errors.push("Прізвище має містити не менше 2 символів");
+    else if (l.length > 50) errors.push("Прізвище має містити не більше 50 символів");
+    if (m) {
+      if (m.length < 2) errors.push("По батькові має містити не менше 2 символів");
+      else if (m.length > 50) errors.push("По батькові має містити не більше 50 символів");
     }
-
-    if (!trimmedLast || trimmedLast.length < 2) {
-      errors.push("Прізвище має містити не менше 2 символів");
-    } else if (trimmedLast.length > 50) {
-      errors.push("Прізвище має містити не більше 50 символів");
-    }
-
-    if (trimmedMiddle) {
-      if (trimmedMiddle.length < 2) {
-        errors.push("По-батькові має містити не менше 2 символів");
-      } else if (trimmedMiddle.length > 50) {
-        errors.push("По-батькові має містити не більше 50 символів");
-      }
-    }
-
-    if (!trimmedPhone) {
-      errors.push("Номер телефону є обовʼязковим");
-    }
-
+    if (!phone.trim()) errors.push("Номер телефону є обовʼязковим");
     return errors;
   };
 
@@ -134,7 +122,6 @@ export default function SettingsScreen() {
       Alert.alert("Помилка", errors.join("\n"));
       return;
     }
-
     try {
       await apiFetch("/users", {
         method: "PUT",
@@ -164,36 +151,24 @@ export default function SettingsScreen() {
       allowsEditing: true,
       aspect: [1, 1],
     });
-
     if (!result.canceled) {
       const localUri = result.assets[0].uri;
       const filename = localUri.split("/").pop()!;
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : "image";
-
       try {
         const response = await apiUploadFile(`/users/${user?.id}/avatar`, {
           uri: localUri,
           name: filename,
           type,
         });
-        if (response?.avatarUpdatedAt) {
-          updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
-        }
+        if (response?.avatarUpdatedAt) updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
         await refreshProfile();
         Alert.alert("Успіх", "Аватар оновлено");
       } catch (e: any) {
         Alert.alert("Помилка", e?.message || "Не вдалося оновити аватар");
       }
     }
-  };
-
-  const handleDeleteAccount = () => {
-    setIsDeleteAccountVisible(true);
-  };
-
-  const handleRemoveAvatar = async () => {
-    setIsDeleteAvatarVisible(true);
   };
 
   const handleChangePassword = async () => {
@@ -210,7 +185,6 @@ export default function SettingsScreen() {
       setPasswordError("Новий пароль та підтвердження не співпадають");
       return;
     }
-
     setPasswordLoading(true);
     try {
       await apiFetch("/auth/change-password", {
@@ -235,7 +209,6 @@ export default function SettingsScreen() {
 
   const handleLocationUpdate = async () => {
     if (locationLoading) return;
-
     try {
       await updateCurrentLocation();
       Alert.alert("Успіх", "Геолокацію оновлено");
@@ -250,8 +223,6 @@ export default function SettingsScreen() {
       }
     }
   };
-
-  const insets = useSafeAreaInsets();
 
   const fields = [
     {
@@ -271,10 +242,10 @@ export default function SettingsScreen() {
       required: true,
     },
     {
-      label: "По-батькові",
+      label: "По батькові",
       value: middleName,
       setter: setMiddleName,
-      placeholder: "Введіть по-батькові",
+      placeholder: "Введіть по батькові",
       maxLength: 50,
       required: false,
     },
@@ -288,15 +259,203 @@ export default function SettingsScreen() {
     },
   ];
 
+  // ─── Security Screen ─────────────────────────────
+  if (isSecurityScreenVisible) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.screenHeader}>
+          <Button
+            shape="round"
+            hierarchy="tertiary"
+            size="medium"
+            leadingIcon={
+              <MaterialCommunityIcons
+                name="arrow-left"
+                size={24}
+                color={theme.colors.content.primary}
+              />
+            }
+            onPress={() => setIsSecurityScreenVisible(false)}
+          />
+          <Typography variant="h3" tone="primary" style={styles.screenHeaderTitle}>
+            Приватність та безпека
+          </Typography>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* ДОЗВОЛИ СИСТЕМИ */}
+          <Typography variant="subtitle2" tone="secondary" style={styles.sectionLabel}>
+            ДОЗВОЛИ СИСТЕМИ
+          </Typography>
+          <View style={styles.settingsSection}>
+            <ListItem
+              layout="switch"
+              artworkSize="none"
+              label="Push-сповіщення"
+              switchValue={notifSettings?.enabled ?? isPushEnabled}
+              showDivider={true}
+              onSwitchChange={async (val) => {
+                if (val) {
+                  const granted = await requestPermission();
+                  if (!granted) {
+                    Alert.alert(
+                      "Дозвіл не отримано",
+                      "Будь ласка, дозвольте сповіщення у налаштуваннях пристрою.",
+                    );
+                    return;
+                  }
+                }
+                setPushEnabled(val);
+                updateNotifSetting("enabled", val);
+              }}
+            />
+            <ListItem
+              layout="switch"
+              artworkSize="none"
+              label="SMS-сповіщення"
+              subLabel="Може стягуватись тариф твого оператора"
+              switchValue={notifSettings?.smsFallover ?? false}
+              showDivider={true}
+              onSwitchChange={(val) => updateNotifSetting("smsFallover", val)}
+            />
+            <ListItem
+              layout="switch"
+              artworkSize="none"
+              label="Геолокація"
+              subLabel="Локація надсилається лише після натискання «Потрібна допомога»"
+              switchValue={locationEnabled}
+              showDivider={true}
+              onSwitchChange={setLocationEnabled}
+            />
+            <ListItem
+              layout="switch"
+              artworkSize="none"
+              label="Доступ до контактів"
+              switchValue={contactsEnabled}
+              showDivider={false}
+              onSwitchChange={setContactsEnabled}
+            />
+          </View>
+
+          {/* ОБЛІКОВИЙ ЗАПИС */}
+          <Typography variant="subtitle2" tone="secondary" style={styles.sectionLabel}>
+            ОБЛІКОВИЙ ЗАПИС
+          </Typography>
+          <View style={styles.settingsSection}>
+            <ListItem
+              layout="compact"
+              artworkSize="small"
+              label="Змінити пароль"
+              leadingIcon={
+                <MaterialCommunityIcons
+                  name="key-variant"
+                  size={22}
+                  color={theme.colors.content.primary}
+                />
+              }
+              onPress={() => setShowPasswordModal(true)}
+            />
+            <ListItem
+              layout="compact"
+              artworkSize="small"
+              label="Видалити акаунт"
+              leadingIcon={
+                <MaterialCommunityIcons
+                  name="delete-forever"
+                  size={22}
+                  color={theme.colors.negative}
+                />
+              }
+              onPress={() => setIsDeleteAccountVisible(true)}
+              showDivider={false}
+            />
+          </View>
+        </ScrollView>
+
+        <ModalContainer isVisible={showPasswordModal} onClose={() => setShowPasswordModal(false)}>
+          <Typography variant="h3" tone="primary" style={{ textAlign: "center" }}>
+            Змінити пароль
+          </Typography>
+          <PasswordField
+            label="Поточний пароль"
+            required
+            placeholder="Введіть поточний пароль"
+            value={oldPassword}
+            onChangeText={setOldPassword}
+          />
+          <PasswordField
+            label="Новий пароль"
+            required
+            placeholder="Новий пароль (мін. 12 символів)"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            caption="Має містити щонайменше 12 символів"
+          />
+          <PasswordField
+            label="Підтвердіть новий пароль"
+            required
+            placeholder="Повторно введіть новий пароль"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            errorMessage={passwordError || undefined}
+          />
+          <Button
+            label={passwordLoading ? "Збереження..." : "Змінити пароль"}
+            hierarchy="primary"
+            size="medium"
+            shape="rectangle"
+            onPress={handleChangePassword}
+            disabled={passwordLoading}
+            loading={passwordLoading}
+          />
+          <Button
+            label="Скасувати"
+            hierarchy="tertiary"
+            size="medium"
+            shape="rectangle"
+            onPress={() => {
+              setShowPasswordModal(false);
+              setPasswordError("");
+              setOldPassword("");
+              setNewPassword("");
+              setConfirmPassword("");
+            }}
+          />
+        </ModalContainer>
+
+        <ConfirmationModal
+          isVisible={isDeleteAccountVisible}
+          onCancel={() => setIsDeleteAccountVisible(false)}
+          onConfirm={async () => {
+            setIsDeleteAccountVisible(false);
+            try {
+              await apiFetch("/users", { method: "DELETE" });
+              logout();
+            } catch {
+              Alert.alert("Помилка", "Не вдалося видалити акаунт");
+            }
+          }}
+          title="Видалити акаунт?"
+          message="Після видалення акаунта всі кола та контакти будуть безповоротно видалені"
+          confirmText="Видалити"
+          cancelText="Назад"
+          confirmStyle="default"
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // ─── Main Settings Screen ────────────────────────
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Profile header */}
         <View style={styles.headerContainer}>
           <Avatar
             userId={user?.id ?? ""}
             avatarUpdatedAt={user?.avatarUpdatedAt}
             size="xl"
-            border={true}
+            border
           />
 
           <Typography variant="h2" tone="primary" style={styles.profileName}>
@@ -325,14 +484,13 @@ export default function SettingsScreen() {
                   shape="rectangle"
                   onPress={handlePickAvatar}
                 />
-
                 {avatarUrl && !imageError && (
                   <Button
                     label="Видалити аватар"
                     hierarchy="secondary"
                     size="small"
                     shape="rectangle"
-                    onPress={handleRemoveAvatar}
+                    onPress={() => setIsDeleteAvatarVisible(true)}
                   />
                 )}
               </View>
@@ -379,7 +537,6 @@ export default function SettingsScreen() {
                 onPress={handleSave}
                 style={styles.save}
               />
-
               <Button
                 label="Скасувати"
                 hierarchy="secondary"
@@ -398,7 +555,7 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* 1. Сповіщення */}
+        {/* Notifications */}
         <View style={styles.settingsSection}>
           <ListItem
             layout="compact"
@@ -412,60 +569,25 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* 2. Приватність та безпека */}
+        {/* Security */}
         <View style={styles.settingsSection}>
-          <TouchableOpacity
-            style={styles.settingsRow}
-            onPress={() => setIsSecurityOpen(!isSecurityOpen)}
-          >
-            <MaterialCommunityIcons
-              name="shield-lock"
-              size={24}
-              color={theme.colors.content.primary}
-            />
-            <Typography variant="subtitle1" tone="primary" style={styles.settingsRowLabel}>
-              Приватність та безпека
-            </Typography>
-            <MaterialCommunityIcons
-              name={isSecurityOpen ? "chevron-up" : "chevron-down"}
-              size={28}
-              color={theme.colors.content.primary}
-            />
-          </TouchableOpacity>
-
-          {isSecurityOpen && (
-            <>
-              <View style={styles.separator} />
-              <ListItem
-                layout="compact"
-                artworkSize="small"
-                label="Змінити пароль"
-                leadingIcon={
-                  <MaterialCommunityIcons
-                    name="key-variant"
-                    size={22}
-                    color={theme.colors.content.primary}
-                  />
-                }
-                onPress={() => setShowPasswordModal(true)}
+          <ListItem
+            layout="compact"
+            artworkSize="small"
+            label="Приватність та безпека"
+            leadingIcon={
+              <MaterialCommunityIcons
+                name="shield-lock"
+                size={24}
+                color={theme.colors.content.primary}
               />
-              <ListItem
-                layout="compact"
-                artworkSize="small"
-                label="Видалити акаунт"
-                leadingIcon={
-                  <MaterialCommunityIcons
-                    name="delete-forever"
-                    size={22}
-                    color={theme.colors.negative}
-                  />
-                }
-                onPress={handleDeleteAccount}
-                showDivider={false}
-              />
-            </>
-          )}
+            }
+            onPress={() => setIsSecurityScreenVisible(true)}
+            showDivider={false}
+          />
         </View>
+
+        {/* Location */}
         <View style={styles.settingsSection}>
           <ListItem
             layout="compact"
@@ -483,7 +605,8 @@ export default function SettingsScreen() {
             showDivider={false}
           />
         </View>
-        {/* 3. Вихід */}
+
+        {/* Logout */}
         <Button
           label="Вихід"
           hierarchy="tertiary"
@@ -498,127 +621,63 @@ export default function SettingsScreen() {
             />
           }
           onPress={() => setIsLogoutVisible(true)}
-          style={styles.logoutButton}
+          style={[styles.logoutButton, { justifyContent: "flex-start" }]}
         />
       </ScrollView>
 
-      <ConfirmationModal
-        isVisible={isLogoutVisible}
-        onCancel={() => setIsLogoutVisible(false)}
-        onConfirm={async () => {
-          setIsLogoutVisible(false);
-          logout();
-        }}
-        title="Вийти"
-        message="Ти впевнений, що хочеш вийти?"
-        confirmText="Вийти"
-        cancelText="Назад"
-        confirmStyle="default"
-      />
-
       {/* Change Password Modal */}
-      <Modal
-        visible={showPasswordModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowPasswordModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Typography variant="h3" tone="primary" style={styles.modalTitle}>
-              Змінити пароль
-            </Typography>
+      <ModalContainer isVisible={showPasswordModal} onClose={() => setShowPasswordModal(false)}>
+        <Typography variant="h3" tone="primary" style={{ textAlign: "center" }}>
+          Змінити пароль
+        </Typography>
+        <PasswordField
+          label="Поточний пароль"
+          required
+          placeholder="Введіть поточний пароль"
+          value={oldPassword}
+          onChangeText={setOldPassword}
+        />
+        <PasswordField
+          label="Новий пароль"
+          required
+          placeholder="Новий пароль (мін. 12 символів)"
+          value={newPassword}
+          onChangeText={setNewPassword}
+          caption="Має містити щонайменше 12 символів"
+        />
+        <PasswordField
+          label="Підтвердіть новий пароль"
+          required
+          placeholder="Повторно введіть новий пароль"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          errorMessage={passwordError || undefined}
+        />
+        <Button
+          label={passwordLoading ? "Збереження..." : "Змінити пароль"}
+          hierarchy="primary"
+          size="medium"
+          shape="rectangle"
+          onPress={handleChangePassword}
+          disabled={passwordLoading}
+          loading={passwordLoading}
+        />
+        <Button
+          label="Скасувати"
+          hierarchy="tertiary"
+          size="medium"
+          shape="rectangle"
+          onPress={() => {
+            setShowPasswordModal(false);
+            setPasswordError("");
+            setOldPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+          }}
+        />
+      </ModalContainer>
 
-            <View style={{ gap: 12 }}>
-              <PasswordField
-                label="Поточний пароль"
-                required
-                placeholder="Введіть поточний пароль"
-                value={oldPassword}
-                onChangeText={setOldPassword}
-              />
-              <PasswordField
-                label="Новий пароль"
-                required
-                placeholder="Новий пароль (мін. 12 символів)"
-                value={newPassword}
-                onChangeText={setNewPassword}
-                caption="Має містити щонайменше 12 символів"
-              />
-              <PasswordField
-                label="Підтвердіть новий пароль"
-                required
-                placeholder="Повторно введіть новий пароль"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                errorMessage={passwordError || undefined}
-              />
-            </View>
-
-            <Button
-              label={passwordLoading ? "Збереження..." : "Змінити пароль"}
-              hierarchy="primary"
-              size="medium"
-              shape="rectangle"
-              onPress={handleChangePassword}
-              disabled={passwordLoading}
-              loading={passwordLoading}
-              style={styles.modalSave}
-            />
-
-            <Button
-              label="Скасувати"
-              hierarchy="tertiary"
-              size="medium"
-              shape="rectangle"
-              onPress={() => {
-                setShowPasswordModal(false);
-                setPasswordError("");
-                setOldPassword("");
-                setNewPassword("");
-                setConfirmPassword("");
-              }}
-              style={styles.modalCancel}
-            />
-          </View>
-        </View>
-      </Modal>
-      <ConfirmationModal
-        isVisible={isDeleteAccountVisible}
-        onCancel={() => setIsDeleteAccountVisible(false)}
-        onConfirm={async () => {
-          setIsDeleteAccountVisible(false);
-          try {
-            await apiFetch("/users", { method: "DELETE" });
-            logout();
-          } catch (e) {
-            Alert.alert("Помилка", "Не вдалося видалити акаунт");
-          }
-        }}
-        title="Видалити акаунт?"
-        message="Після видалення акаунта всі кола та контакти будуть безповоротно видалені"
-        confirmText="Видалити"
-        cancelText="Назад"
-        confirmStyle="default"
-      />
-      <ConfirmationModal
-        isVisible={isDeleteAvatarVisible}
-        onCancel={() => setIsDeleteAvatarVisible(false)}
-        onConfirm={async () => {
-          setIsDeleteAvatarVisible(false);
-          try {
-            await apiFetch(`/users/${user?.id}/avatar`, { method: "DELETE" });
-            updateUser({ avatarUpdatedAt: undefined });
-            setAvatarUrl(null);
-          } catch (e) {
-            Alert.alert("Помилка", "Не вдалося видалити аватар");
-          }
-        }}
-        title="Видалити аватар?"
-        message="Ви впевнені, що хочете видалити фото профілю?"
-        confirmText="Видалити"
-        cancelText="Скасувати"
-      />
+      {/* Notifications Modal */}
       <Modal
         visible={isNotificationsModalVisible}
         animationType="slide"
@@ -646,7 +705,6 @@ export default function SettingsScreen() {
               style={{ position: "absolute", left: theme.spacing[16] }}
             />
           </View>
-
           <ScrollView
             style={{ flex: 1 }}
             contentContainerStyle={notifStyles.scrollContent}
@@ -727,6 +785,20 @@ export default function SettingsScreen() {
         </View>
       </Modal>
 
+      {/* Confirmation modals */}
+      <ConfirmationModal
+        isVisible={isLogoutVisible}
+        onCancel={() => setIsLogoutVisible(false)}
+        onConfirm={async () => {
+          setIsLogoutVisible(false);
+          logout();
+        }}
+        title="Вийти"
+        message="Ти впевнений, що хочеш вийти?"
+        confirmText="Вийти"
+        cancelText="Назад"
+        confirmStyle="default"
+      />
       <ConfirmationModal
         isVisible={isDeleteAccountVisible}
         onCancel={() => setIsDeleteAccountVisible(false)}
@@ -735,14 +807,15 @@ export default function SettingsScreen() {
           try {
             await apiFetch("/users", { method: "DELETE" });
             logout();
-          } catch (e) {
+          } catch {
             Alert.alert("Помилка", "Не вдалося видалити акаунт");
           }
         }}
         title="Видалити акаунт?"
-        message="Цю дію не можна скасувати."
+        message="Після видалення акаунта всі кола та контакти будуть безповоротно видалені"
         confirmText="Видалити"
-        cancelText="Скасувати"
+        cancelText="Назад"
+        confirmStyle="default"
       />
       <ConfirmationModal
         isVisible={isDeleteAvatarVisible}
@@ -753,7 +826,7 @@ export default function SettingsScreen() {
             await apiFetch(`/users/${user?.id}/avatar`, { method: "DELETE" });
             updateUser({ avatarUpdatedAt: undefined });
             setAvatarUrl(null);
-          } catch (e) {
+          } catch {
             Alert.alert("Помилка", "Не вдалося видалити аватар");
           }
         }}
@@ -769,8 +842,23 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: theme.spacing[16],
     backgroundColor: theme.colors.background.primary,
+  },
+  scrollContent: {
+    paddingHorizontal: theme.spacing[16],
+    paddingBottom: 120,
+  },
+  screenHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[8],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.opaque,
+    gap: theme.spacing[8],
+  },
+  screenHeaderTitle: {
+    flex: 1,
   },
   headerContainer: {
     alignItems: "center",
@@ -780,8 +868,8 @@ const styles = StyleSheet.create({
   avatarButtons: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 16,
-    marginBottom: 16,
+    gap: theme.spacing[16],
+    marginBottom: theme.spacing[16],
     width: "100%",
   },
   block: { marginBottom: theme.spacing[16] },
@@ -790,119 +878,32 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing[32],
     textAlign: "center",
   },
-  save: {
+  save: { marginTop: theme.spacing[8] },
+  editContainer: {
+    width: "100%",
     marginTop: theme.spacing[8],
-    alignItems: "center",
   },
+  cancelButton: { marginTop: theme.spacing[8] },
   settingsSection: {
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.radius.lg,
     overflow: "hidden",
     marginBottom: theme.spacing[8],
   },
-  settingsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: theme.spacing[10],
-    paddingHorizontal: theme.spacing[16],
-    gap: theme.spacing[16],
-    backgroundColor: theme.colors.background.secondary,
-  },
-  settingsRowLabel: {
-    flex: 1,
-  },
   separator: {
     height: 1,
     backgroundColor: theme.colors.border.opaque,
     marginLeft: theme.spacing[16],
   },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-start",
-    backgroundColor: theme.colors.background.secondary,
-    marginTop: theme.spacing[8],
-  },
-  editContainer: {
-    width: "100%",
-    paddingHorizontal: theme.spacing[16],
-    marginTop: theme.spacing[8],
-  },
-  cancelButton: {
-    marginTop: theme.spacing[8],
-    alignItems: "center",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  modalContent: {
-    width: "100%",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-  },
-  sectionHeader: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#666666",
-    marginTop: 24,
-    marginBottom: 8,
-    paddingLeft: 4,
+  sectionLabel: {
+    marginTop: theme.spacing[20],
+    marginBottom: theme.spacing[8],
+    marginLeft: theme.spacing[4],
     letterSpacing: 0.5,
-    textTransform: "uppercase",
   },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    marginBottom: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 20,
-    textAlign: "center",
-    color: "#1A1A1A",
-  },
-  modalPasswordContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F5F5F5",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-    marginBottom: 12,
-  },
-  modalPasswordInput: {
-    flex: 1,
-    height: 50,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    color: "#1A1A1A",
-  },
-  modalSave: {
-    backgroundColor: "#4CAF50",
-    padding: 15,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  modalSaveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  modalCancel: {
-    padding: 15,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8,
+  logoutButton: {
+    marginTop: theme.spacing[8],
+    backgroundColor: theme.colors.background.secondary,
   },
 });
 

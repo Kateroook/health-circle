@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ContactsService } from 'src/contacts/contacts.service';
@@ -6,6 +6,7 @@ import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { NotificationTemplates, NotificationType } from 'src/notifications/notification-types';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { SecurityService } from 'src/security/security.service';
+import { UserEntity } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 import { In, Repository } from 'typeorm';
 
@@ -20,6 +21,8 @@ export class GroupService {
   constructor(
     @InjectRepository(GroupEntity)
     private readonly repository: Repository<GroupEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(GroupMemberEntity)
     private readonly memberRepository: Repository<GroupMemberEntity>,
     @InjectRepository(GroupBlockListEntity)
@@ -29,9 +32,25 @@ export class GroupService {
     private readonly firestoreSyncService: FirestoreSyncService,
     private readonly notificationsService: NotificationsService,
     private readonly configService: ConfigService,
-    @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
   ) {}
+
+  private async findUsersByIds(ids: string[]): Promise<UserEntity[]> {
+    if (ids.length === 0) return [];
+    return this.userRepository.find({ where: { id: In(ids) } });
+  }
+
+  private async userExists(id: string): Promise<boolean> {
+    return this.userRepository.existsBy({ id });
+  }
+
+  private async findUserById(id: string): Promise<UserEntity | null> {
+    return this.userRepository.findOneBy({ id });
+  }
+
+  private async updateLastPersonalRollCallAt(id: string): Promise<void> {
+    await this.userRepository.update({ id }, { lastPersonalRollCallAt: new Date() });
+  }
 
   private async syncGroupMembers(groupId: string) {
     const memberships = await this.memberRepository.find({ where: { groupId } });
@@ -58,7 +77,7 @@ export class GroupService {
     allMemberIds.add(userId);
     groups.forEach((g) => allMemberIds.add(g.ownerId));
 
-    const users = await this.usersService.findByIds(Array.from(allMemberIds));
+    const users = await this.findUsersByIds(Array.from(allMemberIds));
     const usersMap = new Map(users.map((u) => [u.id, u]));
 
     const contacts = await this.contactsService.findAllForUser(userId);
@@ -103,7 +122,7 @@ export class GroupService {
     const allMemberIds = group.members.map((m) => m.userId);
     allMemberIds.push(group.ownerId);
 
-    const users = await this.usersService.findByIds(allMemberIds);
+    const users = await this.findUsersByIds(allMemberIds);
     const usersMap = new Map(users.map((u) => [u.id, u]));
 
     const contacts = await this.contactsService.findAllForUser(userId);
@@ -185,7 +204,7 @@ export class GroupService {
     });
     if (isBlocked) throw new ForbiddenException('Ви заблоковані в цьому колі');
 
-    const userExists = await this.usersService.exists(userId);
+    const userExists = await this.userExists(userId);
     if (!userExists) throw new NotFoundException('Користувач не знайдено');
 
     if (group.members.some((m) => m.userId === userId)) throw new BadRequestException('Ви вже приєднались до цього кола');
@@ -293,7 +312,7 @@ export class GroupService {
     });
 
     const userIds = blocked.map((b) => b.userId);
-    const users = await this.usersService.findByIds(userIds);
+    const users = await this.findUsersByIds(userIds);
     const usersMap = new Map(users.map((u) => [u.id, u]));
 
     return blocked.map((b) => ({
@@ -345,7 +364,7 @@ export class GroupService {
     const isMember = group.members.find((m) => m.userId === targetUserId);
     if (!isMember) throw new NotFoundException('Користувач не є учасником цього кола');
 
-    const targetUser = await this.usersService.findOneInternal(targetUserId);
+    const targetUser = await this.findUserById(targetUserId);
     if (!targetUser) throw new NotFoundException('Користувача не знайдено');
 
     const graceMinutes = this.configService.get<number>('PERSONAL_ROLL_CALL_GRACE_MINUTES', 15);
@@ -355,7 +374,7 @@ export class GroupService {
       return { message: 'Користувач нещодавно оновив статус, додатковий запит не потрібен' };
     }
 
-    await this.usersService.updateLastPersonalRollCallAt(targetUserId);
+    await this.updateLastPersonalRollCallAt(targetUserId);
 
     const tokens = await this.usersService.getTokensForUsers(
       [targetUserId],

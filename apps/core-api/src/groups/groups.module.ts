@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ContactsModule } from 'src/contacts/contacts.module';
 import { NotificationsModule } from 'src/notifications/notifications.module';
@@ -19,7 +19,7 @@ import { StatusQueueService } from './status-queue.service';
     SecurityModule,
     ContactsModule,
     NotificationsModule,
-    forwardRef(() => UsersModule),
+    UsersModule,
   ],
   providers: [GroupService, StatusQueueService],
   controllers: [GroupController],

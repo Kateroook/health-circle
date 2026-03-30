@@ -1,34 +1,32 @@
-import { expect, test } from "../../fixtures/api-fixture";
+import { expect, test } from '../../fixtures/api-fixture';
 test.describe('api/auth/refresh tests', async () => {
+  test('[AUTH-016] Get authorized user profile with correct fields', async ({ api, spawnUser }) => {
+    const user = await spawnUser();
 
-    test('[AUTH-016] Get authorized user profile with correct fields', async ({ api, spawnUser }) => {
-        const user = await spawnUser();
-        
-        const login = await api.auth.login({
-            identifier: user.email,
-            password: user.password,
-        });
-        expect(login.response).toHaveStatus2xx();
-
-        const profile = await api.auth.getProfile();
-
-        expect(profile.response).toHaveStatus2xx();
-        expect(profile.data).toEqual(
-            expect.objectContaining({
-                id: user.id,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email.toLowerCase(),
-                phone: user.phone,
-            }),
-        );
+    const login = await api.auth.login({
+      identifier: user.email,
+      password: user.password,
     });
+    expect(login.response).toHaveStatus2xx();
 
+    const profile = await api.auth.getProfile();
 
-    test('[AUTH-017] Get user profile without token', async ({ api, spawnUser }) => {
-        const profile = await api.auth.getProfile();
-        expect(profile.response).toHaveStatus(401);
-    });
+    expect(profile.response).toHaveStatus2xx();
+    expect(profile.data).toEqual(
+      expect.objectContaining({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email.toLowerCase(),
+        phone: user.phone,
+      }),
+    );
+  });
 
-    //TODO (if there isn't anything better) : | AUTH-018 | Відповідь відповідає схемі `UserProfileDto` | Виконано login | Всі обов'язкові поля присутні, типи коректні |
-})
+  test('[AUTH-017] Get user profile without token', async ({ api, spawnUser }) => {
+    const profile = await api.auth.getProfile();
+    expect(profile.response).toHaveStatus(401);
+  });
+
+  //TODO (if there isn't anything better) : | AUTH-018 | Відповідь відповідає схемі `UserProfileDto` | Виконано login | Всі обов'язкові поля присутні, типи коректні |
+});

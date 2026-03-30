@@ -39,7 +39,7 @@ export abstract class BaseClient {
       headers['Authorization'] = `Bearer ${this.context.accessToken}`;
     }
 
-    const result : Record<string, string> = {
+    const result: Record<string, string> = {
       ...headers,
       ...customHeaders,
     };

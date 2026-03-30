@@ -9,11 +9,8 @@ import { getErrorStack } from 'src/common/helpers/get-error-stack.util';
 import { QueueService } from 'src/common/queue/queue.service';
 import { In, IsNull, Not, Repository } from 'typeorm';
 
-import config from '../../../config';
 import { ExternalFilesEntity } from '../entities/external-files.entity';
 import { ExternalFilesService } from '../external-files.service';
-
-const cronConfig = config().cron;
 
 @Injectable()
 export class ExternalFilesQueueService implements OnModuleInit {
@@ -35,12 +32,18 @@ export class ExternalFilesQueueService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    if (cronConfig.missedFilesEnabled) {
-      await this.queueService.schedule('process-missing-files', cronConfig.missedFilesRule!);
+    const missedFilesEnabled = this.configService.get<string>('CRON_MISSED_FILES_ENABLED') === 'true';
+    const unlinkedFilesEnabled = this.configService.get<string>('CRON_UNLINKED_FILES_ENABLED') === 'true';
+
+    if (missedFilesEnabled) {
+      const rule = this.configService.getOrThrow<string>('CRON_MISSED_FILES_RULE');
+      await this.queueService.schedule('process-missing-files', rule);
       await this.queueService.work('process-missing-files', () => this.processMissingFiles());
     }
-    if (cronConfig.unlinkedFilesEnabled) {
-      await this.queueService.schedule('process-unlinked-files', cronConfig.unlinkedFilesRule!);
+
+    if (unlinkedFilesEnabled) {
+      const rule = this.configService.getOrThrow<string>('CRON_UNLINKED_FILES_RULE');
+      await this.queueService.schedule('process-unlinked-files', rule);
       await this.queueService.work('process-unlinked-files', () => this.processUnlinkFiles());
     }
   }
@@ -51,12 +54,21 @@ export class ExternalFilesQueueService implements OnModuleInit {
       const { onlyInDir, onlyInDbIds } = await this.externalFilesService.cleanup();
 
       if (onlyInDir.length > 0 || onlyInDbIds.length > 0) {
-        await Promise.all(
-          onlyInDir.map(async (fileName) => {
-            const filePath = path.join(this.basePath, fileName);
-            await fs.promises.unlink(filePath);
-          }),
-        );
+        // Chunk file deletions to avoid spikes in filesystem/event loop
+        const chunkSize = 100;
+        for (let i = 0; i < onlyInDir.length; i += chunkSize) {
+          const chunk = onlyInDir.slice(i, i + chunkSize);
+          await Promise.allSettled(
+            chunk.map(async (fileName) => {
+              const filePath = path.join(this.basePath, fileName);
+              try {
+                await fs.promises.unlink(filePath);
+              } catch (err) {
+                this.logger.error({ type, fileName, err }, `Failed to unlink missing file ${fileName}`);
+              }
+            }),
+          );
+        }
         if (onlyInDbIds.length > 0) {
           await this.repository.update(
             { id: In(onlyInDbIds) },
@@ -91,12 +103,24 @@ export class ExternalFilesQueueService implements OnModuleInit {
             unlinkAt: new Date(),
           },
         );
-        await Promise.all(
-          toUnlink.map(async (externalFile) => {
-            const filePath = path.join(this.basePath, externalFile.externalId);
-            if (fs.existsSync(filePath)) await fs.promises.unlink(filePath);
-          }),
-        );
+        // Chunk file unlinking to avoid spikes
+        const chunkSize = 100;
+        for (let i = 0; i < toUnlink.length; i += chunkSize) {
+          const chunk = toUnlink.slice(i, i + chunkSize);
+          await Promise.allSettled(
+            chunk.map(async (externalFile) => {
+              const filePath = path.join(this.basePath, externalFile.externalId);
+              try {
+                if (fs.existsSync(filePath)) await fs.promises.unlink(filePath);
+              } catch (err) {
+                this.logger.error(
+                  { type, externalId: externalFile.externalId, err },
+                  `Failed to unlink file ${externalFile.externalId}`,
+                );
+              }
+            }),
+          );
+        }
 
         this.logger.info({ type, data: { toUnlinkIds } }, `Unlinked ${toUnlinkIds.length} files`);
       }

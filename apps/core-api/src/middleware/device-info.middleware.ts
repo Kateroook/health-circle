@@ -20,13 +20,13 @@ export class DeviceInfoMiddleware implements NestMiddleware {
   private readonly cacheTtlMs = Number(process.env.DEVICE_DETECTOR_CACHE_TTL_MS ?? 5 * 60 * 1000);
 
   private getClientIp(req: AuthRequest) {
-    const xf = (req.headers['x-forwarded-for'] as string) || '';
-    const firstHop = xf.split(',')[0]?.trim();
-    return firstHop || req.ip;
+    return (
+      req.ip || (Array.isArray(req.ips) && req.ips.length ? req.ips[0] : undefined) || req.socket?.remoteAddress || 'unknown'
+    );
   }
 
   use(req: AuthRequest, _res: Response, next: NextFunction): void {
-    const userAgent = (req.headers['user-agent'] as string) || '';
+    const userAgent = String(req.headers['user-agent'] ?? '');
     const now = Date.now();
 
     const cached = this.deviceInfoCache.get(userAgent);
