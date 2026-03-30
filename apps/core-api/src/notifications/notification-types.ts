@@ -45,7 +45,7 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   },
   [NotificationType.AIR_ALERT]: {
     title: '🚨 Повітряна тривога!',
-    body: (data) => `У вашому регіоні (${data.region}) оголошено повітряну тривогу!`,
+    body: (data) => `${data.alertType}: у вашому регіоні (${data.regionName}) оголошено тривогу!`,
     permissionKey: 'airAlerts',
     fcmType: 'AIR_ALERT',
   },

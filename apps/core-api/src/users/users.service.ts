@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, StreamableFile } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { AlertRegionResolverService } from 'src/alerts/alert-region-resolver.service';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
@@ -37,7 +38,6 @@ export class UsersService {
     protected readonly userActivitiesService: UserActivitiesService,
     protected readonly externalFilesService: ExternalFilesService,
     private readonly queueService: QueueService,
-    private readonly firestoreSyncService: FirestoreSyncService,
     @InjectRepository(GroupEntity)
     protected readonly groupRepository: Repository<GroupEntity>,
     @InjectRepository(GroupBlockListEntity)
@@ -48,6 +48,8 @@ export class UsersService {
     protected readonly contactRepository: Repository<ContactEntity>,
     @InjectRepository(UserNotificationSettingsEntity)
     protected readonly notificationSettingsRepository: Repository<UserNotificationSettingsEntity>,
+    private readonly alertRegionResolver: AlertRegionResolverService,
+    private readonly firestoreSyncService: FirestoreSyncService,
   ) {}
 
   async getNotificationSettingsInternal(userId: string): Promise<UserNotificationSettingsEntity> {
@@ -286,6 +288,14 @@ export class UsersService {
       });
     }
 
+    // Auto-resolve alertRegionUid if region or district has changed
+    if (item.region || item.district) {
+      const resolvedUid = await this.resolveAlertRegionUid(item.region, item.district);
+      if (resolvedUid) {
+        item.alertRegionUid = resolvedUid;
+      }
+    }
+
     const saved = await this.repository.save(item);
     const userActivityType = isNew ? UserActivityTypes.createUser : UserActivityTypes.modifyUser;
     if (isNew) {
@@ -369,5 +379,21 @@ export class UsersService {
   async findByIds(ids: string[]): Promise<UserEntity[]> {
     if (ids.length === 0) return [];
     return this.repository.find({ where: { id: In(ids) } });
+  }
+
+  async exists(id: string): Promise<boolean> {
+    return this.repository.existsBy({ id });
+  }
+
+  async findOneInternal(id: string): Promise<UserEntity | null> {
+    return this.repository.findOneBy({ id });
+  }
+
+  async updateLastPersonalRollCallAt(id: string): Promise<void> {
+    await this.repository.update({ id }, { lastPersonalRollCallAt: new Date() });
+  }
+
+  private async resolveAlertRegionUid(region?: string, district?: string): Promise<number | null> {
+    return this.alertRegionResolver.resolve(region, district);
   }
 }

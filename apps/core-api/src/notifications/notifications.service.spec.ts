@@ -73,14 +73,14 @@ describe('NotificationsService', () => {
     it('should send an air alert notification', async () => {
       const sendSpy = jest.spyOn(service, 'sendMulticast');
       const tokens = ['token1'];
-      const data = { region: 'Lviv' };
+      const data = { regionName: 'Lviv', alertType: 'Повітряна тривога' };
 
       await service.sendMulticastByType(tokens, NotificationType.AIR_ALERT, data);
 
       expect(sendSpy).toHaveBeenCalledWith(
         tokens,
         '🚨 Повітряна тривога!',
-        'У вашому регіоні (Lviv) оголошено повітряну тривогу!',
+        'Повітряна тривога: у вашому регіоні (Lviv) оголошено тривогу!',
         expect.objectContaining({
           type: 'AIR_ALERT',
           notificationType: NotificationType.AIR_ALERT,

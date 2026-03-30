@@ -19,14 +19,17 @@ Download from [nodejs.org](https://nodejs.org) or install via a version manager 
 Required version: **OpenJDK 17**.
 
 **macOS:**
+
 ```bash
 brew install openjdk@17
 ```
 
 **Windows:**
+
 ```bash
 choco install openjdk17
 ```
+
 Alternatively, download the installer directly from the [Adoptium website](https://adoptium.net).
 
 ---
@@ -60,6 +63,7 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_H
 ```
 
 Apply the changes:
+
 ```bash
 source ~/.zshrc
 ```
@@ -69,10 +73,10 @@ source ~/.zshrc
 1. Open **System Properties** -> **Advanced** -> **Environment Variables**.
 2. Under **System variables**, create the following new variables:
 
-   | Variable       | Value                                              |
-   |----------------|----------------------------------------------------|
+   | Variable       | Value                                                |
+   | -------------- | ---------------------------------------------------- |
    | `ANDROID_HOME` | `C:\Users\<YOUR_USERNAME>\AppData\Local\Android\Sdk` |
-   | `JAVA_HOME`    | Path to your JDK installation folder              |
+   | `JAVA_HOME`    | Path to your JDK installation folder                 |
 
 3. Open the `Path` variable and add the following entries:
    - `%ANDROID_HOME%\platform-tools`

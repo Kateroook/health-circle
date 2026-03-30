@@ -9,12 +9,7 @@
     "paths": {
       "@core/*": ["src/core/*"]
     },
-    "types": [
-      "node",
-      "webdriverio",
-      "@wdio/globals/types",
-      "@wdio/mocha-framework"
-    ],
+    "types": ["node", "webdriverio", "@wdio/globals/types", "@wdio/mocha-framework"],
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true

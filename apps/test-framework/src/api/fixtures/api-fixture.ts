@@ -71,7 +71,7 @@ export const test = workerTest.extend<MyFixture>({
 
   spawnUser: async ({ backendProvider }, use) => {
     await use(() => backendProvider.spawnUser());
-  }
+  },
 });
 
 export const expect = mergeExpects(statusExpect);

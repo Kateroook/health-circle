@@ -133,7 +133,7 @@ export const Button: React.FC<ButtonProps> = ({
         ...containerStyles,
         pressed && !disabled && !loading && styles.pressed,
       ]}
-      >
+    >
       {renderContent()}
     </Pressable>
   );
