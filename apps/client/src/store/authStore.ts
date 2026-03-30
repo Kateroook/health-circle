@@ -20,6 +20,9 @@ interface User {
   phone: string;
   avatarUpdatedAt?: string;
   status: "SAFE" | "DANGER" | "UNKNOWN" | "WAS_SAFE";
+  region?: string | null;
+  district?: string | null;
+  alertRegionUid?: number | null;
 }
 
 interface AuthStoreState {

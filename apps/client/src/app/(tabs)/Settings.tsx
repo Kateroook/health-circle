@@ -5,6 +5,8 @@ import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { ListItem } from "@/src/components/ListItem";
 import { ModalContainer } from "@/src/components/modal/ModalContainer";
 import { Typography } from "@/src/components/typography";
+import { RegionPicker } from "@/src/components/fields/RegionPicker";
+import { HromadaPicker } from "@/src/components/fields/HromadaPicker";
 import { theme } from "@/src/theme/theme";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -33,6 +35,10 @@ export default function SettingsScreen() {
   const [middleName, setMiddleName] = useState(user?.middleName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [phone, setPhone] = useState(user?.phone || "");
+  const [region, setRegion] = useState(user?.region || "");
+  const [district, setDistrict] = useState(user?.district || "");
+  const [alertRegionUid, setAlertRegionUid] = useState<number | null>(user?.alertRegionUid ?? null);
+  const [alertRegionName, setAlertRegionName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
 
@@ -96,6 +102,9 @@ export default function SettingsScreen() {
     setMiddleName(user?.middleName || "");
     setLastName(user?.lastName || "");
     setPhone(user?.phone || "");
+    setRegion(user?.region || "");
+    setDistrict(user?.district || "");
+    setAlertRegionUid(user?.alertRegionUid ?? null);
     if (user?.id) setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
   }, [user]);
 
@@ -132,7 +141,10 @@ export default function SettingsScreen() {
             middleName: middleName.trim(),
             lastName: lastName.trim(),
             phone: phone.trim(),
+            region: region.trim(),
+            district: district.trim(),
             email: user?.email,
+            ...(alertRegionUid != null ? { alertRegionUid } : {}),
           }),
         ),
       });
@@ -210,7 +222,23 @@ export default function SettingsScreen() {
   const handleLocationUpdate = async () => {
     if (locationLoading) return;
     try {
-      await updateCurrentLocation();
+      const info = await updateCurrentLocation();
+      if (info?.region || info?.district) {
+        // Automatically save to profile
+        await apiFetch("/users", {
+          method: "PUT",
+          body: JSON.stringify(
+            cleanObj({
+              id: user?.id,
+              region: info.region,
+              district: info.district,
+              // Preserve manual hromada pick — backend won't auto-resolve if this is set
+              ...(alertRegionUid != null ? { alertRegionUid } : {}),
+            }),
+          ),
+        });
+        await refreshProfile();
+      }
       Alert.alert("Успіх", "Геолокацію оновлено");
     } catch (e: any) {
       if (e.message === "LOCATION_PERMISSION_DENIED") {
@@ -226,6 +254,7 @@ export default function SettingsScreen() {
 
   const fields = [
     {
+      id: "lastName",
       label: "Прізвище",
       value: lastName,
       setter: setLastName,
@@ -234,6 +263,7 @@ export default function SettingsScreen() {
       required: true,
     },
     {
+      id: "firstName",
       label: "Імʼя",
       value: firstName,
       setter: setFirstName,
@@ -242,6 +272,7 @@ export default function SettingsScreen() {
       required: true,
     },
     {
+      id: "middleName",
       label: "По батькові",
       value: middleName,
       setter: setMiddleName,
@@ -250,12 +281,21 @@ export default function SettingsScreen() {
       required: false,
     },
     {
+      id: "phone",
       label: "Номер телефону",
       value: phone,
       setter: setPhone,
       placeholder: "+380...",
       keyboardType: "phone-pad",
       required: true,
+    },
+    {
+      id: "region",
+      label: "Область",
+      value: region,
+      setter: setRegion,
+      placeholder: "Львівська область",
+      required: false,
     },
   ];
 
@@ -463,15 +503,31 @@ export default function SettingsScreen() {
           </Typography>
 
           {!isEditMode && (
-            <Button
-              label="Редагувати"
-              hierarchy="accent"
-              size="medium"
-              shape="rectangle"
-              leadingIcon={<Icon name="edit-2" size={18} color={theme.colors.content.onColor} />}
-              onPress={() => setIsEditMode(true)}
-              style={{ width: "100%" }}
-            />
+            <>
+              {(user?.region || user?.district || alertRegionName) && (
+                <View style={styles.locationView}>
+                  <MaterialCommunityIcons
+                    name="map-marker"
+                    size={16}
+                    color={theme.colors.content.secondary}
+                  />
+                  <Typography variant="body2" tone="secondary">
+                    {alertRegionName
+                      ? alertRegionName
+                      : [user?.region, user?.district].filter(Boolean).join(", ")}
+                  </Typography>
+                </View>
+              )}
+              <Button
+                label="Редагувати"
+                hierarchy="accent"
+                size="medium"
+                shape="rectangle"
+                leadingIcon={<Icon name="edit-2" size={18} color={theme.colors.content.onColor} />}
+                onPress={() => setIsEditMode(true)}
+                style={{ width: "100%" }}
+              />
+            </>
           )}
 
           {isEditMode && (
@@ -496,8 +552,8 @@ export default function SettingsScreen() {
               </View>
 
               {fields.map((field) => (
-                <View key={field.label} style={styles.block}>
-                  {field.label === "Номер телефону" ? (
+                <View key={field.id} style={styles.block}>
+                  {field.id === "phone" ? (
                     <View>
                       <Typography variant="body2" tone="primary" style={{ marginBottom: 4 }}>
                         {field.label}
@@ -515,6 +571,13 @@ export default function SettingsScreen() {
                         showClearButton={false}
                       />
                     </View>
+                  ) : field.id === "region" ? (
+                    <RegionPicker
+                      label={field.label}
+                      value={field.value}
+                      onSelect={field.setter}
+                      placeholder={field.placeholder}
+                    />
                   ) : (
                     <TextField
                       label={field.label}
@@ -528,6 +591,18 @@ export default function SettingsScreen() {
                   )}
                 </View>
               ))}
+
+              <View style={styles.block}>
+                <HromadaPicker
+                  label="Громада / Населений пункт (для тривог)"
+                  value={alertRegionName}
+                  onSelect={(uid, name) => {
+                    setAlertRegionUid(uid);
+                    setAlertRegionName(name);
+                  }}
+                  placeholder="Оберіть громаду для точних тривог"
+                />
+              </View>
 
               <Button
                 label="Зберегти"
@@ -875,8 +950,15 @@ const styles = StyleSheet.create({
   block: { marginBottom: theme.spacing[16] },
   profileName: {
     marginTop: theme.spacing[8],
-    marginBottom: theme.spacing[32],
+    marginBottom: theme.spacing[8],
     textAlign: "center",
+  },
+  locationView: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing[4],
+    marginBottom: theme.spacing[32],
   },
   save: { marginTop: theme.spacing[8] },
   editContainer: {
