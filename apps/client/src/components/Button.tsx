@@ -1,5 +1,5 @@
 import { theme } from "@/src/theme/theme";
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -22,7 +22,7 @@ interface ButtonProps {
   shape?: ButtonShape;
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
-  onPress?: () => void;
+  onPress?: () => void | Promise<void>;
   disabled?: boolean;
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -42,7 +42,21 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
 }) => {
+  const [internalLoading, setInternalLoading] = useState(false);
+  const isLoading = loading || internalLoading;
+
   const isRound = shape === "round";
+
+  const handlePress = async () => {
+    if (onPress) {
+      setInternalLoading(true);
+      try {
+        await onPress();
+      } finally {
+        setInternalLoading(false);
+      }
+    }
+  };
 
   const containerStyles = [
     styles.base,
@@ -84,7 +98,7 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const renderContent = () => {
-    if (loading) {
+    if (isLoading) {
       return (
         <ActivityIndicator
           size="small"
@@ -123,11 +137,11 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <Pressable
-      onPress={onPress}
-      disabled={disabled || loading}
+      onPress={handlePress}
+      disabled={disabled || isLoading}
       style={({ pressed }) => [
         ...containerStyles,
-        pressed && !disabled && !loading && styles.pressed,
+        pressed && !disabled && !isLoading && styles.pressed,
       ]}
     >
       {renderContent()}
