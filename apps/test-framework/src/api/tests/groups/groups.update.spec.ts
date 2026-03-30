@@ -11,7 +11,7 @@ test.describe('api/groups/update tests', async () => {
   test.beforeEach('Setup user and group', async ({ api, spawnUser }) => {
     groupOwner = await spawnUser();
 
-    const loginResult = await api.auth.login({
+    await api.auth.login({
       identifier: groupOwner.email,
       password: groupOwner.password,
     });
@@ -85,7 +85,7 @@ test.describe('api/groups/update tests', async () => {
 
   test('[GRP-020] Update group by non-owner member', async ({ api, spawnUser }) => {
     const secondUser = await spawnUser();
-    const loginResult = await api.auth.login({
+    await api.auth.login({
       identifier: secondUser.email,
       password: secondUser.password,
     });
