@@ -1,18 +1,17 @@
 import { Avatar } from "@/src/components/Avatar";
 import { Button } from "@/src/components/Button";
+import { HromadaPicker } from "@/src/components/fields/HromadaPicker";
 import { PhoneInput } from "@/src/components/fields/PhoneInput";
+import { RegionPicker } from "@/src/components/fields/RegionPicker";
 import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { ListItem } from "@/src/components/ListItem";
 import { ModalActions, ModalContainer, ModalHeader } from "@/src/components/modal";
 import { Typography } from "@/src/components/typography";
-import { RegionPicker } from "@/src/components/fields/RegionPicker";
-import { HromadaPicker } from "@/src/components/fields/HromadaPicker";
 import { theme } from "@/src/theme/theme";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import { Alert, Image, Modal, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Image, Modal, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import ConfirmationModal from "../../components/ConfirmationModal";
@@ -1056,6 +1055,12 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: theme.colors.border.opaque,
     marginLeft: theme.spacing[56],
+  },
+  sectionLabel: {
+    marginTop: theme.spacing[20],
+    marginBottom: theme.spacing[8],
+    marginLeft: theme.spacing[4],
+    letterSpacing: 0.5,
   },
   logoutButton: {
     flexDirection: "row",
