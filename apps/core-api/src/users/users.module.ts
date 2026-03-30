@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AlertsRegionEntity } from 'src/alerts/entities/alerts-region.entity';
+import { AlertsModule } from 'src/alerts/alerts.module';
 import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constraint';
 import { ConfirmationsModule } from 'src/confirmations/confirmations.module';
 import { ExternalFilesModule } from 'src/external-files/external-files.module';
@@ -25,12 +25,12 @@ import { UsersService } from './users.service';
       UserSessionEntity,
       GroupMemberEntity,
       UserNotificationSettingsEntity,
-      AlertsRegionEntity,
     ]),
     UserActivitiesModule,
     ConfirmationsModule,
     ExternalFilesModule,
     NotificationsModule,
+    AlertsModule,
   ],
   providers: [UsersService, SecurityService, UserUniqueConstraint, SessionActivityService],
   controllers: [UsersController],

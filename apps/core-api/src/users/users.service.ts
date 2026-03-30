@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, StreamableFile } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AlertsRegionEntity } from 'src/alerts/entities/alerts-region.entity';
+import { AlertRegionResolverService } from 'src/alerts/alert-region-resolver.service';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
@@ -39,8 +39,7 @@ export class UsersService {
     protected readonly memberRepository: Repository<GroupMemberEntity>,
     @InjectRepository(UserNotificationSettingsEntity)
     protected readonly notificationSettingsRepository: Repository<UserNotificationSettingsEntity>,
-    @InjectRepository(AlertsRegionEntity)
-    protected readonly alertsRegionRepository: Repository<AlertsRegionEntity>,
+    private readonly alertRegionResolver: AlertRegionResolverService,
     private notificationsService: NotificationsService,
     private firestoreSyncService: FirestoreSyncService,
   ) {}
@@ -334,130 +333,6 @@ export class UsersService {
   }
 
   private async resolveAlertRegionUid(region?: string, district?: string): Promise<number | null> {
-    if (!region) return null;
-
-    const OBLAST_MAP: Record<string, string> = {
-      // English
-      Cherkasy: 'Черкаська',
-      Chernihiv: 'Чернігівська',
-      Chernivtsi: 'Чернівецька',
-      Dnipropetrovsk: 'Дніпропетровська',
-      Donetsk: 'Донецька',
-      'Ivano-Frankivsk': 'Івано-Франківська',
-      Kharkiv: 'Харківська',
-      Kherson: 'Херсонська',
-      Khmelnytskyi: 'Хмельницька',
-      Kirovohrad: 'Кіровоградська',
-      Kyiv: 'Київська',
-      Luhansk: 'Луганська',
-      Lviv: 'Львівська',
-      Mykolaiv: 'Миколаївська',
-      Odesa: 'Одеська',
-      Poltava: 'Полтавська',
-      Rivne: 'Рівненська',
-      Sumy: 'Сумська',
-      Ternopil: 'Тернопільська',
-      Vinnytsia: 'Вінницька',
-      Volyn: 'Волинська',
-      Zakarpattia: 'Закарпатська',
-      Zaporizhzhia: 'Запорізька',
-      Zhytomyr: 'Житомирська',
-      Crimea: 'Крим',
-      // Russian
-      Черкасская: 'Черкаська',
-      Черниговская: 'Чернігівська',
-      Черновицкая: 'Чернівецька',
-      Днепропетровская: 'Дніпропетровська',
-      Донецкая: 'Донецька',
-      'Ивано-Франковская': 'Івано-Франківська',
-      Харьковская: 'Харківська',
-      Херсонская: 'Херсонська',
-      Хмельницкая: 'Хмельницька',
-      Кировоградская: 'Кіровоградська',
-      Киевская: 'Київська',
-      Луганская: 'Луганська',
-      Львовская: 'Львівська',
-      Николаевская: 'Миколаївська',
-      Одесская: 'Одеська',
-      Полтавская: 'Полтавська',
-      Ровенская: 'Рівненська',
-      Сумская: 'Сумська',
-      Тернопольская: 'Тернопільська',
-      Винницкая: 'Вінницька',
-      Волынская: 'Волинська',
-      Закарпатская: 'Закарпатська',
-      Запорожская: 'Запорізька',
-      Житомирская: 'Житомирська',
-      Крым: 'Крим',
-      Киев: 'Київ',
-      Севастополь: 'Севастополь',
-    };
-
-    try {
-      // 1. Try to find the Oblast (region)
-      let oblastSearch = region.replace(/( область| Oblast| City| м\.|'s)/gi, '').trim();
-
-      // Handle English mapping
-      for (const [en, ua] of Object.entries(OBLAST_MAP)) {
-        if (oblastSearch.toLowerCase().includes(en.toLowerCase())) {
-          oblastSearch = ua;
-          break;
-        }
-      }
-
-      const oblasts = await this.alertsRegionRepository
-        .createQueryBuilder('ar')
-        .where('ar.name ILIKE :name', { name: `%${oblastSearch}%` })
-        .andWhere('ar.type IN (:...types)', { types: ['Область', 'Місто з спеціальним статусом'] })
-        .getMany();
-
-      if (oblasts.length === 0) return null;
-      const oblast = oblasts[0];
-
-      if (!district) return oblast.uid;
-
-      // 2. Try to find Raion/Gromada
-      // Clean up common suffixes that might be missing or different
-      const cleanSearch = (val: string) =>
-        val.replace(/( район| Raion| District| територіальна громада| громада| Community| Town| City| м\.)/gi, '').trim();
-
-      const districtSearch = cleanSearch(district);
-
-      // Search hierarchical: Raion -> Gromada
-      const raions = await this.alertsRegionRepository
-        .createQueryBuilder('ar')
-        .where('ar.parentUid = :parentUid', { parentUid: oblast.uid })
-        .andWhere('ar.name ILIKE :name', { name: `%${districtSearch}%` })
-        .andWhere('ar.type = :type', { type: 'Район' })
-        .getMany();
-
-      if (raions.length > 0) {
-        return raions[0].uid;
-      }
-
-      // If no raion, just look for any Gromada in the same Oblast by name
-      const hromadas = await this.alertsRegionRepository
-        .createQueryBuilder('ar')
-        .where('ar.name ILIKE :name', { name: `%${districtSearch}%` })
-        .andWhere('ar.type = :type', { type: 'Громада' })
-        .getMany();
-
-      if (hromadas.length > 0) {
-        return hromadas[0].uid;
-      }
-
-      // Check direct children Gromadas
-      const directHromada = await this.alertsRegionRepository
-        .createQueryBuilder('ar')
-        .where('ar.parentUid = :parentUid', { parentUid: oblast.uid })
-        .andWhere('ar.name ILIKE :name', { name: `%${districtSearch}%` })
-        .andWhere('ar.type = :type', { type: 'Громада' })
-        .getOne();
-
-      return directHromada ? directHromada.uid : oblast.uid;
-    } catch (err) {
-      this.logger.error(`Error resolving alertRegionUid for ${region}, ${district}: ${err.message}`);
-      return null;
-    }
+    return this.alertRegionResolver.resolve(region, district);
   }
 }

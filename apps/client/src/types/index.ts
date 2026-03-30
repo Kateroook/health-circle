@@ -35,3 +35,19 @@ export interface Circle {
   };
   members: Member[];
 }
+
+export type ActiveAlert = {
+  id: number;
+  locationUid: number;
+  regionName: string;
+  alertType: string;
+  alertTypeRaw: string;
+  startedAt: string;
+  updatedAt: string;
+};
+
+export type MyAlertStatus = {
+  active: boolean;
+  userAlertRegionUid: number | null;
+  alert: ActiveAlert | null;
+};

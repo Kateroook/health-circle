@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { AlertRegionResolverService } from 'src/alerts/alert-region-resolver.service';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
@@ -133,6 +134,10 @@ describe('UsersService', () => {
     sendSyncSignal: jest.fn(),
   });
 
+  const mockAlertRegionResolver = () => ({
+    resolve: jest.fn().mockResolvedValue(null),
+  });
+
   //
   // BEFORE EACH
   //
@@ -150,6 +155,7 @@ describe('UsersService', () => {
         { provide: getRepositoryToken(UserNotificationSettingsEntity), useValue: createRepoMock() },
         { provide: NotificationsService, useValue: mockNotificationsService() },
         { provide: FirestoreSyncService, useValue: mockFirestoreSyncService() },
+        { provide: AlertRegionResolverService, useValue: mockAlertRegionResolver() },
         { provide: SessionActivityService, useValue: { trackActivity: jest.fn() } },
       ],
     }).compile();
