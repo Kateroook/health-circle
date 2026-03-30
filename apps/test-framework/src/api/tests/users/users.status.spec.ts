@@ -36,7 +36,7 @@ test.describe('Status updating', () => {
     test(options.testName, async ({ api, userRepository }) => {
       await api.auth.quickLogin(user.email, user.password);
       const response = await api.users.updateUserStatus(options.data as any);
-      await expect(response.response).toHaveStatus(options.expectedStatus);
+      expect(response.response).toHaveStatus(options.expectedStatus);
       if (options.expectedStatus === 200) {
         const dbUser = await userRepository.getById(user.id!);
         expect(dbUser?.status).toBe(options.data.status);
@@ -49,6 +49,6 @@ test.describe('Status updating', () => {
       status: utils.random.pick(['SAFE', 'DANGER', 'UNKNOWN']),
     });
 
-    await expect(response.response).toHaveStatus(401);
+    expect(response.response).toHaveStatus(401);
   });
 });

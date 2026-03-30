@@ -13,8 +13,8 @@ test.describe('Getting an authorized user by id ', () => {
   test('[USR-032] Getting an existing user by id', async ({ api }) => {
     const userId = await api.getContext().userId!;
     const response = await api.users.getUser(userId);
-    await expect((await response).response).toHaveStatus(200);
-    await expect((await response).data).toMatchObject({
+    expect((await response).response).toHaveStatus(200);
+    expect((await response).data).toMatchObject({
       id: user.id,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -30,18 +30,18 @@ test.describe('Getting an authorized user by id ', () => {
   test('[USR-033] Getting user by non-existent id', async ({ api }) => {
     const userId = utils.random.uuid();
     const response = await api.users.getUser(userId);
-    await expect(response.response).toHaveStatus(403);
+    expect(response.response).toHaveStatus(403);
   });
 
   test('[USR-034] Getting an existing user by invalid format of id', async ({ api }) => {
     const userId = utils.random.shortId(20);
     const response = await api.users.getUser(userId);
-    await expect(response.response).toHaveStatus(400);
+    expect(response.response).toHaveStatus(400);
   });
 
   test('[USR-035] Getting a user by id without authorizaion', async ({ api }) => {
-    await api.auth.clearTokens();
+    api.auth.clearTokens();
     const response = await api.users.getUser(user.id!);
-    await expect(response.response).toHaveStatus(401);
+    expect(response.response).toHaveStatus(401);
   });
 });

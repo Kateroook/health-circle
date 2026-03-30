@@ -11,7 +11,7 @@ test.describe('User Avatar Management', () => {
   test('[USR-056] Avatar uploading in PNG format ', async ({ api }) => {
     const avatar = utils.random.avatar('.png');
     const userWithAvatar = await api.users.uploadUserAvatar(user.id!, avatar.buffer);
-    await expect(userWithAvatar.response).toHaveStatus(200);
+    expect(userWithAvatar.response).toHaveStatus(200);
     expect(userWithAvatar.data).toMatchObject({
       id: user.id,
       firstName: user.firstName,
@@ -25,7 +25,7 @@ test.describe('User Avatar Management', () => {
   test('[USR-057] Avatar uploading in JPEG format ', async ({ api }) => {
     const avatar = utils.random.avatar('.jpeg');
     const userWithAvatar = await api.users.uploadUserAvatar(user.id!, avatar.buffer);
-    await expect(userWithAvatar.response).toHaveStatus(200);
+    expect(userWithAvatar.response).toHaveStatus(200);
     expect(userWithAvatar.data).toMatchObject({
       id: user.id,
       firstName: user.firstName,
@@ -51,7 +51,7 @@ test.describe('User Avatar Management', () => {
   test('[USR-059] Avatar deletion ', async ({ api }) => {
     const avatar = utils.random.avatar(utils.random.pick(['.png', '.jpg', '.jpeg']));
     const userWithAvatar = await api.users.uploadUserAvatar(user.id!, avatar.buffer);
-    await expect(userWithAvatar.response).toHaveStatus(200);
+    expect(userWithAvatar.response).toHaveStatus(200);
     const deletedAvatar = await api.users.deleteUserAvatar(user.id!);
     expect(deletedAvatar.response).toHaveStatus(204);
   });
@@ -59,7 +59,7 @@ test.describe('User Avatar Management', () => {
   test('[USR-060] Getting avatar after deletion', async ({ api }) => {
     const avatar = utils.random.avatar(utils.random.pick(['.png', '.jpg', '.jpeg']));
     const userWithAvatar = await api.users.uploadUserAvatar(user.id!, avatar.buffer);
-    await expect(userWithAvatar.response).toHaveStatus(200);
+    expect(userWithAvatar.response).toHaveStatus(200);
     await api.users.deleteUserAvatar(user.id!);
     const avatarAfterDeletion = await api.users.getUserAvatar(user.id!);
     expect(avatarAfterDeletion.response).toHaveStatus(404);
@@ -69,13 +69,13 @@ test.describe('User Avatar Management', () => {
     const userB = await spawnUser();
     const avatar = utils.random.avatar(utils.random.pick(['.png', '.jpg', '.jpeg']));
     const userWithAvatar = await api.users.uploadUserAvatar(userB.id!, avatar.buffer);
-    await expect(userWithAvatar.response).toHaveStatus4xx;
+    expect(userWithAvatar.response).toHaveStatus4xx;
   });
 
   test('[USR-062] Avatar uploading without authorization', async ({ api }) => {
-    await api.auth.clearTokens();
+    api.auth.clearTokens();
     const avatar = utils.random.avatar(utils.random.pick(['.png', '.jpg', '.jpeg']));
     const userWithAvatar = await api.users.uploadUserAvatar(user.id!, avatar.buffer);
-    await expect(userWithAvatar.response).toHaveStatus(401);
+    expect(userWithAvatar.response).toHaveStatus(401);
   });
 });

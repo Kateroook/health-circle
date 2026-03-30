@@ -11,24 +11,24 @@ test.describe('User deletion', () => {
   });
 
   test('[USR-046] Successful deletion of an authorized user', async ({ api, userRepository }) => {
-    await expect(deletedUser.response).toHaveStatus2xx;
+    expect(deletedUser.response).toHaveStatus2xx;
     const dbUser = await userRepository.getById(user.id!);
     expect(dbUser).toBeNull();
   });
 
   test('[USR-047] User deletion without authorization', async ({ api }) => {
-    await api.auth.clearTokens();
-    await expect(deletedUser.response).toHaveStatus4xx;
+    api.auth.clearTokens();
+    expect(deletedUser.response).toHaveStatus4xx;
   });
 
   test('[USR-048] Login attempt with deleted account credentials', async ({ api }) => {
     api.auth.setAccessToken('');
     const response = await api.auth.login({ identifier: user.email, password: user.password });
-    await expect(response.response).toHaveStatus(401);
+    expect(response.response).toHaveStatus(401);
   });
 
   test('[USR-049] Deletion of the deleted account', async ({ api }) => {
     const doubleDeletedUser = await api.users.deleteUser();
-    await expect(doubleDeletedUser.response).toHaveStatus(401);
+    expect(doubleDeletedUser.response).toHaveStatus(401);
   });
 });

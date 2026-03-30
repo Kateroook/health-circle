@@ -76,7 +76,15 @@ export class UserClient extends BaseClient {
    */
   public async createUser(data: CreateUserRequest): Promise<ApiResult<CreateUserResponse>> {
     return test.step(`Create user. FirstName: "${data.firstName}", LastName: "${data.lastName}", Phone: "${data.phone}", Email: "${data.email}"`, async () => {
-      const result = await this.post<CreateUserResponse>('/api/users', { data });
+      const result = await this.post<CreateUserResponse>('/api/users', {
+        data: {
+          firstName: data.firstName,
+          middleName: data.middleName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+        },
+      });
       if (result.data && result.data.id) {
         this.dbCleaner?.add('users', result.data.id);
       }
@@ -89,7 +97,16 @@ export class UserClient extends BaseClient {
    * Модифікувати користувача
    */
   public async modifyUser(data: ModifyUserRequest): Promise<ApiResult<ModifyUserResponse>> {
-    return await this.put<ModifyUserResponse>('/api/users', { data });
+    return await this.put<ModifyUserResponse>('/api/users', {
+      data: {
+        id: data.id,
+        firstName: data.firstName,
+        middleName: data.middleName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+      },
+    });
   }
 
   /**

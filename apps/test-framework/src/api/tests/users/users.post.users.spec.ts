@@ -3,29 +3,29 @@ import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe('Happy path', () => {
-  test.only('[USR-001] Successfull creation of the user with all filled fields', async ({ api, userRepository }) => {
+  test('[USR-001] Successfull creation of the user with all filled fields', async ({ api, userRepository }) => {
     const user = UserFactory.createRandomUser({ middleName: utils.random.middleName() });
     const newUser = await api.users.createUser(user);
-    await expect(newUser.response).toHaveStatus(201);
+    expect(newUser.response).toHaveStatus(201);
     const responseData = await newUser.response.json();
     const dbUser = await userRepository.getById(responseData.notificationSettings.userId);
-    await expect(dbUser).toBeDefined();
+    expect(dbUser).toBeDefined();
     expect(dbUser).toMatchObject({
       email: user.email.toLowerCase(),
       phone: user.phone,
       firstName: user.firstName,
       lastName: user.lastName,
-      middleName: null,
+      middleName: user.middleName,
     });
   });
 
   test('[USR-002] Successfull creation of the user without a middle name field', async ({ api, userRepository }) => {
     const user = UserFactory.createRandomUser();
     const newUser = await api.users.createUser(user);
-    await expect(newUser.response).toHaveStatus(201);
+    expect(newUser.response).toHaveStatus(201);
     const responseData = await newUser.response.json();
     const dbUser = await userRepository.getById(responseData.notificationSettings.userId);
-    await expect(dbUser).toBeDefined();
+    expect(dbUser).toBeDefined();
     expect(dbUser).toMatchObject({
       email: user.email.toLowerCase(),
       phone: user.phone,
@@ -40,18 +40,18 @@ test.describe('Happy path', () => {
     const newUser = await api.users.createUser(user);
     const responseData = await newUser.response.json();
     const cleanerTasks = (api.users as any).dbCleaner.tasks;
-    await expect(newUser.response).toHaveStatus2xx();
-    await expect(cleanerTasks).toContainEqual({ table: 'users', id: responseData.notificationSettings.userId });
+    expect(newUser.response).toHaveStatus2xx();
+    expect(cleanerTasks).toContainEqual({ table: 'users', id: responseData.notificationSettings.userId });
   });
 
   test('[USR-028] Successfull user creation with a non-Ukrainian phone number', async ({ api, userRepository }) => {
     const randomForeignPhone = utils.random.phone(utils.random.pick(['us', 'uk', 'de', 'pl']));
     const user = UserFactory.createRandomUser({ phone: randomForeignPhone });
     const newUser = await api.users.createUser(user);
-    await expect(newUser.response).toHaveStatus(201);
+    expect(newUser.response).toHaveStatus(201);
     const responseData = await newUser.response.json();
     const dbUser = await userRepository.getById(responseData.notificationSettings.userId);
-    await expect(dbUser).toBeDefined();
+    expect(dbUser).toBeDefined();
     expect(dbUser).toMatchObject({
       email: user.email.toLowerCase(),
       phone: user.phone,
@@ -105,7 +105,7 @@ test.describe('Negative: first name validation', () => {
     test(options.testName, async ({ api }) => {
       const user = UserFactory.createRandomUser({ firstName: options.firstName });
       const newUser = await api.users.createUser(user);
-      await expect(newUser.response).toHaveStatus(400);
+      expect(newUser.response).toHaveStatus(400);
     });
   });
 });
@@ -153,7 +153,7 @@ test.describe('Negative: last name validation', () => {
     test(options.testName, async ({ api }) => {
       const user = UserFactory.createRandomUser({ lastName: options.lastName });
       const newUser = await api.users.createUser(user);
-      await expect(newUser.response).toHaveStatus(400);
+      expect(newUser.response).toHaveStatus(400);
     });
   });
 });
@@ -193,7 +193,7 @@ test.describe('Negative: middle name validation', () => {
     test(options.testName, async ({ api }) => {
       const user = UserFactory.createRandomUser({ middleName: options.middleName });
       const newUser = await api.users.createUser(user);
-      await expect(newUser.response).toHaveStatus(400);
+      expect(newUser.response).toHaveStatus(400);
     });
   });
 });
@@ -225,26 +225,26 @@ test.describe('Negative: email validation', () => {
     test(options.testName, async ({ api }) => {
       const user = UserFactory.createRandomUser({ email: options.email });
       const newUser = await api.users.createUser(user);
-      await expect(newUser.response).toHaveStatus(400);
+      expect(newUser.response).toHaveStatus(400);
     });
   });
   test('[USR-023] The registration of the registered user', async ({ api }) => {
     const userA = UserFactory.createRandomUser();
     const newUser = await api.users.createUser(userA);
-    await expect(newUser.response).toHaveStatus(201);
+    expect(newUser.response).toHaveStatus(201);
     const userB = UserFactory.createRandomUser({ email: userA.email });
     const registeredUser = await api.users.createUser(userB);
-    await expect(registeredUser).toHaveStatus4xx;
+    expect(registeredUser.response).toHaveStatus4xx;
   });
 
   test('[USR-025] The registration of the email in different registers', async ({ api }) => {
     const baseEmail = utils.random.email().toLowerCase();
     const userA = UserFactory.createRandomUser({ email: baseEmail });
     const newUser = await api.users.createUser(userA);
-    await expect(newUser.response).toHaveStatus(201);
+    expect(newUser.response).toHaveStatus(201);
     const userB = UserFactory.createRandomUser({ email: baseEmail.toUpperCase() });
     const registeredUser = await api.users.createUser(userB);
-    await expect(registeredUser.response).toHaveStatus4xx;
+    expect(registeredUser.response).toHaveStatus4xx;
   });
 });
 
@@ -282,7 +282,7 @@ test.describe('Negative: phone validation', () => {
     test(options.testName, async ({ api }) => {
       const user = UserFactory.createRandomUser({ phone: options.phone });
       const newUser = await api.users.createUser(user);
-      await expect(newUser.response).toHaveStatus(400);
+      expect(newUser.response).toHaveStatus(400);
     });
   });
 });

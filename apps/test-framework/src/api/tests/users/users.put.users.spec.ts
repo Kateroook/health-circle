@@ -47,7 +47,7 @@ test.describe('User modification', () => {
         ...options.data,
       });
 
-      await expect(response.response).toHaveStatus(options.expectedStatus);
+      expect(response.response).toHaveStatus(options.expectedStatus);
 
       if (options.expectedStatus === 200) {
         const dbUser = await userRepository.getById(user.id!);
@@ -71,7 +71,7 @@ test.describe('User modification', () => {
       phone: userB.phone,
     });
 
-    await expect(response.response).toHaveStatus4xx;
+    expect(response.response).toHaveStatus4xx;
   });
 
   test('[USR-044] Request without id field', async ({ api, spawnUser }) => {
@@ -81,7 +81,7 @@ test.describe('User modification', () => {
       firstName: utils.random.firstName(),
     } as any);
 
-    await expect(response.response).toHaveStatus(400);
+    expect(response.response).toHaveStatus(400);
   });
 
   test('[USR-045] Request without authorization (no token)', async ({ api, spawnUser }) => {
@@ -94,6 +94,6 @@ test.describe('User modification', () => {
       middleName: utils.random.middleName(),
       phone: utils.random.phone(),
     });
-    await expect(response.response).toHaveStatus(401);
+    expect(response.response).toHaveStatus(401);
   });
 });
