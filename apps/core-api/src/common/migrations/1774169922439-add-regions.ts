@@ -37,8 +37,22 @@ export class AddRegions1774169922439 implements MigrationInterface {
     }
 
     // Seed alerts_regions
-    const csvPath = path.resolve(__dirname, '../../../assets/alerts_regions.csv');
-    if (fs.existsSync(csvPath)) {
+    const searchPaths = [
+      path.resolve(__dirname, '../../../assets/alerts_regions.csv'), // src/common/migrations/ -> apps/core-api/assets/
+      path.resolve(__dirname, '../../../../assets/alerts_regions.csv'), // dist/src/common/migrations/ -> apps/core-api/assets/
+      path.resolve(process.cwd(), 'apps/core-api/assets/alerts_regions.csv'), // root -> apps/core-api/assets/
+      path.resolve(process.cwd(), 'assets/alerts_regions.csv'), // apps/core-api/ -> assets/
+    ];
+
+    let csvPath = '';
+    for (const p of searchPaths) {
+      if (fs.existsSync(p)) {
+        csvPath = p;
+        break;
+      }
+    }
+
+    if (csvPath) {
       const content = fs.readFileSync(csvPath, 'utf8');
       const lines = content.split('\n');
       for (let i = 4; i < lines.length; i++) {
