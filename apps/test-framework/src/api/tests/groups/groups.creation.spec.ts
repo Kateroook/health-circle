@@ -9,7 +9,7 @@ test.describe('api/groups/creation tests', async () => {
   test.beforeEach('Authenticate user', async ({ api, spawnUser }) => {
     user = await spawnUser();
 
-    const loginResult = await api.auth.login({
+    await api.auth.login({
       identifier: user.email,
       password: user.password,
     });

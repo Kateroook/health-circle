@@ -10,10 +10,11 @@ import { useFocusEffect } from "expo-router";
 import { useAnalytics } from "../../hooks/useAnalytics";
 
 import { MemberProfileModal } from "@/src/components/dashboard/MemberProfileModal";
-import { Circle, Member } from "@/src/types";
+import { Circle, Member, MyAlertStatus } from "@/src/types";
 import React, { useCallback, useMemo, useState } from "react";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AlertBanner } from "../../components/dashboard/AlertBanner";
 import { DashboardHeader } from "../../components/dashboard/DashboardHeader";
 import { GroupFilters } from "../../components/dashboard/GroupFilters";
 import { MainStatusButton } from "../../components/dashboard/MainStatusButton";
@@ -24,6 +25,7 @@ export default function DashboardScreen() {
   const { logEvent } = useAnalytics();
   const user = useAuthStore((s) => s.user);
   const [groups, setGroups] = useState<Circle[]>([]);
+  const [myAlertStatus, setMyAlertStatus] = useState<MyAlertStatus | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -45,12 +47,26 @@ export default function DashboardScreen() {
     }
   }, []);
 
-  useSyncSignal(fetchGroups);
+  const fetchMyAlertStatus = useCallback(async () => {
+    try {
+      const data = (await apiFetch("/alerts/status", { method: "GET" })) as MyAlertStatus;
+      setMyAlertStatus(data);
+    } catch (error) {
+      console.error("Error loading alert status:", error);
+    }
+  }, []);
+
+  const syncDashboardData = useCallback(() => {
+    fetchGroups();
+    fetchMyAlertStatus();
+  }, [fetchGroups, fetchMyAlertStatus]);
+
+  useSyncSignal(syncDashboardData);
 
   useFocusEffect(
     useCallback(() => {
-      fetchGroups();
-    }, [fetchGroups]),
+      syncDashboardData();
+    }, [syncDashboardData]),
   );
 
   const handleStatusUpdate = async (newStatus: UserStatus) => {
@@ -128,6 +144,10 @@ export default function DashboardScreen() {
           locationLoading={locationLoading}
           onUpdateLocation={updateCurrentLocation}
         />
+
+        {myAlertStatus?.active && myAlertStatus.alert ? (
+          <AlertBanner alert={myAlertStatus.alert} />
+        ) : null}
 
         <MainStatusButton
           currentStatus={user?.status || "UNKNOWN"}

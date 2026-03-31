@@ -9,7 +9,9 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { ManyToOne } from 'typeorm';
 
+import { AlertsRegionEntity } from '../../alerts/entities/alerts-region.entity';
 import { UserStatus } from '../../common/enums/user-status';
 import { ExternalFilesEntity } from '../../external-files/entities/external-files.entity';
 import { UserNotificationSettingsEntity } from './user-notification-settings.entity';
@@ -94,6 +96,13 @@ export class UserEntity {
 
   @Column({ type: 'boolean', default: false })
   isRegistered: boolean;
+
+  @Column({ type: 'int', name: 'alert_region_uid', nullable: true })
+  alertRegionUid: number | null;
+
+  @ManyToOne(() => AlertsRegionEntity, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'alert_region_uid', foreignKeyConstraintName: 'FK_alerts_region' })
+  alertRegion: AlertsRegionEntity;
 
   isAlias?: boolean;
 }

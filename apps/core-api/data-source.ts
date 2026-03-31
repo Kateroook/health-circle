@@ -15,7 +15,7 @@ export default new DataSource({
   synchronize: false,
   logging: true,
   migrations: [process.cwd() + '/src/common/migrations/*.ts'],
-  entities: [process.cwd() + '/src/common/entities/*.ts'],
+  entities: [process.cwd() + '/src/**/*.entity.ts'],
   migrationsTableName: '_migrations',
   namingStrategy: new SnakeNamingStrategy(),
 });

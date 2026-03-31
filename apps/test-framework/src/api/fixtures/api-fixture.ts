@@ -11,7 +11,6 @@ import { GroupRepository } from '../../core/db/repositories/group-repository';
 import { UserRepository } from '../../core/db/repositories/user-repository';
 import { Database } from '../../core/db/schema';
 import { UserEntity } from '../../core/types/entites/user-interface';
-import { UserFactory } from '@core/data/factories/user-factory';
 export type ApiFixture = {
   db: Kysely<Database>;
 };
@@ -68,10 +67,9 @@ export const test = workerTest.extend<MyFixture>({
   spawnApi: async ({ backendProvider }, use) => {
     await use(() => backendProvider.spawnApi());
   },
-
   spawnUser: async ({ backendProvider }, use) => {
     await use(() => backendProvider.spawnUser());
-  }
+  },
 });
 
 export const expect = mergeExpects(statusExpect);

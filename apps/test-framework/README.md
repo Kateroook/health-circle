@@ -188,16 +188,16 @@ The framework is organized in four clear layers:
 
 **Public properties:**
 
-| Property                      | Type                            | Description                                          |
-| ----------------------------- | ------------------------------- | ---------------------------------------------------- |
-| `db`                          | `Kysely<Database>`              | Active DB connection                                 |
-| `requestContext`              | `APIRequestContext`             | Playwright HTTP request context                      |
-| `api`                         | `ApiClientFactory`              | Entry point for all API clients                      |
-| `dbCleaner`                   | `DbCleaner`                     | Tracks entities for post-test cleanup                |
-| `userRepository`              | `UserRepository`                | Direct DB access for users                           |
-| `groupRepository`             | `GroupRepository`               | Direct DB access for groups                          |
-| `contactRepository`           | `ContactRepository`             | Direct DB access for contacts                        |
-| `confirmationCodeRepository`  | `ConfirmationCodeRepository`    | Direct DB access for confirmation codes              |
+| Property                     | Type                         | Description                             |
+| ---------------------------- | ---------------------------- | --------------------------------------- |
+| `db`                         | `Kysely<Database>`           | Active DB connection                    |
+| `requestContext`             | `APIRequestContext`          | Playwright HTTP request context         |
+| `api`                        | `ApiClientFactory`           | Entry point for all API clients         |
+| `dbCleaner`                  | `DbCleaner`                  | Tracks entities for post-test cleanup   |
+| `userRepository`             | `UserRepository`             | Direct DB access for users              |
+| `groupRepository`            | `GroupRepository`            | Direct DB access for groups             |
+| `contactRepository`          | `ContactRepository`          | Direct DB access for contacts           |
+| `confirmationCodeRepository` | `ConfirmationCodeRepository` | Direct DB access for confirmation codes |
 
 **Initialisation**
 
@@ -236,8 +236,8 @@ await extraApi.auth.quickLogin('userB@test.com', 'password');
 Call both methods at the end of a test scope — Playwright fixtures handle this automatically:
 
 ```typescript
-await provider.cleanup();  // runs DbCleaner, deletes tracked entities
-await provider.dispose();  // disposes requestContext and all spawned contexts
+await provider.cleanup(); // runs DbCleaner, deletes tracked entities
+await provider.dispose(); // disposes requestContext and all spawned contexts
 ```
 
 ---
@@ -256,13 +256,13 @@ All clients extend `BaseClient`, which handles:
 ```typescript
 const api = new ApiClientFactory({ request, dbCleaner });
 
-api.auth;       // AuthClient
-api.users;      // UserClient
-api.groups;     // GroupClient
-api.contacts;   // ContactClient
+api.auth; // AuthClient
+api.users; // UserClient
+api.groups; // GroupClient
+api.contacts; // ContactClient
 
-api.getContext();       // access current TestContext (accessToken, refreshToken, userId)
-api.clone();            // new factory with a fresh empty TestContext
+api.getContext(); // access current TestContext (accessToken, refreshToken, userId)
+api.clone(); // new factory with a fresh empty TestContext
 api.cloneWithContext(); // new factory with a copy of the current TestContext
 ```
 
@@ -349,10 +349,10 @@ if (checkResponse.is401(result.response)) {
 `expect` (custom matchers) — extends Playwright's `expect` with HTTP-aware matchers; import from `api-fixture.ts` in tests:
 
 ```typescript
-expect(response).toHaveStatus(201);   // exactly 201
-expect(response).toHaveStatus2xx();   // 200–299
-expect(response).toHaveStatus4xx();   // 400–499
-expect(response).toHaveStatus5xx();   // 500–599
+expect(response).toHaveStatus(201); // exactly 201
+expect(response).toHaveStatus2xx(); // 200–299
+expect(response).toHaveStatus4xx(); // 400–499
+expect(response).toHaveStatus5xx(); // 500–599
 expect(response).toHaveJsonContent(); // Content-Type: application/json
 ```
 
@@ -450,16 +450,16 @@ import { test, expect } from '../fixtures/api-fixture';
 
 **Test-scoped fixtures:**
 
-| Fixture                      | Type                                  | Description                                                                                                                                                                                                              |
-| ---------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `backendProvider`            | `BackendProvider`                     | Core fixture. Initialised with the worker `db` and test `request` context. Calls `cleanup()` then `dispose()` on teardown. All other fixtures are derived from this one.                                                |
-| `dbCleaner`                  | `DbCleaner`                           | Proxy to `backendProvider.dbCleaner`.                                                                                                                                                                                    |
-| `userRepository`             | `UserRepository`                      | Proxy to `backendProvider.userRepository`.                                                                                                                                                                               |
-| `groupRepository`            | `GroupRepository`                     | Proxy to `backendProvider.groupRepository`.                                                                                                                                                                              |
-| `contactRepository`          | `ContactRepository`                   | Proxy to `backendProvider.contactRepository`.                                                                                                                                                                            |
-| `confirmationCodeRepository` | `ConfirmationCodeRepository`          | Proxy to `backendProvider.confirmationCodeRepository`.                                                                                                                                                                   |
-| `api`                        | `ApiClientFactory`                    | Proxy to `backendProvider.api`. Fresh `TestContext` per test.                                                                                                                                                            |
-| `spawnApi`                   | `() => Promise<ApiClientFactory>`     | Calls `backendProvider.spawnApi()`. Creates additional isolated `ApiClientFactory` instances with their own `APIRequestContext`. Useful when a single test needs multiple independent authenticated sessions.            |
+| Fixture                      | Type                                  | Description                                                                                                                                                                                                                 |
+| ---------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backendProvider`            | `BackendProvider`                     | Core fixture. Initialised with the worker `db` and test `request` context. Calls `cleanup()` then `dispose()` on teardown. All other fixtures are derived from this one.                                                    |
+| `dbCleaner`                  | `DbCleaner`                           | Proxy to `backendProvider.dbCleaner`.                                                                                                                                                                                       |
+| `userRepository`             | `UserRepository`                      | Proxy to `backendProvider.userRepository`.                                                                                                                                                                                  |
+| `groupRepository`            | `GroupRepository`                     | Proxy to `backendProvider.groupRepository`.                                                                                                                                                                                 |
+| `contactRepository`          | `ContactRepository`                   | Proxy to `backendProvider.contactRepository`.                                                                                                                                                                               |
+| `confirmationCodeRepository` | `ConfirmationCodeRepository`          | Proxy to `backendProvider.confirmationCodeRepository`.                                                                                                                                                                      |
+| `api`                        | `ApiClientFactory`                    | Proxy to `backendProvider.api`. Fresh `TestContext` per test.                                                                                                                                                               |
+| `spawnApi`                   | `() => Promise<ApiClientFactory>`     | Calls `backendProvider.spawnApi()`. Creates additional isolated `ApiClientFactory` instances with their own `APIRequestContext`. Useful when a single test needs multiple independent authenticated sessions.               |
 | `spawnUser`                  | `(overrides?) => Promise<UserEntity>` | Calls `backendProvider.spawnUser()`. Creates a fully ready user via API (POST user → fetch confirmation code → setup password) and returns the `UserEntity`. The created user is automatically registered with `DbCleaner`. |
 
 **`spawnUser` — quick user creation**
@@ -515,14 +515,14 @@ All utilities are accessible through the `utils` singleton:
 ```typescript
 import { utils } from '../../utils/utils';
 
-utils.random.firstName();                    // random first name
-utils.random.lastName();                     // random last name
-utils.random.email({ prefix: 'qa' });        // qa<nanoid>@gmail.com
-utils.random.phone();                        // international format phone
-utils.random.shortId(8);                     // 8-char nanoid
-utils.random.pick([a, b, c]);               // random array element
+utils.random.firstName(); // random first name
+utils.random.lastName(); // random last name
+utils.random.email({ prefix: 'qa' }); // qa<nanoid>@gmail.com
+utils.random.phone(); // international format phone
+utils.random.shortId(8); // 8-char nanoid
+utils.random.pick([a, b, c]); // random array element
 utils.random.number({ min: 1, max: 100 });
-utils.random.password();                     // random valid password string
+utils.random.password(); // random valid password string
 
 utils.date; // DateBuilder instance
 ```

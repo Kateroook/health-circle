@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { ApiClientFactory } from '../../../core/api/api-client-factory';
 import { GroupFactory } from '../../../core/data/factories/group-factory';
 import { GroupEntity } from '../../../core/types/entites/group-interface';
@@ -39,13 +38,13 @@ test.describe('api/groups/block-user tests', async () => {
   });
 
   test('[GRP-046] Blocked user is absent in group members list', async ({ api }) => {
-    const blockResult = await api.groups.blockUser(userGroup.id!, member.id!);
+    await api.groups.blockUser(userGroup.id!, member.id!);
     const group = await api.groups.getGroup(userGroup.id!);
     expect(group.data.members[1]).toBeUndefined();
   });
 
   test('[GRP-047] Join group by blocked user', async ({ api }) => {
-    const blockResult = await api.groups.blockUser(userGroup.id!, member.id!);
+    await api.groups.blockUser(userGroup.id!, member.id!);
     const joinResult = await secondApi.groups.joinGroup({ code: userGroup.inviteCode! });
     expect(joinResult.response).toHaveStatus(403);
   });
@@ -63,7 +62,7 @@ test.describe('api/groups/block-user tests', async () => {
   });
 
   test.fixme('[GRP-049-BUG] Block member by non-existing user ID', async ({ api }) => {
-    const nonExistingId = crypto.randomUUID();
+    const nonExistingId = utils.random.uuid();
     const blockResult = await api.groups.blockUser(userGroup.id!, nonExistingId);
     expect(blockResult.response).toHaveStatus(404);
   });

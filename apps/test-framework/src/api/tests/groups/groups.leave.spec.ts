@@ -41,7 +41,7 @@ test.describe('api/groups/leave tests', async () => {
   });
 
   test('[GRP-028] Group disappears from GET /api/groups after leaving', async () => {
-    const leaveResult = await secondApi.groups.leaveGroup(userGroup.id!);
+    await secondApi.groups.leaveGroup(userGroup.id!);
     const allGroup = await secondApi.groups.getAllGroups();
     expect(allGroup.data).toHaveLength(0);
   });

@@ -27,11 +27,11 @@ Download the latest release of Appium Inspector from the [official GitHub releas
 
 On the Inspector's main screen, configure the connection parameters as follows:
 
-| Field         | Value       |
-|---------------|-------------|
-| Remote Host   | `127.0.0.1` |
-| Remote Port   | `4723`      |
-| Remote Path   | `/`         |
+| Field       | Value       |
+| ----------- | ----------- |
+| Remote Host | `127.0.0.1` |
+| Remote Port | `4723`      |
+| Remote Path | `/`         |
 
 > The Remote Path must be a single forward slash (`/`). This is required for Appium 2.x and differs from the legacy `/wd/hub` path used in Appium 1.x.
 
@@ -57,14 +57,17 @@ To avoid entering each capability manually, switch to the **JSON Representation*
 ```
 
 **macOS** — the `appium:app` path will follow the format:
+
 ```
 /Users/<username>/path/to/app-release.apk
 ```
 
 **Windows** — the `appium:app` path will follow the format:
+
 ```
 C:\\Users\\<username>\\path\\to\\app-release.apk
 ```
+
 Note the double backslashes, which are required inside a JSON string on Windows.
 
 ### Inspecting a Specific Screen Without Restarting the App
@@ -82,6 +85,7 @@ If you need to inspect a screen that is deep within the application (for example
 **Cause:** A known issue in the desktop client where it attempts to reconnect to a previously closed session, or a stale session is still registered on the Appium server.
 
 **Resolution:**
+
 1. Fully quit Appium Inspector (on macOS: `Cmd + Q`; on Windows: close via the taskbar tray).
 2. Stop the Appium server in the terminal (`Ctrl + C`) and restart it (`appium`).
 3. Reopen Inspector and start a new session.
@@ -105,5 +109,6 @@ If you need to inspect a screen that is deep within the application (for example
 **Cause:** Appium Inspector requires an **absolute path** to the `.apk` file. Relative paths (e.g., `../`) are not supported.
 
 **Resolution:** Verify the `appium:app` value and replace it with a full absolute path:
+
 - macOS: starting from `/Users/...`
 - Windows: starting from `C:\\Users\\...`

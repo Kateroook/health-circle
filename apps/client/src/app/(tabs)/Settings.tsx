@@ -1,6 +1,8 @@
 import { Avatar } from "@/src/components/Avatar";
 import { Button } from "@/src/components/Button";
+import { HromadaPicker } from "@/src/components/fields/HromadaPicker";
 import { PhoneInput } from "@/src/components/fields/PhoneInput";
+import { RegionPicker } from "@/src/components/fields/RegionPicker";
 import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { ListItem } from "@/src/components/ListItem";
 import { Typography } from "@/src/components/typography";
@@ -8,7 +10,7 @@ import { theme } from "@/src/theme/theme";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Image, Modal, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
@@ -33,6 +35,10 @@ export default function SettingsScreen() {
   const [middleName, setMiddleName] = useState(user?.middleName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [phone, setPhone] = useState(user?.phone || "");
+  const [region, setRegion] = useState(user?.region || "");
+  const [district, setDistrict] = useState(user?.district || "");
+  const [alertRegionUid, setAlertRegionUid] = useState<number | null>(user?.alertRegionUid ?? null);
+  const [alertRegionName, setAlertRegionName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
 
@@ -97,6 +103,9 @@ export default function SettingsScreen() {
     setMiddleName(user?.middleName || "");
     setLastName(user?.lastName || "");
     setPhone(user?.phone || "");
+    setRegion(user?.region || "");
+    setDistrict(user?.district || "");
+    setAlertRegionUid(user?.alertRegionUid ?? null);
     if (user?.id) setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
   }, [user]);
 
@@ -133,7 +142,10 @@ export default function SettingsScreen() {
             middleName: middleName.trim(),
             lastName: lastName.trim(),
             phone: phone.trim(),
+            region: region.trim(),
+            district: district.trim(),
             email: user?.email,
+            ...(alertRegionUid != null ? { alertRegionUid } : {}),
           }),
         ),
       });
@@ -204,7 +216,6 @@ export default function SettingsScreen() {
           confirmNewPassword: confirmPassword.trim(),
         }),
       });
-      Alert.alert("Успіх", "Пароль успішно змінено");
       closePasswordModal();
       setShowPasswordSuccess(true);
     } catch (e: any) {
@@ -217,7 +228,21 @@ export default function SettingsScreen() {
   const handleLocationUpdate = async () => {
     if (locationLoading) return;
     try {
-      await updateCurrentLocation();
+      const info = await updateCurrentLocation();
+      if (info?.region || info?.district) {
+        await apiFetch("/users", {
+          method: "PUT",
+          body: JSON.stringify(
+            cleanObj({
+              id: user?.id,
+              region: info.region,
+              district: info.district,
+              ...(alertRegionUid != null ? { alertRegionUid } : {}),
+            }),
+          ),
+        });
+        await refreshProfile();
+      }
       Alert.alert("Успіх", "Геолокацію оновлено");
     } catch (e: any) {
       if (e.message === "LOCATION_PERMISSION_DENIED") {
@@ -233,6 +258,7 @@ export default function SettingsScreen() {
 
   const fields = [
     {
+      id: "lastName",
       label: "Прізвище",
       value: lastName,
       setter: setLastName,
@@ -241,6 +267,7 @@ export default function SettingsScreen() {
       required: true,
     },
     {
+      id: "firstName",
       label: "Імʼя",
       value: firstName,
       setter: setFirstName,
@@ -249,6 +276,7 @@ export default function SettingsScreen() {
       required: true,
     },
     {
+      id: "middleName",
       label: "По батькові",
       value: middleName,
       setter: setMiddleName,
@@ -257,12 +285,21 @@ export default function SettingsScreen() {
       required: false,
     },
     {
+      id: "phone",
       label: "Номер телефону",
       value: phone,
       setter: setPhone,
       placeholder: "+380...",
       keyboardType: "phone-pad",
       required: true,
+    },
+    {
+      id: "region",
+      label: "Область",
+      value: region,
+      setter: setRegion,
+      placeholder: "Львівська область",
+      required: false,
     },
   ];
 
@@ -275,7 +312,6 @@ export default function SettingsScreen() {
       onRequestClose={closePasswordModal}
     >
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background.primary }}>
-        {/* Header */}
         <View style={passStyles.header}>
           <Button
             shape="round"
@@ -289,10 +325,8 @@ export default function SettingsScreen() {
           <Typography variant="h3" tone="primary" style={passStyles.headerTitle}>
             Змінити пароль
           </Typography>
-          {/* Spacer to center title */}
           <View style={{ width: 48 }} />
         </View>
-        {/* Fields */}
         <ScrollView
           contentContainerStyle={passStyles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -392,7 +426,6 @@ export default function SettingsScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* ДОЗВОЛИ СИСТЕМИ */}
           <Typography variant="subtitle2" tone="secondary" style={styles.sectionLabel}>
             ДОЗВОЛИ СИСТЕМИ
           </Typography>
@@ -446,7 +479,6 @@ export default function SettingsScreen() {
             />
           </View>
 
-          {/* ОБЛІКОВИЙ ЗАПИС */}
           <Typography variant="subtitle2" tone="secondary" style={styles.sectionLabel}>
             ОБЛІКОВИЙ ЗАПИС
           </Typography>
@@ -510,13 +542,12 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Profile header */}
         <View style={styles.headerContainer}>
           <Avatar
             userId={user?.id ?? ""}
             avatarUpdatedAt={user?.avatarUpdatedAt}
             size="xl"
-            border
+            showOuterRing={true}
           />
 
           <Typography variant="h2" tone="primary" style={styles.profileName}>
@@ -524,15 +555,31 @@ export default function SettingsScreen() {
           </Typography>
 
           {!isEditMode && (
-            <Button
-              label="Редагувати"
-              hierarchy="accent"
-              size="medium"
-              shape="rectangle"
-              leadingIcon={<Icon name="edit-2" size={18} color={theme.colors.content.onColor} />}
-              onPress={() => setIsEditMode(true)}
-              style={{ width: "100%" }}
-            />
+            <>
+              {(user?.region || user?.district || alertRegionName) && (
+                <View style={styles.locationView}>
+                  <MaterialCommunityIcons
+                    name="map-marker"
+                    size={16}
+                    color={theme.colors.content.secondary}
+                  />
+                  <Typography variant="body2" tone="secondary">
+                    {alertRegionName
+                      ? alertRegionName
+                      : [user?.region, user?.district].filter(Boolean).join(", ")}
+                  </Typography>
+                </View>
+              )}
+              <Button
+                label="Редагувати"
+                hierarchy="accent"
+                size="medium"
+                shape="rectangle"
+                leadingIcon={<Icon name="edit-2" size={18} color={theme.colors.content.onColor} />}
+                onPress={() => setIsEditMode(true)}
+                style={{ width: "100%" }}
+              />
+            </>
           )}
 
           {isEditMode && (
@@ -557,8 +604,8 @@ export default function SettingsScreen() {
               </View>
 
               {fields.map((field) => (
-                <View key={field.label} style={styles.block}>
-                  {field.label === "Номер телефону" ? (
+                <View key={field.id} style={styles.block}>
+                  {field.id === "phone" ? (
                     <View>
                       <Typography variant="body2" tone="primary" style={{ marginBottom: 4 }}>
                         {field.label}
@@ -576,6 +623,13 @@ export default function SettingsScreen() {
                         showClearButton={false}
                       />
                     </View>
+                  ) : field.id === "region" ? (
+                    <RegionPicker
+                      label={field.label}
+                      value={field.value}
+                      onSelect={field.setter}
+                      placeholder={field.placeholder}
+                    />
                   ) : (
                     <TextField
                       label={field.label}
@@ -589,6 +643,18 @@ export default function SettingsScreen() {
                   )}
                 </View>
               ))}
+
+              <View style={styles.block}>
+                <HromadaPicker
+                  label="Громада / Населений пункт (для тривог)"
+                  value={alertRegionName}
+                  onSelect={(uid, name) => {
+                    setAlertRegionUid(uid);
+                    setAlertRegionName(name);
+                  }}
+                  placeholder="Оберіть громаду для точних тривог"
+                />
+              </View>
 
               <Button
                 label="Зберегти"
@@ -616,7 +682,6 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* Notifications */}
         <View style={styles.settingsSection}>
           <ListItem
             layout="compact"
@@ -630,7 +695,6 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* Security */}
         <View style={styles.settingsSection}>
           <ListItem
             layout="compact"
@@ -648,7 +712,6 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* Location */}
         <View style={styles.settingsSection}>
           <ListItem
             layout="compact"
@@ -667,7 +730,6 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* Logout */}
         <Button
           label="Вихід"
           hierarchy="tertiary"
@@ -688,6 +750,7 @@ export default function SettingsScreen() {
 
       {PasswordModal}
       {PasswordSuccessModal}
+
       <Modal
         visible={isNotificationsModalVisible}
         animationType="slide"
@@ -795,7 +858,6 @@ export default function SettingsScreen() {
         </View>
       </Modal>
 
-      {/* Confirmation modals */}
       <ConfirmationModal
         isVisible={isLogoutVisible}
         onCancel={() => setIsLogoutVisible(false)}
@@ -875,10 +937,13 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   block: { marginBottom: theme.spacing[16] },
-  profileName: {
-    marginTop: theme.spacing[8],
+  profileName: { marginTop: theme.spacing[8], marginBottom: theme.spacing[8], textAlign: "center" },
+  locationView: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing[4],
     marginBottom: theme.spacing[32],
-    textAlign: "center",
   },
   save: { marginTop: theme.spacing[8] },
   editContainer: { width: "100%", marginTop: theme.spacing[8] },
@@ -892,7 +957,7 @@ const styles = StyleSheet.create({
   separator: {
     height: 1,
     backgroundColor: theme.colors.border.opaque,
-    marginLeft: theme.spacing[16],
+    marginLeft: theme.spacing[56],
   },
   sectionLabel: {
     marginTop: theme.spacing[20],
@@ -924,16 +989,9 @@ const passStyles = StyleSheet.create({
     paddingTop: theme.spacing[64],
     paddingBottom: theme.spacing[40],
   },
-  successTitle: {
-    textAlign: "center",
-  },
-  successImage: {
-    width: "70%",
-    aspectRatio: 1,
-  },
-  successButton: {
-    width: "100%",
-  },
+  successTitle: { textAlign: "center" },
+  successImage: { width: "70%", aspectRatio: 1 },
+  successButton: { width: "100%" },
 });
 
 const notifStyles = StyleSheet.create({
