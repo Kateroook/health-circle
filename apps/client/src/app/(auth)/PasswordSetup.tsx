@@ -20,10 +20,13 @@ import { Feather as Icon } from "@expo/vector-icons";
 import { apiFetch } from "../../api/api";
 import { formatErrorMessage } from "../../utils/error.util";
 import { validatePasswordComplexity } from "../../utils/passwordValidation.util";
+import { useAuthStore } from "../../store/authStore";
 
 export default function PasswordSetup() {
   const { logEvent } = useAnalytics();
   const { email } = useLocalSearchParams<{ email: string }>();
+  const login = useAuthStore((state) => state.login);
+  const normalizedEmail = Array.isArray(email) ? email[0] : email;
 
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
@@ -58,20 +61,24 @@ export default function PasswordSetup() {
     setLoading(true);
     try {
       await apiFetch(
-        `/auth/password-setup?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`,
+        `/auth/password-setup?email=${encodeURIComponent(normalizedEmail ?? "")}&code=${encodeURIComponent(code)}`,
         {
           method: "POST",
           body: JSON.stringify({ newPassword: password, confirmNewPassword: confirmPassword }),
         },
       );
+      if (!normalizedEmail) {
+        throw new Error("Не вдалося визначити email для автоматичного входу");
+      }
+      await login(normalizedEmail, password);
       showMessage({
         message: "Успіх",
-        description: "Ваш акаунт успішно підтверджено. Тепер ви можете увійти.",
+        description: "Ваш акаунт успішно підтверджено. Ви вже увійшли в застосунок.",
         type: "success",
         duration: 3000,
       });
       logEvent("sign_up", { method: "form" });
-      router.replace("/Login");
+      router.replace("/Dashboard");
     } catch (e: any) {
       setFormError(formatErrorMessage(e));
     } finally {
@@ -84,7 +91,7 @@ export default function PasswordSetup() {
     try {
       await apiFetch("/auth/resend-registration-code", {
         method: "POST",
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: normalizedEmail }),
       });
       logEvent("resend_code");
       setCountdown(60);
@@ -121,7 +128,7 @@ export default function PasswordSetup() {
               Створюємо твій акаунт
             </Typography>
             <Typography variant="body1" tone="secondary">
-              Ми надіслали код підтвердження на {email}. Будь ласка, введіть його нижче.
+              Ми надіслали код підтвердження на {normalizedEmail}. Будь ласка, введіть його нижче.
             </Typography>
           </View>
 
