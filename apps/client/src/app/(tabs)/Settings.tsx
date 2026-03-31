@@ -3,14 +3,14 @@ import { Button } from "@/src/components/Button";
 import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { ListItem } from "@/src/components/ListItem";
-import { ModalContainer } from "@/src/components/modal/ModalContainer";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import { useFcmToken } from "../../hooks/useFcmToken";
@@ -38,6 +38,7 @@ export default function SettingsScreen() {
 
   // Password
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showPasswordSuccess, setShowPasswordSuccess] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -171,6 +172,14 @@ export default function SettingsScreen() {
     }
   };
 
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setPasswordError("");
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  };
+
   const handleChangePassword = async () => {
     setPasswordError("");
     if (!oldPassword.trim()) {
@@ -196,10 +205,8 @@ export default function SettingsScreen() {
         }),
       });
       Alert.alert("Успіх", "Пароль успішно змінено");
-      setShowPasswordModal(false);
-      setOldPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+      closePasswordModal();
+      setShowPasswordSuccess(true);
     } catch (e: any) {
       setPasswordError(formatErrorMessage(e, "Не вдалося змінити пароль"));
     } finally {
@@ -258,6 +265,108 @@ export default function SettingsScreen() {
       required: true,
     },
   ];
+
+  // ─── Change Password Modal (fullscreen) ──────────
+  const PasswordModal = (
+    <Modal
+      visible={showPasswordModal}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={closePasswordModal}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background.primary }}>
+        {/* Header */}
+        <View style={passStyles.header}>
+          <Button
+            shape="round"
+            hierarchy="tertiary"
+            size="medium"
+            leadingIcon={
+              <MaterialCommunityIcons name="close" size={24} color={theme.colors.content.primary} />
+            }
+            onPress={closePasswordModal}
+          />
+          <Typography variant="h3" tone="primary" style={passStyles.headerTitle}>
+            Змінити пароль
+          </Typography>
+          {/* Spacer to center title */}
+          <View style={{ width: 48 }} />
+        </View>
+        {/* Fields */}
+        <ScrollView
+          contentContainerStyle={passStyles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <PasswordField
+            label="Поточний пароль"
+            required
+            placeholder="Введіть поточний пароль"
+            value={oldPassword}
+            onChangeText={setOldPassword}
+          />
+          <PasswordField
+            label="Новий пароль"
+            required
+            placeholder="Новий пароль (мін. 12 символів)"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            caption="Має містити щонайменше 12 символів"
+          />
+          <PasswordField
+            label="Підтвердіть новий пароль"
+            required
+            placeholder="Повторно введіть новий пароль"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            errorMessage={passwordError || undefined}
+          />
+          <Button
+            label={passwordLoading ? "Збереження..." : "Змінити пароль"}
+            hierarchy="primary"
+            size="medium"
+            shape="rectangle"
+            onPress={handleChangePassword}
+            disabled={passwordLoading}
+            loading={passwordLoading}
+            style={{ marginTop: theme.spacing[8] }}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+
+  // ─── Password Success Modal (fullscreen) ─────────
+  const PasswordSuccessModal = (
+    <Modal
+      visible={showPasswordSuccess}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={() => setShowPasswordSuccess(false)}
+    >
+      <SafeAreaView style={passStyles.successContainer}>
+        <Typography variant="h2" tone="primary" style={passStyles.successTitle}>
+          Пароль змінено
+        </Typography>
+        <Image
+          source={require("../../components/password_change_image.jpg")}
+          style={passStyles.successImage}
+          resizeMode="contain"
+        />
+        <Button
+          label="Увійти в акаунт"
+          hierarchy="primary"
+          size="large"
+          shape="pill"
+          onPress={() => {
+            setShowPasswordSuccess(false);
+            logout();
+            router.replace("/(auth)/Login");
+          }}
+          style={passStyles.successButton}
+        />
+      </SafeAreaView>
+    </Modal>
+  );
 
   // ─── Security Screen ─────────────────────────────
   if (isSecurityScreenVisible) {
@@ -372,56 +481,8 @@ export default function SettingsScreen() {
           </View>
         </ScrollView>
 
-        <ModalContainer isVisible={showPasswordModal} onClose={() => setShowPasswordModal(false)}>
-          <Typography variant="h3" tone="primary" style={{ textAlign: "center" }}>
-            Змінити пароль
-          </Typography>
-          <PasswordField
-            label="Поточний пароль"
-            required
-            placeholder="Введіть поточний пароль"
-            value={oldPassword}
-            onChangeText={setOldPassword}
-          />
-          <PasswordField
-            label="Новий пароль"
-            required
-            placeholder="Новий пароль (мін. 12 символів)"
-            value={newPassword}
-            onChangeText={setNewPassword}
-            caption="Має містити щонайменше 12 символів"
-          />
-          <PasswordField
-            label="Підтвердіть новий пароль"
-            required
-            placeholder="Повторно введіть новий пароль"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            errorMessage={passwordError || undefined}
-          />
-          <Button
-            label={passwordLoading ? "Збереження..." : "Змінити пароль"}
-            hierarchy="primary"
-            size="medium"
-            shape="rectangle"
-            onPress={handleChangePassword}
-            disabled={passwordLoading}
-            loading={passwordLoading}
-          />
-          <Button
-            label="Скасувати"
-            hierarchy="tertiary"
-            size="medium"
-            shape="rectangle"
-            onPress={() => {
-              setShowPasswordModal(false);
-              setPasswordError("");
-              setOldPassword("");
-              setNewPassword("");
-              setConfirmPassword("");
-            }}
-          />
-        </ModalContainer>
+        {PasswordModal}
+        {PasswordSuccessModal}
 
         <ConfirmationModal
           isVisible={isDeleteAccountVisible}
@@ -625,59 +686,8 @@ export default function SettingsScreen() {
         />
       </ScrollView>
 
-      {/* Change Password Modal */}
-      <ModalContainer isVisible={showPasswordModal} onClose={() => setShowPasswordModal(false)}>
-        <Typography variant="h3" tone="primary" style={{ textAlign: "center" }}>
-          Змінити пароль
-        </Typography>
-        <PasswordField
-          label="Поточний пароль"
-          required
-          placeholder="Введіть поточний пароль"
-          value={oldPassword}
-          onChangeText={setOldPassword}
-        />
-        <PasswordField
-          label="Новий пароль"
-          required
-          placeholder="Новий пароль (мін. 12 символів)"
-          value={newPassword}
-          onChangeText={setNewPassword}
-          caption="Має містити щонайменше 12 символів"
-        />
-        <PasswordField
-          label="Підтвердіть новий пароль"
-          required
-          placeholder="Повторно введіть новий пароль"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          errorMessage={passwordError || undefined}
-        />
-        <Button
-          label={passwordLoading ? "Збереження..." : "Змінити пароль"}
-          hierarchy="primary"
-          size="medium"
-          shape="rectangle"
-          onPress={handleChangePassword}
-          disabled={passwordLoading}
-          loading={passwordLoading}
-        />
-        <Button
-          label="Скасувати"
-          hierarchy="tertiary"
-          size="medium"
-          shape="rectangle"
-          onPress={() => {
-            setShowPasswordModal(false);
-            setPasswordError("");
-            setOldPassword("");
-            setNewPassword("");
-            setConfirmPassword("");
-          }}
-        />
-      </ModalContainer>
-
-      {/* Notifications Modal */}
+      {PasswordModal}
+      {PasswordSuccessModal}
       <Modal
         visible={isNotificationsModalVisible}
         animationType="slide"
@@ -840,14 +850,8 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background.primary,
-  },
-  scrollContent: {
-    paddingHorizontal: theme.spacing[16],
-    paddingBottom: 120,
-  },
+  container: { flex: 1, backgroundColor: theme.colors.background.primary },
+  scrollContent: { paddingHorizontal: theme.spacing[16], paddingBottom: 120 },
   screenHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -857,9 +861,7 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border.opaque,
     gap: theme.spacing[8],
   },
-  screenHeaderTitle: {
-    flex: 1,
-  },
+  screenHeaderTitle: { flex: 1 },
   headerContainer: {
     alignItems: "center",
     paddingTop: theme.spacing[20],
@@ -879,10 +881,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   save: { marginTop: theme.spacing[8] },
-  editContainer: {
-    width: "100%",
-    marginTop: theme.spacing[8],
-  },
+  editContainer: { width: "100%", marginTop: theme.spacing[8] },
   cancelButton: { marginTop: theme.spacing[8] },
   settingsSection: {
     backgroundColor: theme.colors.background.secondary,
@@ -901,9 +900,39 @@ const styles = StyleSheet.create({
     marginLeft: theme.spacing[4],
     letterSpacing: 0.5,
   },
-  logoutButton: {
-    marginTop: theme.spacing[8],
-    backgroundColor: theme.colors.background.secondary,
+  logoutButton: { marginTop: theme.spacing[8], backgroundColor: theme.colors.background.secondary },
+});
+
+const passStyles = StyleSheet.create({
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[8],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.opaque,
+  },
+  headerTitle: { flex: 1, textAlign: "center" },
+  scrollContent: { padding: theme.spacing[16], gap: theme.spacing[16] },
+  successContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background.primary,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: theme.spacing[24],
+    paddingTop: theme.spacing[64],
+    paddingBottom: theme.spacing[40],
+  },
+  successTitle: {
+    textAlign: "center",
+  },
+  successImage: {
+    width: "70%",
+    aspectRatio: 1,
+  },
+  successButton: {
+    width: "100%",
   },
 });
 
@@ -917,10 +946,7 @@ const notifStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.opaque,
   },
-  scrollContent: {
-    padding: theme.spacing[16],
-    paddingBottom: theme.spacing[40],
-  },
+  scrollContent: { padding: theme.spacing[16], paddingBottom: theme.spacing[40] },
   listSection: {
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.radius.xl,
