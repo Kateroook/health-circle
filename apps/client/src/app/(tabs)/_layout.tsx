@@ -1,14 +1,42 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Tabs } from "expo-router";
 import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Animated, Dimensions, StyleSheet, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { Dimensions } from "react-native";
 
 const screenWidth = Dimensions.get("window").width;
 const TAB_WIDTH = (screenWidth - 64 - 12) / 3;
+
+const TabBarIcon = ({ routeName, isFocused }: { routeName: string; isFocused: boolean }) => {
+  const color = isFocused ? "#000" : "#FFF";
+
+  if (routeName === "Dashboard") {
+    return (
+      <MaterialCommunityIcons
+        name={isFocused ? "heart" : "heart-outline"}
+        size={24}
+        color={color}
+      />
+    );
+  }
+
+  if (routeName === "Circles") {
+    return (
+      <MaterialCommunityIcons
+        name={isFocused ? "account-supervisor" : "account-supervisor-outline"}
+        size={25}
+        color={color}
+      />
+    );
+  }
+
+  return isFocused ? (
+    <MaterialCommunityIcons name="cog" size={24} color={color} />
+  ) : (
+    <Octicons name="gear" size={22} color={color} />
+  );
+};
 
 const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
   const insets = useSafeAreaInsets();
@@ -20,7 +48,7 @@ const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
       useNativeDriver: true,
       friction: 8,
     }).start();
-  }, [state.index]);
+  }, [state.index, translateX]);
 
   return (
     <View style={[styles.tabBar, { bottom: 20 + insets.bottom }]}>
@@ -43,15 +71,9 @@ const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
           }
         };
 
-        let iconName: keyof typeof MaterialCommunityIcons.glyphMap = "circle";
-
-        if (route.name === "Dashboard") iconName = "heart-outline";
-        if (route.name === "Circles") iconName = "account-group-outline";
-        if (route.name === "Settings") iconName = "cog";
-
         return (
           <TouchableOpacity key={route.key} style={styles.tabItem} onPress={onPress}>
-            <MaterialCommunityIcons name={iconName} size={32} color={isFocused ? "#000" : "#FFF"} />
+            <TabBarIcon routeName={route.name} isFocused={isFocused} />
           </TouchableOpacity>
         );
       })}
