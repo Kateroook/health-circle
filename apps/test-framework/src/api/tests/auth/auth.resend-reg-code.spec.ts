@@ -6,38 +6,50 @@ test.describe(
     tag: '@auth',
   },
   async () => {
-    test('[AUTH-056] Successful code resend', async ({ api, confirmationCodeRepository }) => {
-      let user = UserFactory.createRandomUser();
-      const postUser = await api.users.createUser({
-        email: user.email,
-        phone: user.phone,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      });
-      expect(postUser.response).toHaveStatus2xx();
-      user.id = postUser.data.id;
+    test(
+      '[AUTH-056] Successful code resend',
+      {
+        tag: '@smoke',
+      },
+      async ({ api, confirmationCodeRepository }) => {
+        let user = UserFactory.createRandomUser();
+        const postUser = await api.users.createUser({
+          email: user.email,
+          phone: user.phone,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        });
+        expect(postUser.response).toHaveStatus2xx();
+        user.id = postUser.data.id;
 
-      const oldCode = (await confirmationCodeRepository.getLastUserCode(user.id)).code;
+        const oldCode = (await confirmationCodeRepository.getLastUserCode(user.id)).code;
 
-      const resendCode = await api.auth.resendRegistrationCode({
-        email: user.email,
-      });
+        const resendCode = await api.auth.resendRegistrationCode({
+          email: user.email,
+        });
 
-      expect(resendCode.response).toHaveStatus2xx();
+        expect(resendCode.response).toHaveStatus2xx();
 
-      const newCode = (await confirmationCodeRepository.getLastUserCode(user.id)).code;
+        const newCode = (await confirmationCodeRepository.getLastUserCode(user.id)).code;
 
-      expect(oldCode).not.toEqual(newCode);
-    });
+        expect(oldCode).not.toEqual(newCode);
+      },
+    );
 
-    test('[AUTH-057] Resend registration code for non-registered email', async ({ api }) => {
-      let user = UserFactory.createRandomUser();
+    test(
+      '[AUTH-057] Resend registration code for non-registered email',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        let user = UserFactory.createRandomUser();
 
-      const resendCode = await api.auth.resendRegistrationCode({
-        email: user.email,
-      });
+        const resendCode = await api.auth.resendRegistrationCode({
+          email: user.email,
+        });
 
-      expect(resendCode.response).toHaveStatus4xx();
-    });
+        expect(resendCode.response).toHaveStatus4xx();
+      },
+    );
   },
 );
