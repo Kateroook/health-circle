@@ -1,6 +1,7 @@
 import { getAvatarUrl } from "@/src/api/api";
 import { theme } from "@/src/theme/theme";
-import React, { useMemo, useState } from "react";
+import { useAuthStore } from "@/src/store/authStore";
+import React, { useEffect, useMemo, useState } from "react";
 import { Image, ImageSourcePropType, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 
 export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
@@ -47,6 +48,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   style,
 }) => {
   const [imageError, setImageError] = useState(false);
+  const accessToken = useAuthStore((state) => state.accessToken);
 
   const { outer, inner } = SIZE_MAP[size];
   const { colorBorder, whiteBorder } = BORDER_CONFIG[size];
@@ -54,21 +56,30 @@ export const Avatar: React.FC<AvatarProps> = ({
   const hasStatus = showStatusRing;
   const hasOuter = showOuterRing && hasStatus;
 
-  // базовий розмір
   let containerSize = outer;
   if (hasOuter) containerSize += whiteBorder * 2;
 
   const imageContainerSize = hasStatus ? inner : outer;
+  useEffect(() => {
+    setImageError(false);
+  }, [source, userId, avatarUpdatedAt]);
+
   const resolvedSource = useMemo(() => {
     if (source) return source;
 
     if (userId) {
       const url = getAvatarUrl(userId, avatarUpdatedAt);
-      if (url && !imageError) return { uri: url };
+      if (url && !imageError) {
+        return {
+          uri: url,
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+          cache: "reload",
+        };
+      }
     }
 
     return DEFAULT_AVATAR;
-  }, [source, userId, avatarUpdatedAt, imageError]);
+  }, [source, userId, avatarUpdatedAt, imageError, accessToken]);
 
   const image = (
     <Image
