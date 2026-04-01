@@ -37,45 +37,81 @@ test.describe(
       await secondApi.groups.joinGroup({ code: userGroup.inviteCode });
     });
 
-    test('[GRP-045] Successful user block by owner', async ({ api }) => {
-      const blockResult = await api.groups.blockUser(userGroup.id!, member.id!);
-      expect(blockResult.response).toHaveStatus(201); // must be 200
-    });
+    test(
+      '[GRP-045] Successful user block by owner',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        const blockResult = await api.groups.blockUser(userGroup.id!, member.id!);
+        expect(blockResult.response).toHaveStatus(201); // must be 200
+      },
+    );
 
-    test('[GRP-046] Blocked user is absent in group members list', async ({ api }) => {
-      await api.groups.blockUser(userGroup.id!, member.id!);
-      const group = await api.groups.getGroup(userGroup.id!);
-      expect(group.data.members[1]).toBeUndefined();
-    });
+    test(
+      '[GRP-046] Blocked user is absent in group members list',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        await api.groups.blockUser(userGroup.id!, member.id!);
+        const group = await api.groups.getGroup(userGroup.id!);
+        expect(group.data.members[1]).toBeUndefined();
+      },
+    );
 
-    test('[GRP-047] Join group by blocked user', async ({ api }) => {
-      await api.groups.blockUser(userGroup.id!, member.id!);
-      const joinResult = await secondApi.groups.joinGroup({ code: userGroup.inviteCode! });
-      expect(joinResult.response).toHaveStatus(403);
-    });
+    test(
+      '[GRP-047] Join group by blocked user',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        await api.groups.blockUser(userGroup.id!, member.id!);
+        const joinResult = await secondApi.groups.joinGroup({ code: userGroup.inviteCode! });
+        expect(joinResult.response).toHaveStatus(403);
+      },
+    );
 
-    test('[GRP-048] Block user by non-owner member', async ({ spawnUser, spawnApi }) => {
-      const secondMember = await spawnUser();
-      const secondMemberApi = await spawnApi();
-      await secondMemberApi.auth.login({
-        identifier: member.email,
-        password: member.password,
-      });
-      await secondMemberApi.groups.joinGroup({ code: userGroup.inviteCode! });
-      const blockResult = await secondApi.groups.blockUser(userGroup.id!, secondMember.id!);
-      expect(blockResult.response).toHaveStatus(401);
-    });
+    test(
+      '[GRP-048] Block user by non-owner member',
+      {
+        tag: '@sanity',
+      },
+      async ({ spawnUser, spawnApi }) => {
+        const secondMember = await spawnUser();
+        const secondMemberApi = await spawnApi();
+        await secondMemberApi.auth.login({
+          identifier: member.email,
+          password: member.password,
+        });
+        await secondMemberApi.groups.joinGroup({ code: userGroup.inviteCode! });
+        const blockResult = await secondApi.groups.blockUser(userGroup.id!, secondMember.id!);
+        expect(blockResult.response).toHaveStatus(401);
+      },
+    );
 
-    test.fixme('[GRP-049-BUG] Block member by non-existing user ID', async ({ api }) => {
-      const nonExistingId = utils.random.uuid();
-      const blockResult = await api.groups.blockUser(userGroup.id!, nonExistingId);
-      expect(blockResult.response).toHaveStatus(404);
-    });
+    test.fixme(
+      '[GRP-049-BUG] Block member by non-existing user ID',
+      {
+        tag: '@sanity',
+      },
+      async ({ api }) => {
+        const nonExistingId = utils.random.uuid();
+        const blockResult = await api.groups.blockUser(userGroup.id!, nonExistingId);
+        expect(blockResult.response).toHaveStatus(404);
+      },
+    );
 
-    test('[GRP-050] Block user without authorization', async ({ api }) => {
-      api.groups.clearTokens();
-      const blockResult = await api.groups.blockUser(userGroup.id!, member.id!);
-      expect(blockResult.response).toHaveStatus(401);
-    });
+    test(
+      '[GRP-050] Block user without authorization',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        api.groups.clearTokens();
+        const blockResult = await api.groups.blockUser(userGroup.id!, member.id!);
+        expect(blockResult.response).toHaveStatus(401);
+      },
+    );
   },
 );

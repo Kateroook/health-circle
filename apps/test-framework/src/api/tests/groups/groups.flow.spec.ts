@@ -7,7 +7,7 @@ import { expect, test } from '../../fixtures/api-fixture';
 test.describe(
   'api/groups/flow tests',
   {
-    tag: '@groups',
+    tag: ['@groups', '@smoke', '@e2e'],
   },
   async () => {
     let userA: UserEntity;

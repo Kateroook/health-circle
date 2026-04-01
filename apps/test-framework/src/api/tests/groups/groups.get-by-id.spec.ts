@@ -20,38 +20,56 @@ test.describe(
       });
     });
 
-    test('[GRP-011] Successful get group by existing ID', async ({ api }) => {
-      const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
-      const createGroupResult = await api.groups.createGroup(validGroup);
+    test(
+      '[GRP-011] Successful get group by existing ID',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
+        const createGroupResult = await api.groups.createGroup(validGroup);
 
-      const groupId = createGroupResult.data.id;
-      const group = await api.groups.getGroup(groupId);
+        const groupId = createGroupResult.data.id;
+        const group = await api.groups.getGroup(groupId);
 
-      expect(group.response).toHaveStatus(200);
-      expect(group.data.members).toHaveLength(1);
-      expect(group.data.owner.id).toBe(user.id);
-    });
+        expect(group.response).toHaveStatus(200);
+        expect(group.data.members).toHaveLength(1);
+        expect(group.data.owner.id).toBe(user.id);
+      },
+    );
 
-    test('[GRP-012] Get group by non-existing ID', async ({ api }) => {
-      const nonExistingId = utils.random.uuid();
-      const group = await api.groups.getGroup(nonExistingId);
+    test(
+      '[GRP-012] Get group by non-existing ID',
+      {
+        tag: '@sanity',
+      },
+      async ({ api }) => {
+        const nonExistingId = utils.random.uuid();
+        const group = await api.groups.getGroup(nonExistingId);
 
-      expect(group.response).toHaveStatus(404);
-      expect(group.data).toBeNull();
-    });
+        expect(group.response).toHaveStatus(404);
+        expect(group.data).toBeNull();
+      },
+    );
 
-    test('[GRP-013] Get group by ID without authorization', async ({ api }) => {
-      const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
-      const createGroupResult = await api.groups.createGroup(validGroup);
+    test(
+      '[GRP-013] Get group by ID without authorization',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
+        const createGroupResult = await api.groups.createGroup(validGroup);
 
-      const groupId = createGroupResult.data.id;
+        const groupId = createGroupResult.data.id;
 
-      api.groups.clearTokens();
+        api.groups.clearTokens();
 
-      const group = await api.groups.getGroup(groupId);
+        const group = await api.groups.getGroup(groupId);
 
-      expect(group.response).toHaveStatus(401);
-      expect(group.data).toBeNull();
-    });
+        expect(group.response).toHaveStatus(401);
+        expect(group.data).toBeNull();
+      },
+    );
   },
 );

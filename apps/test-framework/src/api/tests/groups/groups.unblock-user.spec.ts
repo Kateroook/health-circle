@@ -38,35 +38,59 @@ test.describe(
       await api.groups.blockUser(userGroup.id!, blockedUser.id!);
     });
 
-    test('[GRP-051] Unblock user as owner', async ({ api }) => {
-      const unblockResult = await api.groups.unblockUser(userGroup.id!, blockedUser.id!);
-      expect(unblockResult.response).toHaveStatus(200);
-    });
+    test(
+      '[GRP-051] Unblock user as owner',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        const unblockResult = await api.groups.unblockUser(userGroup.id!, blockedUser.id!);
+        expect(unblockResult.response).toHaveStatus(200);
+      },
+    );
 
-    test('[GRP-052] Join group as unblocked user', async ({ api }) => {
-      await api.groups.unblockUser(userGroup.id!, blockedUser.id!);
-      const joinResult = await secondApi.groups.joinGroup({ code: userGroup.inviteCode! });
-      expect(joinResult.response).toHaveStatus(201); // must be 200
-      const group = await api.groups.getGroup(userGroup.id!);
-      expect(group.data.members[1].id).toBe(blockedUser.id);
-    });
+    test(
+      '[GRP-052] Join group as unblocked user',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        await api.groups.unblockUser(userGroup.id!, blockedUser.id!);
+        const joinResult = await secondApi.groups.joinGroup({ code: userGroup.inviteCode! });
+        expect(joinResult.response).toHaveStatus(201); // must be 200
+        const group = await api.groups.getGroup(userGroup.id!);
+        expect(group.data.members[1].id).toBe(blockedUser.id);
+      },
+    );
 
-    test('[GRP-053] Unblock user as non-owner of group', async ({ api, spawnApi, spawnUser }) => {
-      const member = await spawnUser();
-      const memberApi = await spawnApi();
-      await memberApi.auth.login({
-        identifier: member.email,
-        password: member.password,
-      });
-      await memberApi.groups.joinGroup({ code: userGroup.inviteCode! });
-      const unblockResult = await memberApi.groups.unblockUser(userGroup.id!, blockedUser.id!);
-      expect(unblockResult.response).toHaveStatus(403);
-    });
+    test(
+      '[GRP-053] Unblock user as non-owner of group',
+      {
+        tag: '@sanity',
+      },
+      async ({ api, spawnApi, spawnUser }) => {
+        const member = await spawnUser();
+        const memberApi = await spawnApi();
+        await memberApi.auth.login({
+          identifier: member.email,
+          password: member.password,
+        });
+        await memberApi.groups.joinGroup({ code: userGroup.inviteCode! });
+        const unblockResult = await memberApi.groups.unblockUser(userGroup.id!, blockedUser.id!);
+        expect(unblockResult.response).toHaveStatus(403);
+      },
+    );
 
-    test('[GRP-054] Unblock user without authorization', async ({ api }) => {
-      api.groups.clearTokens();
-      const unblockResult = await api.groups.unblockUser(userGroup.id!, blockedUser.id!);
-      expect(unblockResult.response).toHaveStatus(401);
-    });
+    test(
+      '[GRP-054] Unblock user without authorization',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        api.groups.clearTokens();
+        const unblockResult = await api.groups.unblockUser(userGroup.id!, blockedUser.id!);
+        expect(unblockResult.response).toHaveStatus(401);
+      },
+    );
   },
 );

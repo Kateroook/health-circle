@@ -37,44 +37,74 @@ test.describe(
       await secondApi.groups.joinGroup({ code: userGroup.inviteCode });
     });
 
-    test('[GRP-027] Successful leave from group by member', async ({ api }) => {
-      const leaveResult = await secondApi.groups.leaveGroup(userGroup.id!);
+    test(
+      '[GRP-027] Successful leave from group by member',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        const leaveResult = await secondApi.groups.leaveGroup(userGroup.id!);
 
-      expect(leaveResult.response).toHaveStatus(201); //must be 200
-      const group = await api.groups.getGroup(userGroup.id!);
-      expect(group.data.members).toHaveLength(1);
-    });
+        expect(leaveResult.response).toHaveStatus(201); //must be 200
+        const group = await api.groups.getGroup(userGroup.id!);
+        expect(group.data.members).toHaveLength(1);
+      },
+    );
 
-    test('[GRP-028] Group disappears from GET /api/groups after leaving', async () => {
-      await secondApi.groups.leaveGroup(userGroup.id!);
-      const allGroup = await secondApi.groups.getAllGroups();
-      expect(allGroup.data).toHaveLength(0);
-    });
+    test(
+      '[GRP-028] Group disappears from GET /api/groups after leaving',
+      {
+        tag: '@smoke',
+      },
+      async () => {
+        await secondApi.groups.leaveGroup(userGroup.id!);
+        const allGroup = await secondApi.groups.getAllGroups();
+        expect(allGroup.data).toHaveLength(0);
+      },
+    );
 
-    test.fixme('[GRP-029-BUG] Leave group by non-member', async ({ spawnUser, spawnApi }) => {
-      const outsider = await spawnUser();
-      const thirdApi = await spawnApi();
+    test.fixme(
+      '[GRP-029-BUG] Leave group by non-member',
+      {
+        tag: '@sanity',
+      },
+      async ({ spawnUser, spawnApi }) => {
+        const outsider = await spawnUser();
+        const thirdApi = await spawnApi();
 
-      await thirdApi.auth.login({
-        identifier: outsider.email,
-        password: outsider.password,
-      });
+        await thirdApi.auth.login({
+          identifier: outsider.email,
+          password: outsider.password,
+        });
 
-      const leaveResult = await thirdApi.groups.leaveGroup(userGroup.id!);
+        const leaveResult = await thirdApi.groups.leaveGroup(userGroup.id!);
 
-      expect(leaveResult.response).toHaveStatus4xx();
-    });
+        expect(leaveResult.response).toHaveStatus4xx();
+      },
+    );
 
-    test('[GRP-030] Owner tries to leave their own group', async ({ api }) => {
-      const leaveResult = await api.groups.leaveGroup(userGroup.id!);
-      expect(leaveResult.response).toHaveStatus(403);
-    });
+    test(
+      '[GRP-030] Owner tries to leave their own group',
+      {
+        tag: '@sanity',
+      },
+      async ({ api }) => {
+        const leaveResult = await api.groups.leaveGroup(userGroup.id!);
+        expect(leaveResult.response).toHaveStatus(403);
+      },
+    );
 
-    test('[GRP-031] Leave group without authorization', async () => {
-      secondApi.groups.clearTokens();
-      const leaveResult = await secondApi.groups.leaveGroup(userGroup.id!);
+    test(
+      '[GRP-031] Leave group without authorization',
+      {
+        tag: '@smoke',
+      },
+      async () => {
+        secondApi.groups.clearTokens();
+        const leaveResult = await secondApi.groups.leaveGroup(userGroup.id!);
 
-      expect(leaveResult.response).toHaveStatus(401);
-    });
+        expect(leaveResult.response).toHaveStatus(401);
+      },
+    );
   },
 );
