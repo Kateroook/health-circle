@@ -187,7 +187,7 @@ export const MemberProfileView = ({
         )}
         {onRename && (
           <Button
-            label="Редагувати імʼя"
+            label="Перейменувати"
             hierarchy="secondary"
             shape="rectangle"
             size="medium"
