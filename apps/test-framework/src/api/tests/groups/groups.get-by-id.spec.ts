@@ -3,49 +3,55 @@ import { UserEntity } from '../../../core/types/entites/user-interface';
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
-test.describe('api/groups/get-by-id tests', async () => {
-  let user: UserEntity;
+test.describe(
+  'api/groups/get-by-id tests',
+  {
+    tag: '@groups',
+  },
+  async () => {
+    let user: UserEntity;
 
-  test.beforeEach('Authenticate user', async ({ api, spawnUser }) => {
-    user = await spawnUser();
+    test.beforeEach('Authenticate user', async ({ api, spawnUser }) => {
+      user = await spawnUser();
 
-    await api.auth.login({
-      identifier: user.email,
-      password: user.password,
+      await api.auth.login({
+        identifier: user.email,
+        password: user.password,
+      });
     });
-  });
 
-  test('[GRP-011] Successful get group by existing ID', async ({ api }) => {
-    const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
-    const createGroupResult = await api.groups.createGroup(validGroup);
+    test('[GRP-011] Successful get group by existing ID', async ({ api }) => {
+      const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
+      const createGroupResult = await api.groups.createGroup(validGroup);
 
-    const groupId = createGroupResult.data.id;
-    const group = await api.groups.getGroup(groupId);
+      const groupId = createGroupResult.data.id;
+      const group = await api.groups.getGroup(groupId);
 
-    expect(group.response).toHaveStatus(200);
-    expect(group.data.members).toHaveLength(1);
-    expect(group.data.owner.id).toBe(user.id);
-  });
+      expect(group.response).toHaveStatus(200);
+      expect(group.data.members).toHaveLength(1);
+      expect(group.data.owner.id).toBe(user.id);
+    });
 
-  test('[GRP-012] Get group by non-existing ID', async ({ api }) => {
-    const nonExistingId = utils.random.uuid();
-    const group = await api.groups.getGroup(nonExistingId);
+    test('[GRP-012] Get group by non-existing ID', async ({ api }) => {
+      const nonExistingId = utils.random.uuid();
+      const group = await api.groups.getGroup(nonExistingId);
 
-    expect(group.response).toHaveStatus(404);
-    expect(group.data).toBeNull();
-  });
+      expect(group.response).toHaveStatus(404);
+      expect(group.data).toBeNull();
+    });
 
-  test('[GRP-013] Get group by ID without authorization', async ({ api }) => {
-    const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
-    const createGroupResult = await api.groups.createGroup(validGroup);
+    test('[GRP-013] Get group by ID without authorization', async ({ api }) => {
+      const validGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
+      const createGroupResult = await api.groups.createGroup(validGroup);
 
-    const groupId = createGroupResult.data.id;
+      const groupId = createGroupResult.data.id;
 
-    api.groups.clearTokens();
+      api.groups.clearTokens();
 
-    const group = await api.groups.getGroup(groupId);
+      const group = await api.groups.getGroup(groupId);
 
-    expect(group.response).toHaveStatus(401);
-    expect(group.data).toBeNull();
-  });
-});
+      expect(group.response).toHaveStatus(401);
+      expect(group.data).toBeNull();
+    });
+  },
+);

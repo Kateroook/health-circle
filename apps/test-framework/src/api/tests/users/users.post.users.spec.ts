@@ -2,65 +2,71 @@ import { UserFactory } from '../../../core/data/factories/user-factory';
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
-test.describe('Happy path', () => {
-  test('[USR-001] Successfull creation of the user with all filled fields', async ({ api, userRepository }) => {
-    const user = UserFactory.createRandomUser({ middleName: utils.random.middleName() });
-    const newUser = await api.users.createUser(user);
-    expect(newUser.response).toHaveStatus(201);
-    const responseData = await newUser.response.json();
-    const dbUser = await userRepository.getById(responseData.notificationSettings.userId);
-    expect(dbUser).toBeDefined();
-    expect(dbUser).toMatchObject({
-      email: user.email.toLowerCase(),
-      phone: user.phone,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      middleName: user.middleName,
+test.describe(
+  'Happy path',
+  {
+    tag: '@users',
+  },
+  async () => {
+    test('[USR-001] Successfull creation of the user with all filled fields', async ({ api, userRepository }) => {
+      const user = UserFactory.createRandomUser({ middleName: utils.random.middleName() });
+      const newUser = await api.users.createUser(user);
+      expect(newUser.response).toHaveStatus(201);
+      const responseData = await newUser.response.json();
+      const dbUser = await userRepository.getById(responseData.notificationSettings.userId);
+      expect(dbUser).toBeDefined();
+      expect(dbUser).toMatchObject({
+        email: user.email.toLowerCase(),
+        phone: user.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        middleName: user.middleName,
+      });
     });
-  });
 
-  test('[USR-002] Successfull creation of the user without a middle name field', async ({ api, userRepository }) => {
-    const user = UserFactory.createRandomUser();
-    const newUser = await api.users.createUser(user);
-    expect(newUser.response).toHaveStatus(201);
-    const responseData = await newUser.response.json();
-    const dbUser = await userRepository.getById(responseData.notificationSettings.userId);
-    expect(dbUser).toBeDefined();
-    expect(dbUser).toMatchObject({
-      email: user.email.toLowerCase(),
-      phone: user.phone,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      middleName: null,
+    test('[USR-002] Successfull creation of the user without a middle name field', async ({ api, userRepository }) => {
+      const user = UserFactory.createRandomUser();
+      const newUser = await api.users.createUser(user);
+      expect(newUser.response).toHaveStatus(201);
+      const responseData = await newUser.response.json();
+      const dbUser = await userRepository.getById(responseData.notificationSettings.userId);
+      expect(dbUser).toBeDefined();
+      expect(dbUser).toMatchObject({
+        email: user.email.toLowerCase(),
+        phone: user.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        middleName: null,
+      });
     });
-  });
 
-  test('[USR-003] The registration a new user id in DbCleaner', async ({ api }) => {
-    const user = UserFactory.createRandomUser();
-    const newUser = await api.users.createUser(user);
-    const responseData = await newUser.response.json();
-    const cleanerTasks = (api.users as any).dbCleaner.tasks;
-    expect(newUser.response).toHaveStatus2xx();
-    expect(cleanerTasks).toContainEqual({ table: 'users', id: responseData.notificationSettings.userId });
-  });
-
-  test('[USR-028] Successfull user creation with a non-Ukrainian phone number', async ({ api, userRepository }) => {
-    const randomForeignPhone = utils.random.phone(utils.random.pick(['us', 'uk', 'de', 'pl']));
-    const user = UserFactory.createRandomUser({ phone: randomForeignPhone });
-    const newUser = await api.users.createUser(user);
-    expect(newUser.response).toHaveStatus(201);
-    const responseData = await newUser.response.json();
-    const dbUser = await userRepository.getById(responseData.notificationSettings.userId);
-    expect(dbUser).toBeDefined();
-    expect(dbUser).toMatchObject({
-      email: user.email.toLowerCase(),
-      phone: user.phone,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      middleName: null,
+    test('[USR-003] The registration a new user id in DbCleaner', async ({ api }) => {
+      const user = UserFactory.createRandomUser();
+      const newUser = await api.users.createUser(user);
+      const responseData = await newUser.response.json();
+      const cleanerTasks = (api.users as any).dbCleaner.tasks;
+      expect(newUser.response).toHaveStatus2xx();
+      expect(cleanerTasks).toContainEqual({ table: 'users', id: responseData.notificationSettings.userId });
     });
-  });
-});
+
+    test('[USR-028] Successfull user creation with a non-Ukrainian phone number', async ({ api, userRepository }) => {
+      const randomForeignPhone = utils.random.phone(utils.random.pick(['us', 'uk', 'de', 'pl']));
+      const user = UserFactory.createRandomUser({ phone: randomForeignPhone });
+      const newUser = await api.users.createUser(user);
+      expect(newUser.response).toHaveStatus(201);
+      const responseData = await newUser.response.json();
+      const dbUser = await userRepository.getById(responseData.notificationSettings.userId);
+      expect(dbUser).toBeDefined();
+      expect(dbUser).toMatchObject({
+        email: user.email.toLowerCase(),
+        phone: user.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        middleName: null,
+      });
+    });
+  },
+);
 
 test.describe('Negative: first name validation', () => {
   [
