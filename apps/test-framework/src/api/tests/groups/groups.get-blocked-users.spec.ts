@@ -57,7 +57,7 @@ test.describe(
     test(
       '[GRP-056] Get blocked users list when empty',
       {
-        tag: 'sanity',
+        tag: '@sanity',
       },
       async ({ api }) => {
         const blockedListResult = await api.groups.getBlockedUsers(userGroup.id!);

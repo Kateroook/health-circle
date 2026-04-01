@@ -2,7 +2,7 @@ import { UserEntity } from '../../../core/types/entites/user-interface';
 import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
-test.describe.only(
+test.describe(
   'api/auth/login tests',
   {
     tag: '@auth',
