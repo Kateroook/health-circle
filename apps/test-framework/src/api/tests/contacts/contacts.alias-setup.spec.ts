@@ -36,58 +36,65 @@ test.describe(
       },
     );
 
-    test('[CNT-012] Successful alias setup', async ({ api }) => {
-      const newAlias = utils.random.alias({ count: 2 });
-      const setupAliasResult = await api.contacts.setContactAlias(userB.id!, { alias: newAlias });
+    test(
+      '[CNT-012] Successful alias setup',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        const newAlias = utils.random.alias({ count: 2 });
+        const setupAliasResult = await api.contacts.setContactAlias(userB.id!, { alias: newAlias });
 
-      expect(setupAliasResult.response).toHaveStatus(200);
-      expect(setupAliasResult.data.alias).toBe(newAlias);
-    });
-
-    test.fixme('[CNT-014-BUG] Contact creation without alias', async ({ api }) => {
-      // BUG: Passing an empty string ('') as an alias unexpectedly returns 200 OK
-      // and completely deletes the contact from the database.
-      // Expected behavior: validation error (400 Bad Request).
-
-      const newAlias = '';
-      const setupAliasResult = await api.contacts.setContactAlias(userB.id!, { alias: newAlias });
-
-      console.log('Responce', setupAliasResult.response);
-      console.log('Data', setupAliasResult.data);
-      expect(setupAliasResult.response).toHaveStatus(400); //but got 200
-    });
+        expect(setupAliasResult.response).toHaveStatus(200);
+        expect(setupAliasResult.data.alias).toBe(newAlias);
+      },
+    );
 
     [
       {
         testName: '[CNT-013] Setup alias with alias longer than 255 chars',
+        tag: '@sanity',
         alias: utils.random.shortId(256),
       },
-      // {
-      //   testName: '[CNT-014] Contact creation without alias',
-      //   alias: '',
-      // },
+      {
+        testName: '[CNT-014] Contact creation without alias',
+        tag: ['@sanity', '@bug'],
+        alias: '',
+      },
     ].forEach((options) => {
-      test(options.testName, async ({ api }) => {
+      test(options.testName, { tag: options.tag }, async ({ api }) => {
         const setupAliasResult = await api.contacts.setContactAlias(userB.id!, { alias: options.alias });
 
         expect(setupAliasResult.response).toHaveStatus(400);
       });
     });
 
-    test.fixme('[CNT-015-BUG] Setup alias with non-existing target ID', async ({ api }) => {
-      const newAlias = utils.random.alias({ count: 2 });
-      const setupAliasResult = await api.contacts.setContactAlias(utils.random.uuid(), { alias: newAlias });
+    test.fixme(
+      '[CNT-015-BUG] Setup alias with non-existing target ID',
+      {
+        tag: ['@sanity', '@bug'],
+      },
+      async ({ api }) => {
+        const newAlias = utils.random.alias({ count: 2 });
+        const setupAliasResult = await api.contacts.setContactAlias(utils.random.uuid(), { alias: newAlias });
 
-      expect(setupAliasResult.response).toHaveStatus(404); // got 500
-    });
+        expect(setupAliasResult.response).toHaveStatus(404); // got 500
+      },
+    );
 
-    test('[CNT-016] Setup alias without authorization', async ({ api }) => {
-      api.contacts.clearTokens();
+    test(
+      '[CNT-016] Setup alias without authorization',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        api.contacts.clearTokens();
 
-      const newAlias = utils.random.alias({ count: 2 });
-      const setupAliasResult = await api.contacts.setContactAlias(userB.id!, { alias: newAlias });
+        const newAlias = utils.random.alias({ count: 2 });
+        const setupAliasResult = await api.contacts.setContactAlias(userB.id!, { alias: newAlias });
 
-      expect(setupAliasResult.response).toHaveStatus(401);
-    });
+        expect(setupAliasResult.response).toHaveStatus(401);
+      },
+    );
   },
 );

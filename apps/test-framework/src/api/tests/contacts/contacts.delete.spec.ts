@@ -38,42 +38,72 @@ test.describe(
       },
     );
 
-    test('[CNT-020] Successful delete contact', async ({ api }) => {
-      const deleteResult = await api.contacts.deleteContact(userB.id!);
+    test(
+      '[CNT-020] Successful delete contact',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        const deleteResult = await api.contacts.deleteContact(userB.id!);
 
-      expect(deleteResult.response).toHaveStatus(200);
-    });
+        expect(deleteResult.response).toHaveStatus(200);
+      },
+    );
 
-    test("[CNT-021] Contact is absent in user's list after delete", async ({ api, contactRepository }) => {
-      await api.contacts.deleteContact(userB.id!);
-      const getContactById = await api.contacts.findContactByTargetId(userB.id!);
-      const apiGetContact = await api.contacts.getAllContacts();
+    test(
+      "[CNT-021] Contact is absent in user's list after delete",
+      {
+        tag: '@smoke',
+      },
+      async ({ api, contactRepository }) => {
+        await api.contacts.deleteContact(userB.id!);
+        const getContactById = await api.contacts.findContactByTargetId(userB.id!);
+        const apiGetContact = await api.contacts.getAllContacts();
 
-      expect(getContactById).toBeNull();
-      expect(apiGetContact.data).toHaveLength(0);
+        expect(getContactById).toBeNull();
+        expect(apiGetContact.data).toHaveLength(0);
 
-      const contactRowDB = await contactRepository.findBy({ id: contactListID });
-      expect(contactRowDB).toHaveLength(0);
-    });
+        const contactRowDB = await contactRepository.findBy({ id: contactListID });
+        expect(contactRowDB).toHaveLength(0);
+      },
+    );
 
-    test("[CNT-022] Delete contact two times from user's contact list", async ({ api }) => {
-      await api.contacts.deleteContact(userB.id!);
-      const deleteResult = await api.contacts.deleteContact(userB.id!);
+    test(
+      "[CNT-022] Delete contact two times from user's contact list",
+      {
+        tag: '@sanity',
+      },
+      async ({ api }) => {
+        await api.contacts.deleteContact(userB.id!);
+        const deleteResult = await api.contacts.deleteContact(userB.id!);
 
-      expect(deleteResult.response).toHaveStatus(404);
-    });
+        expect(deleteResult.response).toHaveStatus(404);
+      },
+    );
 
-    test('[CNT-023] Delete contact with non-existing target ID', async ({ api }) => {
-      const deleteResult = await api.contacts.deleteContact(utils.random.uuid());
+    test(
+      '[CNT-023] Delete contact with non-existing target ID',
+      {
+        tag: '@sanity',
+      },
+      async ({ api }) => {
+        const deleteResult = await api.contacts.deleteContact(utils.random.uuid());
 
-      expect(deleteResult.response).toHaveStatus(404);
-    });
+        expect(deleteResult.response).toHaveStatus(404);
+      },
+    );
 
-    test('[CNT-024] Delete contact without authorization', async ({ api }) => {
-      api.contacts.clearTokens();
-      const deleteResult = await api.contacts.deleteContact(userB.id!);
+    test(
+      '[CNT-024] Delete contact without authorization',
+      {
+        tag: '@smoke',
+      },
+      async ({ api }) => {
+        api.contacts.clearTokens();
+        const deleteResult = await api.contacts.deleteContact(userB.id!);
 
-      expect(deleteResult.response).toHaveStatus(401);
-    });
+        expect(deleteResult.response).toHaveStatus(401);
+      },
+    );
   },
 );

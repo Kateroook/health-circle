@@ -6,7 +6,7 @@ import { utils } from '../../../utils/utils';
 test.describe(
   '/api/contacts e2e flow tests',
   {
-    tag: '@contacts',
+    tag: ['@contacts', '@e2e', '@smoke'],
   },
   async () => {
     let userA: UserEntity;
@@ -55,18 +55,24 @@ test.describe(
       expect(apiGetContact.data).toHaveLength(0);
     });
 
-    test.fixme('[CNT-E2E-002-BUG] Contact has appropriate values after creating', async ({ api }) => {
-      // BUG: The GET /api/contacts response does not include the target user's details
-      // (firstName, lastName). It only returns the ContactEntity.
+    test.fixme(
+      '[CNT-E2E-002] Contact has appropriate values after creating',
+      {
+        tag: '@bug',
+      },
+      async ({ api }) => {
+        // BUG: The GET /api/contacts response does not include the target user's details
+        // (firstName, lastName). It only returns the ContactEntity.
 
-      const creationResult = await api.contacts.createContact({
-        target: { id: userB.id! },
-        alias: utils.random.alias({ count: 2 }),
-      });
-      expect(creationResult.response).toHaveStatus2xx();
+        const creationResult = await api.contacts.createContact({
+          target: { id: userB.id! },
+          alias: utils.random.alias({ count: 2 }),
+        });
+        expect(creationResult.response).toHaveStatus2xx();
 
-      const getResult1 = await api.contacts.getAllContacts();
-      expect(getResult1.data[0].targetId).toBe(userB.id);
-    });
+        const getResult1 = await api.contacts.getAllContacts();
+        expect(getResult1.data[0].targetId).toBe(userB.id);
+      },
+    );
   },
 );
