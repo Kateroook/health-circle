@@ -1,5 +1,6 @@
 import { apiFetch } from "@/src/api/api";
-import { initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
+import { setContactAlias } from "@/src/api/contacts";
+import { blockUser, initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import { ConfirmRollCallModal } from "@/src/components/circle/actions/ConfirmRollCallModal";
@@ -165,6 +166,33 @@ export default function CirclesScreen() {
       Alert.alert("Успіх", "Запит на перекличку надіслано");
     } catch {
       Alert.alert("Помилка", "Не вдалося надіслати запит");
+    }
+  };
+
+  const handleBlockUser = async () => {
+    if (!activeCircle || !selectedMember) return;
+    try {
+      await blockUser(activeCircle.id, selectedMember.id);
+      logEvent("block_user");
+      setIsMemberModalVisible(false);
+      setSelectedMember(null);
+      fetchCircles();
+      Alert.alert("Успіх", "Користувача заблоковано");
+    } catch {
+      Alert.alert("Помилка", "Не вдалося заблокувати користувача");
+    }
+  };
+
+  const handleMemberRename = async (newName: string) => {
+    if (!selectedMember) return;
+    try {
+      await setContactAlias(selectedMember.id, newName);
+      setIsMemberModalVisible(false);
+      setSelectedMember(null);
+      fetchCircles();
+      Alert.alert("Успіх", "Ім'я оновлено");
+    } catch {
+      Alert.alert("Помилка", "Не вдалося оновити ім'я");
     }
   };
 
@@ -358,6 +386,8 @@ export default function CirclesScreen() {
                 Alert.alert("Помилка", "Не вдалося видалити учасника");
               }
             }}
+            onBlock={handleBlockUser}
+            onRename={handleMemberRename}
           />
         </ScrollView>
       ) : (

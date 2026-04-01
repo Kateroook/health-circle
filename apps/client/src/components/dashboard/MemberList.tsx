@@ -28,7 +28,7 @@ export const MemberList = ({ members, hasGroups, onMemberPress }: MemberListProp
             key={member.id}
             layout="stateBadge"
             artworkSize="small"
-            label={`${member.firstName} ${member.lastName}`}
+            label={`${member.fullName || `${member.firstName} ${member.lastName}`}`}
             subLabel={STATUS_CONFIG[member.status]?.label ?? "Невідомо"}
             supportCaption={
               member.lastStatusUpdate

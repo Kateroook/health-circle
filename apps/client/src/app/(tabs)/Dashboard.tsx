@@ -1,5 +1,6 @@
 import { apiFetch, updateMyStatus } from "@/src/api/api";
-import { initiatePersonalRollCall } from "@/src/api/groups";
+import { setContactAlias } from "@/src/api/contacts";
+import { blockUser, initiatePersonalRollCall } from "@/src/api/groups";
 import { UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
@@ -77,17 +78,20 @@ export default function DashboardScreen() {
         if (!state.user) return state;
         return { user: { ...state.user, status: newStatus as any } };
       });
-    } catch (e) {
+    } catch {
       Alert.alert("Помилка", "Не вдалося оновити статус. Перевірте інтернет.");
     }
   };
 
-  const { canRollCall, rollCallGroupId } = useMemo(() => {
-    if (!selectedMember || !user) return { canRollCall: false, rollCallGroupId: null };
+  const { canRollCall, rollCallGroupId, isOwner, blockGroupId } = useMemo(() => {
+    if (!selectedMember || !user)
+      return { canRollCall: false, rollCallGroupId: null, isOwner: false, blockGroupId: null };
     const sharedGroup = groups.find((g) => g.members.some((m) => m.id === selectedMember.id));
     return {
       canRollCall: !!sharedGroup,
       rollCallGroupId: sharedGroup?.id || null,
+      isOwner: sharedGroup?.owner.id === user.id,
+      blockGroupId: sharedGroup?.id || null,
     };
   }, [selectedMember, groups, user]);
 
@@ -97,8 +101,34 @@ export default function DashboardScreen() {
       await initiatePersonalRollCall(rollCallGroupId, selectedMember.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
       Alert.alert("Успіх", "Запит на перекличку надіслано");
-    } catch (e) {
+    } catch {
       Alert.alert("Помилка", "Не вдалося надіслати запит");
+    }
+  };
+
+  const handleBlock = async () => {
+    if (!selectedMember || !blockGroupId) return;
+    try {
+      await blockUser(blockGroupId, selectedMember.id);
+      logEvent("block_user");
+      syncDashboardData();
+      handleCloseModal();
+      Alert.alert("Успіх", "Користувача заблоковано");
+    } catch {
+      Alert.alert("Помилка", "Не вдалося заблокувати користувача");
+    }
+  };
+
+  const handleRename = async (newName: string) => {
+    if (!selectedMember) return;
+    try {
+      await setContactAlias(selectedMember.id, newName);
+      logEvent("rename_member");
+      syncDashboardData();
+      handleCloseModal();
+      Alert.alert("Успіх", "Ім'я оновлено");
+    } catch {
+      Alert.alert("Помилка", "Не вдалося оновити ім'я");
     }
   };
 
@@ -178,6 +208,9 @@ export default function DashboardScreen() {
         onClose={handleCloseModal}
         onRollCall={handleRollCall}
         canRollCall={canRollCall}
+        isOwner={isOwner}
+        onBlock={isOwner ? handleBlock : undefined}
+        onRename={handleRename}
       />
     </SafeAreaView>
   );
