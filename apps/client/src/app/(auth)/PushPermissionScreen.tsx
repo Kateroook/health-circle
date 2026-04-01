@@ -11,7 +11,7 @@ export default function PushPermissionScreen() {
 
   const finish = (granted: boolean) => {
     setPushGranted(granted);
-    router.replace("/Login");
+    router.replace("/(onboarding)/AvatarPicker");
   };
 
   return (

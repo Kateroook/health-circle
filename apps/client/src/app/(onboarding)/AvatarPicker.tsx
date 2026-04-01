@@ -3,11 +3,14 @@ import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { AntDesign } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import { FlatList, Image, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { apiFetch, apiUploadFile } from "@/src/api/api";
+import { useAuthStore } from "@/src/store/authStore";
 
-const DEFAULT_AVATARS = [
+const DEFAULT_AVATARS: { id: string; source: ReturnType<typeof require> }[] = [
   { id: "cool", source: require("@/src/assets/images/avatars/avatar-cool.png") },
   { id: "duckling", source: require("@/src/assets/images/avatars/avatar-duckling.png") },
   { id: "chillguy", source: require("@/src/assets/images/avatars/avatar-chillguy.png") },
@@ -22,14 +25,18 @@ const AVATAR_SIZE = 200;
 const GRID_ITEM_SIZE = 72;
 const NUM_COLUMNS = 4;
 
-interface AvatarPickerScreenProps {
-  onSkip: () => void;
-  onNext: (avatarSource: any) => void;
-}
+export default function AvatarPickerScreen() {
+  const user = useAuthStore((s: ReturnType<typeof useAuthStore.getState>) => s.user);
+  const updateUser = useAuthStore((s: ReturnType<typeof useAuthStore.getState>) => s.updateUser);
 
-export default function AvatarPickerScreen({ onSkip, onNext }: AvatarPickerScreenProps) {
-  const [selectedAvatar, setSelectedAvatar] = useState<any>(null);
+  const [selectedAvatar, setSelectedAvatar] = useState<{
+    id: string;
+    source: ReturnType<typeof require>;
+  } | null>(null);
   const [customImage, setCustomImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const finish = () => router.replace("/Login");
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -38,26 +45,49 @@ export default function AvatarPickerScreen({ onSkip, onNext }: AvatarPickerScree
       aspect: [1, 1],
       quality: 1,
     });
-
     if (!result.canceled) {
       setCustomImage(result.assets[0].uri);
       setSelectedAvatar(null);
     }
   };
 
-  const handleSelectDefault = (avatar: (typeof DEFAULT_AVATARS)[0]) => {
+  const handleSelectDefault = (avatar: { id: string; source: ReturnType<typeof require> }) => {
     setSelectedAvatar(avatar);
     setCustomImage(null);
   };
 
-  const handleNext = () => {
-    if (customImage) {
-      onNext({ uri: customImage });
-    } else if (selectedAvatar) {
-      onNext(selectedAvatar.source);
-    } else {
-      onSkip();
+  const handleNext = async () => {
+    // Нічого не вибрано — просто пропускаємо
+    if (!customImage && !selectedAvatar) {
+      finish();
+      return;
     }
+
+    // Завантаження кастомного фото
+    if (customImage && user?.id) {
+      setLoading(true);
+      try {
+        const filename = customImage.split("/").pop()!;
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : "image";
+        const response = await apiUploadFile(`/users/${user.id}/avatar`, {
+          uri: customImage,
+          name: filename,
+          type,
+        });
+        if (response?.avatarUpdatedAt) {
+          updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
+        }
+      } catch (e) {
+        console.error("Avatar upload error:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // TODO: завантаження дефолтного аватару (поки пропускаємо — сервер може не підтримувати)
+
+    finish();
   };
 
   const previewSource = customImage
@@ -73,7 +103,7 @@ export default function AvatarPickerScreen({ onSkip, onNext }: AvatarPickerScree
         label="Пропустити"
         hierarchy="tertiary"
         size="small"
-        onPress={onSkip}
+        onPress={finish}
         style={styles.skipButton}
       />
 
@@ -94,11 +124,8 @@ export default function AvatarPickerScreen({ onSkip, onNext }: AvatarPickerScree
             <Image source={previewSource} style={styles.avatarPreview} />
           </View>
         ) : (
-          <View style={styles.avatarPlaceholder}>
-            {/* Dashed circle border via border trick */}
-          </View>
+          <View style={styles.avatarPlaceholder} />
         )}
-        {/* + button */}
         <View style={styles.addButton}>
           <AntDesign name="plus" size={24} color={theme.colors.content.onColor} />
         </View>
@@ -111,12 +138,12 @@ export default function AvatarPickerScreen({ onSkip, onNext }: AvatarPickerScree
 
       <FlatList
         data={DEFAULT_AVATARS}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: { id: string; source: ReturnType<typeof require> }) => item.id}
         numColumns={NUM_COLUMNS}
         scrollEnabled={false}
         contentContainerStyle={styles.grid}
         columnWrapperStyle={styles.gridRow}
-        renderItem={({ item }) => {
+        renderItem={({ item }: { item: { id: string; source: ReturnType<typeof require> } }) => {
           const isSelected = selectedAvatar?.id === item.id;
           return (
             <Pressable
@@ -132,10 +159,12 @@ export default function AvatarPickerScreen({ onSkip, onNext }: AvatarPickerScree
       {/* Next button */}
       <View style={styles.footer}>
         <Button
-          label="Далі"
+          label={loading ? "Завантаження..." : "Далі"}
           hierarchy={selectedAvatar || customImage ? "primary" : "secondary"}
           shape="rectangle"
           size="medium"
+          loading={loading}
+          disabled={loading}
           onPress={handleNext}
           style={{ width: "100%" }}
         />
@@ -158,12 +187,8 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing[10],
     gap: theme.spacing[16],
   },
-  title: {
-    textAlign: "center",
-  },
-  subtitle: {
-    textAlign: "center",
-  },
+  title: { textAlign: "center" },
+  subtitle: { textAlign: "center" },
   avatarPickerWrapper: {
     alignSelf: "center",
     marginTop: theme.spacing[32],
@@ -210,9 +235,7 @@ const styles = StyleSheet.create({
     gap: theme.spacing[8],
     marginTop: theme.spacing[16],
   },
-  gridRow: {
-    gap: theme.spacing[8],
-  },
+  gridRow: { gap: theme.spacing[8] },
   gridItem: {
     width: GRID_ITEM_SIZE,
     height: GRID_ITEM_SIZE,
@@ -224,13 +247,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  gridItemSelected: {
-    borderColor: theme.colors.accent,
-  },
-  gridAvatar: {
-    width: GRID_ITEM_SIZE,
-    height: GRID_ITEM_SIZE,
-  },
+  gridItemSelected: { borderColor: theme.colors.accent },
+  gridAvatar: { width: GRID_ITEM_SIZE, height: GRID_ITEM_SIZE },
   footer: {
     position: "absolute",
     bottom: theme.spacing[40],
