@@ -78,7 +78,7 @@ export default function PasswordSetup() {
         duration: 3000,
       });
       logEvent("sign_up", { method: "form" });
-      router.replace("/Dashboard");
+      router.replace("/LocationPermissionScreen");
     } catch (e: any) {
       setFormError(formatErrorMessage(e));
     } finally {
@@ -122,7 +122,6 @@ export default function PasswordSetup() {
             style={{ alignSelf: "flex-start" }}
           />
 
-          {/* Header */}
           <View style={styles.header}>
             <Typography variant="h2" tone="primary">
               Створюємо твій акаунт
@@ -132,7 +131,6 @@ export default function PasswordSetup() {
             </Typography>
           </View>
 
-          {/* Form */}
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
               <PinCodeField
@@ -178,6 +176,7 @@ export default function PasswordSetup() {
                 <Text style={styles.errorText}>{formError}</Text>
               </View>
             )}
+
             <Button
               label={loading ? "Зачекайте..." : "Підтвердити"}
               hierarchy="primary"
@@ -190,7 +189,6 @@ export default function PasswordSetup() {
             />
           </View>
 
-          {/* Footer */}
           <View style={styles.footer}>
             <Typography variant="body2" tone="primary">
               Не отримали код?{" "}
@@ -248,12 +246,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   },
-
   footer: {
     alignItems: "center",
     marginTop: theme.spacing[10],
   },
-
   linkDisabled: {
     color: theme.colors.content.tertiary,
   },
