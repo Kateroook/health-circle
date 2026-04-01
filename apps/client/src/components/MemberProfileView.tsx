@@ -159,19 +159,52 @@ export const MemberProfileView = ({
         <Typography variant="h2" tone="primary" style={styles.name}>
           {member.fullName || `${member.firstName} ${member.lastName}`}
         </Typography>
+        <View style={[styles.statusContainer, { flexDirection: "column", gap: theme.spacing[8] }]}>
+          <View style={styles.statusContainer}>
+            <StatusBadge variant="pill" status={member.status} />
+            {onRollCall && (
+              <Button
+                shape="round"
+                hierarchy="secondary"
+                size="medium"
+                onPress={() => setIsRollCallModalVisible(true)}
+                leadingIcon={<Feather name="rss" size={18} color={theme.colors.content.primary} />}
+                style={styles.rollCallIconButton}
+              />
+            )}
+          </View>
+          <Typography variant="caption" tone="secondary">
+            {member.lastStatusUpdate
+              ? (() => {
+                  const date = new Date(member.lastStatusUpdate);
+                  const now = new Date();
+                  const diffMins = Math.floor((now.getTime() - date.getTime()) / 60000);
+                  const diffHours = Math.floor(diffMins / 60);
 
-        <View style={styles.statusContainer}>
-          <StatusBadge variant="pill" status={member.status} />
-          {onRollCall && (
-            <Button
-              shape="round"
-              hierarchy="secondary"
-              size="medium"
-              onPress={() => setIsRollCallModalVisible(true)}
-              leadingIcon={<Feather name="rss" size={18} color={theme.colors.content.primary} />}
-              style={styles.rollCallIconButton}
-            />
-          )}
+                  const timeAgo =
+                    diffMins < 1
+                      ? "щойно"
+                      : diffMins < 60
+                        ? `${diffMins} хв тому`
+                        : diffHours < 24
+                          ? `${diffHours} год тому`
+                          : date.toLocaleDateString("uk-UA", {
+                              day: "2-digit",
+                              month: "2-digit",
+                            });
+
+                  const statusLabels: Record<string, string> = {
+                    SAFE: ``,
+                    WAS_SAFE: `нещодавно в безпеці`,
+                    DANGER: `потребує допомоги`,
+                    UNKNOWN: `востаннє відповів(ла)`,
+                  };
+
+                  const label = statusLabels[member.status] ?? "оновив(ла) статус";
+                  return `${label} · ${timeAgo}`;
+                })()
+              : "ще не відповідав(ла)"}
+          </Typography>
         </View>
         {renderLocation()}
       </View>
