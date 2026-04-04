@@ -7,13 +7,14 @@ export interface User {
   middleName?: string | null;
   lastName: string;
   fullName?: string;
-  phone: string;
+  phone: string | null;
   avatarUpdatedAt?: string;
   status: UserStatus;
   latitude?: number;
   longitude?: number;
   region?: string;
   district?: string;
+  alertRegionUid?: number | null;
 }
 
 export interface Member {
