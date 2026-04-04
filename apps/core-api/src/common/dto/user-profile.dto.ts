@@ -1,5 +1,6 @@
 import { ApiHideProperty } from '@nestjs/swagger';
 import { Exclude } from 'class-transformer';
+import { UserStatus } from 'src/common/enums/user-status';
 import { UserEntity } from 'src/users/entities/user.entity';
 
 export class UserProfileDto {
@@ -11,6 +12,10 @@ export class UserProfileDto {
   email: string | null;
   phone: string | null;
   avatarUpdatedAt?: Date;
+  status: UserStatus;
+  region: string | null;
+  district: string | null;
+  alertRegionUid: number | null;
 
   @ApiHideProperty()
   @Exclude()
@@ -31,6 +36,10 @@ export class UserProfileDto {
     this.email = user.email;
     this.phone = user.phone;
     this.avatarUpdatedAt = user.avatarUpdatedAt;
+    this.status = user.status;
+    this.region = user.region;
+    this.district = user.district;
+    this.alertRegionUid = user.alertRegionUid;
     this.sessionId = user.sessionId;
   }
 }
