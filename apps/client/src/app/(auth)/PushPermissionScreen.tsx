@@ -3,15 +3,37 @@ import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Image, StyleSheet, View } from "react-native";
+import { Alert, Image, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFcmToken } from "../../hooks/useFcmToken";
+import { useSettingsStore } from "../../store/settingsStore";
 
 export default function PushPermissionScreen() {
-  const [pushGranted, setPushGranted] = useState<boolean | null>(null);
+  const { requestPermission } = useFcmToken();
+  const { setPushEnabled } = useSettingsStore();
+  const [loading, setLoading] = useState(false);
 
-  const finish = (granted: boolean) => {
-    setPushGranted(granted);
+  const finish = () => {
     router.replace("/(onboarding)/AvatarPicker");
+  };
+
+  const handleAllow = async () => {
+    setLoading(true);
+    try {
+      const granted = await requestPermission();
+      setPushEnabled(granted);
+      if (!granted) {
+        Alert.alert(
+          "Дозвіл не отримано",
+          "Ви можете увімкнути сповіщення пізніше в налаштуваннях пристрою.",
+        );
+      }
+    } catch (e) {
+      console.error("Push permission error:", e);
+    } finally {
+      setLoading(false);
+      finish();
+    }
   };
 
   return (
@@ -22,39 +44,36 @@ export default function PushPermissionScreen() {
           hierarchy="tertiary"
           size="small"
           shape="rectangle"
-          onPress={() => finish(false)}
+          onPress={finish}
         />
       </View>
-
       <View style={styles.content}>
         <Typography variant="h1" tone="primary" style={styles.title}>
           Не проґав головне
         </Typography>
-
         <Typography variant="body1" tone="secondary" style={styles.subtitle}>
           Дозволь надсилати повідомлення, щоб можна було одним тапом заспокоїти рідних під час
           переклички
         </Typography>
-
         <Image
           source={require("./push_notifications_image.jpg")}
           style={styles.image}
           resizeMode="contain"
         />
-
         <Typography variant="body2" tone="secondary" style={styles.caption}>
           Ми сповістимо тебе лише тоді, коли це дійсно важливо: зміна статусу близьких або початок
           тривоги
         </Typography>
       </View>
-
       <View style={styles.footer}>
         <Button
           label="Дозволити сповіщення"
           hierarchy="primary"
           size="large"
           shape="pill"
-          onPress={() => finish(true)}
+          onPress={handleAllow}
+          loading={loading}
+          disabled={loading}
           style={styles.allowButton}
         />
       </View>
@@ -79,24 +98,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing[24],
     gap: theme.spacing[20],
   },
-  title: {
-    textAlign: "center",
-  },
-  subtitle: {
-    textAlign: "center",
-  },
-  image: {
-    width: "70%",
-    aspectRatio: 1,
-  },
-  caption: {
-    textAlign: "center",
-  },
+  title: { textAlign: "center" },
+  subtitle: { textAlign: "center" },
+  image: { width: "62%", aspectRatio: 1 },
+  caption: { textAlign: "center" },
   footer: {
     paddingHorizontal: theme.spacing[16],
     paddingBottom: theme.spacing[16],
   },
-  allowButton: {
-    width: "100%",
-  },
+  allowButton: { width: "100%" },
 });

@@ -71,12 +71,12 @@ export default function PasswordSetup() {
         throw new Error("Не вдалося визначити email для автоматичного входу");
       }
       await login(normalizedEmail, password);
-      showMessage({
+      /*showMessage({
         message: "Успіх",
         description: "Ваш акаунт успішно підтверджено. Ви вже увійшли в застосунок.",
         type: "success",
         duration: 3000,
-      });
+      });*/
       logEvent("sign_up", { method: "form" });
       router.replace("/LocationPermissionScreen");
     } catch (e: any) {

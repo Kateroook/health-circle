@@ -387,15 +387,11 @@ export default function SettingsScreen() {
           resizeMode="contain"
         />
         <Button
-          label="Увійти в акаунт"
+          label="Ок"
           hierarchy="primary"
           size="large"
           shape="pill"
-          onPress={() => {
-            setShowPasswordSuccess(false);
-            logout();
-            router.replace("/(auth)/Login");
-          }}
+          onPress={() => setShowPasswordSuccess(false)}
           style={passStyles.successButton}
         />
       </SafeAreaView>
@@ -990,7 +986,7 @@ const passStyles = StyleSheet.create({
     paddingBottom: theme.spacing[40],
   },
   successTitle: { textAlign: "center" },
-  successImage: { width: "70%", aspectRatio: 1 },
+  successImage: { width: "62%", aspectRatio: 0.7 },
   successButton: { width: "100%" },
 });
 
