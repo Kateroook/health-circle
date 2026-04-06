@@ -182,6 +182,7 @@ export default function DashboardScreen() {
         <MainStatusButton
           currentStatus={user?.status || "UNKNOWN"}
           onUpdateStatus={handleStatusUpdate}
+          testId="dashboard:mainStatus:button"
         />
         <View style={styles.statusCircleSection}>
           <Typography variant="subtitle2" tone="secondary" style={styles.sectionHeader}>

@@ -23,6 +23,7 @@ export default function PushPermissionScreen() {
           size="small"
           shape="rectangle"
           onPress={() => finish(false)}
+          testId="auth:skipPush:button"
         />
       </View>
 
@@ -56,6 +57,7 @@ export default function PushPermissionScreen() {
           shape="pill"
           onPress={() => finish(true)}
           style={styles.allowButton}
+          testId="auth:allowPush:button"
         />
       </View>
     </SafeAreaView>

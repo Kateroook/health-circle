@@ -230,6 +230,7 @@ export default function OnboardingScreen() {
             accessibilityLabel="Закрити онбординг"
             onPress={handleSkipToAuth}
             style={styles.closeButton}
+            testID="onboarding:close:button"
           >
             <Feather name="x" size={12} color={theme.colors.content.onColor} />
           </Pressable>
@@ -326,6 +327,7 @@ function OnboardingSlidePage({
             disabled={index === 0}
             onPress={() => onScrollToPage(index - 1)}
             style={[styles.navTapZone, index === 0 && styles.navTapZoneDisabled]}
+            testID="onboarding:prevSlide:button"
           />
 
           <Pressable
@@ -333,6 +335,7 @@ function OnboardingSlidePage({
             accessibilityLabel="Наступний слайд"
             onPress={() => onScrollToPage(index + 1)}
             style={styles.navTapZone}
+            testID="onboarding:nextSlide:button"
           />
         </View>
 
@@ -378,6 +381,7 @@ function OnboardingAuthPage({
             label="Зареєструватися"
             onPress={() => onNavigate("/Register")}
             style={styles.authButton}
+            testId="onboarding:register:button"
           />
 
           <Button
@@ -385,6 +389,7 @@ function OnboardingAuthPage({
             hierarchy="secondary"
             onPress={() => onNavigate("/Login")}
             style={styles.authButton}
+            testId="onboarding:login:button"
           />
         </View>
       </View>

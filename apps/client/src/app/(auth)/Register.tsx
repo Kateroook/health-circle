@@ -194,6 +194,7 @@ export default function Register() {
           autoCapitalize={autoCapitalize}
           required={required}
           errorMessage={error}
+          testId={`auth:${isPhone ? "phone" : "email"}:input`}
         />
       ) : (
         <TextField
@@ -205,6 +206,7 @@ export default function Register() {
           autoCapitalize={autoCapitalize}
           required={required}
           errorMessage={error}
+          testId={`auth:${label === "Прізвище" ? "lastName" : label === "Ім'я" ? "firstName" : "middleName"}:input`}
         />
       )}
     </>
@@ -232,6 +234,7 @@ export default function Register() {
               }
               onPress={handleBack}
               style={{ alignSelf: "flex-start" }}
+              testId="auth:back:button"
             />
           )}
 
@@ -332,6 +335,7 @@ export default function Register() {
                 disabled={loading}
                 onPress={handleNext}
                 style={{ width: "100%" }}
+                testId="auth:next:button"
               />
             </View>
           </View>

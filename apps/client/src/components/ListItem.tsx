@@ -65,6 +65,7 @@ export interface ListItemProps {
   status?: UserStatus;
   /** Hide the right-side chevron icon (compact layout). Defaults to false. */
   hideChevron?: boolean;
+  testId?: string;
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -117,6 +118,7 @@ export const ListItem: React.FC<ListItemProps> = ({
   checked = false,
   status,
   hideChevron = false,
+  testId,
 }) => {
   const isCompact = layout === "compact";
 
@@ -215,6 +217,8 @@ export const ListItem: React.FC<ListItemProps> = ({
 
   return (
     <Pressable
+      testID={testId}
+      accessibilityLabel={testId}
       onPress={onPress}
       style={({ pressed }) => [styles.root, pressed && onPress && styles.rootPressed]}
     >

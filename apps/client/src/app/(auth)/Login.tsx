@@ -3,12 +3,12 @@ import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
+import { Feather as Icon } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { useAnalytics } from "../../hooks/useAnalytics";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Feather as Icon } from "@expo/vector-icons";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import { formatErrorMessage } from "../../utils/error.util";
 export default function Login() {
   const { login, loading } = useAuthStore();
@@ -76,6 +76,7 @@ export default function Login() {
                 autoCapitalize="none"
                 required
                 errorMessage={hasError ? formError : undefined}
+                testId="auth:email:input"
               />
             </View>
 
@@ -86,6 +87,7 @@ export default function Login() {
                 value={password}
                 onChangeText={setPassword}
                 required
+                testId="auth:password:input"
               />
             </View>
 
@@ -107,6 +109,7 @@ export default function Login() {
                 disabled={loading}
                 onPress={handleLogin}
                 style={{ width: "100%" }}
+                testId="auth:login:button"
               />
             </View>
           </View>

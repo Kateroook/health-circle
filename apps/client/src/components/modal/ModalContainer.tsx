@@ -9,6 +9,7 @@ type ModalContainerProps = {
   onClose?: () => void;
   children: ReactNode;
   fullScreen?: boolean;
+  testId?: string;
 };
 
 export const ModalContainer: React.FC<ModalContainerProps> = ({
@@ -16,6 +17,7 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
   onClose,
   children,
   fullScreen = false,
+  testId,
 }) => {
   return (
     <Modal
@@ -40,7 +42,13 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={[styles.keyboardWrapper, fullScreen && { flex: 1 }]}
       >
-        <View style={[styles.container, fullScreen && styles.fullScreenContainer]}>{children}</View>
+        <View
+          testID={testId}
+          accessibilityLabel={testId}
+          style={[styles.container, fullScreen && styles.fullScreenContainer]}
+        >
+          {children}
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );

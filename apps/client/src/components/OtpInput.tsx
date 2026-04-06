@@ -5,9 +5,10 @@ interface OtpInputProps {
   value: string[];
   onChange: (code: string[]) => void;
   editable?: boolean;
+  testId?: string;
 }
 
-const OtpInput: React.FC<OtpInputProps> = ({ value, onChange, editable = true }) => {
+const OtpInput: React.FC<OtpInputProps> = ({ value, onChange, editable = true, testId }) => {
   const refs = useRef<(TextInput | null)[]>([]);
 
   const handleChange = (text: string, index: number) => {
@@ -49,12 +50,14 @@ const OtpInput: React.FC<OtpInputProps> = ({ value, onChange, editable = true })
   };
 
   return (
-    <View style={styles.row}>
+    <View testID={testId} accessibilityLabel={testId} style={styles.row}>
       {value.map((char, i) => (
         <View key={i} style={styles.box}>
           {editable ? (
             <TextInput
-              ref={(r) => (refs.current[i] = r)}
+              ref={(r) => {
+                refs.current[i] = r;
+              }}
               style={styles.input}
               value={char}
               maxLength={value.length}

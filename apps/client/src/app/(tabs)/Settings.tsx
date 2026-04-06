@@ -9,10 +9,10 @@ import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Image, Modal, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import { useFcmToken } from "../../hooks/useFcmToken";
@@ -578,6 +578,7 @@ export default function SettingsScreen() {
                 leadingIcon={<Icon name="edit-2" size={18} color={theme.colors.content.onColor} />}
                 onPress={() => setIsEditMode(true)}
                 style={{ width: "100%" }}
+                testId="settings:editProfile:button"
               />
             </>
           )}
@@ -621,6 +622,7 @@ export default function SettingsScreen() {
                         onChangeText={field.setter}
                         placeholder={field.placeholder}
                         showClearButton={false}
+                        testId="settings:phone:input"
                       />
                     </View>
                   ) : field.id === "region" ? (
@@ -639,6 +641,7 @@ export default function SettingsScreen() {
                       placeholder={field.placeholder}
                       keyboardType={field.keyboardType as any}
                       maxLength={field.maxLength}
+                      testId={`settings:${field.id}:input`}
                     />
                   )}
                 </View>
@@ -663,6 +666,7 @@ export default function SettingsScreen() {
                 shape="rectangle"
                 onPress={handleSave}
                 style={styles.save}
+                testId="settings:saveProfile:button"
               />
               <Button
                 label="Скасувати"
@@ -677,6 +681,7 @@ export default function SettingsScreen() {
                   setPhone(user?.phone || "");
                 }}
                 style={styles.cancelButton}
+                testId="settings:cancelProfile:button"
               />
             </View>
           )}

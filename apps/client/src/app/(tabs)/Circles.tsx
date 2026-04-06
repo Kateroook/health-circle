@@ -243,6 +243,7 @@ export default function CirclesScreen() {
                 setShowCircleDetail(false);
                 setActiveCircle(null);
               }}
+              testId="circleDetail:back:button"
             />
             <View style={styles.detailTitleBlock}>
               <Typography variant="h1" tone="primary">
@@ -288,6 +289,7 @@ export default function CirclesScreen() {
                     <Feather name="rss" size={16} color={theme.colors.content.onColor} />
                   }
                   onPress={handleRollCall}
+                  testId="circleDetail:rollCall:button"
                 />
               </View>
               <Typography variant="body2">
@@ -405,6 +407,7 @@ export default function CirclesScreen() {
                   <AntDesign name="plus" size={24} color={theme.colors.content.onColor} />
                 }
                 onPress={() => setIsAddModalVisible(true)}
+                testId="circles:addCircle:button"
               />
             </View>
 
