@@ -14,6 +14,7 @@ import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { Circle, Member } from "@/src/types";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { AntDesign, Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "expo-router";
@@ -214,7 +215,11 @@ export default function CirclesScreen() {
   const wasSafeCount = activeCircle?.members.filter((m) => m.status === "WAS_SAFE").length ?? 0;
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView
+      style={styles.screen}
+      testID={ScreenIds.circles}
+      accessibilityLabel={ScreenIds.circles}
+    >
       {/* Roll Call Modal  */}
       <ConfirmRollCallModal
         isVisible={isRollCallModalVisible}

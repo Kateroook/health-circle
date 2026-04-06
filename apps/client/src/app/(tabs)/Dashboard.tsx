@@ -7,6 +7,7 @@ import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { useLocationStore } from "@/src/store/locationStore";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { useFocusEffect } from "expo-router";
 import { useAnalytics } from "../../hooks/useAnalytics";
 
@@ -163,7 +164,12 @@ export default function DashboardScreen() {
   }, [groups, selectedGroupId, user?.id]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
+    <SafeAreaView
+      style={styles.screen}
+      edges={["top", "left", "right"]}
+      testID={ScreenIds.dashboard}
+      accessibilityLabel={ScreenIds.dashboard}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <DashboardHeader
           firstName={user?.firstName}

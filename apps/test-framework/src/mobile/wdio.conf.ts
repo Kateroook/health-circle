@@ -1,6 +1,6 @@
-import { BackendProvider } from '../core/backend-provider';
 import { browser } from '@wdio/globals';
 import path from 'path';
+import { BackendProvider } from '../core/backend-provider';
 
 export const config: WebdriverIO.Config = {
   //Where to find tests
@@ -29,6 +29,7 @@ export const config: WebdriverIO.Config = {
     {
       'appium:noReset': false,
       'appium:shouldTerminateApp': true,
+      'appium:enforceAppInstall': true,
       'appium:platformName': 'Android',
       'appium:automationName': 'UiAutomator2',
       'appium:platformVersion': process.env.APPIUM__PLATFORM_VERSION!,
@@ -36,6 +37,8 @@ export const config: WebdriverIO.Config = {
       'appium:app': path.join(process.cwd(), '../client/android/app/build/outputs/apk/release/app-release.apk'),
       'appium:autoGrantPermissions': true,
       'appium:newCommandTimeout': 300,
+      'appium:udid': process.env.APPIUM__DEVICE_NAME!,
+      'appium:ignoreHiddenApiPolicyError': true,
     },
   ],
 

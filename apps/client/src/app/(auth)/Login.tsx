@@ -3,6 +3,7 @@ import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { Feather as Icon } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -43,7 +44,11 @@ export default function Login() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={styles.safeArea}
+      testID={ScreenIds.login}
+      accessibilityLabel={ScreenIds.login}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}

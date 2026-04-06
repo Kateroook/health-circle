@@ -1,6 +1,7 @@
 import { Button } from "@/src/components/Button";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -221,7 +222,12 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={["top", "bottom"]}
+      testID={ScreenIds.onboarding}
+      accessibilityLabel={ScreenIds.onboarding}
+    >
       <StatusBar style="dark" hidden />
       <View style={styles.container}>
         {!isAuthPage && (

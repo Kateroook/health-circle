@@ -3,6 +3,7 @@ import { Button } from "@/src/components/Button";
 import { Typography } from "@/src/components/typography";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { AntDesign } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
@@ -97,7 +98,11 @@ export default function AvatarPickerScreen() {
       : null;
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView
+      style={styles.screen}
+      testID={ScreenIds.avatarPicker}
+      accessibilityLabel={ScreenIds.avatarPicker}
+    >
       {/* Skip */}
       <Button
         label="Пропустити"

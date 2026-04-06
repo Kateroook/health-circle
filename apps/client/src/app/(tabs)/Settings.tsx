@@ -7,6 +7,7 @@ import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { ListItem } from "@/src/components/ListItem";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
@@ -411,7 +412,11 @@ export default function SettingsScreen() {
   // ─── Security Screen ─────────────────────────────
   if (isSecurityScreenVisible) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={styles.container}
+        testID={`${ScreenIds.settings}:security`}
+        accessibilityLabel={`${ScreenIds.settings}:security`}
+      >
         <View style={styles.screenHeader}>
           <Button
             shape="round"
@@ -554,7 +559,11 @@ export default function SettingsScreen() {
 
   // ─── Main Settings Screen ────────────────────────
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+      testID={ScreenIds.settings}
+      accessibilityLabel={ScreenIds.settings}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.headerContainer}>
           <Avatar
