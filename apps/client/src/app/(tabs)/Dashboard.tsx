@@ -176,7 +176,7 @@ export default function DashboardScreen() {
         />
 
         {myAlertStatus?.active && myAlertStatus.alert ? (
-          <AlertBanner alert={myAlertStatus.alert} />
+          <AlertBanner alert={myAlertStatus.alert} testId="dashboard:activeAlert:banner" />
         ) : null}
 
         <MainStatusButton

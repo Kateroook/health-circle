@@ -68,6 +68,7 @@ export const MemberList = ({ members, hasGroups, onMemberPress }: MemberListProp
               <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="sm" />
             )}
             showDivider={index < members.length - 1}
+            testId={`dashboard:member_${member.id}:button`}
           />
         ))
       )}

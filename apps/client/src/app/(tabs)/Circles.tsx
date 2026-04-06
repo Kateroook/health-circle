@@ -223,6 +223,7 @@ export default function CirclesScreen() {
           setIsRollCallModalVisible(false);
           await handleRollCallConfirmed();
         }}
+        testId="circles:confirmRollCall:modal"
       />
       {showCircleDetail && activeCircle ? (
         <ScrollView contentContainerStyle={styles.content}>
@@ -262,6 +263,7 @@ export default function CirclesScreen() {
                     await Clipboard.setStringAsync(activeCircle.inviteCode);
                   }}
                   style={{ alignSelf: "flex-start" }}
+                  testId="circleDetail:copyCode:button"
                 />
               )}
             </View>
@@ -273,6 +275,7 @@ export default function CirclesScreen() {
                 <MaterialIcons name="edit" size={20} color={theme.colors.content.onColor} />
               }
               onPress={() => setIsActionsVisible(true)}
+              testId="circleDetail:actions:button"
             />
           </View>
 
@@ -424,6 +427,7 @@ export default function CirclesScreen() {
                     members={circle.members}
                     onMenuPress={() => openActionsModal(circle)}
                     onPress={() => openCircleDetail(circle)}
+                    testId={`circles:item_${circle.id}`}
                   />
                 ))}
               </View>

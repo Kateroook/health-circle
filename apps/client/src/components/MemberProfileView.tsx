@@ -78,6 +78,8 @@ export const MemberProfileView = ({
         onPress={() => handleCopyLocation(copyCoords)}
         style={styles.locationContainer}
         hitSlop={10}
+        testID="profile:copyLocation:button"
+        accessibilityLabel="profile:copyLocation:button"
       >
         <FontAwesome6 name="location-dot" size={16} color={theme.colors.content.primary} />
         <Typography variant="body1" style={styles.locationText} weight="semibold">
@@ -127,6 +129,7 @@ export const MemberProfileView = ({
               }
             : undefined
         }
+        testId="profile:rename:modal"
       />
 
       {/* Roll Call Modal */}
@@ -137,6 +140,7 @@ export const MemberProfileView = ({
           setIsRollCallModalVisible(false);
           onRollCall?.();
         }}
+        testId="profile:confirmRollCall:modal"
       />
 
       {/* Remove Modal */}
@@ -152,6 +156,7 @@ export const MemberProfileView = ({
         confirmText="Видалити"
         cancelText="Назад"
         confirmStyle="destructive"
+        testId="profile:remove:modal"
       />
 
       <View style={styles.profileSection}>
@@ -170,6 +175,7 @@ export const MemberProfileView = ({
                 onPress={() => setIsRollCallModalVisible(true)}
                 leadingIcon={<Feather name="rss" size={18} color={theme.colors.content.primary} />}
                 style={styles.rollCallIconButton}
+                testId="profile:rollCall:button"
               />
             )}
           </View>
@@ -216,6 +222,7 @@ export const MemberProfileView = ({
             shape="rectangle"
             size="medium"
             onPress={handleContact}
+            testId="profile:contact:button"
           />
         )}
         {onRename && (
@@ -225,6 +232,7 @@ export const MemberProfileView = ({
             shape="rectangle"
             size="medium"
             onPress={() => setIsRenaming(true)}
+            testId="profile:rename:button"
           />
         )}
         {isOwner && onBlock && (
@@ -234,6 +242,7 @@ export const MemberProfileView = ({
             shape="rectangle"
             size="medium"
             onPress={onBlock}
+            testId="profile:block:button"
           />
         )}
         {isOwner && onRemove && (
@@ -244,6 +253,7 @@ export const MemberProfileView = ({
             size="medium"
             onPress={() => setIsRemoveModalVisible(true)}
             textStyle={{ color: theme.colors.negative }}
+            testId="profile:remove:button"
           />
         )}
       </View>
