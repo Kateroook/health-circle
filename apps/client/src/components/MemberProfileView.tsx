@@ -1,9 +1,11 @@
-import { AntDesign, Feather, FontAwesome6 } from "@expo/vector-icons";
+import { AntDesign, Feather, FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
 import { Linking, Platform, StyleSheet, ToastAndroid, TouchableOpacity, View } from "react-native";
+import { useCurrentTime } from "../hooks/useCurrentTime";
 import { theme } from "../theme/theme";
 import { Member } from "../types";
+import { getRollCallText, getStatusText } from "../utils/dateUpdate";
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
 import { ConfirmRollCallModal } from "./circle/actions/ConfirmRollCallModal";
@@ -11,10 +13,9 @@ import { RenameModal } from "./circle/actions/RenameModal";
 import ConfirmationModal from "./ConfirmationModal";
 import { StatusBadge } from "./StatusBadge";
 import { Typography } from "./typography";
-
 interface MemberProfileViewProps {
   member: Member;
-  onRollCall?: () => void;
+  onRollCall?: (memberId: string) => void;
   onMessage?: () => void;
   onBlock?: () => void;
   onRemove?: () => void;
@@ -23,7 +24,7 @@ interface MemberProfileViewProps {
 }
 
 export const MemberProfileView = ({
-  member,
+  member: initialMember,
   onRollCall,
   onMessage,
   onBlock,
@@ -31,10 +32,13 @@ export const MemberProfileView = ({
   onRename,
   isOwner,
 }: MemberProfileViewProps) => {
+  const [member, setMember] = useState(initialMember);
   const [isRenaming, setIsRenaming] = useState(false);
   const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isRemoveModalVisible, setIsRemoveModalVisible] = useState(false);
+
+  const currentTime = useCurrentTime();
 
   const handleContact = () => {
     if (member.phone) {
@@ -138,7 +142,9 @@ export const MemberProfileView = ({
         onCancel={() => setIsRollCallModalVisible(false)}
         onConfirm={async () => {
           setIsRollCallModalVisible(false);
-          onRollCall?.();
+          // Update local member state immediately
+          setMember((prev) => ({ ...prev, lastPersonalRollCallAt: new Date().toISOString() }));
+          onRollCall?.(member.id);
         }}
         testId="profile:confirmRollCall:modal"
       />
@@ -164,6 +170,7 @@ export const MemberProfileView = ({
         <Typography variant="h2" tone="primary" style={styles.name}>
           {member.fullName || `${member.firstName} ${member.lastName}`}
         </Typography>
+
         <View style={[styles.statusContainer, { flexDirection: "column", gap: theme.spacing[8] }]}>
           <View style={styles.statusContainer}>
             <StatusBadge variant="pill" status={member.status} />
@@ -179,41 +186,30 @@ export const MemberProfileView = ({
               />
             )}
           </View>
-          <Typography variant="caption" tone="secondary">
-            {member.lastStatusUpdate
-              ? (() => {
-                  const date = new Date(member.lastStatusUpdate);
-                  const now = new Date();
-                  const diffMins = Math.floor((now.getTime() - date.getTime()) / 60000);
-                  const diffHours = Math.floor(diffMins / 60);
 
-                  const timeAgo =
-                    diffMins < 1
-                      ? "щойно"
-                      : diffMins < 60
-                        ? `${diffMins} хв тому`
-                        : diffHours < 24
-                          ? `${diffHours} год тому`
-                          : date.toLocaleDateString("uk-UA", {
-                              day: "2-digit",
-                              month: "2-digit",
-                            });
+          {member.alertStatus?.active && (
+            <View style={styles.alertNotificationRow}>
+              <MaterialCommunityIcons
+                name="bullhorn"
+                size={16}
+                color={theme.colors.content.secondary}
+              />
+              <Typography variant="caption" tone="secondary">
+                Повітряна тривога
+              </Typography>
+            </View>
+          )}
 
-                  const statusLabels: Record<string, string> = {
-                    SAFE: ``,
-                    WAS_SAFE: `нещодавно в безпеці`,
-                    DANGER: `потребує допомоги`,
-                    UNKNOWN: `востаннє відповів(ла)`,
-                  };
-
-                  const label = statusLabels[member.status] ?? "оновив(ла) статус";
-                  return `${label} · ${timeAgo}`;
-                })()
-              : "ще не відповідав(ла)"}
+          <Typography variant="caption" tone="secondary" style={{ textAlign: "center" }}>
+            {member.status === "UNKNOWN" && member.lastPersonalRollCallAt
+              ? getRollCallText(member.lastPersonalRollCallAt, currentTime)
+              : getStatusText(member, currentTime)}
           </Typography>
         </View>
+
         {renderLocation()}
       </View>
+
       <View style={styles.actionsColumn}>
         {onMessage && (
           <Button
@@ -282,6 +278,26 @@ const styles = StyleSheet.create({
   },
   rollCallIconButton: {
     marginLeft: theme.spacing[8],
+  },
+  alertNotificationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing[4],
+    paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[8],
+    borderRadius: theme.spacing[8],
+    backgroundColor: theme.colors.background.secondary,
+  },
+  rollCallNotificationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing[4],
+    paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[8],
+    borderRadius: theme.spacing[8],
+    backgroundColor: theme.colors.background.secondary,
   },
   locationContainer: {
     flexDirection: "row",

@@ -1,10 +1,10 @@
-import React from "react";
-import { View, StyleSheet } from "react-native";
 import { Button } from "@/src/components/Button";
+import { MemberProfileView } from "@/src/components/MemberProfileView";
 import { ModalContainer } from "@/src/components/modal/ModalContainer";
 import { theme } from "@/src/theme/theme";
 import { AntDesign } from "@expo/vector-icons";
-import { MemberProfileView } from "@/src/components/MemberProfileView";
+import React from "react";
+import { StyleSheet, View } from "react-native";
 
 import { Member } from "@/src/types";
 
@@ -12,7 +12,7 @@ interface MemberDetailModalProps {
   member: Member | null;
   visible: boolean;
   onClose: () => void;
-  onRollCall?: () => void;
+  onRollCall?: (memberId: string) => void;
   canRollCall?: boolean;
 }
 

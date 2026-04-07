@@ -18,12 +18,14 @@ import { ScreenIds } from "@/src/utils/testIDs";
 import { AntDesign, Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAnalytics } from "../../hooks/useAnalytics";
 
 import {
   Alert,
+  Animated,
   BackHandler,
+  Easing,
   Platform,
   ScrollView,
   StyleSheet,
@@ -36,6 +38,123 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+// ─── Skeleton loader for circle items ────────────────────────────────────────
+
+function SkeletonCircleItem() {
+  const shimmer = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmer, {
+          toValue: 0,
+          duration: 1000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, []);
+
+  const opacity = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.6],
+  });
+
+  return (
+    <Animated.View style={[styles.skeletonCard, { opacity }]}>
+      <View style={styles.skeletonHeader}>
+        <View style={styles.skeletonTitle} />
+        <View style={styles.skeletonMenu} />
+      </View>
+
+      {/* Імітація Members (Аватари що накладаються) */}
+      <View style={styles.skeletonMembersRow}>
+        {[0, 1, 2, 3].map((i) => (
+          <View
+            key={i}
+            style={[styles.skeletonAvatarCircle, { marginLeft: i === 0 ? 0 : -12, zIndex: 5 - i }]}
+          />
+        ))}
+      </View>
+    </Animated.View>
+  );
+}
+function CirclesSkeletonList() {
+  return (
+    <View style={styles.listContainer}>
+      {[0, 1, 2].map((i) => (
+        <SkeletonCircleItem key={i} />
+      ))}
+    </View>
+  );
+}
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+
+function EmptyCircles({ onAdd }: { onAdd: () => void }) {
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -10,
+          duration: 1800,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 1800,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View style={[styles.emptyContainer, { opacity: fadeAnim }]}>
+      <Animated.Image
+        source={require("../../assets/images/sad-penguin.png")}
+        style={[styles.emptyImage, { transform: [{ translateY: floatAnim }] }]}
+        resizeMode="contain"
+      />
+      <Typography variant="h2" tone="primary" style={styles.emptyTitle}>
+        Кіл поки немає
+      </Typography>
+      <Typography variant="body1" tone="secondary" style={styles.emptySubtitle}>
+        Створи своє перше коло або приєднайся до існуючого
+      </Typography>
+      <Button
+        label="Створити коло"
+        hierarchy="accent"
+        shape="pill"
+        size="medium"
+        leadingIcon={<AntDesign name="plus" size={18} color={theme.colors.content.onColor} />}
+        onPress={onAdd}
+        style={styles.emptyButton}
+      />
+    </Animated.View>
+  );
+}
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
+
 export default function CirclesScreen() {
   const user = useAuthStore().user;
   const { logEvent } = useAnalytics();
@@ -45,6 +164,7 @@ export default function CirclesScreen() {
   const [activeCircle, setActiveCircle] = useState<Circle | null>(null);
   const [circles, setCircles] = useState<Circle[]>([]);
   const [showCircleDetail, setShowCircleDetail] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
@@ -54,6 +174,7 @@ export default function CirclesScreen() {
 
   const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
   const canRollCall = !!selectedMember && !!activeCircle;
+
   useEffect(() => {
     setActiveCircle((current) => {
       if (!current) return current;
@@ -63,6 +184,7 @@ export default function CirclesScreen() {
   }, [circles]);
 
   const fetchCircles = useCallback(async () => {
+    setIsLoading(true);
     try {
       const data = await apiFetch("/groups", { method: "GET" });
       const circlesWithStatus = data.map((circle: any) => ({
@@ -75,6 +197,8 @@ export default function CirclesScreen() {
       setCircles(circlesWithStatus);
     } catch (error) {
       console.error("Error loading circles:", error);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -159,11 +283,21 @@ export default function CirclesScreen() {
   const handleRollCall = () => {
     setIsRollCallModalVisible(true);
   };
+
   const handlePersonalRollCall = async (member: Member) => {
     if (!activeCircle) return;
     try {
       await initiatePersonalRollCall(activeCircle.id, member.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
+      setActiveCircle((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          members: prev.members.map((m) =>
+            m.id === member.id ? { ...m, lastPersonalRollCallAt: new Date().toISOString() } : m,
+          ),
+        };
+      });
       Alert.alert("Успіх", "Запит на перекличку надіслано");
     } catch {
       Alert.alert("Помилка", "Не вдалося надіслати запит");
@@ -419,10 +553,10 @@ export default function CirclesScreen() {
               />
             </View>
 
-            {circles.length === 0 ? (
-              <Typography variant="body1" tone="secondary" style={styles.emptyText}>
-                Кола не знайдені
-              </Typography>
+            {isLoading ? (
+              <CirclesSkeletonList />
+            ) : circles.length === 0 ? (
+              <EmptyCircles onAdd={() => setIsAddModalVisible(true)} />
             ) : (
               <View style={styles.listContainer}>
                 {circles.map((circle) => (
@@ -498,6 +632,7 @@ export default function CirclesScreen() {
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.background.primary },
   content: { paddingHorizontal: theme.spacing[16], paddingBottom: 140 },
@@ -508,13 +643,72 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing[20],
     gap: theme.spacing[8],
   },
-  emptyText: {
-    textAlign: "center",
-    marginTop: theme.spacing[20],
-  },
   listContainer: {
     marginTop: theme.spacing[16],
   },
+
+  // ── Skeleton ──────────────────────────────────────────────────────────────
+  // Оновлені стилі для Skeleton, що повторюють CircleItem
+  skeletonCard: {
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing[16],
+    marginBottom: theme.spacing[12],
+  },
+  skeletonHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: theme.spacing[16], // Збільшено для відповідності структурі
+  },
+  skeletonTitle: {
+    height: 18,
+    width: "40%",
+    borderRadius: 9,
+    backgroundColor: theme.colors.border.opaque,
+  },
+  skeletonMenu: {
+    width: 24,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: theme.colors.border.opaque,
+  },
+  skeletonMembersRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  skeletonAvatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.colors.border.opaque,
+    borderWidth: 2,
+    borderColor: theme.colors.background.secondary, // Створює ефект розрізу між фейковими аватарами
+  },
+
+  // ── Empty state ───────────────────────────────────────────────────────────
+  emptyContainer: {
+    alignItems: "center",
+    paddingTop: theme.spacing[32],
+    paddingHorizontal: theme.spacing[24],
+    gap: theme.spacing[12],
+  },
+  emptyImage: {
+    width: 180,
+    height: 180,
+    marginBottom: theme.spacing[8],
+  },
+  emptyTitle: {
+    textAlign: "center",
+  },
+  emptySubtitle: {
+    textAlign: "center",
+    lineHeight: 22,
+  },
+  emptyButton: {
+    marginTop: theme.spacing[8],
+  },
+
   // Detail view
   detailHeader: {
     flexDirection: "row",
@@ -578,11 +772,9 @@ const styles = StyleSheet.create({
     padding: theme.spacing[12],
     borderRadius: theme.radius.xl,
     width: "100%",
-
     backgroundColor: "rgba(255,255,255,0.6)",
     borderWidth: 1,
     borderColor: theme.colors.primaryA,
-
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,

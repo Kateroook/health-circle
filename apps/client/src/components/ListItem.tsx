@@ -42,7 +42,7 @@ export interface ListItemProps {
   /** Secondary label shown below the primary label (simple / stateBadge / check / switch). */
   subLabel?: string;
   /** Third line of supporting text (simple / stateBadge). */
-  supportCaption?: string;
+  supportCaption?: React.ReactNode;
   /**
    * Icon rendered in the compact artwork frame.
    * Pass any ReactNode (e.g. an <Ionicons> or a custom SVG wrapper).
@@ -204,11 +204,14 @@ export const ListItem: React.FC<ListItemProps> = ({
           {subLabel}
         </Typography>
       )}
-      {supportCaption !== undefined && (
-        <Typography variant="body1" tone="secondary" style={styles.supportCaption}>
-          {supportCaption}
-        </Typography>
-      )}
+      {supportCaption !== undefined &&
+        (typeof supportCaption === "string" || typeof supportCaption === "number" ? (
+          <Typography variant="body2" tone="secondary" style={styles.supportCaption}>
+            {supportCaption}
+          </Typography>
+        ) : (
+          <View style={styles.supportCaption}>{supportCaption}</View>
+        ))}
     </View>
   );
 
