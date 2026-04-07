@@ -1,4 +1,4 @@
-import { AntDesign, Feather, FontAwesome6 } from "@expo/vector-icons";
+import { AntDesign, Feather, FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
 import { Linking, Platform, StyleSheet, ToastAndroid, TouchableOpacity, View } from "react-native";
@@ -179,6 +179,18 @@ export const MemberProfileView = ({
               />
             )}
           </View>
+          {member.alertStatus?.active && (
+            <View style={styles.alertNotificationRow}>
+              <MaterialCommunityIcons
+                name="bullhorn"
+                size={16}
+                color={theme.colors.content.secondary}
+              />
+              <Typography variant="caption" tone="secondary" style={{ marginBottom: 0 }}>
+                Повітряна тривога
+              </Typography>
+            </View>
+          )}
           <Typography variant="caption" tone="secondary">
             {member.lastStatusUpdate
               ? (() => {
@@ -282,6 +294,16 @@ const styles = StyleSheet.create({
   },
   rollCallIconButton: {
     marginLeft: theme.spacing[8],
+  },
+  alertNotificationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing[4],
+    paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[8],
+    borderRadius: theme.spacing[8],
+    backgroundColor: theme.colors.background.secondary,
   },
   locationContainer: {
     flexDirection: "row",
