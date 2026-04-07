@@ -33,6 +33,7 @@ export interface Member {
   district?: string;
   phone?: string;
   lastStatusUpdate?: string;
+  lastPersonalRollCallAt?: string;
   alertStatus?: MyAlertStatus;
 }
 

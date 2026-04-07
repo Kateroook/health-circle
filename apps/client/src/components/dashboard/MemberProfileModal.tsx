@@ -7,7 +7,7 @@ interface MemberProfileModalProps {
   member: Member | null;
   visible: boolean;
   onClose: () => void;
-  onRollCall: () => void;
+  onRollCall: (memberId: string) => void;
   canRollCall: boolean;
   isOwner?: boolean;
   onRemove?: () => void;

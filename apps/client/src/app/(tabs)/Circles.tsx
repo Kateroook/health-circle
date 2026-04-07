@@ -164,6 +164,18 @@ export default function CirclesScreen() {
     try {
       await initiatePersonalRollCall(activeCircle.id, member.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
+
+      // Update the member's lastPersonalRollCallAt timestamp
+      setActiveCircle((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          members: prev.members.map((m) =>
+            m.id === member.id ? { ...m, lastPersonalRollCallAt: new Date().toISOString() } : m,
+          ),
+        };
+      });
+
       Alert.alert("Успіх", "Запит на перекличку надіслано");
     } catch {
       Alert.alert("Помилка", "Не вдалося надіслати запит");

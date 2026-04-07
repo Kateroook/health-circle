@@ -2,8 +2,10 @@ import { Avatar } from "@/src/components/Avatar";
 import { ListItem } from "@/src/components/ListItem";
 import { STATUS_CONFIG } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
+import { useCurrentTime } from "@/src/hooks/useCurrentTime";
 import { theme } from "@/src/theme/theme";
 import { Member } from "@/src/types";
+import { getRollCallText, getStatusText } from "@/src/utils/dateUpdate";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, View } from "react-native";
@@ -13,35 +15,10 @@ interface MemberListProps {
   hasGroups: boolean;
   onMemberPress: (member: Member) => void;
 }
-const getStatusText = (member: Member) => {
-  if (!member.lastStatusUpdate) return "ще не відповідав(ла)";
-
-  const date = new Date(member.lastStatusUpdate);
-  const now = new Date();
-  const diffMins = Math.floor((now.getTime() - date.getTime()) / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-
-  const timeAgo =
-    diffMins < 1
-      ? "щойно"
-      : diffMins < 60
-        ? `${diffMins} хв тому`
-        : diffHours < 24
-          ? `${diffHours} год тому`
-          : date.toLocaleDateString("uk-UA", { day: "2-digit", month: "2-digit" });
-
-  const statusLabels: Record<string, string> = {
-    SAFE: "",
-    WAS_SAFE: "нещодавно в безпеці",
-    DANGER: "потребує допомоги",
-    UNKNOWN: "востаннє відповів(ла)",
-  };
-
-  const label = statusLabels[member.status] ?? "оновив(ла) статус";
-  return `${label}${label ? " · " : ""}${timeAgo}`;
-};
 
 export const MemberList = ({ members, hasGroups, onMemberPress }: MemberListProps) => {
+  const currentTime = useCurrentTime();
+
   return (
     <View style={styles.container}>
       {members.length === 0 ? (
@@ -51,41 +28,48 @@ export const MemberList = ({ members, hasGroups, onMemberPress }: MemberListProp
           </Typography>
         </View>
       ) : (
-        members.map((member, index) => (
-          <ListItem
-            key={member.id}
-            layout="stateBadge"
-            artworkSize="small"
-            label={`${member.fullName || `${member.firstName} ${member.lastName}`}`}
-            subLabel={STATUS_CONFIG[member.status]?.label ?? "Невідомо"}
-            supportCaption={
-              <View style={styles.supportCaptionWithIcon}>
-                {member.alertStatus?.active && (
-                  <MaterialCommunityIcons
-                    name="bullhorn"
-                    size={14}
-                    color={theme.colors.content.secondary}
-                  />
-                )}
-                <Typography variant="caption" tone="secondary" style={{ marginBottom: 1 }}>
-                  {getStatusText(member)}
-                </Typography>
-              </View>
-            }
-            status={member.status}
-            onPress={() => onMemberPress(member)}
-            renderAvatar={() => (
-              <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="sm" />
-            )}
-            showDivider={index < members.length - 1}
-            testId={`dashboard:member_${member.id}:button`}
-          />
-        ))
+        members.map((member, index) => {
+          const captionText =
+            member.status === "UNKNOWN" && member.lastPersonalRollCallAt
+              ? getRollCallText(member.lastPersonalRollCallAt, currentTime)
+              : getStatusText(member, currentTime);
+
+          return (
+            <ListItem
+              key={member.id}
+              layout="stateBadge"
+              artworkSize="small"
+              label={`${member.fullName || `${member.firstName} ${member.lastName}`}`}
+              subLabel={STATUS_CONFIG[member.status]?.label ?? "Невідомо"}
+              supportCaption={
+                <View style={styles.supportCaptionWithIcon}>
+                  {member.alertStatus?.active && (
+                    <MaterialCommunityIcons
+                      name="bullhorn"
+                      size={14}
+                      color={theme.colors.content.secondary}
+                      style={{ marginTop: 1 }}
+                    />
+                  )}
+                  <Typography variant="caption" tone="secondary">
+                    {captionText}
+                  </Typography>
+                </View>
+              }
+              status={member.status}
+              onPress={() => onMemberPress(member)}
+              renderAvatar={() => (
+                <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="sm" />
+              )}
+              showDivider={index < members.length - 1}
+              testId={`dashboard:member_${member.id}:button`}
+            />
+          );
+        })
       )}
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     backgroundColor: theme.colors.background.secondary,

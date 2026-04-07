@@ -101,6 +101,7 @@ export default function DashboardScreen() {
     try {
       await initiatePersonalRollCall(rollCallGroupId, selectedMember.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
+      syncDashboardData(); // Refresh data to show updated rollcall status
       Alert.alert("Успіх", "Запит на перекличку надіслано");
     } catch {
       Alert.alert("Помилка", "Не вдалося надіслати запит");
