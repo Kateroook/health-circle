@@ -17,6 +17,7 @@ interface RenameModalProps {
     label: string;
     onPress: () => void;
   };
+  testId?: string;
 }
 
 export const RenameModal: React.FC<RenameModalProps> = ({
@@ -28,6 +29,7 @@ export const RenameModal: React.FC<RenameModalProps> = ({
   onCancel,
   onSave,
   extraAction,
+  testId,
 }) => {
   const [value, setValue] = useState(initialValue);
 
@@ -38,9 +40,9 @@ export const RenameModal: React.FC<RenameModalProps> = ({
   if (!isVisible) return null;
 
   return (
-    <ModalContainer isVisible={isVisible} onClose={onCancel}>
-      <ModalHeader title={title} />
-      <ModalContent noMarginBottom>
+    <ModalContainer isVisible={isVisible} onClose={onCancel} testId={testId}>
+      <ModalHeader title={title} testId={testId ? `${testId}:header` : undefined} />
+      <ModalContent noMarginBottom testId={testId ? `${testId}:content` : undefined}>
         <TextField
           label=""
           placeholder={placeholder}
@@ -49,15 +51,17 @@ export const RenameModal: React.FC<RenameModalProps> = ({
           autoFocus
           required
           caption={caption}
+          testId={testId ? `${testId}:input` : undefined}
         />
       </ModalContent>
-      <ModalActions>
+      <ModalActions testId={testId ? `${testId}:actions` : undefined}>
         <Button
           label="Скасувати"
           hierarchy="secondary"
           shape="rectangle"
           size="medium"
           onPress={onCancel}
+          testId={testId ? `${testId}:cancel:button` : undefined}
         />
         <Button
           label="Зберегти"
@@ -66,6 +70,7 @@ export const RenameModal: React.FC<RenameModalProps> = ({
           size="medium"
           disabled={value.trim() === "" || value.trim() === initialValue}
           onPress={() => onSave(value.trim())}
+          testId={testId ? `${testId}:submit:button` : undefined}
         />
       </ModalActions>
       {extraAction && (
@@ -77,6 +82,7 @@ export const RenameModal: React.FC<RenameModalProps> = ({
           onPress={extraAction.onPress}
           style={{ width: "100%" }}
           textStyle={{ color: theme.colors.negative }}
+          testId={testId ? `${testId}:extraAction:button` : undefined}
         />
       )}
     </ModalContainer>

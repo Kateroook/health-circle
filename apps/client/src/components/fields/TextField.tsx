@@ -69,9 +69,9 @@ export interface BaseTextFieldProps extends Omit<
   disabled?: boolean;
   /**
    * Force a specific validation state from the outside. If omitted, a best-effort state is derived
-   * from `required`, `value`, `errorMessage`, `successMessage`, and blur events.
    */
   validationState?: Exclude<TextFieldValidationState, "incomplete" | "complete" | "none">;
+  testId?: string;
 }
 
 export interface TextFieldProps extends BaseTextFieldProps {}
@@ -182,13 +182,16 @@ export const TextFieldInput = React.forwardRef<
     disabled?: boolean;
     onFocus?: () => void;
     onBlur?: () => void;
+    testId?: string;
   } & Omit<
     TextInputProps,
     "style" | "onChangeText" | "editable" | "value" | "placeholderTextColor" | "onFocus" | "onBlur"
   >
->(({ value, onChangeText, disabled, multiline, onFocus, onBlur, ...rest }, ref) => {
+>(({ value, onChangeText, disabled, multiline, onFocus, onBlur, testId, ...rest }, ref) => {
   return (
     <TextInput
+      testID={testId}
+      accessibilityLabel={testId}
       {...rest}
       ref={ref}
       style={[styles.input, multiline && styles.multilineInput]}
@@ -449,6 +452,7 @@ const BaseTextField: React.FC<BaseTextFieldProps> = (props) => {
     multiline,
     numberOfLines,
     autoCapitalize,
+    testId,
     ...restInputProps
   } = props;
 
@@ -536,6 +540,7 @@ const BaseTextField: React.FC<BaseTextFieldProps> = (props) => {
         <TextFieldLeading>{leadingArtwork}</TextFieldLeading>
 
         <TextFieldInput
+          testId={testId}
           {...restInputProps}
           value={textValue}
           onChangeText={handleChangeText}

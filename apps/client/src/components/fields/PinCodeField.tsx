@@ -42,6 +42,7 @@ export interface PinCodeFieldProps extends Omit<
    * - "code": alphanumeric, shows characters (for invite / verification codes)
    */
   variant?: "pin" | "code";
+  testId?: string;
 }
 
 const PIN_LENGTH = 6;
@@ -135,6 +136,7 @@ export const PinCodeField: React.FC<PinCodeFieldProps> = ({
   variant = "pin",
   autoFocus,
   labelTrailing,
+  testId,
   ...rest
 }) => {
   const inputRef = useRef<TextInput | null>(null);
@@ -206,7 +208,7 @@ export const PinCodeField: React.FC<PinCodeFieldProps> = ({
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View testID={testId} accessibilityLabel={testId} style={styles.container}>
       <TextFieldLabelRow label={label} required={required} labelTrailing={labelTrailing} />
 
       {/* hidden input */}

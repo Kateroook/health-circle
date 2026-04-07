@@ -1,14 +1,15 @@
+import { apiUploadFile } from "@/src/api/api";
 import { Button } from "@/src/components/Button";
 import { Typography } from "@/src/components/typography";
+import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { AntDesign } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { FlatList, Image, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { apiFetch, apiUploadFile } from "@/src/api/api";
-import { useAuthStore } from "@/src/store/authStore";
 
 const DEFAULT_AVATARS: { id: string; source: ReturnType<typeof require> }[] = [
   { id: "cool", source: require("@/src/assets/images/avatars/avatar-cool.png") },
@@ -97,7 +98,11 @@ export default function AvatarPickerScreen() {
       : null;
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView
+      style={styles.screen}
+      testID={ScreenIds.avatarPicker}
+      accessibilityLabel={ScreenIds.avatarPicker}
+    >
       {/* Skip */}
       <Button
         label="Пропустити"
@@ -105,6 +110,7 @@ export default function AvatarPickerScreen() {
         size="small"
         onPress={finish}
         style={styles.skipButton}
+        testId="onboarding:skip:button"
       />
 
       {/* Title */}
@@ -167,6 +173,7 @@ export default function AvatarPickerScreen() {
           disabled={loading}
           onPress={handleNext}
           style={{ width: "100%" }}
+          testId="onboarding:next:button"
         />
       </View>
     </SafeAreaView>

@@ -1,8 +1,9 @@
 import { Button } from "@/src/components/Button";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
-import { router } from "expo-router";
+import { ScreenIds } from "@/src/utils/testIDs";
 import * as Location from "expo-location";
+import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Image, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -33,14 +34,20 @@ export default function LocationPermissionScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+      testID={ScreenIds.locationPermission}
+      accessibilityLabel={ScreenIds.locationPermission}
+    >
+      {/* Пропустити */}
       <View style={styles.skipRow}>
         <Button
           label="Пропустити"
           hierarchy="tertiary"
           size="small"
           shape="rectangle"
-          onPress={finish}
+          onPress={() => finish(false)}
+          testId="auth:skipLocation:button"
         />
       </View>
       <View style={styles.content}>
@@ -69,6 +76,7 @@ export default function LocationPermissionScreen() {
           loading={loading}
           disabled={loading}
           style={styles.allowButton}
+          testId="auth:allowLocation:button"
         />
       </View>
     </SafeAreaView>

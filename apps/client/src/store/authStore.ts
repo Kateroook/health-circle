@@ -17,7 +17,7 @@ interface User {
   middleName?: string | null;
   lastName: string;
   fullName?: string;
-  phone: string;
+  phone: string | null;
   avatarUpdatedAt?: string;
   status: "SAFE" | "DANGER" | "UNKNOWN" | "WAS_SAFE";
   region?: string | null;
@@ -45,6 +45,13 @@ interface AuthStoreState {
   completeOnboarding: () => void;
   updateUser: (data: Partial<User>) => void;
 }
+
+const VALID_USER_STATUSES = new Set<User["status"]>(["SAFE", "DANGER", "UNKNOWN", "WAS_SAFE"]);
+
+const normalizeUser = (profile: Partial<User>): User => ({
+  ...(profile as User),
+  status: VALID_USER_STATUSES.has(profile.status as User["status"]) ? profile.status! : "UNKNOWN",
+});
 
 export const useAuthStore = create<AuthStoreState>()(
   persist(
@@ -79,7 +86,7 @@ export const useAuthStore = create<AuthStoreState>()(
           });
 
           set({
-            user: profile as User,
+            user: normalizeUser(profile as Partial<User>),
             loading: false,
             isLoggedIn: true,
           });
@@ -96,7 +103,7 @@ export const useAuthStore = create<AuthStoreState>()(
                 headers: { Authorization: `Bearer ${newToken}` },
               });
               set({
-                user: profile as User,
+                user: normalizeUser(profile as Partial<User>),
                 loading: false,
                 isLoggedIn: true,
               });

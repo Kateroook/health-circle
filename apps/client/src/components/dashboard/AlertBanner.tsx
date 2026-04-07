@@ -7,11 +7,17 @@ import { StyleSheet, View } from "react-native";
 
 interface AlertBannerProps {
   alert: ActiveAlert;
+  testId?: string;
 }
 
-export const AlertBanner: React.FC<AlertBannerProps> = ({ alert }) => {
+export const AlertBanner: React.FC<AlertBannerProps> = ({ alert, testId }) => {
   return (
-    <View style={styles.alertBanner} accessibilityRole="alert">
+    <View
+      style={styles.alertBanner}
+      accessibilityRole="alert"
+      testID={testId}
+      accessibilityLabel={testId}
+    >
       <View style={styles.alertBannerIcon}>
         <Feather name="alert-triangle" size={18} color={theme.colors.negative} />
       </View>

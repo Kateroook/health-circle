@@ -7,12 +7,13 @@ import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { ListItem } from "@/src/components/ListItem";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Image, Modal, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import { useFcmToken } from "../../hooks/useFcmToken";
@@ -321,6 +322,7 @@ export default function SettingsScreen() {
               <MaterialCommunityIcons name="close" size={24} color={theme.colors.content.primary} />
             }
             onPress={closePasswordModal}
+            testId="changePassword:close:button"
           />
           <Typography variant="h3" tone="primary" style={passStyles.headerTitle}>
             Змінити пароль
@@ -337,6 +339,7 @@ export default function SettingsScreen() {
             placeholder="Введіть поточний пароль"
             value={oldPassword}
             onChangeText={setOldPassword}
+            testId="changePassword:oldPassword:input"
           />
           <PasswordField
             label="Новий пароль"
@@ -345,6 +348,7 @@ export default function SettingsScreen() {
             value={newPassword}
             onChangeText={setNewPassword}
             caption="Має містити щонайменше 12 символів"
+            testId="changePassword:newPassword:input"
           />
           <PasswordField
             label="Підтвердіть новий пароль"
@@ -353,6 +357,7 @@ export default function SettingsScreen() {
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             errorMessage={passwordError || undefined}
+            testId="changePassword:confirmNewPassword:input"
           />
           <Button
             label={passwordLoading ? "Збереження..." : "Змінити пароль"}
@@ -363,6 +368,7 @@ export default function SettingsScreen() {
             disabled={passwordLoading}
             loading={passwordLoading}
             style={{ marginTop: theme.spacing[8] }}
+            testId="changePassword:submit:button"
           />
         </ScrollView>
       </SafeAreaView>
@@ -393,6 +399,7 @@ export default function SettingsScreen() {
           shape="pill"
           onPress={() => setShowPasswordSuccess(false)}
           style={passStyles.successButton}
+          testId="changePasswordSuccess:login:button"
         />
       </SafeAreaView>
     </Modal>
@@ -401,7 +408,11 @@ export default function SettingsScreen() {
   // ─── Security Screen ─────────────────────────────
   if (isSecurityScreenVisible) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={styles.container}
+        testID={`${ScreenIds.settings}:security`}
+        accessibilityLabel={`${ScreenIds.settings}:security`}
+      >
         <View style={styles.screenHeader}>
           <Button
             shape="round"
@@ -415,6 +426,7 @@ export default function SettingsScreen() {
               />
             }
             onPress={() => setIsSecurityScreenVisible(false)}
+            testId="security:back:button"
           />
           <Typography variant="h3" tone="primary" style={styles.screenHeaderTitle}>
             Приватність та безпека
@@ -446,6 +458,7 @@ export default function SettingsScreen() {
                 setPushEnabled(val);
                 updateNotifSetting("enabled", val);
               }}
+              testId="security:pushNotifications:switch"
             />
             <ListItem
               layout="switch"
@@ -455,6 +468,7 @@ export default function SettingsScreen() {
               switchValue={notifSettings?.smsFallover ?? false}
               showDivider={true}
               onSwitchChange={(val) => updateNotifSetting("smsFallover", val)}
+              testId="security:smsNotifications:switch"
             />
             <ListItem
               layout="switch"
@@ -464,6 +478,7 @@ export default function SettingsScreen() {
               switchValue={locationEnabled}
               showDivider={true}
               onSwitchChange={setLocationEnabled}
+              testId="security:location:switch"
             />
             <ListItem
               layout="switch"
@@ -472,6 +487,7 @@ export default function SettingsScreen() {
               switchValue={contactsEnabled}
               showDivider={false}
               onSwitchChange={setContactsEnabled}
+              testId="security:contacts:switch"
             />
           </View>
 
@@ -491,6 +507,7 @@ export default function SettingsScreen() {
                 />
               }
               onPress={() => setShowPasswordModal(true)}
+              testId="security:changePassword:button"
             />
             <ListItem
               layout="compact"
@@ -505,6 +522,7 @@ export default function SettingsScreen() {
               }
               onPress={() => setIsDeleteAccountVisible(true)}
               showDivider={false}
+              testId="security:deleteAccount:button"
             />
           </View>
         </ScrollView>
@@ -529,6 +547,7 @@ export default function SettingsScreen() {
           confirmText="Видалити"
           cancelText="Назад"
           confirmStyle="default"
+          testId="settings:deleteAccount:modal"
         />
       </SafeAreaView>
     );
@@ -536,7 +555,11 @@ export default function SettingsScreen() {
 
   // ─── Main Settings Screen ────────────────────────
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+      testID={ScreenIds.settings}
+      accessibilityLabel={ScreenIds.settings}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.headerContainer}>
           <Avatar
@@ -574,6 +597,7 @@ export default function SettingsScreen() {
                 leadingIcon={<Icon name="edit-2" size={18} color={theme.colors.content.onColor} />}
                 onPress={() => setIsEditMode(true)}
                 style={{ width: "100%" }}
+                testId="settings:editProfile:button"
               />
             </>
           )}
@@ -587,6 +611,7 @@ export default function SettingsScreen() {
                   size="small"
                   shape="rectangle"
                   onPress={handlePickAvatar}
+                  testId="settings:changeAvatar:button"
                 />
                 {avatarUrl && !imageError && (
                   <Button
@@ -595,6 +620,7 @@ export default function SettingsScreen() {
                     size="small"
                     shape="rectangle"
                     onPress={() => setIsDeleteAvatarVisible(true)}
+                    testId="settings:deleteAvatar:button"
                   />
                 )}
               </View>
@@ -617,6 +643,7 @@ export default function SettingsScreen() {
                         onChangeText={field.setter}
                         placeholder={field.placeholder}
                         showClearButton={false}
+                        testId="settings:phone:input"
                       />
                     </View>
                   ) : field.id === "region" ? (
@@ -635,6 +662,7 @@ export default function SettingsScreen() {
                       placeholder={field.placeholder}
                       keyboardType={field.keyboardType as any}
                       maxLength={field.maxLength}
+                      testId={`settings:${field.id}:input`}
                     />
                   )}
                 </View>
@@ -659,6 +687,7 @@ export default function SettingsScreen() {
                 shape="rectangle"
                 onPress={handleSave}
                 style={styles.save}
+                testId="settings:saveProfile:button"
               />
               <Button
                 label="Скасувати"
@@ -673,6 +702,7 @@ export default function SettingsScreen() {
                   setPhone(user?.phone || "");
                 }}
                 style={styles.cancelButton}
+                testId="settings:cancelProfile:button"
               />
             </View>
           )}
@@ -688,6 +718,7 @@ export default function SettingsScreen() {
             }
             onPress={() => setIsNotificationsModalVisible(true)}
             showDivider={false}
+            testId="settings:notifications:button"
           />
         </View>
 
@@ -705,6 +736,7 @@ export default function SettingsScreen() {
             }
             onPress={() => setIsSecurityScreenVisible(true)}
             showDivider={false}
+            testId="settings:security:button"
           />
         </View>
 
@@ -723,6 +755,7 @@ export default function SettingsScreen() {
             onPress={handleLocationUpdate}
             hideChevron={true}
             showDivider={false}
+            testId="settings:updateLocation:button"
           />
         </View>
 
@@ -741,6 +774,7 @@ export default function SettingsScreen() {
           }
           onPress={() => setIsLogoutVisible(true)}
           style={[styles.logoutButton, { justifyContent: "flex-start" }]}
+          testId="settings:logout:button"
         />
       </ScrollView>
 
@@ -772,6 +806,7 @@ export default function SettingsScreen() {
               }
               onPress={() => setIsNotificationsModalVisible(false)}
               style={{ position: "absolute", left: theme.spacing[16] }}
+              testId="notifications:close:button"
             />
           </View>
           <ScrollView
@@ -866,6 +901,7 @@ export default function SettingsScreen() {
         confirmText="Вийти"
         cancelText="Назад"
         confirmStyle="default"
+        testId="settings:logout:modal"
       />
       <ConfirmationModal
         isVisible={isDeleteAccountVisible}
@@ -884,6 +920,7 @@ export default function SettingsScreen() {
         confirmText="Видалити"
         cancelText="Назад"
         confirmStyle="default"
+        testId="settings:deleteAccount:modal"
       />
       <ConfirmationModal
         isVisible={isDeleteAvatarVisible}
@@ -902,6 +939,7 @@ export default function SettingsScreen() {
         message="Ви впевнені, що хочете видалити фото профілю?"
         confirmText="Видалити"
         cancelText="Скасувати"
+        testId="settings:deleteAvatar:modal"
       />
     </SafeAreaView>
   );

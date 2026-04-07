@@ -7,15 +7,21 @@ export interface ModalContentProps {
   style?: StyleProp<ViewStyle>;
   /** Remove bottom margin when content is followed by ModalActions */
   noMarginBottom?: boolean;
+  testId?: string;
 }
 
 export const ModalContent: React.FC<ModalContentProps> = ({
   children,
   style,
   noMarginBottom = false,
+  testId,
 }) => {
   return (
-    <View style={[styles.content, noMarginBottom && styles.contentNoMargin, style]}>
+    <View
+      testID={testId}
+      accessibilityLabel={testId}
+      style={[styles.content, noMarginBottom && styles.contentNoMargin, style]}
+    >
       {children}
     </View>
   );

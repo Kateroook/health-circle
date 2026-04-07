@@ -1,7 +1,7 @@
-import React from "react";
-import { ScrollView, StyleSheet } from "react-native";
 import { Button } from "@/src/components/Button";
 import { theme } from "@/src/theme/theme";
+import React from "react";
+import { ScrollView, StyleSheet } from "react-native";
 
 import { Circle } from "@/src/types";
 
@@ -26,6 +26,7 @@ export const GroupFilters = ({ groups, selectedGroupId, onSelectGroup }: GroupFi
         size="small"
         onPress={() => onSelectGroup("ALL")}
         style={styles.filterButton}
+        testId="dashboard:filter_all:button"
       />
 
       {groups.map((group) => (
@@ -37,6 +38,7 @@ export const GroupFilters = ({ groups, selectedGroupId, onSelectGroup }: GroupFi
           size="small"
           onPress={() => onSelectGroup(group.id)}
           style={styles.filterButton}
+          testId={`dashboard:filter_${group.id}:button`}
         />
       ))}
     </ScrollView>

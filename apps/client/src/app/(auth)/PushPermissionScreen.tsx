@@ -1,6 +1,7 @@
 import { Button } from "@/src/components/Button";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Image, StyleSheet, View } from "react-native";
@@ -37,14 +38,19 @@ export default function PushPermissionScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+      testID={ScreenIds.pushPermission}
+      accessibilityLabel={ScreenIds.pushPermission}
+    >
       <View style={styles.skipRow}>
         <Button
           label="Пропустити"
           hierarchy="tertiary"
           size="small"
           shape="rectangle"
-          onPress={finish}
+          onPress={() => finish(false)}
+          testId="auth:skipPush:button"
         />
       </View>
       <View style={styles.content}>
@@ -75,6 +81,7 @@ export default function PushPermissionScreen() {
           loading={loading}
           disabled={loading}
           style={styles.allowButton}
+          testId="auth:allowPush:button"
         />
       </View>
     </SafeAreaView>

@@ -15,6 +15,7 @@ interface ConfirmationModalProps {
   confirmText?: string;
   confirmStyle?: "destructive" | "default";
   isLoading?: boolean;
+  testId?: string;
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -27,19 +28,26 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   confirmText = "Видалити",
   confirmStyle = "destructive",
   isLoading = false,
+  testId,
 }) => {
   if (!isVisible) {
     return null;
   }
 
   return (
-    <ModalContainer isVisible={isVisible} onClose={onCancel}>
-      <ModalHeader title={title} description={message} />
-      <ModalActions>
+    <ModalContainer isVisible={isVisible} onClose={onCancel} testId={testId}>
+      <ModalHeader
+        title={title}
+        description={message}
+        testId={testId ? `${testId}:header` : undefined}
+      />
+      <ModalActions testId={testId ? `${testId}:actions` : undefined}>
         <TouchableOpacity
           style={[styles.btn, styles.cancelBtn]}
           onPress={onCancel}
           disabled={isLoading}
+          testID={testId ? `${testId}:cancel:button` : undefined}
+          accessibilityLabel={testId ? `${testId}:cancel:button` : undefined}
         >
           <Typography variant="subtitle1" weight="semibold" tone="primary">
             {cancelText}
@@ -54,6 +62,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           ]}
           onPress={onConfirm}
           disabled={isLoading}
+          testID={testId ? `${testId}:confirm:button` : undefined}
+          accessibilityLabel={testId ? `${testId}:confirm:button` : undefined}
         >
           <Typography
             variant="subtitle1"

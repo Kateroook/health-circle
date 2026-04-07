@@ -2,9 +2,10 @@ import { Button } from "@/src/components/Button";
 import { PasswordField, PinCodeField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
+import { Feather as Icon } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { useAnalytics } from "../../hooks/useAnalytics";
 import {
   Alert,
   Image,
@@ -17,8 +18,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Feather as Icon } from "@expo/vector-icons";
 import { apiFetch } from "../../api/api";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import { formatErrorMessage } from "../../utils/error.util";
 import { validatePasswordComplexity } from "../../utils/passwordValidation.util";
 
@@ -90,7 +91,11 @@ export default function ResetPassword() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={styles.safeArea}
+      testID={ScreenIds.resetPassword}
+      accessibilityLabel={ScreenIds.resetPassword}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
@@ -108,6 +113,7 @@ export default function ResetPassword() {
             leadingIcon={<Icon name="arrow-left" size={24} color={theme.colors.content.primary} />}
             onPress={() => router.back()}
             style={{ alignSelf: "flex-start" }}
+            testId="auth:back:button"
           />
 
           <View style={styles.header}>
@@ -135,6 +141,7 @@ export default function ResetPassword() {
                 required
                 variant="code"
                 errorMessage={formError === "Введіть 6-значний код" ? formError : undefined}
+                testId="auth:code:input"
               />
             </View>
 
@@ -152,6 +159,7 @@ export default function ResetPassword() {
                     ? formError
                     : undefined
                 }
+                testId="auth:newPassword:input"
               />
             </View>
 
@@ -162,6 +170,7 @@ export default function ResetPassword() {
                 value={confirm}
                 onChangeText={setConfirm}
                 required
+                testId="auth:confirmNewPassword:input"
               />
             </View>
 
@@ -182,6 +191,7 @@ export default function ResetPassword() {
                 disabled={loading}
                 onPress={handleSubmit}
                 style={{ width: "100%" }}
+                testId="auth:submit:button"
               />
             </View>
           </View>
