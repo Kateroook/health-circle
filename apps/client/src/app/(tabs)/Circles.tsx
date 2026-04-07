@@ -14,6 +14,7 @@ import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { Circle, Member } from "@/src/types";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { AntDesign, Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "expo-router";
@@ -214,7 +215,11 @@ export default function CirclesScreen() {
   const wasSafeCount = activeCircle?.members.filter((m) => m.status === "WAS_SAFE").length ?? 0;
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView
+      style={styles.screen}
+      testID={ScreenIds.circles}
+      accessibilityLabel={ScreenIds.circles}
+    >
       {/* Roll Call Modal  */}
       <ConfirmRollCallModal
         isVisible={isRollCallModalVisible}
@@ -223,6 +228,7 @@ export default function CirclesScreen() {
           setIsRollCallModalVisible(false);
           await handleRollCallConfirmed();
         }}
+        testId="circles:confirmRollCall:modal"
       />
       {showCircleDetail && activeCircle ? (
         <ScrollView contentContainerStyle={styles.content}>
@@ -243,6 +249,7 @@ export default function CirclesScreen() {
                 setShowCircleDetail(false);
                 setActiveCircle(null);
               }}
+              testId="circleDetail:back:button"
             />
             <View style={styles.detailTitleBlock}>
               <Typography variant="h1" tone="primary">
@@ -261,6 +268,7 @@ export default function CirclesScreen() {
                     await Clipboard.setStringAsync(activeCircle.inviteCode);
                   }}
                   style={{ alignSelf: "flex-start" }}
+                  testId="circleDetail:copyCode:button"
                 />
               )}
             </View>
@@ -272,6 +280,7 @@ export default function CirclesScreen() {
                 <MaterialIcons name="edit" size={20} color={theme.colors.content.onColor} />
               }
               onPress={() => setIsActionsVisible(true)}
+              testId="circleDetail:actions:button"
             />
           </View>
 
@@ -288,6 +297,7 @@ export default function CirclesScreen() {
                     <Feather name="rss" size={16} color={theme.colors.content.onColor} />
                   }
                   onPress={handleRollCall}
+                  testId="circleDetail:rollCall:button"
                 />
               </View>
               <Typography variant="body2">
@@ -405,6 +415,7 @@ export default function CirclesScreen() {
                   <AntDesign name="plus" size={24} color={theme.colors.content.onColor} />
                 }
                 onPress={() => setIsAddModalVisible(true)}
+                testId="circles:addCircle:button"
               />
             </View>
 
@@ -421,6 +432,7 @@ export default function CirclesScreen() {
                     members={circle.members}
                     onMenuPress={() => openActionsModal(circle)}
                     onPress={() => openCircleDetail(circle)}
+                    testId={`circles:item_${circle.id}`}
                   />
                 ))}
               </View>

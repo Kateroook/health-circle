@@ -2,20 +2,14 @@ import { Button } from "@/src/components/Button";
 import { TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
+import { Feather as Icon } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { useAnalytics } from "../../hooks/useAnalytics";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Feather as Icon } from "@expo/vector-icons";
 import { apiFetch } from "../../api/api";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import { formatErrorMessage } from "../../utils/error.util";
 
 export default function ForgotPassword() {
@@ -59,7 +53,11 @@ export default function ForgotPassword() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={styles.safeArea}
+      testID={ScreenIds.forgotPassword}
+      accessibilityLabel={ScreenIds.forgotPassword}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
@@ -82,6 +80,7 @@ export default function ForgotPassword() {
             leadingIcon={<Icon name="arrow-left" size={24} color={theme.colors.content.primary} />}
             onPress={() => router.back()}
             style={{ alignSelf: "flex-start" }}
+            testId="auth:back:button"
           />
 
           {/* Header */}
@@ -111,6 +110,7 @@ export default function ForgotPassword() {
                 autoCapitalize="none"
                 required
                 errorMessage={formError || undefined}
+                testId="auth:email:input"
               />
             </View>
 
@@ -124,6 +124,7 @@ export default function ForgotPassword() {
                 disabled={loading}
                 onPress={handleSubmit}
                 style={{ width: "100%" }}
+                testId="auth:sendCode:button"
               />
             </View>
 
@@ -141,6 +142,7 @@ export default function ForgotPassword() {
                     })
                   }
                   style={{ width: "100%" }}
+                  testId="auth:confirmEmail:button"
                 />
               </View>
             )}

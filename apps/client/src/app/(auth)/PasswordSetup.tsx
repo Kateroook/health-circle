@@ -2,9 +2,10 @@ import { Button } from "@/src/components/Button";
 import { PasswordField, PinCodeField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
+import { Feather as Icon } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { useAnalytics } from "../../hooks/useAnalytics";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -16,11 +17,11 @@ import {
 } from "react-native";
 import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Feather as Icon } from "@expo/vector-icons";
 import { apiFetch } from "../../api/api";
+import { useAnalytics } from "../../hooks/useAnalytics";
+import { useAuthStore } from "../../store/authStore";
 import { formatErrorMessage } from "../../utils/error.util";
 import { validatePasswordComplexity } from "../../utils/passwordValidation.util";
-import { useAuthStore } from "../../store/authStore";
 
 export default function PasswordSetup() {
   const { logEvent } = useAnalytics();
@@ -102,7 +103,11 @@ export default function PasswordSetup() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={styles.safeArea}
+      testID={ScreenIds.passwordSetup}
+      accessibilityLabel={ScreenIds.passwordSetup}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
@@ -120,6 +125,7 @@ export default function PasswordSetup() {
             leadingIcon={<Icon name="arrow-left" size={24} color={theme.colors.content.primary} />}
             onPress={() => router.back()}
             style={{ alignSelf: "flex-start" }}
+            testId="auth:back:button"
           />
 
           <View style={styles.header}>
@@ -140,6 +146,7 @@ export default function PasswordSetup() {
                 required
                 variant="pin"
                 errorMessage={formError === "Введіть 6-значний код" ? formError : undefined}
+                testId="auth:code:input"
               />
             </View>
 
@@ -157,6 +164,7 @@ export default function PasswordSetup() {
                     ? formError
                     : undefined
                 }
+                testId="auth:password:input"
               />
             </View>
 
@@ -167,6 +175,7 @@ export default function PasswordSetup() {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 required
+                testId="auth:confirmPassword:input"
               />
             </View>
 
@@ -186,6 +195,7 @@ export default function PasswordSetup() {
               disabled={loading}
               onPress={handleSubmit}
               style={{ width: "100%" }}
+              testId="auth:submit:button"
             />
           </View>
 

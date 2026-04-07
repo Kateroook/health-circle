@@ -14,6 +14,7 @@ interface RollCallModalProps {
   cancelText?: string;
   confirmText?: string;
   isLoading?: boolean;
+  testId?: string;
 }
 
 export const ConfirmRollCallModal: React.FC<RollCallModalProps> = ({
@@ -25,10 +26,15 @@ export const ConfirmRollCallModal: React.FC<RollCallModalProps> = ({
   cancelText = "Скасувати",
   confirmText = "Запитати",
   isLoading = false,
+  testId,
 }) => {
   return (
-    <ModalContainer isVisible={isVisible} onClose={onCancel}>
-      <ModalHeader title={title} description={description} />
+    <ModalContainer isVisible={isVisible} onClose={onCancel} testId={testId}>
+      <ModalHeader
+        title={title}
+        description={description}
+        testId={testId ? `${testId}:header` : undefined}
+      />
       <View style={styles.rcMessageBubble}>
         <Avatar source={require("@/src/assets/images/Logo-nobackground.png")} size="xs" />
         <View style={styles.rcMessageTextContainer}>
@@ -50,7 +56,7 @@ export const ConfirmRollCallModal: React.FC<RollCallModalProps> = ({
           {new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}
         </Typography>
       </View>
-      <ModalActions direction="row">
+      <ModalActions direction="row" testId={testId ? `${testId}:actions` : undefined}>
         <Button
           label={cancelText}
           hierarchy="secondary"
@@ -58,6 +64,7 @@ export const ConfirmRollCallModal: React.FC<RollCallModalProps> = ({
           size="medium"
           onPress={onCancel}
           disabled={isLoading}
+          testId={testId ? `${testId}:cancel:button` : undefined}
         />
         <Button
           label={isLoading ? "..." : confirmText}
@@ -66,6 +73,7 @@ export const ConfirmRollCallModal: React.FC<RollCallModalProps> = ({
           size="medium"
           onPress={onConfirm}
           disabled={isLoading}
+          testId={testId ? `${testId}:confirm:button` : undefined}
         />
       </ModalActions>
     </ModalContainer>

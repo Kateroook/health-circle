@@ -7,11 +7,12 @@ export interface ModalHeaderProps {
   title: string;
   description?: string;
   style?: StyleProp<ViewStyle>;
+  testId?: string;
 }
 
-export const ModalHeader: React.FC<ModalHeaderProps> = ({ title, description, style }) => {
+export const ModalHeader: React.FC<ModalHeaderProps> = ({ title, description, style, testId }) => {
   return (
-    <View style={[styles.container, style]}>
+    <View testID={testId} accessibilityLabel={testId} style={[styles.container, style]}>
       <Typography variant="h2" style={{ textAlign: "center" }}>
         {title}
       </Typography>

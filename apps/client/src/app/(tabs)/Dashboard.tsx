@@ -7,6 +7,7 @@ import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { useLocationStore } from "@/src/store/locationStore";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { useFocusEffect } from "expo-router";
 import { useAnalytics } from "../../hooks/useAnalytics";
 
@@ -163,7 +164,12 @@ export default function DashboardScreen() {
   }, [groups, selectedGroupId, user?.id]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
+    <SafeAreaView
+      style={styles.screen}
+      edges={["top", "left", "right"]}
+      testID={ScreenIds.dashboard}
+      accessibilityLabel={ScreenIds.dashboard}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <DashboardHeader
           firstName={user?.firstName}
@@ -176,12 +182,13 @@ export default function DashboardScreen() {
         />
 
         {myAlertStatus?.active && myAlertStatus.alert ? (
-          <AlertBanner alert={myAlertStatus.alert} />
+          <AlertBanner alert={myAlertStatus.alert} testId="dashboard:activeAlert:banner" />
         ) : null}
 
         <MainStatusButton
           currentStatus={user?.status || "UNKNOWN"}
           onUpdateStatus={handleStatusUpdate}
+          testId="dashboard:mainStatus:button"
         />
         <View style={styles.statusCircleSection}>
           <Typography variant="subtitle2" tone="secondary" style={styles.sectionHeader}>

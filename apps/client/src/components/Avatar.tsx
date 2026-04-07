@@ -1,6 +1,6 @@
 import { getAvatarUrl } from "@/src/api/api";
-import { theme } from "@/src/theme/theme";
 import { useAuthStore } from "@/src/store/authStore";
+import { theme } from "@/src/theme/theme";
 import React, { useEffect, useMemo, useState } from "react";
 import { Image, ImageSourcePropType, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 
@@ -36,6 +36,7 @@ interface AvatarProps {
   statusColor?: string;
 
   style?: StyleProp<ViewStyle>;
+  testId?: string;
 }
 export const Avatar: React.FC<AvatarProps> = ({
   userId,
@@ -46,6 +47,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   showOuterRing = false,
   statusColor = "white",
   style,
+  testId,
 }) => {
   const [imageError, setImageError] = useState(false);
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -91,11 +93,21 @@ export const Avatar: React.FC<AvatarProps> = ({
   );
 
   if (!hasStatus) {
-    return <View style={[styles.circle, { width: outer, height: outer }, style]}>{image}</View>;
+    return (
+      <View
+        testID={testId}
+        accessibilityLabel={testId}
+        style={[styles.circle, { width: outer, height: outer }, style]}
+      >
+        {image}
+      </View>
+    );
   }
 
   return (
     <View
+      testID={testId}
+      accessibilityLabel={testId}
       style={[
         styles.circle,
         hasOuter && {

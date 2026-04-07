@@ -3,6 +3,7 @@ import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
@@ -13,7 +14,6 @@ import { apiFetch } from "../../api/api";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
-import LocationPermissionScreen from "./LocationPermissionScreen";
 
 export default function Register() {
   const { logEvent } = useAnalytics();
@@ -194,6 +194,7 @@ export default function Register() {
           autoCapitalize={autoCapitalize}
           required={required}
           errorMessage={error}
+          testId={`auth:${isPhone ? "phone" : "email"}:input`}
         />
       ) : (
         <TextField
@@ -205,13 +206,18 @@ export default function Register() {
           autoCapitalize={autoCapitalize}
           required={required}
           errorMessage={error}
+          testId={`auth:${label === "Прізвище" ? "lastName" : label === "Ім'я" ? "firstName" : "middleName"}:input`}
         />
       )}
     </>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={styles.safeArea}
+      testID={ScreenIds.register}
+      accessibilityLabel={ScreenIds.register}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
@@ -232,6 +238,7 @@ export default function Register() {
               }
               onPress={handleBack}
               style={{ alignSelf: "flex-start" }}
+              testId="auth:back:button"
             />
           )}
 
@@ -332,6 +339,7 @@ export default function Register() {
                 disabled={loading}
                 onPress={handleNext}
                 style={{ width: "100%" }}
+                testId="auth:next:button"
               />
             </View>
           </View>

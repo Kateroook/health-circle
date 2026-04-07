@@ -1,6 +1,7 @@
 import { Button } from "@/src/components/Button";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Image, StyleSheet, View } from "react-native";
@@ -16,7 +17,11 @@ export default function LocationPermissionScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+      testID={ScreenIds.locationPermission}
+      accessibilityLabel={ScreenIds.locationPermission}
+    >
       {/* Пропустити */}
       <View style={styles.skipRow}>
         <Button
@@ -25,6 +30,7 @@ export default function LocationPermissionScreen() {
           size="small"
           shape="rectangle"
           onPress={() => finish(false)}
+          testId="auth:skipLocation:button"
         />
       </View>
 
@@ -58,6 +64,7 @@ export default function LocationPermissionScreen() {
           shape="pill"
           onPress={() => finish(true)}
           style={styles.allowButton}
+          testId="auth:allowLocation:button"
         />
       </View>
     </SafeAreaView>
