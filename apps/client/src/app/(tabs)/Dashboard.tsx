@@ -24,6 +24,7 @@ import { MemberList } from "../../components/dashboard/MemberList";
 export default function DashboardScreen() {
   const { logEvent } = useAnalytics();
   const user = useAuthStore((s) => s.user);
+  const refreshProfile = useAuthStore((s) => s.refreshProfile);
   const [groups, setGroups] = useState<Circle[]>([]);
   const [myAlertStatus, setMyAlertStatus] = useState<MyAlertStatus | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
@@ -57,9 +58,8 @@ export default function DashboardScreen() {
   }, []);
 
   const syncDashboardData = useCallback(() => {
-    fetchGroups();
-    fetchMyAlertStatus();
-  }, [fetchGroups, fetchMyAlertStatus]);
+    void Promise.all([refreshProfile(), fetchGroups(), fetchMyAlertStatus()]);
+  }, [fetchGroups, fetchMyAlertStatus, refreshProfile]);
 
   useSyncSignal(syncDashboardData);
 
