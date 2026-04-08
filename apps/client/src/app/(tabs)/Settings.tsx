@@ -10,9 +10,8 @@ import { theme } from "@/src/theme/theme";
 import { ScreenIds } from "@/src/utils/testIDs";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Image, Modal, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import ConfirmationModal from "../../components/ConfirmationModal";
@@ -22,6 +21,8 @@ import { useLocationStore } from "../../store/locationStore";
 import { useSettingsStore } from "../../store/settingsStore";
 import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
+
+const { width, height } = Dimensions.get("window");
 
 export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
@@ -388,7 +389,7 @@ export default function SettingsScreen() {
           Пароль змінено
         </Typography>
         <Image
-          source={require("../../components/password_change_image.jpg")}
+          source={require("./../../assets/images/interactiveScreens/password_change.png")}
           style={passStyles.successImage}
           resizeMode="contain"
         />
@@ -1024,7 +1025,7 @@ const passStyles = StyleSheet.create({
     paddingBottom: theme.spacing[40],
   },
   successTitle: { textAlign: "center" },
-  successImage: { width: "62%", aspectRatio: 0.7 },
+  successImage: { width: width * 0.417, maxHeight: height * 0.235 },
   successButton: { width: "100%" },
 });
 

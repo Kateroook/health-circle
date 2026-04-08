@@ -5,9 +5,10 @@ import { ScreenIds } from "@/src/utils/testIDs";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Image, StyleSheet, View } from "react-native";
+import { Alert, Dimensions, Image, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+const { width, height } = Dimensions.get("window");
 export default function LocationPermissionScreen() {
   const [loading, setLoading] = useState(false);
 
@@ -58,7 +59,7 @@ export default function LocationPermissionScreen() {
           Дозволь доступ до геолокації, щоб у критичний момент близькі бачили, де ти
         </Typography>
         <Image
-          source={require("./geolocation_image.jpg")}
+          source={require("./../../assets/images/interactiveScreens/geolocation.png")}
           style={styles.image}
           resizeMode="contain"
         />
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
   },
   title: { textAlign: "center" },
   subtitle: { textAlign: "center" },
-  image: { width: "62%", aspectRatio: 0.9 },
+  image: { width: width * 0.649, maxHeight: height * 0.181 },
   caption: { textAlign: "center" },
   footer: {
     paddingHorizontal: theme.spacing[16],

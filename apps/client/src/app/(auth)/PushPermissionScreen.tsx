@@ -62,7 +62,7 @@ export default function PushPermissionScreen() {
           переклички
         </Typography>
         <Image
-          source={require("./push_notifications_image.jpg")}
+          source={require("./../../assets/images/interactiveScreens/push_notifications.png")}
           style={styles.image}
           resizeMode="contain"
         />

@@ -5,10 +5,10 @@ import { theme } from "@/src/theme/theme";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
-import { useAnalytics } from "../../hooks/useAnalytics";
 import { Alert, Image, Share, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAnalytics } from "../../hooks/useAnalytics";
 import { formatErrorMessage } from "../../utils/error.util";
 import { Button } from "../Button";
 import { Typography } from "../typography";
@@ -176,7 +176,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                         Твоє коло створюється...
                       </Typography>
                       <Image
-                        source={require("../circle_creating_image.jpg")}
+                        source={require("../../assets/images/interactiveScreens/circle_creating.png")}
                         style={styles.statusImage}
                         resizeMode="contain"
                       />
@@ -192,7 +192,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                           Коло створено
                         </Typography>
                         <Image
-                          source={require("../circle_created_image.jpg")}
+                          source={require("../../assets/images/interactiveScreens/circle_created.png")}
                           style={styles.statusImage}
                           resizeMode="contain"
                         />
@@ -345,8 +345,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   statusImage: {
-    width: 200,
-    height: 200,
+    width: 236,
+    height: 188,
   },
 });
 

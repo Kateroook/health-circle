@@ -8,6 +8,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Dimensions,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -22,6 +23,8 @@ import { apiFetch } from "../../api/api";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { formatErrorMessage } from "../../utils/error.util";
 import { validatePasswordComplexity } from "../../utils/passwordValidation.util";
+
+const { width, height } = Dimensions.get("window");
 
 export default function ResetPassword() {
   const { logEvent } = useAnalytics();
@@ -225,7 +228,7 @@ export default function ResetPassword() {
             Пароль змінено
           </Typography>
           <Image
-            source={require("./password_change_image.jpg")}
+            source={require("./../../assets/images/interactiveScreens/password_change.png")}
             style={successStyles.image}
             resizeMode="contain"
           />
@@ -295,6 +298,6 @@ const successStyles = StyleSheet.create({
     paddingBottom: theme.spacing[40],
   },
   title: { textAlign: "center" },
-  image: { width: "62%", aspectRatio: 1 },
+  image: { width: width * 0.417, maxHeight: height * 0.235 },
   button: { width: "100%" },
 });
