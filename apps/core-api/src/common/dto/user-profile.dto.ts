@@ -1,34 +1,17 @@
 import { ApiHideProperty } from '@nestjs/swagger';
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude } from 'class-transformer';
 import { UserStatus } from 'src/common/enums/user-status';
 import { UserEntity } from 'src/users/entities/user.entity';
 
 export class UserProfileDto {
-  @Expose()
   id: string;
-
-  @Expose()
   firstName: string;
-
-  @Expose()
   middleName?: string;
-
-  @Expose()
   lastName: string;
-
-  @Expose()
   fullName: string | null;
-
-  @Expose()
   email: string | null;
-
-  @Expose()
   phone: string | null;
-
-  @Expose()
   avatarUpdatedAt?: Date;
-
-  @Expose()
   status: UserStatus;
   region: string | null;
   district: string | null;
