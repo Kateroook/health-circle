@@ -18,6 +18,7 @@ export interface ModalActionsProps {
   style?: StyleProp<ViewStyle>;
   /** Gap between buttons. Default from theme. */
   gap?: number;
+  testId?: string;
 }
 
 export const ModalActions: React.FC<ModalActionsProps> = ({
@@ -28,6 +29,7 @@ export const ModalActions: React.FC<ModalActionsProps> = ({
   bottomInset = 0,
   style,
   gap = theme.spacing[12],
+  testId,
 }) => {
   const content = (
     <View
@@ -37,8 +39,11 @@ export const ModalActions: React.FC<ModalActionsProps> = ({
         { gap },
       ]}
     >
-      {React.Children.map(children, (child) => (
-        <View style={direction === "column" ? styles.buttonWrapperColumn : styles.buttonWrapperRow}>
+      {React.Children.map(children, (child, index) => (
+        <View
+          key={index}
+          style={direction === "column" ? styles.buttonWrapperColumn : styles.buttonWrapperRow}
+        >
           {child}
         </View>
       ))}
@@ -46,11 +51,19 @@ export const ModalActions: React.FC<ModalActionsProps> = ({
   );
 
   if (!sticky) {
-    return <View style={[styles.flexContainer, style]}>{content}</View>;
+    return (
+      <View testID={testId} accessibilityLabel={testId} style={[styles.flexContainer, style]}>
+        {content}
+      </View>
+    );
   }
 
   return (
-    <View style={[styles.stickyContainer, { bottom: bottomInset }, style]}>
+    <View
+      testID={testId}
+      accessibilityLabel={testId}
+      style={[styles.stickyContainer, { bottom: bottomInset }, style]}
+    >
       {overlay && <View style={StyleSheet.absoluteFill}>{overlay}</View>}
       {content}
     </View>

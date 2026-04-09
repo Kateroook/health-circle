@@ -9,12 +9,14 @@ type BottomSheetContainerProps = {
   isVisible: boolean;
   onClose?: () => void;
   children: ReactNode;
+  testId?: string;
 };
 
 export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   isVisible,
   onClose,
   children,
+  testId,
 }) => {
   return (
     <Modal
@@ -30,7 +32,7 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       propagateSwipe
       style={styles.modal}
     >
-      <SafeAreaView style={styles.sheet}>
+      <SafeAreaView testID={testId} accessibilityLabel={testId} style={styles.sheet}>
         <View style={styles.grabber} />
         <View style={styles.container}>{children}</View>
       </SafeAreaView>

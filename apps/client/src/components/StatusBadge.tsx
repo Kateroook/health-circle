@@ -61,6 +61,7 @@ export const STATUS_CONFIG: Record<
 interface StatusBadgeProps {
   status: UserStatus;
   variant?: StatusBadgeVariant;
+  testId?: string;
 }
 
 const StatusIcon = ({
@@ -78,11 +79,15 @@ const StatusIcon = ({
   return <FontAwesome6 name={config.mcIcon} size={size} color={color} />;
 };
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = "round" }) => {
+export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = "round", testId }) => {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.UNKNOWN;
 
   const roundBadge = (
-    <View style={[styles.roundOuter, { backgroundColor: config.bg }]}>
+    <View
+      testID={variant === "round" ? testId : undefined}
+      accessibilityLabel={variant === "round" ? testId : undefined}
+      style={[styles.roundOuter, { backgroundColor: config.bg }]}
+    >
       {config.showCircle ? (
         <View style={[styles.roundInner, { backgroundColor: config.icon }]}>
           <StatusIcon config={config} size={12} color="white" />
@@ -96,7 +101,11 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = "rou
   if (variant === "round") return roundBadge;
 
   return (
-    <View style={[styles.pill, { backgroundColor: config.bg }]}>
+    <View
+      testID={testId}
+      accessibilityLabel={testId}
+      style={[styles.pill, { backgroundColor: config.bg }]}
+    >
       {roundBadge}
       <Typography variant="subtitle1" style={{ color: config.icon }}>
         {config.label}

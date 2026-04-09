@@ -14,6 +14,7 @@ interface RegionPickerProps {
   value: string;
   onSelect: (name: string) => void;
   placeholder?: string;
+  testId?: string;
 }
 
 export const RegionPicker: React.FC<RegionPickerProps> = ({
@@ -21,6 +22,7 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
   value,
   onSelect,
   placeholder,
+  testId,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [search, setSearch] = useState("");
@@ -38,7 +40,7 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View testID={testId} accessibilityLabel={testId} style={styles.container}>
       <TouchableOpacity
         onPress={() => {
           setModalVisible(true);
@@ -88,7 +90,7 @@ export const RegionPicker: React.FC<RegionPickerProps> = ({
               value={search}
               onChangeText={setSearch}
               autoFocus
-              leftIcon={
+              leadingArtwork={
                 <MaterialCommunityIcons
                   name="magnify"
                   size={20}

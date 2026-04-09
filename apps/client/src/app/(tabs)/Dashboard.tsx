@@ -1,11 +1,13 @@
 import { apiFetch, updateMyStatus } from "@/src/api/api";
-import { initiatePersonalRollCall } from "@/src/api/groups";
+import { setContactAlias } from "@/src/api/contacts";
+import { blockUser, initiatePersonalRollCall } from "@/src/api/groups";
 import { UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { useLocationStore } from "@/src/store/locationStore";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { useFocusEffect } from "expo-router";
 import { useAnalytics } from "../../hooks/useAnalytics";
 
@@ -80,12 +82,15 @@ export default function DashboardScreen() {
     }
   };
 
-  const { canRollCall, rollCallGroupId } = useMemo(() => {
-    if (!selectedMember || !user) return { canRollCall: false, rollCallGroupId: null };
+  const { canRollCall, rollCallGroupId, isOwner, blockGroupId } = useMemo(() => {
+    if (!selectedMember || !user)
+      return { canRollCall: false, rollCallGroupId: null, isOwner: false, blockGroupId: null };
     const sharedGroup = groups.find((g) => g.members.some((m) => m.id === selectedMember.id));
     return {
       canRollCall: !!sharedGroup,
       rollCallGroupId: sharedGroup?.id || null,
+      isOwner: sharedGroup?.owner.id === user.id,
+      blockGroupId: sharedGroup?.id || null,
     };
   }, [selectedMember, groups, user]);
 
@@ -94,9 +99,36 @@ export default function DashboardScreen() {
     try {
       await initiatePersonalRollCall(rollCallGroupId, selectedMember.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
+      syncDashboardData(); // Refresh data to show updated rollcall status
       Alert.alert("Успіх", "Запит на перекличку надіслано");
-    } catch (e) {
+    } catch {
       Alert.alert("Помилка", "Не вдалося надіслати запит");
+    }
+  };
+
+  const handleBlock = async () => {
+    if (!selectedMember || !blockGroupId) return;
+    try {
+      await blockUser(blockGroupId, selectedMember.id);
+      logEvent("block_user");
+      syncDashboardData();
+      handleCloseModal();
+      Alert.alert("Успіх", "Користувача заблоковано");
+    } catch {
+      Alert.alert("Помилка", "Не вдалося заблокувати користувача");
+    }
+  };
+
+  const handleRename = async (newName: string) => {
+    if (!selectedMember) return;
+    try {
+      await setContactAlias(selectedMember.id, newName);
+      logEvent("rename_member");
+      syncDashboardData();
+      handleCloseModal();
+      Alert.alert("Успіх", "Ім'я оновлено");
+    } catch {
+      Alert.alert("Помилка", "Не вдалося оновити ім'я");
     }
   };
 
@@ -131,7 +163,12 @@ export default function DashboardScreen() {
   }, [groups, selectedGroupId, user?.id]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
+    <SafeAreaView
+      style={styles.screen}
+      edges={["top", "left", "right"]}
+      testID={ScreenIds.dashboard}
+      accessibilityLabel={ScreenIds.dashboard}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <DashboardHeader
           firstName={user?.firstName}
@@ -144,12 +181,13 @@ export default function DashboardScreen() {
         />
 
         {myAlertStatus?.active && myAlertStatus.alert ? (
-          <AlertBanner alert={myAlertStatus.alert} />
+          <AlertBanner alert={myAlertStatus.alert} testId="dashboard:activeAlert:banner" />
         ) : null}
 
         <MainStatusButton
           currentStatus={user?.status || "UNKNOWN"}
           onUpdateStatus={handleStatusUpdate}
+          testId="dashboard:mainStatus:button"
         />
         <View style={styles.statusCircleSection}>
           <Typography variant="subtitle2" tone="secondary" style={styles.sectionHeader}>
@@ -176,6 +214,9 @@ export default function DashboardScreen() {
         onClose={handleCloseModal}
         onRollCall={handleRollCall}
         canRollCall={canRollCall}
+        isOwner={isOwner}
+        onBlock={isOwner ? handleBlock : undefined}
+        onRename={handleRename}
       />
     </SafeAreaView>
   );

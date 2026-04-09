@@ -1,13 +1,11 @@
 import { useAnalytics } from "@/src/hooks/useAnalytics";
 import { useAuthStore } from "@/src/store/authStore";
-import { AntDesign } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { setContactAlias } from "@/src/api/contacts";
 import { blockUser, initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
-import { Button } from "@/src/components/Button";
-import { BottomSheetContainer, ModalActions, ModalContainer } from "@/src/components/modal";
+import { BottomSheetContainer, ModalContainer } from "@/src/components/modal";
 import { theme } from "@/src/theme/theme";
 import { Member } from "@/src/types";
 import ConfirmationModal from "../../ConfirmationModal";
@@ -123,6 +121,7 @@ export default function CircleDetailsModal({
       try {
         await initiatePersonalRollCall(circleId, selectedMember.id);
         logEvent("initiate_personal_roll_call", { type: "individual" });
+        onMemberUpdated(); // Notify parent to refresh member data
         onRollCall();
       } catch (error) {
         console.error("Failed to initiate personal roll call:", error);

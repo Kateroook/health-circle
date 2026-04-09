@@ -48,11 +48,13 @@ const VideoLayer: React.FC<VideoLayerProps> = ({ source, opacity }) => {
 interface MainStatusButtonProps {
   currentStatus: UserStatus;
   onUpdateStatus: (s: UserStatus) => void;
+  testId?: string;
 }
 
 export const MainStatusButton: React.FC<MainStatusButtonProps> = ({
   currentStatus,
   onUpdateStatus,
+  testId,
 }) => {
   const scale = useRef(new Animated.Value(1)).current;
   const transitionScale = useRef(new Animated.Value(1)).current;
@@ -142,6 +144,8 @@ export const MainStatusButton: React.FC<MainStatusButtonProps> = ({
   return (
     <View style={styles.container}>
       <Pressable
+        testID={testId}
+        accessibilityLabel={testId}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={handleShortPress}

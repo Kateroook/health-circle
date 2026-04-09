@@ -27,6 +27,7 @@ interface HromadaPickerProps {
   value: string; // display name of currently selected region
   onSelect: (uid: number, name: string) => void;
   placeholder?: string;
+  testId?: string;
 }
 
 export const HromadaPicker: React.FC<HromadaPickerProps> = ({
@@ -34,6 +35,7 @@ export const HromadaPicker: React.FC<HromadaPickerProps> = ({
   value,
   onSelect,
   placeholder,
+  testId,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [search, setSearch] = useState("");
@@ -70,7 +72,7 @@ export const HromadaPicker: React.FC<HromadaPickerProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View testID={testId} accessibilityLabel={testId} style={styles.container}>
       <TouchableOpacity onPress={() => setModalVisible(true)} activeOpacity={0.7}>
         <View pointerEvents="none">
           <TextField

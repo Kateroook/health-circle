@@ -1,6 +1,7 @@
 import { Button } from "@/src/components/Button";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -221,7 +222,12 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={["top", "bottom"]}
+      testID={ScreenIds.onboarding}
+      accessibilityLabel={ScreenIds.onboarding}
+    >
       <StatusBar style="dark" hidden />
       <View style={styles.container}>
         {!isAuthPage && (
@@ -230,6 +236,7 @@ export default function OnboardingScreen() {
             accessibilityLabel="Закрити онбординг"
             onPress={handleSkipToAuth}
             style={styles.closeButton}
+            testID="onboarding:close:button"
           >
             <Feather name="x" size={12} color={theme.colors.content.onColor} />
           </Pressable>
@@ -326,6 +333,7 @@ function OnboardingSlidePage({
             disabled={index === 0}
             onPress={() => onScrollToPage(index - 1)}
             style={[styles.navTapZone, index === 0 && styles.navTapZoneDisabled]}
+            testID="onboarding:prevSlide:button"
           />
 
           <Pressable
@@ -333,6 +341,7 @@ function OnboardingSlidePage({
             accessibilityLabel="Наступний слайд"
             onPress={() => onScrollToPage(index + 1)}
             style={styles.navTapZone}
+            testID="onboarding:nextSlide:button"
           />
         </View>
 
@@ -378,6 +387,7 @@ function OnboardingAuthPage({
             label="Зареєструватися"
             onPress={() => onNavigate("/Register")}
             style={styles.authButton}
+            testId="onboarding:register:button"
           />
 
           <Button
@@ -385,6 +395,7 @@ function OnboardingAuthPage({
             hierarchy="secondary"
             onPress={() => onNavigate("/Login")}
             style={styles.authButton}
+            testId="onboarding:login:button"
           />
         </View>
       </View>
