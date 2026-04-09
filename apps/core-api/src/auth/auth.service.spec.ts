@@ -6,6 +6,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { createHash } from 'crypto';
 import { Response } from 'express';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
+import { UserStatus } from 'src/common/enums/user-status';
 import { RequestMetadata } from 'src/common/types/request-metadata';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { SecurityService } from 'src/security/security.service';
@@ -36,6 +37,10 @@ describe('AuthService', () => {
     email: 'test@example.com',
     lockedAt: null,
     isRegistered: true,
+    status: UserStatus.WAS_SAFE,
+    region: 'Kyiv',
+    district: 'Shevchenkivskyi',
+    alertRegionUid: 31,
   } as unknown as UserEntity;
 
   const mockMetadata = {
@@ -151,6 +156,8 @@ describe('AuthService', () => {
 
       expect(result).toBeInstanceOf(UserProfileDto);
       expect(result.id).toBe(mockUserEntity.id);
+      expect(result.status).toBe(UserStatus.WAS_SAFE);
+      expect(result.region).toBe('Kyiv');
     });
 
     it('should throw UnauthorizedException if user not found', async () => {

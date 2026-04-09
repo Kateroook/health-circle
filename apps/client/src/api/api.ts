@@ -4,6 +4,20 @@ const API_URL =
     ? "http://localhost:3001/api"
     : "http://34.116.132.120:3001/api");
 
+export class ApiError extends Error {
+  status: number;
+  body: string;
+  path: string;
+
+  constructor(status: number, body: string, path: string, fallbackMessage?: string) {
+    super(body || fallbackMessage || `Request failed with status ${status}`);
+    this.name = "ApiError";
+    this.status = status;
+    this.body = body;
+    this.path = path;
+  }
+}
+
 export async function apiFetch(
   path: string,
   options: RequestInit & {
@@ -71,7 +85,7 @@ export async function apiFetch(
         });
       }
     }
-    throw new Error(text || res.statusText);
+    throw new ApiError(res.status, text, path, res.statusText);
   }
 
   try {

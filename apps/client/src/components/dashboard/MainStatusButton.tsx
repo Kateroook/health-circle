@@ -65,10 +65,6 @@ export const MainStatusButton: React.FC<MainStatusButtonProps> = ({
   const previousOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (currentStatus === "UNKNOWN" && displayedStatus !== "UNKNOWN") {
-      return;
-    }
-
     if (currentStatus === displayedStatus) return;
 
     setPreviousStatus(displayedStatus);
