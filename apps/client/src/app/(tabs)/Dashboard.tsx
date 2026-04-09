@@ -25,6 +25,7 @@ export default function DashboardScreen() {
   const { logEvent } = useAnalytics();
   const user = useAuthStore((s) => s.user);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
+  const updateUser = useAuthStore((s) => s.updateUser);
   const [groups, setGroups] = useState<Circle[]>([]);
   const [myAlertStatus, setMyAlertStatus] = useState<MyAlertStatus | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
@@ -73,10 +74,7 @@ export default function DashboardScreen() {
     try {
       await updateMyStatus(newStatus);
       logEvent("update_status", { status: newStatus });
-      useAuthStore.setState((state) => {
-        if (!state.user) return state;
-        return { user: { ...state.user, status: newStatus as any } };
-      });
+      updateUser({ status: newStatus as any });
     } catch (e) {
       Alert.alert("Помилка", "Не вдалося оновити статус. Перевірте інтернет.");
     }

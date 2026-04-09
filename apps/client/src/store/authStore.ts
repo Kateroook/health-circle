@@ -1,7 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 import { createJSONStorage, persist, StateStorage } from "zustand/middleware";
-import { apiFetch, ApiError } from "../api/api";
+import { ApiError, apiFetch } from "../api/api";
 
 // Secure storage for Expo
 const secureStorage: StateStorage = {
@@ -103,7 +103,25 @@ export const useAuthStore = create<AuthStoreState>()(
             isLoggedIn: true,
           });
         } catch (error) {
-          console.error("Profile fetch failed:", error);
+          console.error("Profile fetch failed, trying refresh:", error);
+
+          // Try refreshing the session before giving up
+          const refreshed = await get().refreshSession();
+          if (refreshed) {
+            // Retry profile fetch with new token
+            try {
+              const newToken = get().accessToken;
+              const profile = await apiFetch("/auth/profile", {
+                headers: { Authorization: `Bearer ${newToken}` },
+              });
+              set({
+                user: normalizeUser(profile as Partial<User>),
+                loading: false,
+                isLoggedIn: true,
+              });
+              return;
+            } catch {}
+          }
 
           if (isAuthFailure(error)) {
             set({
@@ -217,6 +235,7 @@ export const useAuthStore = create<AuthStoreState>()(
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
+        user: state.user,
       }),
 
       // Refresh profile on startup
