@@ -110,5 +110,56 @@ test.describe(
         expect(roll_callResult.response.status()).toBe(401);
       },
     );
+
+    test(
+      '[RC-006] Initiate group roll-call in an empty group',
+      {
+        tag: '@sanity',
+      },
+      async ({ api }) => {
+        const secondOwnerGroup = GroupFactory.createEmptyGroup(utils.random.groupName());
+        const createResult = await api.groups.createGroup(secondOwnerGroup);
+        secondOwnerGroup.id = createResult.data.id;
+        secondOwnerGroup.inviteCode = createResult.data.inviteCode;
+
+        const roll_callResult = await api.rollCall.initiateForGroup(secondOwnerGroup.id!);
+        expect(roll_callResult.response.status()).toBe(201);
+      },
+    );
+
+    test.skip(
+      "[RC-007] Ignoring group call changes user's status",
+      {
+        tag: '@sanity',
+      },
+      async ({ api }) => {
+        const getMemberBeforeRC = await memberApi.users.getUser(member.id!);
+
+        //sleep function or method (implemented in utils)
+
+        await api.rollCall.initiateForGroup(ownerGroup.id!);
+        const getMemberAfterRC = await memberApi.users.getUser(member.id!);
+
+        expect(getMemberAfterRC.data.status).not.toBe(getMemberBeforeRC.data.status);
+      },
+    );
+
+    test.skip(
+      "[RC-008] Group call doesn't changes user\'s status after imidiate responce",
+      {
+        tag: '@sanity',
+      },
+      async ({ api }) => {
+        const getMemberBeforeRC = await memberApi.users.getUser(member.id!);
+
+        //sleep function or method (implemented in utils)
+
+        await api.rollCall.initiateForGroup(ownerGroup.id!);
+        await memberApi.users.updateUserStatus({ status: 'SAFE' });
+        const getMemberAfterRC = await memberApi.users.getUser(member.id!);
+
+        expect(getMemberAfterRC.data.status).toBe(getMemberBeforeRC.data.status);
+      },
+    );
   },
 );
