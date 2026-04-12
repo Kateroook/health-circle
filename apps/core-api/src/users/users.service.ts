@@ -104,6 +104,27 @@ export class UsersService {
       .map((u) => u.fcmToken as string);
   }
 
+  async getPhoneNumbersForUsers(userIds: string[], settingKey?: string): Promise<string[]> {
+    const users = await this.repository.find({
+      where: { id: In(userIds) },
+      select: ['id', 'phone'],
+      relations: ['notificationSettings'],
+    });
+
+    return users
+      .filter((u) => {
+        if (!u.phone) return false;
+        const settings = u.notificationSettings;
+        if (!settings) return true;
+        if (!settings.enabled) return false;
+        if (settingKey && settings.prefs && settings.prefs[settingKey] === false) {
+          return false;
+        }
+        return true;
+      })
+      .map((u) => u.phone as string);
+  }
+
   private async isAvatarViewAllowed(targetUserId: string, requesterUserId: string): Promise<boolean> {
     if (targetUserId === requesterUserId) return true;
 

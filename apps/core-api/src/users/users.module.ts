@@ -7,6 +7,7 @@ import { ContactEntity } from 'src/contacts/entities/contact.entity';
 import { ExternalFilesModule } from 'src/external-files/external-files.module';
 import { NotificationsModule } from 'src/notifications/notifications.module';
 import { StatusUpdateQueueWorker } from 'src/notifications/status-update-queue.worker';
+import { SmsModule } from 'src/sms/sms.module';
 import { UserActivitiesModule } from 'src/user-activities/user-activities.module';
 
 import { GroupEntity } from '../groups/entities/group.entity';
@@ -37,6 +38,7 @@ import { UsersService } from './users.service';
     ExternalFilesModule,
     NotificationsModule,
     AlertsModule,
+    SmsModule,
   ],
   providers: [UsersService, UserUniqueConstraint, SessionActivityService, StatusUpdateQueueWorker],
   controllers: [UsersController],
