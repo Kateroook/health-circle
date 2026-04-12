@@ -1,0 +1,46 @@
+# .easignore - used by EAS CLI instead of .gitignore
+# We copy .gitignore rules but REMOVE google-services.json and *.jks to include them in local builds
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native (Keep these to allow local signing)
+#.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+app-example
+
+# generated native folders
+/ios
+/android
+
+# Defensive un-ignore for local builds
+!google-services.json
+!*.jks
