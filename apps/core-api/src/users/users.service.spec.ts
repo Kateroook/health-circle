@@ -11,6 +11,7 @@ import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ContactEntity } from 'src/contacts/entities/contact.entity';
 import { ExternalFilesEntity } from 'src/external-files/entities/external-files.entity';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { GeocodingService } from 'src/geocoding/geocoding.service';
 import { GroupEntity } from 'src/groups/entities/group.entity';
 import { GroupBlockListEntity } from 'src/groups/entities/group-block-list.entity';
 import { GroupMemberEntity } from 'src/groups/entities/group-member.entity';
@@ -154,6 +155,10 @@ describe('UsersService', () => {
     resolve: jest.fn().mockResolvedValue(null),
   });
 
+  const mockGeocodingService = () => ({
+    reverseGeocode: jest.fn().mockResolvedValue(null),
+  });
+
   //
   // BEFORE EACH
   //
@@ -174,6 +179,7 @@ describe('UsersService', () => {
         { provide: getRepositoryToken(UserNotificationSettingsEntity), useValue: createRepoMock() },
         { provide: QueueService, useValue: mockQueueService() },
         { provide: AlertRegionResolverService, useValue: mockAlertRegionResolver() },
+        { provide: GeocodingService, useValue: mockGeocodingService() },
         { provide: SessionActivityService, useValue: { trackActivity: jest.fn() } },
       ],
     }).compile();

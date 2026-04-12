@@ -5,6 +5,7 @@ import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constra
 import { ConfirmationsModule } from 'src/confirmations/confirmations.module';
 import { ContactEntity } from 'src/contacts/entities/contact.entity';
 import { ExternalFilesModule } from 'src/external-files/external-files.module';
+import { GeocodingModule } from 'src/geocoding/geocoding.module';
 import { NotificationsModule } from 'src/notifications/notifications.module';
 import { StatusUpdateQueueWorker } from 'src/notifications/status-update-queue.worker';
 import { SmsModule } from 'src/sms/sms.module';
@@ -39,6 +40,7 @@ import { UsersService } from './users.service';
     NotificationsModule,
     AlertsModule,
     SmsModule,
+    GeocodingModule,
   ],
   providers: [UsersService, UserUniqueConstraint, SessionActivityService, StatusUpdateQueueWorker],
   controllers: [UsersController],

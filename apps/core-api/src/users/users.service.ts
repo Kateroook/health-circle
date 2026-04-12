@@ -11,6 +11,7 @@ import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { ContactEntity } from 'src/contacts/entities/contact.entity';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { GeocodingService } from 'src/geocoding/geocoding.service';
 import { GroupEntity } from 'src/groups/entities/group.entity';
 import { GroupBlockListEntity } from 'src/groups/entities/group-block-list.entity';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
@@ -49,6 +50,7 @@ export class UsersService {
     @InjectRepository(UserNotificationSettingsEntity)
     protected readonly notificationSettingsRepository: Repository<UserNotificationSettingsEntity>,
     private readonly alertRegionResolver: AlertRegionResolverService,
+    private readonly geocodingService: GeocodingService,
     private readonly firestoreSyncService: FirestoreSyncService,
   ) {}
 
@@ -309,11 +311,31 @@ export class UsersService {
       });
     }
 
-    // Auto-resolve alertRegionUid from region/district text only if client didn't send one directly
-    if (!item.alertRegionUid && (item.region || item.district)) {
-      const resolvedUid = await this.resolveAlertRegionUid(item.region, item.district);
-      if (resolvedUid) {
-        item.alertRegionUid = resolvedUid;
+    // Auto-resolve alertRegionUid from coordinates OR region/district text
+    if (!item.alertRegionUid) {
+      if (item.latitude && item.longitude) {
+        // Step 1: Reverse geocode to get reliable Ukrainian names
+        const geo = await this.geocodingService.reverseGeocode(item.latitude, item.longitude);
+        if (geo) {
+          // Auto-fill region/district strings if they are missing
+          if (!item.region) item.region = geo.region || undefined;
+          if (!item.district) item.district = geo.district || geo.city || undefined;
+
+          // Step 2: Resolve the UID using these reliable names
+          const resolvedUid = await this.alertRegionResolver.resolve(
+            geo.region || undefined,
+            geo.district || geo.city || undefined,
+          );
+          if (resolvedUid) {
+            item.alertRegionUid = resolvedUid;
+          }
+        }
+      } else if (item.region || item.district) {
+        // Fallback to string-based resolution if no coordinates
+        const resolvedUid = await this.alertRegionResolver.resolve(item.region, item.district);
+        if (resolvedUid) {
+          item.alertRegionUid = resolvedUid;
+        }
       }
     }
 
