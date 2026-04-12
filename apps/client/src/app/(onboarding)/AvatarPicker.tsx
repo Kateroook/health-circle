@@ -37,7 +37,7 @@ export default function AvatarPickerScreen() {
   const [customImage, setCustomImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const finish = () => router.replace("/Login");
+  const finish = () => router.replace("/(tabs)/Dashboard");
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({

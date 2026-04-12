@@ -8,19 +8,23 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Dimensions,
+  Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
 import { useAnalytics } from "../../hooks/useAnalytics";
 import { formatErrorMessage } from "../../utils/error.util";
 import { validatePasswordComplexity } from "../../utils/passwordValidation.util";
+
+const { width, height } = Dimensions.get("window");
 
 export default function ResetPassword() {
   const { logEvent } = useAnalytics();
@@ -32,6 +36,7 @@ export default function ResetPassword() {
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(60);
+  const [showPasswordSuccess, setShowPasswordSuccess] = useState(false);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -65,14 +70,8 @@ export default function ResetPassword() {
           body: JSON.stringify({ newPassword, confirmNewPassword: confirm }),
         },
       );
-      showMessage({
-        message: "Успіх",
-        description: "Пароль успішно скинуто. Увійдіть з новим паролем.",
-        type: "success",
-        duration: 3000,
-      });
       logEvent("password_reset_successful");
-      router.replace("/Login");
+      setShowPasswordSuccess(true);
     } catch (e: any) {
       setFormError(formatErrorMessage(e));
     } finally {
@@ -110,7 +109,6 @@ export default function ResetPassword() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Back button */}
           <Button
             shape="round"
             hierarchy="tertiary"
@@ -121,7 +119,6 @@ export default function ResetPassword() {
             testId="auth:back:button"
           />
 
-          {/* Header */}
           <View style={styles.header}>
             <Typography variant="h2" tone="primary">
               Скидання паролю
@@ -131,7 +128,6 @@ export default function ResetPassword() {
             </Typography>
           </View>
 
-          {/* Email Badge */}
           <View style={styles.emailBadge}>
             <Icon name="key" size={16} color="#666" style={{ marginRight: 8 }} />
             <Typography variant="body2" tone="primary">
@@ -139,7 +135,6 @@ export default function ResetPassword() {
             </Typography>
           </View>
 
-          {/* Form */}
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
               <PinCodeField
@@ -189,7 +184,6 @@ export default function ResetPassword() {
               </View>
             )}
 
-            {/* Buttons */}
             <View style={styles.buttonsContainer}>
               <Button
                 label={loading ? "Збереження..." : "Скинути пароль"}
@@ -205,7 +199,6 @@ export default function ResetPassword() {
             </View>
           </View>
 
-          {/* Footer */}
           <View style={styles.footer}>
             <Typography variant="body2" tone="primary">
               Не отримали код?{" "}
@@ -222,34 +215,50 @@ export default function ResetPassword() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Password Success Modal */}
+      <Modal
+        visible={showPasswordSuccess}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowPasswordSuccess(false)}
+      >
+        <SafeAreaView style={successStyles.container}>
+          <Typography variant="h2" tone="primary" style={successStyles.title}>
+            Пароль змінено
+          </Typography>
+          <Image
+            source={require("./../../assets/images/interactiveScreens/password_change.png")}
+            style={successStyles.image}
+            resizeMode="contain"
+          />
+          <Button
+            label="Увійти в акаунт"
+            hierarchy="primary"
+            size="large"
+            shape="pill"
+            onPress={() => {
+              setShowPasswordSuccess(false);
+              router.replace("/Login");
+            }}
+            style={successStyles.button}
+          />
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.colors.background.primary,
-  },
-  keyboardView: {
-    flex: 1,
-  },
+  safeArea: { flex: 1, backgroundColor: theme.colors.background.primary },
+  keyboardView: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: theme.spacing[16],
     paddingTop: theme.spacing[10],
     paddingBottom: theme.spacing[40],
   },
-  backButton: {
-    marginBottom: theme.spacing[10],
-    padding: theme.spacing[4],
-    alignSelf: "flex-start",
-  },
-  header: {
-    alignItems: "center",
-    gap: theme.spacing[8],
-    marginBottom: theme.spacing[32],
-  },
+  header: { alignItems: "center", gap: theme.spacing[8], marginBottom: theme.spacing[32] },
   emailBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -262,12 +271,8 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border.opaque,
     marginBottom: theme.spacing[16],
   },
-  formContainer: {
-    marginBottom: theme.spacing[12],
-  },
-  inputGroup: {
-    marginBottom: theme.spacing[16],
-  },
+  formContainer: { marginBottom: theme.spacing[12] },
+  inputGroup: { marginBottom: theme.spacing[16] },
   errorContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -276,37 +281,23 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     marginBottom: theme.spacing[16],
   },
-  errorText: {
-    color: theme.colors.negative,
-    fontSize: 14,
+  errorText: { color: theme.colors.negative, fontSize: 14, flex: 1 },
+  buttonsContainer: { marginTop: theme.spacing[8], gap: theme.spacing[16] },
+  footer: { alignItems: "center", marginTop: theme.spacing[16] },
+  linkDisabled: { color: theme.colors.content.secondary },
+});
+
+const successStyles = StyleSheet.create({
+  container: {
     flex: 1,
-  },
-  buttonsContainer: {
-    marginTop: theme.spacing[8],
-    gap: theme.spacing[16],
-  },
-  primaryButton: {
-    backgroundColor: theme.colors.primaryB,
-    paddingVertical: theme.spacing[16],
-    borderRadius: theme.radius.pill,
+    backgroundColor: theme.colors.background.primary,
     alignItems: "center",
-    shadowColor: theme.colors.primitives.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: theme.radius.md,
-    elevation: 4,
+    justifyContent: "space-between",
+    paddingHorizontal: theme.spacing[24],
+    paddingTop: theme.spacing[64],
+    paddingBottom: theme.spacing[40],
   },
-  buttonDisabled: {
-    backgroundColor: theme.colors.primitives.black,
-    opacity: 0.7,
-  },
-
-  footer: {
-    alignItems: "center",
-    marginTop: theme.spacing[16],
-  },
-
-  linkDisabled: {
-    color: theme.colors.content.secondary,
-  },
+  title: { textAlign: "center" },
+  image: { width: width * 0.417, maxHeight: height * 0.235 },
+  button: { width: "100%" },
 });
