@@ -21,6 +21,7 @@ import { LoggingModule } from './logging/logging.module';
 import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PostgresModule } from './postgres/postgres.module';
+import { SmsModule } from './sms/sms.module';
 import { UserActivitiesModule } from './user-activities/user-activities.module';
 import { UsersModule } from './users/users.module';
 
@@ -98,6 +99,12 @@ import { UsersModule } from './users/users.module';
 
         // Alerts.in.ua
         ALERTS_TOKEN: Joi.string().required(),
+
+        // SMS
+        SMS_ENABLED: Joi.boolean().optional().default(false),
+        TWILIO_ACCOUNT_SID: Joi.string().when('SMS_ENABLED', { is: true, then: Joi.required(), otherwise: Joi.optional() }),
+        TWILIO_AUTH_TOKEN: Joi.string().when('SMS_ENABLED', { is: true, then: Joi.required(), otherwise: Joi.optional() }),
+        TWILIO_PHONE_NUMBER: Joi.string().when('SMS_ENABLED', { is: true, then: Joi.required(), otherwise: Joi.optional() }),
       }),
     }),
     PostgresModule.register(entities, migrations, subscribers),
@@ -113,6 +120,7 @@ import { UsersModule } from './users/users.module';
     NotificationsModule,
     HealthModule,
     AlertsModule,
+    SmsModule,
     ThrottlerModule.forRoot([
       {
         name: 'short',

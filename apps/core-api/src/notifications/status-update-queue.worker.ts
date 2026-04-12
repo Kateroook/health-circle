@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserStatus } from 'src/common/enums/user-status';
 import { QueueService } from 'src/common/queue/queue.service';
+import { SmsService } from 'src/sms/sms.service';
 import { UsersService } from 'src/users/users.service';
 
 import { FirestoreSyncService } from './firestore-sync.service';
@@ -23,6 +24,7 @@ export class StatusUpdateQueueWorker implements OnModuleInit {
     private readonly firestoreSyncService: FirestoreSyncService,
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
+    private readonly smsService: SmsService,
   ) {}
 
   async onModuleInit() {
@@ -78,5 +80,14 @@ export class StatusUpdateQueueWorker implements OnModuleInit {
     // Always send sync signal for affected users.
     const syncUserIds = Array.from(new Set([...recipients, senderUserId]));
     await this.firestoreSyncService.sendSyncSignal(syncUserIds);
+
+    // SMS Notifications for DANGER status.
+    if (status === UserStatus.DANGER) {
+      const phones = await this.usersService.getPhoneNumbersForUsers(recipients, 'smsSafetyStatus');
+      if (phones.length > 0) {
+        const message = `${sender.firstName} ${sender.lastName} у небезпеці! (Health Circle)`;
+        await this.smsService.sendBulkSms(phones, message);
+      }
+    }
   }
 }
