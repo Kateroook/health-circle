@@ -44,7 +44,7 @@ function SkeletonCircleItem() {
   const shimmer = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(shimmer, {
           toValue: 1,
@@ -59,8 +59,10 @@ function SkeletonCircleItem() {
           useNativeDriver: true,
         }),
       ]),
-    ).start();
-  }, []);
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [shimmer]);
 
   const opacity = shimmer.interpolate({
     inputRange: [0, 1],
@@ -165,6 +167,7 @@ export default function CirclesScreen() {
   const [circles, setCircles] = useState<Circle[]>([]);
   const [showCircleDetail, setShowCircleDetail] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const hasLoadedCirclesOnceRef = useRef(false);
 
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
@@ -184,7 +187,9 @@ export default function CirclesScreen() {
   }, [circles]);
 
   const fetchCircles = useCallback(async () => {
-    setIsLoading(true);
+    if (!hasLoadedCirclesOnceRef.current) {
+      setIsLoading(true);
+    }
     try {
       const data = await apiFetch("/groups", { method: "GET" });
       const circlesWithStatus = data.map((circle: any) => ({
@@ -199,6 +204,7 @@ export default function CirclesScreen() {
       console.error("Error loading circles:", error);
     } finally {
       setIsLoading(false);
+      hasLoadedCirclesOnceRef.current = true;
     }
   }, []);
 
