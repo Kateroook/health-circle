@@ -10,11 +10,13 @@ import { theme } from "@/src/theme/theme";
 import { ScreenIds } from "@/src/utils/testIDs";
 import { useFocusEffect } from "expo-router";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useLoadingState } from "../../hooks/useLoadingState";
 import { useToast } from "../../hooks/useToast";
 
 import { MemberProfileModal } from "@/src/components/dashboard/MemberProfileModal";
+import { DashboardSkeleton } from "@/src/components/Skeleton";
 import { Circle, Member, MyAlertStatus } from "@/src/types";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AlertBanner } from "../../components/dashboard/AlertBanner";
@@ -25,6 +27,7 @@ import { MemberList } from "../../components/dashboard/MemberList";
 
 // --- DashboardScreen ---
 export default function DashboardScreen() {
+  const { loading, withLoading } = useLoadingState(true);
   const { showToast } = useToast();
   const { logEvent } = useAnalytics();
   const user = useAuthStore((s) => s.user);
@@ -44,14 +47,28 @@ export default function DashboardScreen() {
     loading: locationLoading,
   } = useLocationStore();
 
+  /** Only the first load toggles `loading` / skeleton; refetches stay silent (avoids flicker from focus + Firestore sync). */
+  const hasLoadedGroupsOnceRef = useRef(false);
+
   const fetchGroups = useCallback(async () => {
+    if (!hasLoadedGroupsOnceRef.current) {
+      try {
+        await withLoading(async () => {
+          const data = await apiFetch("/groups", { method: "GET" });
+          setGroups(data);
+        });
+      } finally {
+        hasLoadedGroupsOnceRef.current = true;
+      }
+      return;
+    }
     try {
       const data = await apiFetch("/groups", { method: "GET" });
       setGroups(data);
     } catch (error) {
       console.error("Error loading groups:", error);
     }
-  }, []);
+  }, [withLoading]);
 
   const fetchMyAlertStatus = useCallback(async () => {
     try {
@@ -213,28 +230,34 @@ export default function DashboardScreen() {
           <AlertBanner alert={myAlertStatus.alert} testId="dashboard:activeAlert:banner" />
         ) : null}
 
-        <MainStatusButton
-          currentStatus={user?.status || "UNKNOWN"}
-          onUpdateStatus={handleStatusUpdate}
-          testId="dashboard:mainStatus:button"
-        />
-        <View style={styles.statusCircleSection}>
-          <Typography variant="subtitle2" tone="secondary" style={styles.sectionHeader}>
-            СТАТУС КОЛА
-          </Typography>
+        {loading ? (
+          <DashboardSkeleton />
+        ) : (
+          <>
+            <MainStatusButton
+              currentStatus={user?.status || "UNKNOWN"}
+              onUpdateStatus={handleStatusUpdate}
+              testId="dashboard:mainStatus:button"
+            />
+            <View style={styles.statusCircleSection}>
+              <Typography variant="subtitle2" tone="secondary" style={styles.sectionHeader}>
+                СТАТУС КОЛА
+              </Typography>
 
-          <GroupFilters
-            groups={groups}
-            selectedGroupId={selectedGroupId}
-            onSelectGroup={setSelectedGroupId}
-          />
+              <GroupFilters
+                groups={groups}
+                selectedGroupId={selectedGroupId}
+                onSelectGroup={setSelectedGroupId}
+              />
 
-          <MemberList
-            members={displayedMembers}
-            hasGroups={groups.length > 0}
-            onMemberPress={handleMemberPress}
-          />
-        </View>
+              <MemberList
+                members={displayedMembers}
+                hasGroups={groups.length > 0}
+                onMemberPress={handleMemberPress}
+              />
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <MemberProfileModal

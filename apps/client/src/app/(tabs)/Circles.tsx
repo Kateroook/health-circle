@@ -9,6 +9,7 @@ import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
 import { MemberList } from "@/src/components/dashboard/MemberList";
 import { MemberProfileModal } from "@/src/components/dashboard/MemberProfileModal";
+import { CircleDetailSkeleton } from "@/src/components/Skeleton";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
@@ -400,93 +401,101 @@ export default function CirclesScreen() {
         testId="circles:confirmRollCall:modal"
       />
       {showCircleDetail && activeCircle ? (
-        <ScrollView contentContainerStyle={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Button
-              shape="round"
-              hierarchy="tertiary"
-              size="small"
-              leadingIcon={
-                <MaterialIcons
-                  name="keyboard-arrow-left"
-                  size={24}
-                  color={theme.colors.content.primary}
-                />
-              }
-              onPress={() => {
-                setShowCircleDetail(false);
-                setActiveCircle(null);
-              }}
-              testId="circleDetail:back:button"
-            />
-            <View style={styles.detailTitleBlock}>
-              <Typography variant="h1" tone="primary">
-                {activeCircle.name}
-              </Typography>
-              {activeCircle.inviteCode && (
+        <>
+          {isLoading ? (
+            <CircleDetailSkeleton />
+          ) : (
+            <ScrollView contentContainerStyle={styles.content}>
+              {/* Header */}
+              <View style={styles.header}>
                 <Button
-                  label={`Код: ${activeCircle.inviteCode}`}
-                  hierarchy="secondary"
-                  shape="pill"
+                  shape="round"
+                  hierarchy="tertiary"
                   size="small"
-                  trailingIcon={
-                    <Ionicons name="copy" size={14} color={theme.colors.content.secondary} />
+                  leadingIcon={
+                    <MaterialIcons
+                      name="keyboard-arrow-left"
+                      size={24}
+                      color={theme.colors.content.primary}
+                    />
                   }
-                  onPress={async () => {
-                    await Clipboard.setStringAsync(activeCircle.inviteCode);
-                    showToast({ type: "success", title: "Скопійовано", compact: true });
+                  onPress={() => {
+                    setShowCircleDetail(false);
+                    setActiveCircle(null);
                   }}
-                  style={{ alignSelf: "flex-start" }}
-                  testId="circleDetail:copyCode:button"
+                  testId="circleDetail:back:button"
                 />
-              )}
-            </View>
-            <Button
-              shape="round"
-              hierarchy="accent"
-              size="medium"
-              leadingIcon={
-                <MaterialIcons name="edit" size={20} color={theme.colors.content.onColor} />
-              }
-              onPress={() => setIsActionsVisible(true)}
-              testId="circleDetail:actions:button"
-            />
-          </View>
-
-          <ScrollView contentContainerStyle={styles.detailContent}>
-            <View style={styles.statsCard}>
-              <View style={styles.statsHeader}>
-                <Typography variant="subtitle1">{activeCircle.members.length} учасників</Typography>
+                <View style={styles.detailTitleBlock}>
+                  <Typography variant="h1" tone="primary">
+                    {activeCircle.name}
+                  </Typography>
+                  {activeCircle.inviteCode && (
+                    <Button
+                      label={`Код: ${activeCircle.inviteCode}`}
+                      hierarchy="secondary"
+                      shape="pill"
+                      size="small"
+                      trailingIcon={
+                        <Ionicons name="copy" size={14} color={theme.colors.content.secondary} />
+                      }
+                      onPress={async () => {
+                        await Clipboard.setStringAsync(activeCircle.inviteCode);
+                        showToast({ type: "success", title: "Скопійовано", compact: true });
+                      }}
+                      style={{ alignSelf: "flex-start" }}
+                      testId="circleDetail:copyCode:button"
+                    />
+                  )}
+                </View>
                 <Button
-                  label="Перекличка"
+                  shape="round"
                   hierarchy="accent"
-                  shape="pill"
-                  size="small"
-                  trailingIcon={
-                    <Feather name="rss" size={16} color={theme.colors.content.onColor} />
+                  size="medium"
+                  leadingIcon={
+                    <MaterialIcons name="edit" size={20} color={theme.colors.content.onColor} />
                   }
-                  onPress={handleRollCall}
-                  testId="circleDetail:rollCall:button"
+                  onPress={() => setIsActionsVisible(true)}
+                  testId="circleDetail:actions:button"
                 />
               </View>
-              <Typography variant="body2">
-                {unknownCount} не відповіли,{"\n"}
-                {wasSafeCount} нещодавно в безпеці, {safeCount} в безпеці
-              </Typography>
-            </View>
 
-            <View style={styles.membersList}>
-              <MemberList
-                members={activeCircle.members}
-                hasGroups={circles.length > 0}
-                onMemberPress={(member) => {
-                  setSelectedMember(member);
-                  setIsMemberModalVisible(true);
-                }}
-              />
-            </View>
-          </ScrollView>
+              <ScrollView contentContainerStyle={styles.detailContent}>
+                <View style={styles.statsCard}>
+                  <View style={styles.statsHeader}>
+                    <Typography variant="subtitle1">
+                      {activeCircle.members.length} учасників
+                    </Typography>
+                    <Button
+                      label="Перекличка"
+                      hierarchy="accent"
+                      shape="pill"
+                      size="small"
+                      trailingIcon={
+                        <Feather name="rss" size={16} color={theme.colors.content.onColor} />
+                      }
+                      onPress={handleRollCall}
+                      testId="circleDetail:rollCall:button"
+                    />
+                  </View>
+                  <Typography variant="body2">
+                    {unknownCount} не відповіли,{"\n"}
+                    {wasSafeCount} нещодавно в безпеці, {safeCount} в безпеці
+                  </Typography>
+                </View>
+
+                <View style={styles.membersList}>
+                  <MemberList
+                    members={activeCircle.members}
+                    hasGroups={circles.length > 0}
+                    onMemberPress={(member) => {
+                      setSelectedMember(member);
+                      setIsMemberModalVisible(true);
+                    }}
+                  />
+                </View>
+              </ScrollView>
+            </ScrollView>
+          )}
 
           <CircleActionsModal
             visible={isActionsVisible}
@@ -625,7 +634,7 @@ export default function CirclesScreen() {
             onBlock={handleBlockUser}
             onRename={handleMemberRename}
           />
-        </ScrollView>
+        </>
       ) : (
         <>
           <ScrollView contentContainerStyle={styles.content}>
