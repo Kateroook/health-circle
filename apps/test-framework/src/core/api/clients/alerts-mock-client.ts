@@ -20,7 +20,7 @@ export class AlertsMockClient extends BaseClient {
 
   /**
    * Вмикає тривогу
-   * Приймає або повний об'єкт AlertRegion, або просто UID (тоді title буде дефолтним)
+   * Приймає повний об'єкт AlertRegion
    */
   async startAlert(region: AlertRegion, alertType: string = 'air_raid'): Promise<ApiResult> {
     return this.post('/start', {

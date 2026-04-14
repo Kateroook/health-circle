@@ -92,9 +92,9 @@ import { UsersModule } from './users/users.module';
         FIREBASE_PRIVATE_KEY: Joi.string().required(),
 
         // Status & Roll-call
-        STATUS_EXPIRY_HOURS: Joi.number().default(8),
-        ROLL_CALL_TIMEOUT_MINUTES: Joi.number().default(60),
-        PERSONAL_ROLL_CALL_GRACE_MINUTES: Joi.number().default(15),
+        STATUS_EXPIRY_SECONDS: Joi.number().default(8 * 60 * 60),
+        ROLL_CALL_TIMEOUT_SECONDS: Joi.number().default(60 * 60),
+        PERSONAL_ROLL_CALL_GRACE_SECONDS: Joi.number().default(15 * 60),
 
         // Alerts.in.ua
         ALERTS_TOKEN: Joi.string().required(),

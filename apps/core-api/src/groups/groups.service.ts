@@ -367,8 +367,8 @@ export class GroupService {
     const targetUser = await this.findUserById(targetUserId);
     if (!targetUser) throw new NotFoundException('Користувача не знайдено');
 
-    const graceMinutes = this.configService.get<number>('PERSONAL_ROLL_CALL_GRACE_MINUTES', 15);
-    const graceThreshold = new Date(Date.now() - graceMinutes * 60 * 1000);
+    const graceSeconds = this.configService.get<number>('PERSONAL_ROLL_CALL_GRACE_SECONDS', 15 * 60);
+    const graceThreshold = new Date(Date.now() - graceSeconds * 1000);
 
     if (targetUser.lastStatusUpdate > graceThreshold) {
       return { message: 'Користувач нещодавно оновив статус, додатковий запит не потрібен' };
