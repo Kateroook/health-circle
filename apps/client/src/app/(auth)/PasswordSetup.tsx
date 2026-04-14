@@ -15,7 +15,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
 import { useAnalytics } from "../../hooks/useAnalytics";
@@ -206,6 +205,7 @@ export default function PasswordSetup() {
                 variant="body2"
                 tone="primary"
                 weight="bold"
+                testId="auth:resendCode:link"
                 style={[countdown > 0 && styles.linkDisabled]}
                 onPress={handleResendCode}
               >

@@ -19,42 +19,42 @@ class LoginScreen extends BaseScreen {
   }
 
   get resetPasswordLink() {
-    return $('//*[contains(@text, "Скинути")]');
+    return $('~auth:forgotPassword:link');
   }
 
   get registerLink() {
-    return $('//*[contains(@text, "Зареєструватися")]');
+    return $('~auth:register:link');
   }
 
-  async contact(contact?: string) {
+  async fillContact(contact?: string) {
     await this.wait(this.contactInput);
     if (contact) {
       await this.contactInput.setValue(contact);
     }
   }
 
-  async password(password?: string) {
+  async fillPassword(password?: string) {
     await this.wait(this.passwordInput);
     if (password) {
       await this.passwordInput.setValue(password);
     }
   }
 
-  async fullLogin(contact?: string, password?: string) {
-    await this.contact(contact);
-    await this.password(password);
+  async login(contact?: string, password?: string) {
+    await this.fillContact(contact);
+    await this.fillPassword(password);
     await this.tap(this.loginButton);
   }
 
-  async loginButtonClick() {
+  async clickLoginButton() {
     await this.tap(this.loginButton);
   }
 
-  async resetPasswordLinkClick() {
+  async clickResetPasswordLink() {
     await this.tap(this.resetPasswordLink);
   }
 
-  async registerLinkClick() {
+  async clickRegisterLink() {
     await this.tap(this.registerLink);
   }
 }

@@ -207,6 +207,7 @@ export default function ResetPassword() {
               variant="body2"
               tone="primary"
               weight="bold"
+              testId="auth:resendCode:link"
               style={[countdown > 0 && styles.linkDisabled]}
               onPress={handleResendCode}
             >

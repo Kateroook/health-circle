@@ -19,7 +19,7 @@ class ResetPasswordScreen extends BaseScreen {
   }
 
   get loginLink() {
-    return $('//*[@text="Увійти"]');
+    return $('~auth:login:link');
   }
 
   get confirmCodeInput() {
@@ -39,10 +39,10 @@ class ResetPasswordScreen extends BaseScreen {
   }
 
   get resendCodeLink() {
-    return $("//*[@text='Надіслати повторно']");
+    return $('~auth:resendCode:link');
   }
 
-  async email(email?: string) {
+  async fillEmail(email?: string) {
     await this.wait(this.emailInput);
     if (email) {
       await this.emailInput.setValue(email);
@@ -50,21 +50,21 @@ class ResetPasswordScreen extends BaseScreen {
     await this.tap(this.sendCodeButton);
   }
 
-  async confirmCode(confirmCode?: string) {
+  async fillConfirmCode(confirmCode?: string) {
     await this.wait(this.confirmCodeInput);
     if (confirmCode) {
       await this.confirmCodeInput.setValue(confirmCode);
     }
   }
 
-  async newPassword(newPassword?: string) {
+  async fillNewPassword(newPassword?: string) {
     await this.wait(this.newPasswordInput);
     if (newPassword) {
       await this.newPasswordInput.setValue(newPassword);
     }
   }
 
-  async confirmPassword(confirmPassword?: string) {
+  async fillConfirmPassword(confirmPassword?: string) {
     await this.wait(this.confirmPasswordInput);
     if (confirmPassword) {
       await this.confirmPasswordInput.setValue(confirmPassword);
@@ -72,30 +72,30 @@ class ResetPasswordScreen extends BaseScreen {
   }
 
   async fillPasswords(newPassword?: string, confirmPassword?: string) {
-    await this.newPassword(newPassword);
-    await this.confirmPassword(confirmPassword);
+    await this.fillNewPassword(newPassword);
+    await this.fillConfirmPassword(confirmPassword);
     await this.tap(this.resetButton);
   }
 
   async fullPasswordSetup(email?: string, confirmCode?: string, password?: string, confirmPassword?: string) {
-    await this.email(email);
-    await this.confirmCode(confirmCode);
+    await this.fillEmail(email);
+    await this.fillConfirmCode(confirmCode);
     await this.fillPasswords(password, confirmPassword);
   }
 
-  async loginLinkClick() {
+  async clickLoginLink() {
     await this.tap(this.loginLink);
   }
 
-  async resetButtonClick() {
+  async clickResetButton() {
     await this.tap(this.resetButton);
   }
 
-  async backClick() {
+  async clickBack() {
     await this.tap(this.backButton);
   }
 
-  async resendPasswordClick() {
+  async clickResendPassword() {
     await this.tap(this.resendCodeLink);
   }
 }

@@ -25,6 +25,14 @@ export default class BaseScreen {
     });
   }
 
+  async wait(target: WebdriverIO.Element | ChainablePromiseElement, timeout = 10000): Promise<void> {
+    const el = await target;
+
+    await (el as any).waitForDisplayed({
+      timeoutMsg: `Element with locator "${(el as any).selector}" did not load within ${timeout}ms.`,
+    });
+  }
+
   /**
    * Hides the keyboard if it is open.
    * In mobile apps, the keyboard often overlaps buttons, causing tests to fail.
@@ -38,9 +46,13 @@ export default class BaseScreen {
   /**
    * Universal method for clicking with waiting (to avoid "flaky" tests)
    */
-  async tap(target: string | WebdriverIO.Element): Promise<void> {
-    const element = typeof target === 'string' ? await $(target) : await target;
-    await element.waitForDisplayed();
+  async tap(target: string | WebdriverIO.Element | ChainablePromiseElement, timeout = 10000): Promise<void> {
+    const element = (typeof target === 'string' ? await $(target) : await target) as any;
+    const identifier = element.selector || target.toString();
+    await element.waitForDisplayed({
+      timeoutMsg: `Element with locator "${identifier}" did not load within ${timeout}ms.`,
+    });
+
     await element.click();
   }
 

@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { FlatList, Modal, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -49,11 +49,17 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChangeText, ...
 
   const leadingArtwork = (
     <TouchableOpacity
+      testID="auth:phone:prefix"
       style={styles.prefixContainer}
       onPress={() => setModalVisible(true)}
       activeOpacity={0.7}
     >
-      <Typography variant="body1" tone="primary" style={styles.prefixText}>
+      <Typography
+        variant="body1"
+        tone="primary"
+        style={styles.prefixText}
+        testID="auth:phone:currentPrefix"
+      >
         {currentPrefixObj.flag} {currentPrefix}
       </Typography>
       <Feather name="chevron-down" size={16} color={theme.colors.content.secondary} />
@@ -78,7 +84,11 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChangeText, ...
       >
         <SafeAreaView style={styles.modalSafe}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={styles.closeBtn}
+              testID="auth:phone:closeModal"
+            >
               <Feather name="x" size={24} color={theme.colors.content.primary} />
             </TouchableOpacity>
             <Typography variant="h3" tone="primary">
@@ -94,6 +104,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChangeText, ...
               <TouchableOpacity
                 style={styles.itemRow}
                 onPress={() => handlePrefixSelect(item.code)}
+                testID={`auth:phone:country_${item.code}`}
               >
                 <Typography variant="body1" tone="primary" style={styles.itemFlag}>
                   {item.flag}

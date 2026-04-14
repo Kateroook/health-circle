@@ -7,7 +7,7 @@ class RegisterScreen extends BaseScreen {
   }
 
   get phonePrefix() {
-    return $('//*[@text="+380"]');
+    return $('~auth:phone:prefix');
   }
   get phoneInput() {
     return $('~auth:phone:input');
@@ -20,7 +20,7 @@ class RegisterScreen extends BaseScreen {
   }
 
   get loginLink() {
-    return $('//*[@text="Увійти"]');
+    return $('~auth:login:link');
   }
 
   get lastNameInput() {
@@ -37,10 +37,10 @@ class RegisterScreen extends BaseScreen {
   }
 
   countryOption(countryCode: string) {
-    return $(`//*[contains(@text, "${countryCode}")]`);
+    return $(`~auth:phone:country_${countryCode}`);
   }
 
-  async phone(phone?: string, countryCode?: string) {
+  async fillPhone(phone?: string, countryCode?: string) {
     await this.wait(this.phoneInput);
     if (countryCode) {
       await this.tap(this.phonePrefix);
@@ -52,7 +52,7 @@ class RegisterScreen extends BaseScreen {
     }
   }
 
-  async email(email?: string) {
+  async fillEmail(email?: string) {
     await this.wait(this.emailInput);
     if (email) {
       await this.emailInput.setValue(email);
@@ -60,26 +60,26 @@ class RegisterScreen extends BaseScreen {
   }
 
   async fillContactInfo(countryCode: string = 'Україна', phone?: string, email?: string) {
-    await this.phone(phone, countryCode);
-    await this.email(email);
+    await this.fillPhone(phone, countryCode);
+    await this.fillEmail(email);
     await this.tap(this.nextButton);
   }
 
-  async lastName(lastName?: string) {
+  async fillLastName(lastName?: string) {
     await this.wait(this.lastNameInput);
     if (lastName) {
       await this.lastNameInput.setValue(lastName);
     }
   }
 
-  async firstName(firstName?: string) {
+  async fillFirstName(firstName?: string) {
     await this.wait(this.firstNameInput);
     if (firstName) {
       await this.firstNameInput.setValue(firstName);
     }
   }
 
-  async middleName(middleName?: string) {
+  async fillMiddleName(middleName?: string) {
     await this.wait(this.middleNameInput);
     if (middleName) {
       await this.middleNameInput.setValue(middleName);
@@ -87,13 +87,13 @@ class RegisterScreen extends BaseScreen {
   }
 
   async fillNameInfo(lastName?: string, firstName?: string, middleName?: string) {
-    await this.lastName(lastName);
-    await this.firstName(firstName);
-    await this.middleName(middleName);
+    await this.fillLastName(lastName);
+    await this.fillFirstName(firstName);
+    await this.fillMiddleName(middleName);
     await this.tap(this.nextButton);
   }
 
-  async fullRegistration(
+  async registration(
     countryCode?: string,
     phone?: string,
     email?: string,
@@ -105,15 +105,15 @@ class RegisterScreen extends BaseScreen {
     await this.fillNameInfo(lastName, firstName, middleName);
   }
 
-  async nextButtonClick() {
+  async clickNextButton() {
     await this.tap(this.nextButton);
   }
 
-  async loginRedirection() {
+  async clickLoginRedirection() {
     await this.tap(this.loginLink);
   }
 
-  async backClick() {
+  async clickBack() {
     await this.tap(this.backButton);
   }
 }

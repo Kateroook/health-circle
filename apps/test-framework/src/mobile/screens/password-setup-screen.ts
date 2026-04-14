@@ -27,50 +27,50 @@ class PasswordSetupScreen extends BaseScreen {
   }
 
   get resendCodeLink() {
-    return $('//*[contains(@text, "Надіслати повторно")]');
+    return $('~auth:resendCode:link');
   }
 
-  async confirmCode(confirmCode?: string) {
+  async fillConfirmCode(confirmCode?: string) {
     await this.wait(this.confirmCodeInput);
     if (confirmCode) {
       await this.confirmCodeInput.setValue(confirmCode);
     }
   }
 
-  async password(password?: string) {
+  async fillPassword(password?: string) {
     await this.wait(this.passwordInput);
     if (password) {
       await this.passwordInput.setValue(password);
     }
   }
 
-  async confirmPassword(confirmPassword?: string) {
-    await this.wait(this.passwordInput);
+  async fillConfirmPassword(confirmPassword?: string) {
+    await this.wait(this.confirmPasswordInput);
     if (confirmPassword) {
       await this.confirmPasswordInput.setValue(confirmPassword);
     }
   }
 
   async fillPasswords(password?: string, confirmPassword?: string) {
-    await this.password(password);
-    await this.confirmPassword(confirmPassword);
+    await this.fillPassword(password);
+    await this.fillConfirmPassword(confirmPassword);
     await this.tap(this.confirmButton);
   }
 
-  async fullPasswordSetup(confirmCode?: string, password?: string, confirmPassword?: string) {
-    await this.confirmCode(confirmCode);
+  async passwordSetup(confirmCode?: string, password?: string, confirmPassword?: string) {
+    await this.fillConfirmCode(confirmCode);
     await this.fillPasswords(password, confirmPassword);
   }
 
-  async confirmButtonClick() {
+  async clickConfirmButton() {
     await this.tap(this.confirmButton);
   }
 
-  async backClick() {
+  async clickBack() {
     await this.tap(this.backButton);
   }
 
-  async resendCodeClick() {
+  async clickResendCodeLink() {
     await this.tap(this.resendCodeLink);
   }
 }
