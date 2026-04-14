@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { FlatList, Modal, StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -22,6 +22,7 @@ const COUNTRY_CODES = [
 
 export interface PhoneInputProps extends Omit<TextFieldProps, "value" | "onChangeText"> {
   value: string;
+  testId?: string;
   onChangeText: (text: string) => void;
 }
 

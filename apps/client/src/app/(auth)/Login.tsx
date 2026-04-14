@@ -81,7 +81,7 @@ export default function Login() {
                 autoCapitalize="none"
                 required
                 errorMessage={hasError ? formError : undefined}
-                testId="auth:email:input"
+                testId="auth:identifier:input"
               />
             </View>
 

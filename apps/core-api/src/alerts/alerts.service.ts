@@ -33,7 +33,7 @@ export class AlertsService implements OnModuleInit {
   private activeAlertUids: Set<number> = new Set();
   private activeAlertsByUid: Map<number, Alert> = new Map();
   private hasInitialSyncCompleted = false;
-  private readonly apiUrl = 'https://api.alerts.in.ua/v1/alerts/active.json';
+  private readonly apiUrl: string;
   private regionHierarchy: Map<number, number[]> = new Map(); // parentUid -> childrenUids[]
 
   constructor(
@@ -45,7 +45,9 @@ export class AlertsService implements OnModuleInit {
     private readonly notificationsService: NotificationsService,
     private readonly firestoreSyncService: FirestoreSyncService,
     private readonly queueService: QueueService,
-  ) {}
+  ) {
+    this.apiUrl = this.configService.get<string>('ALERTS_API_URL') || 'http://localhost:3001/v1/alerts/active.json';
+  }
 
   async onModuleInit() {
     this.logger.log('Initializing AlertsService with pg-boss...');
