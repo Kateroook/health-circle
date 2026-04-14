@@ -184,4 +184,11 @@ export class UsersController {
   async removeLogo(@Param() params: UUIdParamDto, @Req() req: AuthRequest) {
     await this.service.removeFile(params.id, req.user.id);
   }
+
+  @Post(':id/roll-call')
+  @ApiOperation({ summary: 'Initiate a personal roll call for a user' })
+  @ApiOkResponse({ description: 'Personal roll call initiated successfully' })
+  async initiatePersonalRollCall(@Param('id') userId: string, @Req() req: AuthRequest) {
+    return this.service.initiatePersonalRollCall(userId, req.user.id);
+  }
 }

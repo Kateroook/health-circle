@@ -1,11 +1,13 @@
 import { APIRequestContext } from '@playwright/test';
-import { TestContext, createTestContext } from './helpers/test-context';
-import { AuthClient } from './clients/auth-client';
-import { UserClient } from './clients/user-client';
-import { GroupClient } from './clients/group-client';
-import { ContactClient } from './clients/contact-client';
 import { DbCleaner } from '../db/db-cleaner';
+import { AlertsClient } from './clients/alerts-client';
+import { AlertsMockClient } from './clients/alerts-mock-client';
+import { AuthClient } from './clients/auth-client';
+import { ContactClient } from './clients/contact-client';
+import { GroupClient } from './clients/group-client';
 import { HealthClient } from './clients/health-client';
+import { UserClient } from './clients/user-client';
+import { TestContext, createTestContext } from './helpers/test-context';
 
 /**
  * ApiClientFactory - фабрика для створення API клієнтів
@@ -58,6 +60,14 @@ export class ApiClientFactory {
 
   get health(): HealthClient {
     return new HealthClient(this.request, this.context, this.dbCleaner);
+  }
+
+  get alertsMock(): AlertsMockClient {
+    return new AlertsMockClient(this.request, this.context);
+  }
+
+  get alerts(): AlertsClient {
+    return new AlertsClient(this.request, this.context);
   }
 
   /**

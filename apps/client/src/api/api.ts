@@ -162,6 +162,12 @@ export async function saveFcmTokenToBackend(token: string) {
   });
 }
 
+export async function initiatePersonalRollCall(userId: string) {
+  return apiFetch(`/users/${userId}/roll-call`, {
+    method: "POST",
+  });
+}
+
 export async function updateUserLocation(locationData: {
   latitude?: number;
   longitude?: number;

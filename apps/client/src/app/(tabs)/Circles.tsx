@@ -1,6 +1,6 @@
-import { apiFetch } from "@/src/api/api";
+import { apiFetch, initiatePersonalRollCall } from "@/src/api/api";
 import { setContactAlias } from "@/src/api/contacts";
-import { blockUser, initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
+import { blockUser, initiateRollCall } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import { ConfirmRollCallModal } from "@/src/components/circle/actions/ConfirmRollCallModal";
@@ -305,19 +305,20 @@ export default function CirclesScreen() {
   };
 
   const handlePersonalRollCall = async (member: Member) => {
-    if (!activeCircle) return;
     try {
-      await initiatePersonalRollCall(activeCircle.id, member.id);
+      await initiatePersonalRollCall(member.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
-      setActiveCircle((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          members: prev.members.map((m) =>
-            m.id === member.id ? { ...m, lastPersonalRollCallAt: new Date().toISOString() } : m,
-          ),
-        };
-      });
+      if (activeCircle) {
+        setActiveCircle((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            members: prev.members.map((m) =>
+              m.id === member.id ? { ...m, lastPersonalRollCallAt: new Date().toISOString() } : m,
+            ),
+          };
+        });
+      }
       showToast({ type: "success", title: "Запит на перекличку надіслано" });
     } catch {
       showToast({

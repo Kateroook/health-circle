@@ -1,6 +1,6 @@
-import { apiFetch, updateMyStatus } from "@/src/api/api";
+import { apiFetch, initiatePersonalRollCall, updateMyStatus } from "@/src/api/api";
 import { setContactAlias } from "@/src/api/contacts";
-import { blockUser, initiatePersonalRollCall } from "@/src/api/groups";
+import { blockUser } from "@/src/api/groups";
 import { UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
@@ -116,22 +116,20 @@ export default function DashboardScreen() {
     }
   };
 
-  const { canRollCall, rollCallGroupId, isOwner, blockGroupId } = useMemo(() => {
-    if (!selectedMember || !user)
-      return { canRollCall: false, rollCallGroupId: null, isOwner: false, blockGroupId: null };
+  const { canRollCall, isOwner, blockGroupId } = useMemo(() => {
+    if (!selectedMember || !user) return { canRollCall: false, isOwner: false, blockGroupId: null };
     const sharedGroup = groups.find((g) => g.members.some((m) => m.id === selectedMember.id));
     return {
       canRollCall: !!sharedGroup,
-      rollCallGroupId: sharedGroup?.id || null,
       isOwner: sharedGroup?.owner.id === user.id,
       blockGroupId: sharedGroup?.id || null,
     };
   }, [selectedMember, groups, user]);
 
   const handleRollCall = async () => {
-    if (!selectedMember || !rollCallGroupId) return;
+    if (!selectedMember) return;
     try {
-      await initiatePersonalRollCall(rollCallGroupId, selectedMember.id);
+      await initiatePersonalRollCall(selectedMember.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
       syncDashboardData(); // Refresh data to show updated rollcall status
       showToast({ type: "success", title: "Запит на перекличку надіслано" });
