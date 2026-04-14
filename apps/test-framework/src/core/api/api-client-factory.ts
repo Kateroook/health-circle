@@ -1,5 +1,6 @@
 import { APIRequestContext } from '@playwright/test';
 import { DbCleaner } from '../db/db-cleaner';
+import { AlertsClient } from './clients/alerts-client';
 import { AlertsMockClient } from './clients/alerts-mock-client';
 import { AuthClient } from './clients/auth-client';
 import { ContactClient } from './clients/contact-client';
@@ -63,6 +64,10 @@ export class ApiClientFactory {
 
   get alertsMock(): AlertsMockClient {
     return new AlertsMockClient(this.request, this.context);
+  }
+
+  get alerts(): AlertsClient {
+    return new AlertsClient(this.request, this.context);
   }
 
   /**
