@@ -1,12 +1,15 @@
 import cors from 'cors';
 import express, { Request, Response } from 'express';
+import swaggerUi from 'swagger-ui-express';
 import { ExternalAlert } from './dto/alerts-dto';
+import { swaggerDocument } from './swagger.sonfig';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 let activeAlerts: Map<number, ExternalAlert> = new Map();
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/v1/alerts/active.json', (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
@@ -54,5 +57,6 @@ app.post('/__admin/reset', (req: Request, res: Response) => {
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Alerts Mock Server running on port ${PORT}`);
+  console.log(`Alerts Mock Server is running on port ${PORT}`);
+  console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
 });
