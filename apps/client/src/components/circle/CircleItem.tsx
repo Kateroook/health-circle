@@ -12,6 +12,7 @@ interface CircleItemProps {
   extraCount?: number;
   onMenuPress?: () => void;
   onPress?: () => void;
+  testId?: string;
 }
 const MAX_VISIBLE = 5;
 const CircleItem: React.FC<CircleItemProps> = ({
@@ -20,12 +21,19 @@ const CircleItem: React.FC<CircleItemProps> = ({
   extraCount,
   onMenuPress,
   onPress,
+  testId,
 }) => {
   const visibleMembers = members.slice(0, MAX_VISIBLE);
   const overflow = extraCount ?? (members.length > MAX_VISIBLE ? members.length - MAX_VISIBLE : 0);
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.9}
+      testID={testId}
+      accessibilityLabel={testId}
+    >
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Typography variant="h3" weight="bold" numberOfLines={1} ellipsizeMode="tail">
@@ -36,6 +44,8 @@ const CircleItem: React.FC<CircleItemProps> = ({
           style={styles.menuButton}
           onPress={onMenuPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          testID={testId ? `${testId}:menu:button` : undefined}
+          accessibilityLabel={testId ? `${testId}:menu:button` : undefined}
         >
           <MaterialCommunityIcons
             name="dots-horizontal"

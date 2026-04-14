@@ -7,10 +7,12 @@ interface MemberProfileModalProps {
   member: Member | null;
   visible: boolean;
   onClose: () => void;
-  onRollCall: () => void;
+  onRollCall: (memberId: string) => void;
   canRollCall: boolean;
   isOwner?: boolean;
   onRemove?: () => void;
+  onBlock?: () => void;
+  onRename?: (newName: string) => void;
 }
 
 export const MemberProfileModal = ({
@@ -21,6 +23,8 @@ export const MemberProfileModal = ({
   canRollCall,
   isOwner,
   onRemove,
+  onBlock,
+  onRename,
 }: MemberProfileModalProps) => {
   if (!member) return null;
 
@@ -32,6 +36,8 @@ export const MemberProfileModal = ({
         onMessage={() => {}}
         isOwner={isOwner}
         onRemove={onRemove}
+        onBlock={onBlock}
+        onRename={onRename}
       />
     </BottomSheetContainer>
   );

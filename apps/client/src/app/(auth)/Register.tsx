@@ -3,17 +3,20 @@ import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
-import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useToast } from "../../hooks/useToast";
 import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
+
 export default function Register() {
+  const { showToast } = useToast();
   const { logEvent } = useAnalytics();
 
   useEffect(() => {
@@ -30,9 +33,13 @@ export default function Register() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-
-  // Відстежуємо, які кроки вже пройшли валідацію (щоб показувати індикатори помилок)
   const [validatedSteps, setValidatedSteps] = useState<Set<number>>(new Set());
+
+  // Після реєстрації показуємо екран геолокації
+  const [showLocationScreen, setShowLocationScreen] = useState(false);
+
+  // Локальна змінна — чи дозволив користувач геолокацію
+  const [locationGranted, setLocationGranted] = useState<boolean | null>(null);
 
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -68,7 +75,6 @@ export default function Register() {
     if (step === 2) {
       const trimmedLastName = form.lastName.trim();
       const trimmedFirstName = form.firstName.trim();
-      const trimmedMiddleName = form.middleName.trim();
 
       if (!trimmedLastName) {
         newErrors.lastName = "Поле прізвища є обовʼязковим";
@@ -100,11 +106,8 @@ export default function Register() {
   };
 
   const handleNext = async () => {
-    // Позначаємо, що цей крок вже валідувався
     setValidatedSteps((prev) => new Set([...prev, step]));
-
     const isValid = validateCurrentStep();
-
     if (isValid) {
       if (step === 1) {
         logEvent("registration_step_2");
@@ -119,48 +122,8 @@ export default function Register() {
     setStep((prev) => (prev > 1 ? ((prev - 1) as 1 | 2) : prev));
   };
 
-  const renderInput = (
-    label: string,
-    value: string,
-    error: string | undefined,
-    placeholder: string,
-    keyboardType: "phone-pad" | "email-address" | "default" = "default",
-    onChangeText: (text: string) => void,
-    autoCapitalize: "none" | "words" = "words",
-    maxLength?: number,
-    isPhone?: boolean,
-    required?: boolean,
-  ) => {
-    return (
-      <>
-        {isPhone ? (
-          <PhoneInput
-            label={label}
-            placeholder={placeholder}
-            value={value}
-            onChangeText={onChangeText}
-            autoCapitalize={autoCapitalize}
-            required={required}
-            errorMessage={error}
-          />
-        ) : (
-          <TextField
-            label={label}
-            placeholder={placeholder}
-            value={value}
-            onChangeText={onChangeText}
-            keyboardType={keyboardType}
-            autoCapitalize={autoCapitalize}
-            required={required}
-            errorMessage={error}
-          />
-        )}
-      </>
-    );
-  };
-
   async function handleRegister() {
-    setValidatedSteps((prev) => new Set([...prev, 2])); // позначаємо останній крок
+    setValidatedSteps((prev) => new Set([...prev, 2]));
     if (!validateCurrentStep()) return;
 
     setLoading(true);
@@ -174,30 +137,87 @@ export default function Register() {
           }),
         ),
       });
+      // Переходимо на PasswordSetup, а після нього покажемо екран геолокації
       router.replace({ pathname: "/PasswordSetup", params: { email: form.email } });
+      // Показуємо екран геолокації після PasswordSetup
+      setShowLocationScreen(true);
     } catch (e: any) {
       const errorMsg = formatErrorMessage(e);
       const isConflict =
         errorMsg.toLowerCase().includes("вже використовується") ||
         errorMsg.toLowerCase().includes("already exists");
 
-      if (isConflict) {
-        setStep(1);
-      }
+      if (isConflict) setStep(1);
 
-      showMessage({
-        message: "Помилка реєстрації",
-        description: errorMsg,
-        type: "danger",
-        duration: 5000,
+      showToast({
+        type: "error",
+        title: "Помилка реєстрації",
+        subtitle: errorMsg,
       });
     } finally {
       setLoading(false);
     }
   }
 
+  // Завершення реєстрації після екрана геолокації
+  const handleLocationAllow = () => {
+    setLocationGranted(true);
+    setShowLocationScreen(false);
+    router.replace("/");
+  };
+
+  const handleLocationSkip = () => {
+    setLocationGranted(false);
+    setShowLocationScreen(false);
+    router.replace("/");
+  };
+
+  const renderInput = (
+    label: string,
+    value: string,
+    error: string | undefined,
+    placeholder: string,
+    keyboardType: "phone-pad" | "email-address" | "default" = "default",
+    onChangeText: (text: string) => void,
+    autoCapitalize: "none" | "words" = "words",
+    maxLength?: number,
+    isPhone?: boolean,
+    required?: boolean,
+  ) => (
+    <>
+      {isPhone ? (
+        <PhoneInput
+          label={label}
+          placeholder={placeholder}
+          value={value}
+          onChangeText={onChangeText}
+          autoCapitalize={autoCapitalize}
+          required={required}
+          errorMessage={error}
+          testId={`auth:${isPhone ? "phone" : "email"}:input`}
+        />
+      ) : (
+        <TextField
+          label={label}
+          placeholder={placeholder}
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          required={required}
+          errorMessage={error}
+          testId={`auth:${label === "Прізвище" ? "lastName" : label === "Ім'я" ? "firstName" : "middleName"}:input`}
+        />
+      )}
+    </>
+  );
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={styles.safeArea}
+      testID={ScreenIds.register}
+      accessibilityLabel={ScreenIds.register}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
@@ -208,7 +228,6 @@ export default function Register() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Back button */}
           {step > 1 && (
             <Button
               shape="round"
@@ -219,16 +238,16 @@ export default function Register() {
               }
               onPress={handleBack}
               style={{ alignSelf: "flex-start" }}
+              testId="auth:back:button"
             />
           )}
-          {/* Header */}
+
           <View style={styles.header}>
             <Typography variant="h2" tone="primary" style={styles.title}>
               {step === 1 ? "Введи номер телефону та електронну пошту" : "Як тебе звати?"}
             </Typography>
           </View>
 
-          {/* Form */}
           <View style={styles.formContainer}>
             {step === 1 && (
               <>
@@ -246,7 +265,6 @@ export default function Register() {
                     true,
                   )}
                 </View>
-
                 <View style={styles.inputGroup}>
                   {renderInput(
                     "Електронна пошта",
@@ -280,7 +298,6 @@ export default function Register() {
                     true,
                   )}
                 </View>
-
                 <View style={styles.inputGroup}>
                   {renderInput(
                     "Ім'я",
@@ -295,7 +312,6 @@ export default function Register() {
                     true,
                   )}
                 </View>
-
                 <View style={styles.inputGroup}>
                   {renderInput(
                     "По батькові",
@@ -313,9 +329,6 @@ export default function Register() {
               </>
             )}
 
-            {/* Removed redundant step 3 password fields */}
-
-            {/* Buttons */}
             <View style={styles.buttonsContainer}>
               <Button
                 label={loading ? "Зачекайте..." : step < 2 ? "Далі" : "Зареєструватися"}
@@ -326,11 +339,11 @@ export default function Register() {
                 disabled={loading}
                 onPress={handleNext}
                 style={{ width: "100%" }}
+                testId="auth:next:button"
               />
             </View>
           </View>
 
-          {/* Footer */}
           <Typography variant="body2" tone="primary" style={styles.footer}>
             Вже є акаунт?{" "}
             <Typography
@@ -375,34 +388,10 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: theme.spacing[16],
   },
-
   buttonsContainer: {
     paddingTop: theme.spacing[8],
     gap: theme.spacing[16],
   },
-
-  primaryButton: {
-    backgroundColor: theme.colors.primaryB,
-    paddingVertical: theme.spacing[16],
-    borderRadius: theme.radius.pill,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: theme.spacing[8],
-    elevation: theme.spacing[4],
-  },
-
-  buttonDisabled: {
-    backgroundColor: theme.colors.primaryB,
-    opacity: 0.7,
-  },
-
-  backButton: {
-    paddingVertical: theme.spacing[12],
-    alignItems: "center",
-  },
-
   footer: {
     textAlign: "center",
     marginTop: theme.spacing[16],

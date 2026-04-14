@@ -7,13 +7,14 @@ export interface User {
   middleName?: string | null;
   lastName: string;
   fullName?: string;
-  phone: string;
+  phone: string | null;
   avatarUpdatedAt?: string;
   status: UserStatus;
   latitude?: number;
   longitude?: number;
   region?: string;
   district?: string;
+  alertRegionUid?: number | null;
 }
 
 export interface Member {
@@ -32,6 +33,8 @@ export interface Member {
   district?: string;
   phone?: string;
   lastStatusUpdate?: string;
+  lastPersonalRollCallAt?: string;
+  alertStatus?: MyAlertStatus;
 }
 
 export interface Circle {

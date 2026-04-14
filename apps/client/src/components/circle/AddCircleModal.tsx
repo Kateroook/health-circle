@@ -5,10 +5,11 @@ import { theme } from "@/src/theme/theme";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
-import { useAnalytics } from "../../hooks/useAnalytics";
-import { Alert, Share, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { Image, Share, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAnalytics } from "../../hooks/useAnalytics";
+import { useToast } from "../../hooks/useToast";
 import { formatErrorMessage } from "../../utils/error.util";
 import { Button } from "../Button";
 import { Typography } from "../typography";
@@ -20,6 +21,7 @@ interface AddCircleModalProps {
 }
 
 const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpdated }) => {
+  const { showToast } = useToast();
   const { logEvent } = useAnalytics();
   const [activeTab, setActiveTab] = useState<"join" | "create">("join");
 
@@ -35,6 +37,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(generatedCode);
+    showToast({ type: "success", title: "Скопійовано", compact: true });
   };
 
   // --- CREATE CIRCLE ---
@@ -49,11 +52,11 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
       const code = response.inviteCode || "";
       setGeneratedCode(code);
       setCreateStep(2);
-
       if (onUpdated) onUpdated();
+      showToast({ type: "success", title: "Коло створено", compact: true });
     } catch (error: any) {
       const msg = formatErrorMessage(error, "Не вдалося створити коло. Спробуйте ще раз.");
-      Alert.alert("Помилка", msg);
+      showToast({ type: "error", title: "Помилка", subtitle: msg });
       console.error("Create circle error:", error);
     } finally {
       setIsCreating(false);
@@ -63,24 +66,27 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
   // --- JOIN CIRCLE ---
   const handleJoinCircle = async () => {
     if (joinCode.length !== 6) {
-      Alert.alert("Помилка", "Будь ласка, введіть повний код");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Будь ласка, введіть повний код",
+      });
       return;
     }
     const code = joinCode;
     setIsJoining(true);
     try {
-      const response = await apiFetch("/groups/join", {
+      await apiFetch("/groups/join", {
         method: "POST",
         body: JSON.stringify({ code }),
       });
       logEvent("join_circle");
-      Alert.alert("Успіх", "Ви приєдналися до кола");
-
+      showToast({ type: "success", title: "Ви приєдналися до кола" });
       if (onUpdated) onUpdated();
       onClose();
     } catch (error: any) {
       const msg = formatErrorMessage(error, "Не вдалося приєднатися до кола. Перевірте код.");
-      Alert.alert("Помилка", msg);
+      showToast({ type: "error", title: "Помилка", subtitle: msg });
       console.error("Join circle error:", error);
     } finally {
       setIsJoining(false);
@@ -153,8 +159,8 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
               {/* CREATE Content */}
               {activeTab === "create" && (
                 <View style={styles.tabContent}>
-                  {/* STEP 1 */}
-                  {createStep === 1 && (
+                  {/* STEP 1 — введення назви */}
+                  {createStep === 1 && !isCreating && (
                     <>
                       <Typography variant="subtitle1" style={styles.centeredText}>
                         Назви своє Коло
@@ -171,9 +177,36 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                     </>
                   )}
 
-                  {/* STEP 2 */}
-                  {createStep === 2 && (
+                  {/* CREATING — іде запит */}
+                  {isCreating && (
+                    <View style={styles.statusContainer}>
+                      <Typography variant="subtitle1" tone="secondary" style={styles.statusText}>
+                        Твоє коло створюється...
+                      </Typography>
+                      <Image
+                        source={require("../../assets/images/interactiveScreens/circle_creating.png")}
+                        style={styles.statusImage}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  )}
+
+                  {/* STEP 2 — коло створено */}
+                  {createStep === 2 && !isCreating && (
                     <>
+                      {/* Стан "Коло створено" */}
+                      <View style={styles.statusContainer}>
+                        <Typography variant="subtitle1" tone="primary" style={styles.statusText}>
+                          Коло створено
+                        </Typography>
+                        <Image
+                          source={require("../../assets/images/interactiveScreens/circle_created.png")}
+                          style={styles.statusImage}
+                          resizeMode="contain"
+                        />
+                      </View>
+
+                      {/* Код і запрошення */}
                       <View style={styles.codeContainer}>
                         <PinCodeField
                           label="Код кола"
@@ -215,24 +248,12 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                         }}
                         style={{ width: "100%" }}
                       />
-
-                      {/* Велике світло-сіре коло з назвою */}
-                      <View style={styles.circleContainer}>
-                        <View style={styles.circle}>
-                          <Typography
-                            variant="h3"
-                            tone="secondary"
-                            numberOfLines={2}
-                            ellipsizeMode="tail"
-                          >
-                            {circleName}
-                          </Typography>
-                        </View>
-                      </View>
                     </>
                   )}
                 </View>
               )}
+
+              {/* JOIN button */}
               {activeTab === "join" && (
                 <Button
                   label={isJoining ? "Підключення..." : "Приєднатися"}
@@ -246,30 +267,29 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                 />
               )}
 
-              {activeTab === "create" && createStep === 1 && (
+              {/* CREATE step 1 button */}
+              {activeTab === "create" && createStep === 1 && !isCreating && (
                 <Button
-                  label={isCreating ? "Створюємо..." : "Створити"}
+                  label="Створити"
                   hierarchy="primary"
                   shape="rectangle"
                   size="medium"
-                  loading={isCreating}
-                  disabled={circleName.trim().length < 3 || isCreating}
+                  disabled={circleName.trim().length < 3}
                   onPress={handleCreateCircle}
                   style={{ width: "100%" }}
                 />
               )}
 
-              {activeTab === "create" && createStep === 2 && (
-                <>
-                  <Button
-                    label="Готово"
-                    hierarchy="primary"
-                    shape="rectangle"
-                    size="medium"
-                    onPress={onClose}
-                    style={{ width: "100%" }}
-                  />
-                </>
+              {/* CREATE step 2 button */}
+              {activeTab === "create" && createStep === 2 && !isCreating && (
+                <Button
+                  label="Готово"
+                  hierarchy="primary"
+                  shape="rectangle"
+                  size="medium"
+                  onPress={onClose}
+                  style={{ width: "100%" }}
+                />
               )}
             </ModalContent>
           </View>
@@ -323,19 +343,18 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing[88],
     color: theme.colors.content.primary,
   },
-  circleContainer: {
+  // Стани створення/успіху
+  statusContainer: {
     alignItems: "center",
-    justifyContent: "center",
-    marginVertical: theme.spacing[32],
+    paddingVertical: theme.spacing[16],
+    gap: theme.spacing[16],
   },
-  circle: {
-    width: 224,
-    height: 224,
-    borderRadius: theme.radius.circle,
-    backgroundColor: theme.colors.background.tertiary,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: theme.spacing[16],
+  statusText: {
+    textAlign: "center",
+  },
+  statusImage: {
+    width: 236,
+    height: 188,
   },
 });
 

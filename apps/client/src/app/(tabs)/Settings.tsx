@@ -5,24 +5,28 @@ import { PhoneInput } from "@/src/components/fields/PhoneInput";
 import { RegionPicker } from "@/src/components/fields/RegionPicker";
 import { PasswordField, TextField } from "@/src/components/fields/TextField";
 import { ListItem } from "@/src/components/ListItem";
-import { ModalActions, ModalContainer, ModalHeader } from "@/src/components/modal";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import { Alert, Image, Modal, ScrollView, StyleSheet, View } from "react-native";
+import { Dimensions, Image, Modal, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import { useFcmToken } from "../../hooks/useFcmToken";
+import { useToast } from "../../hooks/useToast";
 import { useAuthStore } from "../../store/authStore";
 import { useLocationStore } from "../../store/locationStore";
 import { useSettingsStore } from "../../store/settingsStore";
 import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
 
+const { width, height } = Dimensions.get("window");
+
 export default function SettingsScreen() {
+  const { showToast } = useToast();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
@@ -44,12 +48,12 @@ export default function SettingsScreen() {
 
   // Password
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showPasswordSuccess, setShowPasswordSuccess] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   // UI state
   const [isDeleteAccountVisible, setIsDeleteAccountVisible] = useState(false);
@@ -93,7 +97,11 @@ export default function SettingsScreen() {
         body: JSON.stringify({ [key]: value }),
       });
     } catch {
-      Alert.alert("Помилка", "Не вдалося зберегти налаштування");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося зберегти налаштування",
+      });
       fetchNotifSettings();
     }
   };
@@ -129,7 +137,11 @@ export default function SettingsScreen() {
   const handleSave = async () => {
     const errors = validate();
     if (errors.length > 0) {
-      Alert.alert("Помилка", errors.join("\n"));
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: errors.join("\n"),
+      });
       return;
     }
     try {
@@ -149,11 +161,15 @@ export default function SettingsScreen() {
           }),
         ),
       });
-      Alert.alert("Успіх", "Дані оновлено");
+      showToast({ type: "success", title: "Дані оновлено" });
       await refreshProfile();
       setIsEditMode(false);
     } catch (e: any) {
-      Alert.alert("Помилка", e?.message || "Не вдалося оновити дані");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: e?.message || "Не вдалося оновити дані",
+      });
     }
   };
 
@@ -177,11 +193,23 @@ export default function SettingsScreen() {
         });
         if (response?.avatarUpdatedAt) updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
         await refreshProfile();
-        Alert.alert("Успіх", "Аватар оновлено");
+        showToast({ type: "success", title: "Аватар оновлено", compact: true });
       } catch (e: any) {
-        Alert.alert("Помилка", e?.message || "Не вдалося оновити аватар");
+        showToast({
+          type: "error",
+          title: "Помилка",
+          subtitle: e?.message || "Не вдалося оновити аватар",
+        });
       }
     }
+  };
+
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setPasswordError("");
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
   };
 
   const handleChangePassword = async () => {
@@ -198,8 +226,7 @@ export default function SettingsScreen() {
       setPasswordError("Новий пароль та підтвердження не співпадають");
       return;
     }
-
-    // setPasswordLoading(true);
+    setPasswordLoading(true);
     try {
       await apiFetch("/auth/change-password", {
         method: "POST",
@@ -209,11 +236,8 @@ export default function SettingsScreen() {
           confirmNewPassword: confirmPassword.trim(),
         }),
       });
-      // Alert.alert("Успіх", "Пароль успішно змінено");
-      setPasswordSuccess(true);
-      setOldPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+      closePasswordModal();
+      setShowPasswordSuccess(true);
     } catch (e: any) {
       setPasswordError(formatErrorMessage(e, "Не вдалося змінити пароль"));
     } finally {
@@ -226,7 +250,6 @@ export default function SettingsScreen() {
     try {
       const info = await updateCurrentLocation();
       if (info?.region || info?.district) {
-        // Automatically save to profile
         await apiFetch("/users", {
           method: "PUT",
           body: JSON.stringify(
@@ -234,22 +257,26 @@ export default function SettingsScreen() {
               id: user?.id,
               region: info.region,
               district: info.district,
-              // Preserve manual hromada pick — backend won't auto-resolve if this is set
               ...(alertRegionUid != null ? { alertRegionUid } : {}),
             }),
           ),
         });
         await refreshProfile();
       }
-      Alert.alert("Успіх", "Геолокацію оновлено");
+      showToast({ type: "success", title: "Геолокацію оновлено", compact: true });
     } catch (e: any) {
       if (e.message === "LOCATION_PERMISSION_DENIED") {
-        Alert.alert(
-          "Доступ заборонено",
-          "Будь ласка, дозвольте доступ до геолокації в налаштуваннях пристрою.",
-        );
+        showToast({
+          type: "warning",
+          title: "Доступ заборонено",
+          subtitle: "Будь ласка, дозвольте доступ до геолокації в налаштуваннях пристрою.",
+        });
       } else {
-        Alert.alert("Помилка", "Не вдалося оновити геолокацію");
+        showToast({
+          type: "error",
+          title: "Помилка",
+          subtitle: "Не вдалося оновити геолокацію",
+        });
       }
     }
   };
@@ -301,10 +328,115 @@ export default function SettingsScreen() {
     },
   ];
 
+  // ─── Change Password Modal (fullscreen) ──────────
+  const PasswordModal = (
+    <Modal
+      visible={showPasswordModal}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={closePasswordModal}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background.primary }}>
+        <View style={passStyles.header}>
+          <Button
+            shape="round"
+            hierarchy="tertiary"
+            size="medium"
+            leadingIcon={
+              <MaterialCommunityIcons name="close" size={24} color={theme.colors.content.primary} />
+            }
+            onPress={closePasswordModal}
+            testId="changePassword:close:button"
+          />
+          <Typography variant="h3" tone="primary" style={passStyles.headerTitle}>
+            Змінити пароль
+          </Typography>
+          <View style={{ width: 48 }} />
+        </View>
+        <ScrollView
+          contentContainerStyle={passStyles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <PasswordField
+            label="Поточний пароль"
+            required
+            placeholder="Введіть поточний пароль"
+            value={oldPassword}
+            onChangeText={setOldPassword}
+            testId="changePassword:oldPassword:input"
+          />
+          <PasswordField
+            label="Новий пароль"
+            required
+            placeholder="Новий пароль (мін. 12 символів)"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            caption="Має містити щонайменше 12 символів"
+            testId="changePassword:newPassword:input"
+          />
+          <PasswordField
+            label="Підтвердіть новий пароль"
+            required
+            placeholder="Повторно введіть новий пароль"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            errorMessage={passwordError || undefined}
+            testId="changePassword:confirmNewPassword:input"
+          />
+          <Button
+            label={passwordLoading ? "Збереження..." : "Змінити пароль"}
+            hierarchy="primary"
+            size="medium"
+            shape="rectangle"
+            onPress={handleChangePassword}
+            disabled={passwordLoading}
+            loading={passwordLoading}
+            style={{ marginTop: theme.spacing[8] }}
+            testId="changePassword:submit:button"
+          />
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+
+  // ─── Password Success Modal (fullscreen) ─────────
+  const PasswordSuccessModal = (
+    <Modal
+      visible={showPasswordSuccess}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={() => setShowPasswordSuccess(false)}
+    >
+      <SafeAreaView style={passStyles.successContainer}>
+        <Typography variant="h2" tone="primary" style={passStyles.successTitle}>
+          Пароль змінено
+        </Typography>
+        <Image
+          source={require("./../../assets/images/interactiveScreens/password_change.png")}
+          style={passStyles.successImage}
+          resizeMode="contain"
+        />
+        <Button
+          label="Ок"
+          hierarchy="primary"
+          size="large"
+          shape="pill"
+          onPress={() => setShowPasswordSuccess(false)}
+          style={passStyles.successButton}
+          testId="changePasswordSuccess:login:button"
+        />
+      </SafeAreaView>
+    </Modal>
+  );
+
   // ─── Security Screen ─────────────────────────────
   if (isSecurityScreenVisible) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={styles.container}
+        testID={`${ScreenIds.settings}:security`}
+        accessibilityLabel={`${ScreenIds.settings}:security`}
+      >
         <View style={styles.screenHeader}>
           <Button
             shape="round"
@@ -318,6 +450,7 @@ export default function SettingsScreen() {
               />
             }
             onPress={() => setIsSecurityScreenVisible(false)}
+            testId="security:back:button"
           />
           <Typography variant="h3" tone="primary" style={styles.screenHeaderTitle}>
             Приватність та безпека
@@ -325,7 +458,6 @@ export default function SettingsScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* ДОЗВОЛИ СИСТЕМИ */}
           <Typography variant="subtitle2" tone="secondary" style={styles.sectionLabel}>
             ДОЗВОЛИ СИСТЕМИ
           </Typography>
@@ -340,16 +472,18 @@ export default function SettingsScreen() {
                 if (val) {
                   const granted = await requestPermission();
                   if (!granted) {
-                    Alert.alert(
-                      "Дозвіл не отримано",
-                      "Будь ласка, дозвольте сповіщення у налаштуваннях пристрою.",
-                    );
+                    showToast({
+                      type: "warning",
+                      title: "Дозвіл не отримано",
+                      subtitle: "Будь ласка, дозвольте сповіщення у налаштуваннях пристрою.",
+                    });
                     return;
                   }
                 }
                 setPushEnabled(val);
                 updateNotifSetting("enabled", val);
               }}
+              testId="security:pushNotifications:switch"
             />
             <ListItem
               layout="switch"
@@ -359,6 +493,7 @@ export default function SettingsScreen() {
               switchValue={notifSettings?.smsFallover ?? false}
               showDivider={true}
               onSwitchChange={(val) => updateNotifSetting("smsFallover", val)}
+              testId="security:smsNotifications:switch"
             />
             <ListItem
               layout="switch"
@@ -368,6 +503,7 @@ export default function SettingsScreen() {
               switchValue={locationEnabled}
               showDivider={true}
               onSwitchChange={setLocationEnabled}
+              testId="security:location:switch"
             />
             <ListItem
               layout="switch"
@@ -376,10 +512,10 @@ export default function SettingsScreen() {
               switchValue={contactsEnabled}
               showDivider={false}
               onSwitchChange={setContactsEnabled}
+              testId="security:contacts:switch"
             />
           </View>
 
-          {/* ОБЛІКОВИЙ ЗАПИС */}
           <Typography variant="subtitle2" tone="secondary" style={styles.sectionLabel}>
             ОБЛІКОВИЙ ЗАПИС
           </Typography>
@@ -396,6 +532,7 @@ export default function SettingsScreen() {
                 />
               }
               onPress={() => setShowPasswordModal(true)}
+              testId="security:changePassword:button"
             />
             <ListItem
               layout="compact"
@@ -410,60 +547,13 @@ export default function SettingsScreen() {
               }
               onPress={() => setIsDeleteAccountVisible(true)}
               showDivider={false}
+              testId="security:deleteAccount:button"
             />
           </View>
         </ScrollView>
 
-        <ModalContainer isVisible={showPasswordModal} onClose={() => setShowPasswordModal(false)}>
-          <Typography variant="h3" tone="primary" style={{ textAlign: "center" }}>
-            Змінити пароль
-          </Typography>
-          <PasswordField
-            label="Поточний пароль"
-            required
-            placeholder="Введіть поточний пароль"
-            value={oldPassword}
-            onChangeText={setOldPassword}
-          />
-          <PasswordField
-            label="Новий пароль"
-            required
-            placeholder="Новий пароль (мін. 12 символів)"
-            value={newPassword}
-            onChangeText={setNewPassword}
-            caption="Має містити щонайменше 12 символів"
-          />
-          <PasswordField
-            label="Підтвердіть новий пароль"
-            required
-            placeholder="Повторно введіть новий пароль"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            errorMessage={passwordError || undefined}
-          />
-          <Button
-            label={passwordLoading ? "Збереження..." : "Змінити пароль"}
-            hierarchy="primary"
-            size="medium"
-            shape="rectangle"
-            onPress={handleChangePassword}
-            disabled={passwordLoading}
-            loading={passwordLoading}
-          />
-          <Button
-            label="Скасувати"
-            hierarchy="tertiary"
-            size="medium"
-            shape="rectangle"
-            onPress={() => {
-              setShowPasswordModal(false);
-              setPasswordError("");
-              setOldPassword("");
-              setNewPassword("");
-              setConfirmPassword("");
-            }}
-          />
-        </ModalContainer>
+        {PasswordModal}
+        {PasswordSuccessModal}
 
         <ConfirmationModal
           isVisible={isDeleteAccountVisible}
@@ -472,9 +562,14 @@ export default function SettingsScreen() {
             setIsDeleteAccountVisible(false);
             try {
               await apiFetch("/users", { method: "DELETE" });
+              showToast({ type: "success", title: "Акаунт видалено", compact: true });
               logout();
             } catch {
-              Alert.alert("Помилка", "Не вдалося видалити акаунт");
+              showToast({
+                type: "error",
+                title: "Помилка",
+                subtitle: "Не вдалося видалити акаунт",
+              });
             }
           }}
           title="Видалити акаунт?"
@@ -482,6 +577,7 @@ export default function SettingsScreen() {
           confirmText="Видалити"
           cancelText="Назад"
           confirmStyle="default"
+          testId="settings:deleteAccount:modal"
         />
       </SafeAreaView>
     );
@@ -489,9 +585,12 @@ export default function SettingsScreen() {
 
   // ─── Main Settings Screen ────────────────────────
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+      testID={ScreenIds.settings}
+      accessibilityLabel={ScreenIds.settings}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Profile header */}
         <View style={styles.headerContainer}>
           <Avatar
             userId={user?.id ?? ""}
@@ -528,6 +627,7 @@ export default function SettingsScreen() {
                 leadingIcon={<Icon name="edit-2" size={18} color={theme.colors.content.onColor} />}
                 onPress={() => setIsEditMode(true)}
                 style={{ width: "100%" }}
+                testId="settings:editProfile:button"
               />
             </>
           )}
@@ -541,6 +641,7 @@ export default function SettingsScreen() {
                   size="small"
                   shape="rectangle"
                   onPress={handlePickAvatar}
+                  testId="settings:changeAvatar:button"
                 />
                 {avatarUrl && !imageError && (
                   <Button
@@ -549,6 +650,7 @@ export default function SettingsScreen() {
                     size="small"
                     shape="rectangle"
                     onPress={() => setIsDeleteAvatarVisible(true)}
+                    testId="settings:deleteAvatar:button"
                   />
                 )}
               </View>
@@ -571,6 +673,7 @@ export default function SettingsScreen() {
                         onChangeText={field.setter}
                         placeholder={field.placeholder}
                         showClearButton={false}
+                        testId="settings:phone:input"
                       />
                     </View>
                   ) : field.id === "region" ? (
@@ -589,6 +692,7 @@ export default function SettingsScreen() {
                       placeholder={field.placeholder}
                       keyboardType={field.keyboardType as any}
                       maxLength={field.maxLength}
+                      testId={`settings:${field.id}:input`}
                     />
                   )}
                 </View>
@@ -613,6 +717,7 @@ export default function SettingsScreen() {
                 shape="rectangle"
                 onPress={handleSave}
                 style={styles.save}
+                testId="settings:saveProfile:button"
               />
               <Button
                 label="Скасувати"
@@ -627,12 +732,12 @@ export default function SettingsScreen() {
                   setPhone(user?.phone || "");
                 }}
                 style={styles.cancelButton}
+                testId="settings:cancelProfile:button"
               />
             </View>
           )}
         </View>
 
-        {/* Notifications */}
         <View style={styles.settingsSection}>
           <ListItem
             layout="compact"
@@ -643,10 +748,10 @@ export default function SettingsScreen() {
             }
             onPress={() => setIsNotificationsModalVisible(true)}
             showDivider={false}
+            testId="settings:notifications:button"
           />
         </View>
 
-        {/* Security */}
         <View style={styles.settingsSection}>
           <ListItem
             layout="compact"
@@ -661,10 +766,10 @@ export default function SettingsScreen() {
             }
             onPress={() => setIsSecurityScreenVisible(true)}
             showDivider={false}
+            testId="settings:security:button"
           />
         </View>
 
-        {/* Location */}
         <View style={styles.settingsSection}>
           <ListItem
             layout="compact"
@@ -680,10 +785,10 @@ export default function SettingsScreen() {
             onPress={handleLocationUpdate}
             hideChevron={true}
             showDivider={false}
+            testId="settings:updateLocation:button"
           />
         </View>
 
-        {/* Logout */}
         <Button
           label="Вихід"
           hierarchy="tertiary"
@@ -699,139 +804,13 @@ export default function SettingsScreen() {
           }
           onPress={() => setIsLogoutVisible(true)}
           style={[styles.logoutButton, { justifyContent: "flex-start" }]}
+          testId="settings:logout:button"
         />
       </ScrollView>
 
-      {/* Change Password Modal */}
-      <ModalContainer
-        isVisible={showPasswordModal}
-        onClose={() => {
-          setShowPasswordModal(false);
-          setPasswordSuccess(false);
-          setPasswordError("");
-          setOldPassword("");
-          setNewPassword("");
-          setConfirmPassword("");
-        }}
-      >
-        {passwordSuccess ? (
-          // ── Success view ──
-          <View style={styles.successContainer}>
-            <Image
-              source={require("@/src/assets/images/penguin-key.png")}
-              style={styles.successMascot}
-              resizeMode="contain"
-            />
-            <Typography variant="h3" tone="primary" style={styles.successTitle}>
-              Пароль змінено!
-            </Typography>
-            <Typography variant="body2" tone="secondary" style={styles.successSubtitle}>
-              Твій пароль успішно оновлено. Тепер ти в безпеці
-            </Typography>
-            <Button
-              label="Готово"
-              hierarchy="primary"
-              shape="rectangle"
-              size="medium"
-              onPress={() => {
-                setShowPasswordModal(false);
-                setPasswordSuccess(false);
-              }}
-              style={{ width: "100%", marginTop: theme.spacing[8] }}
-            />
-          </View>
-        ) : (
-          <View>
-            <ModalHeader title="Змінити пароль" description="Введіть поточний та новий пароль" />
+      {PasswordModal}
+      {PasswordSuccessModal}
 
-            <View style={{ gap: 8, marginVertical: 16 }}>
-              <PasswordField
-                label="Поточний пароль"
-                required
-                placeholder="Введіть поточний пароль"
-                value={oldPassword}
-                onChangeText={setOldPassword}
-              />
-              <PasswordField
-                label="Новий пароль"
-                required
-                placeholder="Новий пароль "
-                value={newPassword}
-                onChangeText={setNewPassword}
-                caption="Має містити щонайменше 12 символів"
-              />
-              <PasswordField
-                label="Підтвердіть новий пароль"
-                required
-                placeholder="Повторно введіть новий пароль"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                errorMessage={passwordError || undefined}
-              />
-            </View>
-            <ModalActions>
-              <Button
-                label="Скасувати"
-                hierarchy="secondary"
-                size="medium"
-                shape="rectangle"
-                onPress={() => {
-                  setShowPasswordModal(false);
-                  setPasswordError("");
-                  setOldPassword("");
-                  setNewPassword("");
-                  setConfirmPassword("");
-                }}
-              />
-              <Button
-                label={passwordLoading ? "Збереження..." : "Змінити"}
-                hierarchy="primary"
-                size="medium"
-                shape="rectangle"
-                onPress={handleChangePassword}
-                disabled={passwordLoading}
-                loading={passwordLoading}
-              />
-            </ModalActions>
-          </View>
-        )}
-      </ModalContainer>
-      <ConfirmationModal
-        isVisible={isDeleteAccountVisible}
-        onCancel={() => setIsDeleteAccountVisible(false)}
-        onConfirm={async () => {
-          setIsDeleteAccountVisible(false);
-          try {
-            await apiFetch("/users", { method: "DELETE" });
-            logout();
-          } catch (e) {
-            Alert.alert("Помилка", "Не вдалося видалити акаунт");
-          }
-        }}
-        title="Видалити акаунт?"
-        message="Після видалення акаунта всі кола та контакти будуть безповоротно видалені"
-        confirmText="Видалити"
-        cancelText="Назад"
-        confirmStyle="default"
-      />
-      <ConfirmationModal
-        isVisible={isDeleteAvatarVisible}
-        onCancel={() => setIsDeleteAvatarVisible(false)}
-        onConfirm={async () => {
-          setIsDeleteAvatarVisible(false);
-          try {
-            await apiFetch(`/users/${user?.id}/avatar`, { method: "DELETE" });
-            updateUser({ avatarUpdatedAt: undefined });
-            setAvatarUrl(null);
-          } catch (e) {
-            Alert.alert("Помилка", "Не вдалося видалити аватар");
-          }
-        }}
-        title="Видалити аватар?"
-        message="Ви впевнені, що хочете видалити фото профілю?"
-        confirmText="Видалити"
-        cancelText="Скасувати"
-      />
       <Modal
         visible={isNotificationsModalVisible}
         animationType="slide"
@@ -857,6 +836,7 @@ export default function SettingsScreen() {
               }
               onPress={() => setIsNotificationsModalVisible(false)}
               style={{ position: "absolute", left: theme.spacing[16] }}
+              testId="notifications:close:button"
             />
           </View>
           <ScrollView
@@ -876,10 +856,11 @@ export default function SettingsScreen() {
                   if (val) {
                     const granted = await requestPermission();
                     if (!granted) {
-                      Alert.alert(
-                        "Дозвіл не отримано",
-                        "Будь ласка, дозвольте сповіщення у налаштуваннях пристрою.",
-                      );
+                      showToast({
+                        type: "warning",
+                        title: "Дозвіл не отримано",
+                        subtitle: "Будь ласка, дозвольте сповіщення у налаштуваннях пристрою.",
+                      });
                       return;
                     }
                   }
@@ -939,7 +920,6 @@ export default function SettingsScreen() {
         </View>
       </Modal>
 
-      {/* Confirmation modals */}
       <ConfirmationModal
         isVisible={isLogoutVisible}
         onCancel={() => setIsLogoutVisible(false)}
@@ -952,6 +932,7 @@ export default function SettingsScreen() {
         confirmText="Вийти"
         cancelText="Назад"
         confirmStyle="default"
+        testId="settings:logout:modal"
       />
       <ConfirmationModal
         isVisible={isDeleteAccountVisible}
@@ -960,9 +941,14 @@ export default function SettingsScreen() {
           setIsDeleteAccountVisible(false);
           try {
             await apiFetch("/users", { method: "DELETE" });
+            showToast({ type: "success", title: "Акаунт видалено", compact: true });
             logout();
           } catch {
-            Alert.alert("Помилка", "Не вдалося видалити акаунт");
+            showToast({
+              type: "error",
+              title: "Помилка",
+              subtitle: "Не вдалося видалити акаунт",
+            });
           }
         }}
         title="Видалити акаунт?"
@@ -970,6 +956,7 @@ export default function SettingsScreen() {
         confirmText="Видалити"
         cancelText="Назад"
         confirmStyle="default"
+        testId="settings:deleteAccount:modal"
       />
       <ConfirmationModal
         isVisible={isDeleteAvatarVisible}
@@ -980,28 +967,28 @@ export default function SettingsScreen() {
             await apiFetch(`/users/${user?.id}/avatar`, { method: "DELETE" });
             updateUser({ avatarUpdatedAt: undefined });
             setAvatarUrl(null);
+            showToast({ type: "success", title: "Аватар видалено", compact: true });
           } catch {
-            Alert.alert("Помилка", "Не вдалося видалити аватар");
+            showToast({
+              type: "error",
+              title: "Помилка",
+              subtitle: "Не вдалося видалити аватар",
+            });
           }
         }}
         title="Видалити аватар?"
         message="Ви впевнені, що хочете видалити фото профілю?"
         confirmText="Видалити"
         cancelText="Скасувати"
+        testId="settings:deleteAvatar:modal"
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background.primary,
-  },
-  scrollContent: {
-    paddingHorizontal: theme.spacing[16],
-    paddingBottom: 120,
-  },
+  container: { flex: 1, backgroundColor: theme.colors.background.primary },
+  scrollContent: { paddingHorizontal: theme.spacing[16], paddingBottom: 120 },
   screenHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1011,9 +998,7 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border.opaque,
     gap: theme.spacing[8],
   },
-  screenHeaderTitle: {
-    flex: 1,
-  },
+  screenHeaderTitle: { flex: 1 },
   headerContainer: {
     alignItems: "center",
     paddingTop: theme.spacing[20],
@@ -1027,11 +1012,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   block: { marginBottom: theme.spacing[16] },
-  profileName: {
-    marginTop: theme.spacing[8],
-    marginBottom: theme.spacing[8],
-    textAlign: "center",
-  },
+  profileName: { marginTop: theme.spacing[8], marginBottom: theme.spacing[8], textAlign: "center" },
   locationView: {
     flexDirection: "row",
     alignItems: "center",
@@ -1040,10 +1021,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing[32],
   },
   save: { marginTop: theme.spacing[8] },
-  editContainer: {
-    width: "100%",
-    marginTop: theme.spacing[8],
-  },
+  editContainer: { width: "100%", marginTop: theme.spacing[8] },
   cancelButton: { marginTop: theme.spacing[8] },
   settingsSection: {
     backgroundColor: theme.colors.background.secondary,
@@ -1062,36 +1040,33 @@ const styles = StyleSheet.create({
     marginLeft: theme.spacing[4],
     letterSpacing: 0.5,
   },
-  logoutButton: {
+  logoutButton: { marginTop: theme.spacing[8], backgroundColor: theme.colors.background.secondary },
+});
+
+const passStyles = StyleSheet.create({
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-start",
-    backgroundColor: theme.colors.background.secondary,
-    marginTop: theme.spacing[8],
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  successContainer: {
-    alignItems: "center",
-    gap: theme.spacing[12],
-    paddingVertical: theme.spacing[8],
-  },
-  successMascot: {
-    width: 140,
-    height: 140,
-  },
-  successTitle: {
-    textAlign: "center",
-  },
-  successSubtitle: {
-    textAlign: "center",
+    justifyContent: "space-between",
     paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[8],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.opaque,
   },
+  headerTitle: { flex: 1, textAlign: "center" },
+  scrollContent: { padding: theme.spacing[16], gap: theme.spacing[16] },
+  successContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background.primary,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: theme.spacing[24],
+    paddingTop: theme.spacing[64],
+    paddingBottom: theme.spacing[40],
+  },
+  successTitle: { textAlign: "center" },
+  successImage: { width: width * 0.417, maxHeight: height * 0.235 },
+  successButton: { width: "100%" },
 });
 
 const notifStyles = StyleSheet.create({
@@ -1104,10 +1079,7 @@ const notifStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.opaque,
   },
-  scrollContent: {
-    padding: theme.spacing[16],
-    paddingBottom: theme.spacing[40],
-  },
+  scrollContent: { padding: theme.spacing[16], paddingBottom: theme.spacing[40] },
   listSection: {
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.radius.xl,

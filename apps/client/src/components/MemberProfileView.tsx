@@ -1,9 +1,11 @@
-import { AntDesign, Feather, FontAwesome6 } from "@expo/vector-icons";
+import { AntDesign, Feather, FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
 import { Linking, Platform, StyleSheet, ToastAndroid, TouchableOpacity, View } from "react-native";
+import { useCurrentTime } from "../hooks/useCurrentTime";
 import { theme } from "../theme/theme";
 import { Member } from "../types";
+import { getRollCallText, getStatusText } from "../utils/dateUpdate";
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
 import { ConfirmRollCallModal } from "./circle/actions/ConfirmRollCallModal";
@@ -11,10 +13,9 @@ import { RenameModal } from "./circle/actions/RenameModal";
 import ConfirmationModal from "./ConfirmationModal";
 import { StatusBadge } from "./StatusBadge";
 import { Typography } from "./typography";
-
 interface MemberProfileViewProps {
   member: Member;
-  onRollCall?: () => void;
+  onRollCall?: (memberId: string) => void;
   onMessage?: () => void;
   onBlock?: () => void;
   onRemove?: () => void;
@@ -23,7 +24,7 @@ interface MemberProfileViewProps {
 }
 
 export const MemberProfileView = ({
-  member,
+  member: initialMember,
   onRollCall,
   onMessage,
   onBlock,
@@ -31,10 +32,13 @@ export const MemberProfileView = ({
   onRename,
   isOwner,
 }: MemberProfileViewProps) => {
+  const [member, setMember] = useState(initialMember);
   const [isRenaming, setIsRenaming] = useState(false);
   const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isRemoveModalVisible, setIsRemoveModalVisible] = useState(false);
+
+  const currentTime = useCurrentTime();
 
   const handleContact = () => {
     if (member.phone) {
@@ -78,6 +82,8 @@ export const MemberProfileView = ({
         onPress={() => handleCopyLocation(copyCoords)}
         style={styles.locationContainer}
         hitSlop={10}
+        testID="profile:copyLocation:button"
+        accessibilityLabel="profile:copyLocation:button"
       >
         <FontAwesome6 name="location-dot" size={16} color={theme.colors.content.primary} />
         <Typography variant="body1" style={styles.locationText} weight="semibold">
@@ -127,6 +133,7 @@ export const MemberProfileView = ({
               }
             : undefined
         }
+        testId="profile:rename:modal"
       />
 
       {/* Roll Call Modal */}
@@ -135,8 +142,11 @@ export const MemberProfileView = ({
         onCancel={() => setIsRollCallModalVisible(false)}
         onConfirm={async () => {
           setIsRollCallModalVisible(false);
-          onRollCall?.();
+          // Update local member state immediately
+          setMember((prev) => ({ ...prev, lastPersonalRollCallAt: new Date().toISOString() }));
+          onRollCall?.(member.id);
         }}
+        testId="profile:confirmRollCall:modal"
       />
 
       {/* Remove Modal */}
@@ -152,6 +162,7 @@ export const MemberProfileView = ({
         confirmText="Видалити"
         cancelText="Назад"
         confirmStyle="destructive"
+        testId="profile:remove:modal"
       />
 
       <View style={styles.profileSection}>
@@ -160,21 +171,45 @@ export const MemberProfileView = ({
           {member.fullName || `${member.firstName} ${member.lastName}`}
         </Typography>
 
-        <View style={styles.statusContainer}>
-          <StatusBadge variant="pill" status={member.status} />
-          {onRollCall && (
-            <Button
-              shape="round"
-              hierarchy="secondary"
-              size="medium"
-              onPress={() => setIsRollCallModalVisible(true)}
-              leadingIcon={<Feather name="rss" size={18} color={theme.colors.content.primary} />}
-              style={styles.rollCallIconButton}
-            />
+        <View style={[styles.statusContainer, { flexDirection: "column", gap: theme.spacing[8] }]}>
+          <View style={styles.statusContainer}>
+            <StatusBadge variant="pill" status={member.status} />
+            {onRollCall && (
+              <Button
+                shape="round"
+                hierarchy="secondary"
+                size="medium"
+                onPress={() => setIsRollCallModalVisible(true)}
+                leadingIcon={<Feather name="rss" size={18} color={theme.colors.content.primary} />}
+                style={styles.rollCallIconButton}
+                testId="profile:rollCall:button"
+              />
+            )}
+          </View>
+
+          {member.alertStatus?.active && (
+            <View style={styles.alertNotificationRow}>
+              <MaterialCommunityIcons
+                name="bullhorn"
+                size={16}
+                color={theme.colors.content.secondary}
+              />
+              <Typography variant="caption" tone="secondary">
+                Повітряна тривога
+              </Typography>
+            </View>
           )}
+
+          <Typography variant="caption" tone="secondary" style={{ textAlign: "center" }}>
+            {member.status === "UNKNOWN" && member.lastPersonalRollCallAt
+              ? getRollCallText(member.lastPersonalRollCallAt, currentTime)
+              : getStatusText(member, currentTime)}
+          </Typography>
         </View>
+
         {renderLocation()}
       </View>
+
       <View style={styles.actionsColumn}>
         {onMessage && (
           <Button
@@ -183,15 +218,17 @@ export const MemberProfileView = ({
             shape="rectangle"
             size="medium"
             onPress={handleContact}
+            testId="profile:contact:button"
           />
         )}
         {onRename && (
           <Button
-            label="Редагувати імʼя"
+            label="Перейменувати"
             hierarchy="secondary"
             shape="rectangle"
             size="medium"
             onPress={() => setIsRenaming(true)}
+            testId="profile:rename:button"
           />
         )}
         {isOwner && onBlock && (
@@ -201,6 +238,7 @@ export const MemberProfileView = ({
             shape="rectangle"
             size="medium"
             onPress={onBlock}
+            testId="profile:block:button"
           />
         )}
         {isOwner && onRemove && (
@@ -211,6 +249,7 @@ export const MemberProfileView = ({
             size="medium"
             onPress={() => setIsRemoveModalVisible(true)}
             textStyle={{ color: theme.colors.negative }}
+            testId="profile:remove:button"
           />
         )}
       </View>
@@ -239,6 +278,26 @@ const styles = StyleSheet.create({
   },
   rollCallIconButton: {
     marginLeft: theme.spacing[8],
+  },
+  alertNotificationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing[4],
+    paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[8],
+    borderRadius: theme.spacing[8],
+    backgroundColor: theme.colors.background.secondary,
+  },
+  rollCallNotificationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing[4],
+    paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[8],
+    borderRadius: theme.spacing[8],
+    backgroundColor: theme.colors.background.secondary,
   },
   locationContainer: {
     flexDirection: "row",

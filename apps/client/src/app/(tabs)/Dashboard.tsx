@@ -1,18 +1,23 @@
 import { apiFetch, updateMyStatus } from "@/src/api/api";
-import { initiatePersonalRollCall } from "@/src/api/groups";
+import { setContactAlias } from "@/src/api/contacts";
+import { blockUser, initiatePersonalRollCall } from "@/src/api/groups";
 import { UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { useLocationStore } from "@/src/store/locationStore";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { useFocusEffect } from "expo-router";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useLoadingState } from "../../hooks/useLoadingState";
+import { useToast } from "../../hooks/useToast";
 
 import { MemberProfileModal } from "@/src/components/dashboard/MemberProfileModal";
+import { DashboardSkeleton } from "@/src/components/Skeleton";
 import { Circle, Member, MyAlertStatus } from "@/src/types";
-import React, { useCallback, useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AlertBanner } from "../../components/dashboard/AlertBanner";
 import { DashboardHeader } from "../../components/dashboard/DashboardHeader";
@@ -22,8 +27,12 @@ import { MemberList } from "../../components/dashboard/MemberList";
 
 // --- DashboardScreen ---
 export default function DashboardScreen() {
+  const { loading, withLoading } = useLoadingState(true);
+  const { showToast } = useToast();
   const { logEvent } = useAnalytics();
   const user = useAuthStore((s) => s.user);
+  const refreshProfile = useAuthStore((s) => s.refreshProfile);
+  const updateUser = useAuthStore((s) => s.updateUser);
   const [groups, setGroups] = useState<Circle[]>([]);
   const [myAlertStatus, setMyAlertStatus] = useState<MyAlertStatus | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("ALL");
@@ -38,14 +47,28 @@ export default function DashboardScreen() {
     loading: locationLoading,
   } = useLocationStore();
 
+  /** Only the first load toggles `loading` / skeleton; refetches stay silent (avoids flicker from focus + Firestore sync). */
+  const hasLoadedGroupsOnceRef = useRef(false);
+
   const fetchGroups = useCallback(async () => {
+    if (!hasLoadedGroupsOnceRef.current) {
+      try {
+        await withLoading(async () => {
+          const data = await apiFetch("/groups", { method: "GET" });
+          setGroups(data);
+        });
+      } finally {
+        hasLoadedGroupsOnceRef.current = true;
+      }
+      return;
+    }
     try {
       const data = await apiFetch("/groups", { method: "GET" });
       setGroups(data);
     } catch (error) {
       console.error("Error loading groups:", error);
     }
-  }, []);
+  }, [withLoading]);
 
   const fetchMyAlertStatus = useCallback(async () => {
     try {
@@ -57,9 +80,8 @@ export default function DashboardScreen() {
   }, []);
 
   const syncDashboardData = useCallback(() => {
-    fetchGroups();
-    fetchMyAlertStatus();
-  }, [fetchGroups, fetchMyAlertStatus]);
+    void Promise.all([refreshProfile(), fetchGroups(), fetchMyAlertStatus()]);
+  }, [fetchGroups, fetchMyAlertStatus, refreshProfile]);
 
   useSyncSignal(syncDashboardData);
 
@@ -73,21 +95,36 @@ export default function DashboardScreen() {
     try {
       await updateMyStatus(newStatus);
       logEvent("update_status", { status: newStatus });
-      useAuthStore.setState((state) => {
-        if (!state.user) return state;
-        return { user: { ...state.user, status: newStatus as any } };
-      });
+      updateUser({ status: newStatus as any });
+      if (newStatus === "SAFE") {
+        showToast({ type: "success", title: "Статус: у безпеці", compact: true });
+      } else if (newStatus === "DANGER") {
+        showToast({
+          type: "warning",
+          title: "Сигнал надіслано",
+          subtitle: "Учасники ваших кіл отримали сповіщення",
+        });
+      } else {
+        showToast({ type: "success", title: "Статус оновлено", compact: true });
+      }
     } catch (e) {
-      Alert.alert("Помилка", "Не вдалося оновити статус. Перевірте інтернет.");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося оновити статус. Перевірте інтернет.",
+      });
     }
   };
 
-  const { canRollCall, rollCallGroupId } = useMemo(() => {
-    if (!selectedMember || !user) return { canRollCall: false, rollCallGroupId: null };
+  const { canRollCall, rollCallGroupId, isOwner, blockGroupId } = useMemo(() => {
+    if (!selectedMember || !user)
+      return { canRollCall: false, rollCallGroupId: null, isOwner: false, blockGroupId: null };
     const sharedGroup = groups.find((g) => g.members.some((m) => m.id === selectedMember.id));
     return {
       canRollCall: !!sharedGroup,
       rollCallGroupId: sharedGroup?.id || null,
+      isOwner: sharedGroup?.owner.id === user.id,
+      blockGroupId: sharedGroup?.id || null,
     };
   }, [selectedMember, groups, user]);
 
@@ -96,9 +133,48 @@ export default function DashboardScreen() {
     try {
       await initiatePersonalRollCall(rollCallGroupId, selectedMember.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
-      Alert.alert("Успіх", "Запит на перекличку надіслано");
-    } catch (e) {
-      Alert.alert("Помилка", "Не вдалося надіслати запит");
+      syncDashboardData(); // Refresh data to show updated rollcall status
+      showToast({ type: "success", title: "Запит на перекличку надіслано" });
+    } catch {
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося надіслати запит",
+      });
+    }
+  };
+
+  const handleBlock = async () => {
+    if (!selectedMember || !blockGroupId) return;
+    try {
+      await blockUser(blockGroupId, selectedMember.id);
+      logEvent("block_user");
+      syncDashboardData();
+      handleCloseModal();
+      showToast({ type: "success", title: "Користувача заблоковано" });
+    } catch {
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося заблокувати користувача",
+      });
+    }
+  };
+
+  const handleRename = async (newName: string) => {
+    if (!selectedMember) return;
+    try {
+      await setContactAlias(selectedMember.id, newName);
+      logEvent("rename_member");
+      syncDashboardData();
+      handleCloseModal();
+      showToast({ type: "success", title: "Ім'я оновлено" });
+    } catch {
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося оновити ім'я",
+      });
     }
   };
 
@@ -133,7 +209,12 @@ export default function DashboardScreen() {
   }, [groups, selectedGroupId, user?.id]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
+    <SafeAreaView
+      style={styles.screen}
+      edges={["top", "left", "right"]}
+      testID={ScreenIds.dashboard}
+      accessibilityLabel={ScreenIds.dashboard}
+    >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <DashboardHeader
           firstName={user?.firstName}
@@ -146,30 +227,37 @@ export default function DashboardScreen() {
         />
 
         {myAlertStatus?.active && myAlertStatus.alert ? (
-          <AlertBanner alert={myAlertStatus.alert} />
+          <AlertBanner alert={myAlertStatus.alert} testId="dashboard:activeAlert:banner" />
         ) : null}
 
-        <MainStatusButton
-          currentStatus={user?.status || "UNKNOWN"}
-          onUpdateStatus={handleStatusUpdate}
-        />
-        <View style={styles.statusCircleSection}>
-          <Typography variant="subtitle2" tone="secondary" style={styles.sectionHeader}>
-            СТАТУС КОЛА
-          </Typography>
+        {loading ? (
+          <DashboardSkeleton />
+        ) : (
+          <>
+            <MainStatusButton
+              currentStatus={user?.status || "UNKNOWN"}
+              onUpdateStatus={handleStatusUpdate}
+              testId="dashboard:mainStatus:button"
+            />
+            <View style={styles.statusCircleSection}>
+              <Typography variant="subtitle2" tone="secondary" style={styles.sectionHeader}>
+                СТАТУС КОЛА
+              </Typography>
 
-          <GroupFilters
-            groups={groups}
-            selectedGroupId={selectedGroupId}
-            onSelectGroup={setSelectedGroupId}
-          />
+              <GroupFilters
+                groups={groups}
+                selectedGroupId={selectedGroupId}
+                onSelectGroup={setSelectedGroupId}
+              />
 
-          <MemberList
-            members={displayedMembers}
-            hasGroups={groups.length > 0}
-            onMemberPress={handleMemberPress}
-          />
-        </View>
+              <MemberList
+                members={displayedMembers}
+                hasGroups={groups.length > 0}
+                onMemberPress={handleMemberPress}
+              />
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <MemberProfileModal
@@ -178,6 +266,9 @@ export default function DashboardScreen() {
         onClose={handleCloseModal}
         onRollCall={handleRollCall}
         canRollCall={canRollCall}
+        isOwner={isOwner}
+        onBlock={isOwner ? handleBlock : undefined}
+        onRename={handleRename}
       />
     </SafeAreaView>
   );

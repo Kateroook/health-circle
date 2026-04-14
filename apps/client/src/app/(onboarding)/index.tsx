@@ -1,6 +1,8 @@
 import { Button } from "@/src/components/Button";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
@@ -16,8 +18,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "../../store/authStore";
-
-const ONBOARDING_SCREEN_TEST_ID = "screen:onboarding:container";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const IS_COMPACT_HEIGHT = SCREEN_HEIGHT < 760;
@@ -225,8 +225,8 @@ export default function OnboardingScreen() {
     <SafeAreaView
       style={styles.safeArea}
       edges={["top", "bottom"]}
-      testID={ONBOARDING_SCREEN_TEST_ID}
-      accessibilityLabel={ONBOARDING_SCREEN_TEST_ID}
+      testID={ScreenIds.onboarding}
+      accessibilityLabel={ScreenIds.onboarding}
     >
       <StatusBar style="dark" hidden />
       <View style={styles.container}>

@@ -1,6 +1,7 @@
 import { getAvatarUrl } from "@/src/api/api";
+import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Image, ImageSourcePropType, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 
 export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
@@ -35,6 +36,7 @@ interface AvatarProps {
   statusColor?: string;
 
   style?: StyleProp<ViewStyle>;
+  testId?: string;
 }
 export const Avatar: React.FC<AvatarProps> = ({
   userId,
@@ -45,8 +47,10 @@ export const Avatar: React.FC<AvatarProps> = ({
   showOuterRing = false,
   statusColor = "white",
   style,
+  testId,
 }) => {
   const [imageError, setImageError] = useState(false);
+  const accessToken = useAuthStore((state) => state.accessToken);
 
   const { outer, inner } = SIZE_MAP[size];
   const { colorBorder, whiteBorder } = BORDER_CONFIG[size];
@@ -54,21 +58,30 @@ export const Avatar: React.FC<AvatarProps> = ({
   const hasStatus = showStatusRing;
   const hasOuter = showOuterRing && hasStatus;
 
-  // базовий розмір
   let containerSize = outer;
   if (hasOuter) containerSize += whiteBorder * 2;
 
   const imageContainerSize = hasStatus ? inner : outer;
+  useEffect(() => {
+    setImageError(false);
+  }, [source, userId, avatarUpdatedAt]);
+
   const resolvedSource = useMemo(() => {
     if (source) return source;
 
     if (userId) {
       const url = getAvatarUrl(userId, avatarUpdatedAt);
-      if (url && !imageError) return { uri: url };
+      if (url && !imageError) {
+        return {
+          uri: url,
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+          cache: "reload",
+        };
+      }
     }
 
     return DEFAULT_AVATAR;
-  }, [source, userId, avatarUpdatedAt, imageError]);
+  }, [source, userId, avatarUpdatedAt, imageError, accessToken]);
 
   const image = (
     <Image
@@ -80,11 +93,21 @@ export const Avatar: React.FC<AvatarProps> = ({
   );
 
   if (!hasStatus) {
-    return <View style={[styles.circle, { width: outer, height: outer }, style]}>{image}</View>;
+    return (
+      <View
+        testID={testId}
+        accessibilityLabel={testId}
+        style={[styles.circle, { width: outer, height: outer }, style]}
+      >
+        {image}
+      </View>
+    );
   }
 
   return (
     <View
+      testID={testId}
+      accessibilityLabel={testId}
       style={[
         styles.circle,
         hasOuter && {

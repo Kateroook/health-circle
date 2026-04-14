@@ -46,6 +46,10 @@ describe('AuthController', () => {
     email: 'test@test.com',
     firstName: 'John',
     lastName: 'Doe',
+    status: 'WAS_SAFE',
+    region: 'Kyiv',
+    district: 'Shevchenkivskyi',
+    alertRegionUid: 31,
   };
 
   const mockRequest = {
@@ -154,6 +158,8 @@ describe('AuthController', () => {
       expect(result).toEqual(instanceToPlain(mockUser));
       expect(result).toHaveProperty('id', 'user-123');
       expect(result).toHaveProperty('email', 'test@test.com');
+      expect(result).toHaveProperty('status', 'WAS_SAFE');
+      expect(result).toHaveProperty('alertRegionUid', 31);
     });
   });
 

@@ -4,12 +4,12 @@ import {
   Entity,
   Index,
   JoinColumn,
+  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { ManyToOne } from 'typeorm';
 
 import { AlertsRegionEntity } from '../../alerts/entities/alerts-region.entity';
 import { UserStatus } from '../../common/enums/user-status';
