@@ -20,6 +20,7 @@ import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useToast } from "../../hooks/useToast";
 
 import {
   Alert,
@@ -158,6 +159,7 @@ function EmptyCircles({ onAdd }: { onAdd: () => void }) {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function CirclesScreen() {
+  const { showToast } = useToast();
   const user = useAuthStore().user;
   const { logEvent } = useAnalytics();
 
@@ -263,9 +265,15 @@ export default function CirclesScreen() {
           try {
             await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
             setShowCircleDetail(false);
+            setActiveCircle(null);
             fetchCircles();
+            showToast({ type: "success", title: "Ви покинули коло" });
           } catch {
-            Alert.alert("Помилка", "Не вдалося покинути");
+            showToast({
+              type: "error",
+              title: "Помилка",
+              subtitle: "Не вдалося покинути",
+            });
           }
         },
       },
@@ -281,8 +289,13 @@ export default function CirclesScreen() {
       });
       setIsRenameModalVisible(false);
       fetchCircles();
+      showToast({ type: "success", title: "Назву кола оновлено" });
     } catch {
-      Alert.alert("Помилка", "Не вдалося перейменувати");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося перейменувати",
+      });
     }
   };
 
@@ -304,9 +317,13 @@ export default function CirclesScreen() {
           ),
         };
       });
-      Alert.alert("Успіх", "Запит на перекличку надіслано");
+      showToast({ type: "success", title: "Запит на перекличку надіслано" });
     } catch {
-      Alert.alert("Помилка", "Не вдалося надіслати запит");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося надіслати запит",
+      });
     }
   };
 
@@ -318,9 +335,13 @@ export default function CirclesScreen() {
       setIsMemberModalVisible(false);
       setSelectedMember(null);
       fetchCircles();
-      Alert.alert("Успіх", "Користувача заблоковано");
+      showToast({ type: "success", title: "Користувача заблоковано" });
     } catch {
-      Alert.alert("Помилка", "Не вдалося заблокувати користувача");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося заблокувати користувача",
+      });
     }
   };
 
@@ -331,9 +352,13 @@ export default function CirclesScreen() {
       setIsMemberModalVisible(false);
       setSelectedMember(null);
       fetchCircles();
-      Alert.alert("Успіх", "Ім'я оновлено");
+      showToast({ type: "success", title: "Ім'я оновлено" });
     } catch {
-      Alert.alert("Помилка", "Не вдалося оновити ім'я");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося оновити ім'я",
+      });
     }
   };
 
@@ -341,11 +366,15 @@ export default function CirclesScreen() {
     if (!activeCircle) return;
     try {
       await initiateRollCall(activeCircle.id);
-      Alert.alert("Успіх", "Перекличку розпочато");
+      showToast({ type: "success", title: "Перекличку розпочато", compact: true });
       fetchCircles();
     } catch (error) {
       console.error("Failed to initiate roll call:", error);
-      Alert.alert("Помилка", "Не вдалося розпочати перекличку");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося розпочати перекличку",
+      });
     }
   };
 
@@ -406,6 +435,7 @@ export default function CirclesScreen() {
                   }
                   onPress={async () => {
                     await Clipboard.setStringAsync(activeCircle.inviteCode);
+                    showToast({ type: "success", title: "Скопійовано", compact: true });
                   }}
                   style={{ alignSelf: "flex-start" }}
                   testId="circleDetail:copyCode:button"
@@ -468,43 +498,90 @@ export default function CirclesScreen() {
             members={activeCircle?.members || []}
             onSaveMembers={async (updatedMembers) => {
               if (!activeCircle) return;
-              await apiFetch("/groups", {
-                method: "PUT",
-                body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
-              });
-              setIsActionsVisible(false);
-              fetchCircles();
+              try {
+                await apiFetch("/groups", {
+                  method: "PUT",
+                  body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
+                });
+                setIsActionsVisible(false);
+                fetchCircles();
+                showToast({ type: "success", title: "Склад кола оновлено" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося зберегти склад кола",
+                });
+              }
             }}
             onRename={async (newName) => {
               if (!activeCircle) return;
-              await apiFetch("/groups", {
-                method: "PUT",
-                body: JSON.stringify({ id: activeCircle.id, name: newName }),
-              });
-              setIsActionsVisible(false);
-              fetchCircles();
+              try {
+                await apiFetch("/groups", {
+                  method: "PUT",
+                  body: JSON.stringify({ id: activeCircle.id, name: newName }),
+                });
+                setIsActionsVisible(false);
+                fetchCircles();
+                showToast({ type: "success", title: "Назву кола оновлено" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося перейменувати коло",
+                });
+              }
             }}
             onDelete={async () => {
               if (!activeCircle) return;
-              await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
-              setIsActionsVisible(false);
-              setShowCircleDetail(false);
-              fetchCircles();
+              try {
+                await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
+                setIsActionsVisible(false);
+                setShowCircleDetail(false);
+                setActiveCircle(null);
+                fetchCircles();
+                showToast({ type: "success", title: "Коло видалено" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося видалити коло",
+                });
+              }
             }}
             onLeave={async () => {
               if (!activeCircle) return;
-              await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
-              setIsActionsVisible(false);
-              setShowCircleDetail(false);
-              fetchCircles();
+              try {
+                await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
+                setIsActionsVisible(false);
+                setShowCircleDetail(false);
+                setActiveCircle(null);
+                fetchCircles();
+                showToast({ type: "success", title: "Ви покинули коло" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося покинути коло",
+                });
+              }
             }}
             onRegenerateInvite={async () => {
               if (!activeCircle) return;
-              const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
-                method: "POST",
-              });
-              setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
-              fetchCircles();
+              try {
+                const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
+                  method: "POST",
+                });
+                setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+                fetchCircles();
+                showToast({ type: "success", title: "Код запрошення оновлено", compact: true });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося оновити код",
+                });
+              }
             }}
             onRollCall={handleRollCallConfirmed}
           />
@@ -532,8 +609,17 @@ export default function CirclesScreen() {
                 setIsMemberModalVisible(false);
                 setSelectedMember(null);
                 fetchCircles();
+                showToast({
+                  type: "success",
+                  title: "Учасника видалено з кола",
+                  compact: true,
+                });
               } catch {
-                Alert.alert("Помилка", "Не вдалося видалити учасника");
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося видалити учасника",
+                });
               }
             }}
             onBlock={handleBlockUser}
@@ -595,41 +681,88 @@ export default function CirclesScreen() {
             members={activeCircle?.members || []}
             onSaveMembers={async (updatedMembers) => {
               if (!activeCircle) return;
-              await apiFetch("/groups", {
-                method: "PUT",
-                body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
-              });
-              setIsActionsVisible(false);
-              fetchCircles();
+              try {
+                await apiFetch("/groups", {
+                  method: "PUT",
+                  body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
+                });
+                setIsActionsVisible(false);
+                fetchCircles();
+                showToast({ type: "success", title: "Склад кола оновлено" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося зберегти склад кола",
+                });
+              }
             }}
             onRename={async (newName) => {
               if (!activeCircle) return;
-              await apiFetch("/groups", {
-                method: "PUT",
-                body: JSON.stringify({ id: activeCircle.id, name: newName }),
-              });
-              setIsActionsVisible(false);
-              fetchCircles();
+              try {
+                await apiFetch("/groups", {
+                  method: "PUT",
+                  body: JSON.stringify({ id: activeCircle.id, name: newName }),
+                });
+                setIsActionsVisible(false);
+                fetchCircles();
+                showToast({ type: "success", title: "Назву кола оновлено" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося перейменувати коло",
+                });
+              }
             }}
             onDelete={async () => {
               if (!activeCircle) return;
-              await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
-              setIsActionsVisible(false);
-              fetchCircles();
+              try {
+                await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
+                setIsActionsVisible(false);
+                setActiveCircle(null);
+                fetchCircles();
+                showToast({ type: "success", title: "Коло видалено" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося видалити коло",
+                });
+              }
             }}
             onLeave={async () => {
               if (!activeCircle) return;
-              await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
-              setIsActionsVisible(false);
-              fetchCircles();
+              try {
+                await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
+                setIsActionsVisible(false);
+                setActiveCircle(null);
+                fetchCircles();
+                showToast({ type: "success", title: "Ви покинули коло" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося покинути коло",
+                });
+              }
             }}
             onRegenerateInvite={async () => {
               if (!activeCircle) return;
-              const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
-                method: "POST",
-              });
-              setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
-              fetchCircles();
+              try {
+                const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
+                  method: "POST",
+                });
+                setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+                fetchCircles();
+                showToast({ type: "success", title: "Код запрошення оновлено", compact: true });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося оновити код",
+                });
+              }
             }}
             onRollCall={handleRollCallConfirmed}
           />

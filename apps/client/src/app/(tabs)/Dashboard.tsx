@@ -10,11 +10,12 @@ import { theme } from "@/src/theme/theme";
 import { ScreenIds } from "@/src/utils/testIDs";
 import { useFocusEffect } from "expo-router";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useToast } from "../../hooks/useToast";
 
 import { MemberProfileModal } from "@/src/components/dashboard/MemberProfileModal";
 import { Circle, Member, MyAlertStatus } from "@/src/types";
 import React, { useCallback, useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AlertBanner } from "../../components/dashboard/AlertBanner";
 import { DashboardHeader } from "../../components/dashboard/DashboardHeader";
@@ -24,6 +25,7 @@ import { MemberList } from "../../components/dashboard/MemberList";
 
 // --- DashboardScreen ---
 export default function DashboardScreen() {
+  const { showToast } = useToast();
   const { logEvent } = useAnalytics();
   const user = useAuthStore((s) => s.user);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
@@ -77,8 +79,23 @@ export default function DashboardScreen() {
       await updateMyStatus(newStatus);
       logEvent("update_status", { status: newStatus });
       updateUser({ status: newStatus as any });
+      if (newStatus === "SAFE") {
+        showToast({ type: "success", title: "Статус: у безпеці", compact: true });
+      } else if (newStatus === "DANGER") {
+        showToast({
+          type: "warning",
+          title: "Сигнал надіслано",
+          subtitle: "Учасники ваших кіл отримали сповіщення",
+        });
+      } else {
+        showToast({ type: "success", title: "Статус оновлено", compact: true });
+      }
     } catch (e) {
-      Alert.alert("Помилка", "Не вдалося оновити статус. Перевірте інтернет.");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося оновити статус. Перевірте інтернет.",
+      });
     }
   };
 
@@ -100,9 +117,13 @@ export default function DashboardScreen() {
       await initiatePersonalRollCall(rollCallGroupId, selectedMember.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
       syncDashboardData(); // Refresh data to show updated rollcall status
-      Alert.alert("Успіх", "Запит на перекличку надіслано");
+      showToast({ type: "success", title: "Запит на перекличку надіслано" });
     } catch {
-      Alert.alert("Помилка", "Не вдалося надіслати запит");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося надіслати запит",
+      });
     }
   };
 
@@ -113,9 +134,13 @@ export default function DashboardScreen() {
       logEvent("block_user");
       syncDashboardData();
       handleCloseModal();
-      Alert.alert("Успіх", "Користувача заблоковано");
+      showToast({ type: "success", title: "Користувача заблоковано" });
     } catch {
-      Alert.alert("Помилка", "Не вдалося заблокувати користувача");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося заблокувати користувача",
+      });
     }
   };
 
@@ -126,9 +151,13 @@ export default function DashboardScreen() {
       logEvent("rename_member");
       syncDashboardData();
       handleCloseModal();
-      Alert.alert("Успіх", "Ім'я оновлено");
+      showToast({ type: "success", title: "Ім'я оновлено" });
     } catch {
-      Alert.alert("Помилка", "Не вдалося оновити ім'я");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося оновити ім'я",
+      });
     }
   };
 

@@ -1,6 +1,8 @@
-import React, { type ReactNode } from "react";
+import { ToastContext, ToastStack } from "@/src/components/Toast/ToastProvider";
+import React, { useContext, useEffect, useState, type ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import Modal from "react-native-modal";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { theme } from "@/src/theme/theme";
 
@@ -19,6 +21,14 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
   fullScreen = false,
   testId,
 }) => {
+  const insets = useSafeAreaInsets();
+  const toastCtx = useContext(ToastContext);
+  const [showToasts, setShowToasts] = useState(false);
+
+  useEffect(() => {
+    if (isVisible) setShowToasts(true);
+  }, [isVisible]);
+
   return (
     <Modal
       isVisible={isVisible}
@@ -37,6 +47,7 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
       style={[styles.modal, fullScreen && styles.fullScreenModal]}
       hideModalContentWhileAnimating
       accessibilityViewIsModal
+      onModalWillHide={() => setShowToasts(false)}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -50,6 +61,7 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
           {children}
         </View>
       </KeyboardAvoidingView>
+      {toastCtx && showToasts && <ToastStack insets={{ top: insets.top }} />}
     </Modal>
   );
 };
