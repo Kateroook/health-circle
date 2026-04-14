@@ -48,10 +48,6 @@ export class GroupService {
     return this.userRepository.findOneBy({ id });
   }
 
-  private async updateLastPersonalRollCallAt(id: string): Promise<void> {
-    await this.userRepository.update({ id }, { lastPersonalRollCallAt: new Date() });
-  }
-
   private async syncGroupMembers(groupId: string) {
     const memberships = await this.memberRepository.find({ where: { groupId } });
     const memberIds = memberships.map((m) => m.userId);
@@ -349,49 +345,5 @@ export class GroupService {
     }
 
     return { message: 'Перекличку розпочато' };
-  }
-
-  async initiatePersonalRollCall(groupId: string, targetUserId: string, requesterId: string) {
-    const group = await this.repository.findOne({
-      where: { id: groupId },
-      relations: ['members'],
-    });
-
-    if (!group) throw new NotFoundException('Коло не знайдено');
-    const isMemberRequester = group.members.some((m) => m.userId === requesterId) || group.ownerId === requesterId;
-    if (!isMemberRequester) throw new ForbiddenException('Тільки учасники можуть ініціювати перекличку');
-
-    const isMember = group.members.find((m) => m.userId === targetUserId);
-    if (!isMember) throw new NotFoundException('Користувач не є учасником цього кола');
-
-    const targetUser = await this.findUserById(targetUserId);
-    if (!targetUser) throw new NotFoundException('Користувача не знайдено');
-
-    const graceSeconds = this.configService.get<number>('PERSONAL_ROLL_CALL_GRACE_SECONDS', 15 * 60);
-    const graceThreshold = new Date(Date.now() - graceSeconds * 1000);
-
-    if (targetUser.lastStatusUpdate > graceThreshold) {
-      return { message: 'Користувач нещодавно оновив статус, додатковий запит не потрібен' };
-    }
-
-    await this.updateLastPersonalRollCallAt(targetUserId);
-
-    const tokens = await this.usersService.getTokensForUsers(
-      [targetUserId],
-      NotificationTemplates[NotificationType.PERSONAL_ROLL_CALL].permissionKey,
-    );
-
-    if (tokens.length > 0) {
-      await this.notificationsService.sendMulticastByType(
-        tokens,
-        NotificationType.PERSONAL_ROLL_CALL,
-        { groupName: group.name },
-        {
-          groupId: group.id,
-        },
-      );
-    }
-
-    return { message: 'Вимогу оновлення статусу надіслано' };
   }
 }

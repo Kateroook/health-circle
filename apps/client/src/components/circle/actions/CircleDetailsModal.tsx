@@ -3,8 +3,9 @@ import { useAuthStore } from "@/src/store/authStore";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
+import { initiatePersonalRollCall } from "@/src/api/api";
 import { setContactAlias } from "@/src/api/contacts";
-import { blockUser, initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
+import { blockUser, initiateRollCall } from "@/src/api/groups";
 import { BottomSheetContainer, ModalContainer } from "@/src/components/modal";
 import { theme } from "@/src/theme/theme";
 import { Member } from "@/src/types";
@@ -117,9 +118,9 @@ export default function CircleDetailsModal({
   };
 
   const handlePersonalRollCall = async () => {
-    if (selectedMember && circleId) {
+    if (selectedMember) {
       try {
-        await initiatePersonalRollCall(circleId, selectedMember.id);
+        await initiatePersonalRollCall(selectedMember.id);
         logEvent("initiate_personal_roll_call", { type: "individual" });
         onMemberUpdated(); // Notify parent to refresh member data
         onRollCall();
