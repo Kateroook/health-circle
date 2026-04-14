@@ -1,10 +1,10 @@
 import { ModalProvider } from "@/src/components/modal";
+import { ToastProvider } from "@/src/components/Toast";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Easing, Image, StyleSheet, View } from "react-native";
-import FlashMessage from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { useFcmToken } from "../hooks/useFcmToken";
@@ -308,21 +308,22 @@ export default function RootLayout() {
   }
 
   return (
-    <ModalProvider>
-      <React.Fragment>
-        <StatusBar style="auto" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Protected guard={isLoggedIn}>
-            <Stack.Screen name="(tabs)" />
-          </Stack.Protected>
-          <Stack.Protected guard={!isLoggedIn && !hasCompletedOnboarding}>
-            <Stack.Screen name="(onboarding)/index" />
-          </Stack.Protected>
-          <Stack.Screen name="(auth)" />
-        </Stack>
-        <FlashMessage position="top" />
-      </React.Fragment>
-    </ModalProvider>
+    <ToastProvider>
+      <ModalProvider>
+        <React.Fragment>
+          <StatusBar style="auto" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Protected guard={isLoggedIn}>
+              <Stack.Screen name="(tabs)" />
+            </Stack.Protected>
+            <Stack.Protected guard={!isLoggedIn && !hasCompletedOnboarding}>
+              <Stack.Screen name="(onboarding)/index" />
+            </Stack.Protected>
+            <Stack.Screen name="(auth)" />
+          </Stack>
+        </React.Fragment>
+      </ModalProvider>
+    </ToastProvider>
   );
 }
 

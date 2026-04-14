@@ -11,11 +11,12 @@ import { ScreenIds } from "@/src/utils/testIDs";
 import { Feather as Icon, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useEffect, useState } from "react";
-import { Alert, Dimensions, Image, Modal, ScrollView, StyleSheet, View } from "react-native";
+import { Dimensions, Image, Modal, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../api/api";
 import ConfirmationModal from "../../components/ConfirmationModal";
 import { useFcmToken } from "../../hooks/useFcmToken";
+import { useToast } from "../../hooks/useToast";
 import { useAuthStore } from "../../store/authStore";
 import { useLocationStore } from "../../store/locationStore";
 import { useSettingsStore } from "../../store/settingsStore";
@@ -25,6 +26,7 @@ import { formatErrorMessage } from "../../utils/error.util";
 const { width, height } = Dimensions.get("window");
 
 export default function SettingsScreen() {
+  const { showToast } = useToast();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
@@ -95,7 +97,11 @@ export default function SettingsScreen() {
         body: JSON.stringify({ [key]: value }),
       });
     } catch {
-      Alert.alert("Помилка", "Не вдалося зберегти налаштування");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося зберегти налаштування",
+      });
       fetchNotifSettings();
     }
   };
@@ -131,7 +137,11 @@ export default function SettingsScreen() {
   const handleSave = async () => {
     const errors = validate();
     if (errors.length > 0) {
-      Alert.alert("Помилка", errors.join("\n"));
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: errors.join("\n"),
+      });
       return;
     }
     try {
@@ -151,11 +161,15 @@ export default function SettingsScreen() {
           }),
         ),
       });
-      Alert.alert("Успіх", "Дані оновлено");
+      showToast({ type: "success", title: "Дані оновлено" });
       await refreshProfile();
       setIsEditMode(false);
     } catch (e: any) {
-      Alert.alert("Помилка", e?.message || "Не вдалося оновити дані");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: e?.message || "Не вдалося оновити дані",
+      });
     }
   };
 
@@ -179,9 +193,13 @@ export default function SettingsScreen() {
         });
         if (response?.avatarUpdatedAt) updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
         await refreshProfile();
-        Alert.alert("Успіх", "Аватар оновлено");
+        showToast({ type: "success", title: "Аватар оновлено", compact: true });
       } catch (e: any) {
-        Alert.alert("Помилка", e?.message || "Не вдалося оновити аватар");
+        showToast({
+          type: "error",
+          title: "Помилка",
+          subtitle: e?.message || "Не вдалося оновити аватар",
+        });
       }
     }
   };
@@ -245,15 +263,20 @@ export default function SettingsScreen() {
         });
         await refreshProfile();
       }
-      Alert.alert("Успіх", "Геолокацію оновлено");
+      showToast({ type: "success", title: "Геолокацію оновлено", compact: true });
     } catch (e: any) {
       if (e.message === "LOCATION_PERMISSION_DENIED") {
-        Alert.alert(
-          "Доступ заборонено",
-          "Будь ласка, дозвольте доступ до геолокації в налаштуваннях пристрою.",
-        );
+        showToast({
+          type: "warning",
+          title: "Доступ заборонено",
+          subtitle: "Будь ласка, дозвольте доступ до геолокації в налаштуваннях пристрою.",
+        });
       } else {
-        Alert.alert("Помилка", "Не вдалося оновити геолокацію");
+        showToast({
+          type: "error",
+          title: "Помилка",
+          subtitle: "Не вдалося оновити геолокацію",
+        });
       }
     }
   };
@@ -449,10 +472,11 @@ export default function SettingsScreen() {
                 if (val) {
                   const granted = await requestPermission();
                   if (!granted) {
-                    Alert.alert(
-                      "Дозвіл не отримано",
-                      "Будь ласка, дозвольте сповіщення у налаштуваннях пристрою.",
-                    );
+                    showToast({
+                      type: "warning",
+                      title: "Дозвіл не отримано",
+                      subtitle: "Будь ласка, дозвольте сповіщення у налаштуваннях пристрою.",
+                    });
                     return;
                   }
                 }
@@ -538,9 +562,14 @@ export default function SettingsScreen() {
             setIsDeleteAccountVisible(false);
             try {
               await apiFetch("/users", { method: "DELETE" });
+              showToast({ type: "success", title: "Акаунт видалено", compact: true });
               logout();
             } catch {
-              Alert.alert("Помилка", "Не вдалося видалити акаунт");
+              showToast({
+                type: "error",
+                title: "Помилка",
+                subtitle: "Не вдалося видалити акаунт",
+              });
             }
           }}
           title="Видалити акаунт?"
@@ -827,10 +856,11 @@ export default function SettingsScreen() {
                   if (val) {
                     const granted = await requestPermission();
                     if (!granted) {
-                      Alert.alert(
-                        "Дозвіл не отримано",
-                        "Будь ласка, дозвольте сповіщення у налаштуваннях пристрою.",
-                      );
+                      showToast({
+                        type: "warning",
+                        title: "Дозвіл не отримано",
+                        subtitle: "Будь ласка, дозвольте сповіщення у налаштуваннях пристрою.",
+                      });
                       return;
                     }
                   }
@@ -911,9 +941,14 @@ export default function SettingsScreen() {
           setIsDeleteAccountVisible(false);
           try {
             await apiFetch("/users", { method: "DELETE" });
+            showToast({ type: "success", title: "Акаунт видалено", compact: true });
             logout();
           } catch {
-            Alert.alert("Помилка", "Не вдалося видалити акаунт");
+            showToast({
+              type: "error",
+              title: "Помилка",
+              subtitle: "Не вдалося видалити акаунт",
+            });
           }
         }}
         title="Видалити акаунт?"
@@ -932,8 +967,13 @@ export default function SettingsScreen() {
             await apiFetch(`/users/${user?.id}/avatar`, { method: "DELETE" });
             updateUser({ avatarUpdatedAt: undefined });
             setAvatarUrl(null);
+            showToast({ type: "success", title: "Аватар видалено", compact: true });
           } catch {
-            Alert.alert("Помилка", "Не вдалося видалити аватар");
+            showToast({
+              type: "error",
+              title: "Помилка",
+              subtitle: "Не вдалося видалити аватар",
+            });
           }
         }}
         title="Видалити аватар?"

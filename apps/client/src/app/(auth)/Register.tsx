@@ -8,14 +8,15 @@ import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
-import { showMessage } from "react-native-flash-message";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useToast } from "../../hooks/useToast";
 import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
 
 export default function Register() {
+  const { showToast } = useToast();
   const { logEvent } = useAnalytics();
 
   useEffect(() => {
@@ -148,11 +149,10 @@ export default function Register() {
 
       if (isConflict) setStep(1);
 
-      showMessage({
-        message: "Помилка реєстрації",
-        description: errorMsg,
-        type: "danger",
-        duration: 5000,
+      showToast({
+        type: "error",
+        title: "Помилка реєстрації",
+        subtitle: errorMsg,
       });
     } finally {
       setLoading(false);

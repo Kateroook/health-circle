@@ -2,6 +2,7 @@ import { Button } from "@/src/components/Button";
 import { ListItem } from "@/src/components/ListItem";
 import { Typography } from "@/src/components/typography";
 import { useAnalytics } from "@/src/hooks/useAnalytics";
+import { useToast } from "@/src/hooks/useToast";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { Member } from "@/src/types";
@@ -44,6 +45,7 @@ export default function CircleActionsModal({
   onRollCall,
   onRegenerateInvite,
 }: Props) {
+  const { showToast } = useToast();
   const { logEvent } = useAnalytics();
   const [isRenaming, setIsRenaming] = useState(false);
   const [isEditingMembers, setIsEditingMembers] = useState(false);
@@ -89,6 +91,7 @@ export default function CircleActionsModal({
   const handleCopy = async () => {
     await Clipboard.setStringAsync(inviteCode);
     logEvent("copy_invite_code");
+    showToast({ type: "success", title: "Скопійовано", compact: true });
   };
 
   return (
