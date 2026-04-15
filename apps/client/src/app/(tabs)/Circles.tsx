@@ -4,7 +4,6 @@ import { blockUser, initiateRollCall } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import { ConfirmRollCallModal } from "@/src/components/circle/actions/ConfirmRollCallModal";
-
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
 import { MemberList } from "@/src/components/dashboard/MemberList";
@@ -24,7 +23,6 @@ import { useAnalytics } from "../../hooks/useAnalytics";
 import { useToast } from "../../hooks/useToast";
 
 import {
-  Alert,
   Animated,
   BackHandler,
   Easing,
@@ -255,70 +253,69 @@ export default function CirclesScreen() {
 
   const isOwner = activeCircle && user?.id === activeCircle.owner.id;
 
-  const handleLeave = () => {
-    Alert.alert("Покинути коло?", "Ви впевнені?", [
-      { text: "Скасувати", style: "cancel" },
-      {
-        text: "Покинути",
-        style: "destructive",
-        onPress: async () => {
-          if (!activeCircle) return;
-          try {
-            await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
-            setShowCircleDetail(false);
-            setActiveCircle(null);
-            fetchCircles();
-            showToast({ type: "success", title: "Ви покинули коло" });
-          } catch {
-            showToast({
-              type: "error",
-              title: "Помилка",
-              subtitle: "Не вдалося покинути",
-            });
-          }
-        },
-      },
-    ]);
-  };
+  // const handleLeave = () => {
+  //   Alert.alert("Покинути коло?", "Ви впевнені?", [
+  //     { text: "Скасувати", style: "cancel" },
+  //     {
+  //       text: "Покинути",
+  //       style: "destructive",
+  //       onPress: async () => {
+  //         if (!activeCircle) return;
+  //         try {
+  //           await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
+  //           setShowCircleDetail(false);
+  //           setActiveCircle(null);
+  //           fetchCircles();
+  //           showToast({ type: "success", title: "Ви покинули коло" });
+  //         } catch {
+  //           showToast({
+  //             type: "error",
+  //             title: "Помилка",
+  //             subtitle: "Не вдалося покинути",
+  //           });
+  //         }
+  //       },
+  //     },
+  //   ]);
+  // };
 
-  const handleRenameSubmit = async () => {
-    if (!renameValue.trim() || !activeCircle) return;
-    try {
-      await apiFetch("/groups", {
-        method: "PUT",
-        body: JSON.stringify({ id: activeCircle.id, name: renameValue.trim() }),
-      });
-      setIsRenameModalVisible(false);
-      fetchCircles();
-      showToast({ type: "success", title: "Назву кола оновлено" });
-    } catch {
-      showToast({
-        type: "error",
-        title: "Помилка",
-        subtitle: "Не вдалося перейменувати",
-      });
-    }
-  };
+  // const handleRenameSubmit = async () => {
+  //   if (!renameValue.trim() || !activeCircle) return;
+  //   try {
+  //     await apiFetch("/groups", {
+  //       method: "PUT",
+  //       body: JSON.stringify({ id: activeCircle.id, name: renameValue.trim() }),
+  //     });
+  //     setIsRenameModalVisible(false);
+  //     fetchCircles();
+  //     showToast({ type: "success", title: "Назву кола оновлено" });
+  //   } catch {
+  //     showToast({
+  //       type: "error",
+  //       title: "Помилка",
+  //       subtitle: "Не вдалося перейменувати",
+  //     });
+  //   }
+  // };
 
   const handleRollCall = () => {
     setIsRollCallModalVisible(true);
   };
 
   const handlePersonalRollCall = async (member: Member) => {
+    if (!activeCircle) return;
     try {
       await initiatePersonalRollCall(member.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
-      if (activeCircle) {
-        setActiveCircle((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            members: prev.members.map((m) =>
-              m.id === member.id ? { ...m, lastPersonalRollCallAt: new Date().toISOString() } : m,
-            ),
-          };
-        });
-      }
+      setActiveCircle((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          members: prev.members.map((m) =>
+            m.id === member.id ? { ...m, lastPersonalRollCallAt: new Date().toISOString() } : m,
+          ),
+        };
+      });
       showToast({ type: "success", title: "Запит на перекличку надіслано" });
     } catch {
       showToast({
@@ -797,7 +794,6 @@ const styles = StyleSheet.create({
   },
 
   // ── Skeleton ──────────────────────────────────────────────────────────────
-  // Оновлені стилі для Skeleton, що повторюють CircleItem
   skeletonCard: {
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.radius.xl,
@@ -808,7 +804,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: theme.spacing[16], // Збільшено для відповідності структурі
+    marginBottom: theme.spacing[16],
   },
   skeletonTitle: {
     height: 18,
@@ -832,7 +828,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: theme.colors.border.opaque,
     borderWidth: 2,
-    borderColor: theme.colors.background.secondary, // Створює ефект розрізу між фейковими аватарами
+    borderColor: theme.colors.background.secondary,
   },
 
   // ── Empty state ───────────────────────────────────────────────────────────

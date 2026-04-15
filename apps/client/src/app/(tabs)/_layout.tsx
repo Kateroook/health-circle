@@ -97,6 +97,8 @@ const styles = StyleSheet.create({
     left: 32,
     right: 32,
     height: 56,
+    zIndex: 0,
+    elevation: 0,
     backgroundColor: "#000",
     borderRadius: 30,
     flexDirection: "row",
@@ -109,7 +111,6 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 2,
   },
 
   activePill: {
@@ -119,6 +120,5 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     backgroundColor: "#FFF",
     left: 6,
-    zIndex: 1,
   },
 });

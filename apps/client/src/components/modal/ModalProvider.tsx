@@ -1,4 +1,6 @@
 import React, { createContext, useCallback, useMemo, useState, type ReactNode } from "react";
+import { StyleSheet, View } from "react-native";
+import { FullWindowOverlay } from "react-native-screens";
 import { BottomSheetContainer } from "./BottomSheetContainer";
 import { ModalContainer } from "./ModalContainer";
 
@@ -52,18 +54,30 @@ export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
     <ModalContext.Provider value={value}>
       {children}
 
-      {/* Render each modal in the stack */}
-      {stack.map((entry, index) =>
-        entry.type === "center" ? (
-          <ModalContainer key={entry.id} isVisible={true} onClose={closeModal}>
-            {entry.node}
-          </ModalContainer>
-        ) : (
-          <BottomSheetContainer key={entry.id} isVisible={true} onClose={closeModal}>
-            {entry.node}
-          </BottomSheetContainer>
-        ),
-      )}
+      <FullWindowOverlay>
+        <View pointerEvents="box-none" style={styles.modalLayer}>
+          {/* Render each modal in the stack */}
+          {stack.map((entry) =>
+            entry.type === "center" ? (
+              <ModalContainer key={entry.id} isVisible={true} onClose={closeModal}>
+                {entry.node}
+              </ModalContainer>
+            ) : (
+              <BottomSheetContainer key={entry.id} isVisible={true} onClose={closeModal}>
+                {entry.node}
+              </BottomSheetContainer>
+            ),
+          )}
+        </View>
+      </FullWindowOverlay>
     </ModalContext.Provider>
   );
 };
+
+const styles = StyleSheet.create({
+  modalLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 99999,
+    elevation: 9999,
+  },
+});

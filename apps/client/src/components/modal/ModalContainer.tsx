@@ -1,10 +1,9 @@
-import { ToastContext, ToastStack } from "@/src/components/Toast/ToastProvider";
-import React, { useContext, useEffect, useState, type ReactNode } from "react";
+import React, { useEffect, useRef, type ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import Modal from "react-native-modal";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { theme } from "@/src/theme/theme";
+import { markModalHidden, markModalVisible } from "./modalVisibility";
 
 type ModalContainerProps = {
   isVisible: boolean;
@@ -21,17 +20,32 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
   fullScreen = false,
   testId,
 }) => {
-  const insets = useSafeAreaInsets();
-  const toastCtx = useContext(ToastContext);
-  const [showToasts, setShowToasts] = useState(false);
+  const reportedVisibleRef = useRef(false);
 
   useEffect(() => {
-    if (isVisible) setShowToasts(true);
+    if (isVisible && !reportedVisibleRef.current) {
+      markModalVisible();
+      reportedVisibleRef.current = true;
+    } else if (!isVisible && reportedVisibleRef.current) {
+      markModalHidden();
+      reportedVisibleRef.current = false;
+    }
   }, [isVisible]);
+
+  useEffect(
+    () => () => {
+      if (reportedVisibleRef.current) {
+        markModalHidden();
+        reportedVisibleRef.current = false;
+      }
+    },
+    [],
+  );
 
   return (
     <Modal
       isVisible={isVisible}
+      coverScreen={false}
       onBackdropPress={onClose}
       onBackButtonPress={onClose}
       useNativeDriver
@@ -47,7 +61,6 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
       style={[styles.modal, fullScreen && styles.fullScreenModal]}
       hideModalContentWhileAnimating
       accessibilityViewIsModal
-      onModalWillHide={() => setShowToasts(false)}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -61,7 +74,6 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
           {children}
         </View>
       </KeyboardAvoidingView>
-      {toastCtx && showToasts && <ToastStack insets={{ top: insets.top }} />}
     </Modal>
   );
 };
@@ -71,6 +83,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     margin: 0,
+    zIndex: 99999,
+    elevation: 9999,
   },
   fullScreenModal: {
     margin: 0,
