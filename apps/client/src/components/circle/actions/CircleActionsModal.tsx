@@ -62,6 +62,13 @@ export default function CircleActionsModal({
       setLocalMembers(
         members.filter((m) => m.id !== user?.id).map((m) => ({ ...m, active: true })),
       );
+    } else {
+      setIsRenaming(false);
+      setIsEditingMembers(false);
+      setIsDeleteVisible(false);
+      setIsLeaveVisible(false);
+      setIsRollCallVisible(false);
+      setNewName("");
     }
   }, [members, visible, user?.id]);
 
@@ -95,7 +102,152 @@ export default function CircleActionsModal({
   };
 
   return (
-    <BottomSheetContainer isVisible={visible} onClose={onClose}>
+    <>
+      <BottomSheetContainer isVisible={visible} onClose={onClose}>
+        {/* ===== EDIT MEMBERS MODE ===== */}
+        {isEditingMembers && isOwner && (
+          <View style={styles.section}>
+            <Button
+              shape="round"
+              hierarchy="tertiary"
+              size="xsmall"
+              leadingIcon={
+                <AntDesign name="arrow-left" size={16} color={theme.colors.content.primary} />
+              }
+              onPress={() => setIsEditingMembers(false)}
+              style={{ alignSelf: "flex-start" }}
+            />
+            <Typography variant="h3" weight="bold" style={styles.sectionTitle}>
+              Редагуй склад кола
+            </Typography>
+            <Typography variant="body2" tone="secondary" style={styles.sectionSubtitle}>
+              Видали учасників, яких більше не потрібно відстежувати
+            </Typography>
+
+            <ScrollView style={styles.memberScroll} showsVerticalScrollIndicator={false}>
+              {localMembers.map((m, index) => (
+                <ListItem
+                  key={m.id}
+                  layout="check"
+                  artworkSize="none"
+                  label={`${m.lastName} ${m.firstName}`}
+                  checked={m.active}
+                  onPress={() => toggleMember(m.id)}
+                  showDivider={index < localMembers.length - 1}
+                />
+              ))}
+            </ScrollView>
+
+            <Button
+              label="Зберегти"
+              hierarchy="primary"
+              shape="pill"
+              size="large"
+              onPress={handleSaveMembers}
+              style={{ width: "100%" }}
+            />
+          </View>
+        )}
+
+        {/* ===== MAIN MENU ===== */}
+        {!isEditingMembers && (
+          <View style={styles.section}>
+            <Typography
+              variant="h3"
+              weight="bold"
+              style={styles.modalTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {currentName}
+            </Typography>
+
+            {isOwner && (
+              <View style={styles.inviteContainer}>
+                <Typography variant="subtitle1" weight="semibold" style={styles.inviteText}>
+                  Код: {inviteCode}
+                </Typography>
+                <Button
+                  shape="round"
+                  hierarchy="primary"
+                  size="xsmall"
+                  leadingIcon={
+                    <Feather name="refresh-cw" size={16} color={theme.colors.content.onColor} />
+                  }
+                  onPress={() => {
+                    onRegenerateInvite();
+                    logEvent("regenerate_invite_code");
+                  }}
+                />
+                <Button
+                  shape="round"
+                  hierarchy="primary"
+                  size="xsmall"
+                  leadingIcon={
+                    <Feather name="copy" size={16} color={theme.colors.content.onColor} />
+                  }
+                  onPress={handleCopy}
+                />
+              </View>
+            )}
+
+            <View style={styles.actionButtons}>
+              <Button
+                label="Перекличка"
+                hierarchy="accent"
+                shape="rectangle"
+                size="medium"
+                leadingIcon={<Feather name="rss" size={16} color="#FFF" />}
+                onPress={() => setIsRollCallVisible(true)}
+                style={{ width: "100%", marginBottom: theme.spacing[8] }}
+              />
+
+              {isOwner ? (
+                <>
+                  <Button
+                    label="Перейменувати"
+                    hierarchy="secondary"
+                    shape="rectangle"
+                    size="medium"
+                    onPress={handleRenamePress}
+                    style={{ width: "100%" }}
+                  />
+                  <Button
+                    label="Редагувати склад"
+                    hierarchy="secondary"
+                    shape="rectangle"
+                    size="medium"
+                    onPress={() => setIsEditingMembers(true)}
+                    style={{ width: "100%" }}
+                  />
+                  <Button
+                    label="Видалити"
+                    hierarchy="tertiary"
+                    shape="rectangle"
+                    size="medium"
+                    onPress={() => setIsDeleteVisible(true)}
+                    style={{ width: "100%" }}
+                    textStyle={{ color: theme.colors.negative }}
+                  />
+                </>
+              ) : (
+                <>
+                  <Button
+                    label="Покинути коло"
+                    hierarchy="tertiary"
+                    shape="rectangle"
+                    size="medium"
+                    onPress={() => setIsLeaveVisible(true)}
+                    style={{ width: "100%" }}
+                    textStyle={{ color: theme.colors.negative }}
+                  />
+                </>
+              )}
+            </View>
+          </View>
+        )}
+      </BottomSheetContainer>
+
       <ConfirmationModal
         isVisible={isDeleteVisible}
         onCancel={() => setIsDeleteVisible(false)}
@@ -121,7 +273,7 @@ export default function CircleActionsModal({
         confirmText="Покинути"
         cancelText="Назад"
       />
-      {/* ===== RENAME MODE ===== */}
+
       <RenameModal
         isVisible={isRenaming && isOwner}
         title="Редагуй назву Кола"
@@ -148,148 +300,7 @@ export default function CircleActionsModal({
           onRollCall();
         }}
       />
-
-      {/* ===== EDIT MEMBERS MODE ===== */}
-      {isEditingMembers && isOwner && (
-        <View style={styles.section}>
-          <Button
-            shape="round"
-            hierarchy="tertiary"
-            size="xsmall"
-            leadingIcon={
-              <AntDesign name="arrow-left" size={16} color={theme.colors.content.primary} />
-            }
-            onPress={() => setIsEditingMembers(false)}
-            style={{ alignSelf: "flex-start" }}
-          />
-          <Typography variant="h3" weight="bold" style={styles.sectionTitle}>
-            Редагуй склад кола
-          </Typography>
-          <Typography variant="body2" tone="secondary" style={styles.sectionSubtitle}>
-            Видали учасників, яких більше не потрібно відстежувати
-          </Typography>
-
-          <ScrollView style={styles.memberScroll} showsVerticalScrollIndicator={false}>
-            {localMembers.map((m, index) => (
-              <ListItem
-                key={m.id}
-                layout="check"
-                artworkSize="none"
-                label={`${m.lastName} ${m.firstName}`}
-                checked={m.active}
-                onPress={() => toggleMember(m.id)}
-                showDivider={index < localMembers.length - 1}
-              />
-            ))}
-          </ScrollView>
-
-          <Button
-            label="Зберегти"
-            hierarchy="primary"
-            shape="pill"
-            size="large"
-            onPress={handleSaveMembers}
-            style={{ width: "100%" }}
-          />
-        </View>
-      )}
-
-      {/* ===== MAIN MENU ===== */}
-      {!isEditingMembers && (
-        <View style={styles.section}>
-          <Typography
-            variant="h3"
-            weight="bold"
-            style={styles.modalTitle}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {currentName}
-          </Typography>
-
-          {isOwner && (
-            <View style={styles.inviteContainer}>
-              <Typography variant="subtitle1" weight="semibold" style={styles.inviteText}>
-                Код: {inviteCode}
-              </Typography>
-              <Button
-                shape="round"
-                hierarchy="primary"
-                size="xsmall"
-                leadingIcon={
-                  <Feather name="refresh-cw" size={16} color={theme.colors.content.onColor} />
-                }
-                onPress={() => {
-                  onRegenerateInvite();
-                  logEvent("regenerate_invite_code");
-                }}
-              />
-              <Button
-                shape="round"
-                hierarchy="primary"
-                size="xsmall"
-                leadingIcon={<Feather name="copy" size={16} color={theme.colors.content.onColor} />}
-                onPress={handleCopy}
-              />
-            </View>
-          )}
-
-          <View style={styles.actionButtons}>
-            <Button
-              label="Перекличка"
-              hierarchy="accent"
-              shape="rectangle"
-              size="medium"
-              leadingIcon={<Feather name="rss" size={16} color="#FFF" />}
-              onPress={() => setIsRollCallVisible(true)}
-              style={{ width: "100%", marginBottom: theme.spacing[8] }}
-            />
-
-            {isOwner ? (
-              <>
-                <Button
-                  label="Перейменувати"
-                  hierarchy="secondary"
-                  shape="rectangle"
-                  size="medium"
-                  onPress={handleRenamePress}
-                  style={{ width: "100%" }}
-                />
-                <Button
-                  label="Редагувати склад"
-                  hierarchy="secondary"
-                  shape="rectangle"
-                  size="medium"
-                  onPress={() => setIsEditingMembers(true)}
-                  style={{ width: "100%" }}
-                />
-                <Button
-                  label="Видалити"
-                  hierarchy="tertiary"
-                  shape="rectangle"
-                  size="medium"
-                  onPress={() => setIsDeleteVisible(true)}
-                  style={{ width: "100%" }}
-                  textStyle={{ color: theme.colors.negative }}
-                />
-              </>
-            ) : (
-              <>
-                <Button
-                  label="Покинути коло"
-                  hierarchy="tertiary"
-                  shape="rectangle"
-                  size="medium"
-                  onPress={() => setIsLeaveVisible(true)}
-                  style={{ width: "100%" }}
-                  textStyle={{ color: theme.colors.negative }}
-                />
-              </>
-            )}
-          </View>
-        </View>
-      )}
-    </BottomSheetContainer>
+    </>
   );
 }
 

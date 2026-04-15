@@ -1,10 +1,10 @@
-import { ToastContext, ToastStack } from "@/src/components/Toast/ToastProvider";
-import React, { useContext, useEffect, useState, type ReactNode } from "react";
+import React, { useEffect, useRef, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import Modal from "react-native-modal";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { theme } from "@/src/theme/theme";
+import { markModalHidden, markModalVisible } from "./modalVisibility";
 
 type BottomSheetContainerProps = {
   isVisible: boolean;
@@ -19,21 +19,32 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
   children,
   testId,
 }) => {
-  const insets = useSafeAreaInsets();
-  const toastCtx = useContext(ToastContext);
-  const [showToasts, setShowToasts] = useState(false);
+  const reportedVisibleRef = useRef(false);
 
   useEffect(() => {
-    if (isVisible) {
-      setShowToasts(true);
-    } else {
-      // Hide toasts before close animation starts
-      setShowToasts(false);
+    if (isVisible && !reportedVisibleRef.current) {
+      markModalVisible();
+      reportedVisibleRef.current = true;
+    } else if (!isVisible && reportedVisibleRef.current) {
+      markModalHidden();
+      reportedVisibleRef.current = false;
     }
   }, [isVisible]);
+
+  useEffect(
+    () => () => {
+      if (reportedVisibleRef.current) {
+        markModalHidden();
+        reportedVisibleRef.current = false;
+      }
+    },
+    [],
+  );
+
   return (
     <Modal
       isVisible={isVisible}
+      coverScreen={false}
       onBackdropPress={onClose}
       onBackButtonPress={onClose}
       onSwipeComplete={onClose}
@@ -44,13 +55,16 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
       backdropOpacity={1}
       propagateSwipe
       style={styles.modal}
-      onModalWillHide={() => setShowToasts(false)}
     >
-      <SafeAreaView testID={testId} accessibilityLabel={testId} style={styles.sheet}>
+      <SafeAreaView
+        edges={["bottom"]}
+        testID={testId}
+        accessibilityLabel={testId}
+        style={styles.sheet}
+      >
         <View style={styles.grabber} />
         <View style={styles.container}>{children}</View>
       </SafeAreaView>
-      {toastCtx && showToasts && <ToastStack insets={{ top: insets.top }} />}
     </Modal>
   );
 };
@@ -59,6 +73,8 @@ const styles = StyleSheet.create({
   modal: {
     justifyContent: "flex-end",
     margin: 0,
+    zIndex: 99999,
+    elevation: 9999,
   },
   sheet: {
     backgroundColor: theme.colors.background.secondary,

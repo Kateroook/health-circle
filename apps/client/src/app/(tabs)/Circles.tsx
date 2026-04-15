@@ -4,12 +4,12 @@ import { blockUser, initiateRollCall } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import { ConfirmRollCallModal } from "@/src/components/circle/actions/ConfirmRollCallModal";
-
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
 import { MemberList } from "@/src/components/dashboard/MemberList";
 import { MemberProfileModal } from "@/src/components/dashboard/MemberProfileModal";
 import { CircleDetailSkeleton } from "@/src/components/Skeleton";
+import { CirclesSkeletonList } from "@/src/components/Skeleton/CircleItemSkeleton";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
@@ -24,7 +24,6 @@ import { useAnalytics } from "../../hooks/useAnalytics";
 import { useToast } from "../../hooks/useToast";
 
 import {
-  Alert,
   Animated,
   BackHandler,
   Easing,
@@ -38,66 +37,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-// ─── Skeleton loader for circle items ────────────────────────────────────────
-
-function SkeletonCircleItem() {
-  const shimmer = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(shimmer, {
-          toValue: 0,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [shimmer]);
-
-  const opacity = shimmer.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.6],
-  });
-
-  return (
-    <Animated.View style={[styles.skeletonCard, { opacity }]}>
-      <View style={styles.skeletonHeader}>
-        <View style={styles.skeletonTitle} />
-        <View style={styles.skeletonMenu} />
-      </View>
-
-      {/* Імітація Members (Аватари що накладаються) */}
-      <View style={styles.skeletonMembersRow}>
-        {[0, 1, 2, 3].map((i) => (
-          <View
-            key={i}
-            style={[styles.skeletonAvatarCircle, { marginLeft: i === 0 ? 0 : -12, zIndex: 5 - i }]}
-          />
-        ))}
-      </View>
-    </Animated.View>
-  );
-}
-function CirclesSkeletonList() {
-  return (
-    <View style={styles.listContainer}>
-      {[0, 1, 2].map((i) => (
-        <SkeletonCircleItem key={i} />
-      ))}
-    </View>
-  );
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
@@ -254,51 +193,6 @@ export default function CirclesScreen() {
   }
 
   const isOwner = activeCircle && user?.id === activeCircle.owner.id;
-
-  const handleLeave = () => {
-    Alert.alert("Покинути коло?", "Ви впевнені?", [
-      { text: "Скасувати", style: "cancel" },
-      {
-        text: "Покинути",
-        style: "destructive",
-        onPress: async () => {
-          if (!activeCircle) return;
-          try {
-            await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
-            setShowCircleDetail(false);
-            setActiveCircle(null);
-            fetchCircles();
-            showToast({ type: "success", title: "Ви покинули коло" });
-          } catch {
-            showToast({
-              type: "error",
-              title: "Помилка",
-              subtitle: "Не вдалося покинути",
-            });
-          }
-        },
-      },
-    ]);
-  };
-
-  const handleRenameSubmit = async () => {
-    if (!renameValue.trim() || !activeCircle) return;
-    try {
-      await apiFetch("/groups", {
-        method: "PUT",
-        body: JSON.stringify({ id: activeCircle.id, name: renameValue.trim() }),
-      });
-      setIsRenameModalVisible(false);
-      fetchCircles();
-      showToast({ type: "success", title: "Назву кола оновлено" });
-    } catch {
-      showToast({
-        type: "error",
-        title: "Помилка",
-        subtitle: "Не вдалося перейменувати",
-      });
-    }
-  };
 
   const handleRollCall = () => {
     setIsRollCallModalVisible(true);
@@ -794,45 +688,6 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     marginTop: theme.spacing[16],
-  },
-
-  // ── Skeleton ──────────────────────────────────────────────────────────────
-  // Оновлені стилі для Skeleton, що повторюють CircleItem
-  skeletonCard: {
-    backgroundColor: theme.colors.background.secondary,
-    borderRadius: theme.radius.xl,
-    padding: theme.spacing[16],
-    marginBottom: theme.spacing[12],
-  },
-  skeletonHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: theme.spacing[16], // Збільшено для відповідності структурі
-  },
-  skeletonTitle: {
-    height: 18,
-    width: "40%",
-    borderRadius: 9,
-    backgroundColor: theme.colors.border.opaque,
-  },
-  skeletonMenu: {
-    width: 24,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: theme.colors.border.opaque,
-  },
-  skeletonMembersRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  skeletonAvatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.border.opaque,
-    borderWidth: 2,
-    borderColor: theme.colors.background.secondary, // Створює ефект розрізу між фейковими аватарами
   },
 
   // ── Empty state ───────────────────────────────────────────────────────────

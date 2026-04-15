@@ -7,20 +7,21 @@ import { SkeletonCircle } from "./SkeletonCircle";
 
 export function DashboardSkeleton() {
   return (
-    <View style={styles.section}>
+    <View>
       <View style={styles.statusButtonWrap}>
         <SkeletonCircle size={236} />
       </View>
+      <View style={styles.section}>
+        <SkeletonBox width={120} height={12} borderRadius={6} style={styles.sectionLabel} />
 
-      <SkeletonBox width={120} height={12} borderRadius={6} style={styles.sectionLabel} />
+        <View style={styles.filtersRow}>
+          {[0, 1, 2].map((i) => (
+            <SkeletonBox key={i} width={64} height={32} borderRadius={theme.radius.pill} />
+          ))}
+        </View>
 
-      <View style={styles.filtersRow}>
-        {[0, 1, 2].map((i) => (
-          <SkeletonBox key={i} width={64} height={32} borderRadius={theme.radius.pill} />
-        ))}
+        <MemberListSkeleton count={4} />
       </View>
-
-      <MemberListSkeleton count={4} />
     </View>
   );
 }
@@ -31,6 +32,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.xl,
     padding: theme.spacing[16],
     gap: theme.spacing[8],
+    marginTop: theme.spacing[104],
   },
   statusButtonWrap: {
     alignItems: "center",
