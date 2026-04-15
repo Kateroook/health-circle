@@ -1,5 +1,5 @@
 import { ModalProvider } from "@/src/components/modal";
-import { ToastProvider } from "@/src/components/toast/ToastProvider";
+import { ToastProvider } from "@/src/components/Toast/ToastProvider";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
