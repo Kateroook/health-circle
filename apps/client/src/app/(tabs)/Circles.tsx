@@ -194,69 +194,25 @@ export default function CirclesScreen() {
 
   const isOwner = activeCircle && user?.id === activeCircle.owner.id;
 
-  // const handleLeave = () => {
-  //   Alert.alert("Покинути коло?", "Ви впевнені?", [
-  //     { text: "Скасувати", style: "cancel" },
-  //     {
-  //       text: "Покинути",
-  //       style: "destructive",
-  //       onPress: async () => {
-  //         if (!activeCircle) return;
-  //         try {
-  //           await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
-  //           setShowCircleDetail(false);
-  //           setActiveCircle(null);
-  //           fetchCircles();
-  //           showToast({ type: "success", title: "Ви покинули коло" });
-  //         } catch {
-  //           showToast({
-  //             type: "error",
-  //             title: "Помилка",
-  //             subtitle: "Не вдалося покинути",
-  //           });
-  //         }
-  //       },
-  //     },
-  //   ]);
-  // };
-
-  // const handleRenameSubmit = async () => {
-  //   if (!renameValue.trim() || !activeCircle) return;
-  //   try {
-  //     await apiFetch("/groups", {
-  //       method: "PUT",
-  //       body: JSON.stringify({ id: activeCircle.id, name: renameValue.trim() }),
-  //     });
-  //     setIsRenameModalVisible(false);
-  //     fetchCircles();
-  //     showToast({ type: "success", title: "Назву кола оновлено" });
-  //   } catch {
-  //     showToast({
-  //       type: "error",
-  //       title: "Помилка",
-  //       subtitle: "Не вдалося перейменувати",
-  //     });
-  //   }
-  // };
-
   const handleRollCall = () => {
     setIsRollCallModalVisible(true);
   };
 
   const handlePersonalRollCall = async (member: Member) => {
-    if (!activeCircle) return;
     try {
       await initiatePersonalRollCall(member.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
-      setActiveCircle((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          members: prev.members.map((m) =>
-            m.id === member.id ? { ...m, lastPersonalRollCallAt: new Date().toISOString() } : m,
-          ),
-        };
-      });
+      if (activeCircle) {
+        setActiveCircle((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            members: prev.members.map((m) =>
+              m.id === member.id ? { ...m, lastPersonalRollCallAt: new Date().toISOString() } : m,
+            ),
+          };
+        });
+      }
       showToast({ type: "success", title: "Запит на перекличку надіслано" });
     } catch {
       showToast({
