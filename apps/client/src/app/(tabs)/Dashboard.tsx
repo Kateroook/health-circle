@@ -14,7 +14,7 @@ import { useLoadingState } from "../../hooks/useLoadingState";
 import { useToast } from "../../hooks/useToast";
 
 import { MemberProfileModal } from "@/src/components/dashboard/MemberProfileModal";
-import { DashboardSkeleton } from "@/src/components/Skeleton";
+import { DashboardSkeleton } from "@/src/components/skeleton";
 import { Circle, Member, MyAlertStatus } from "@/src/types";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
