@@ -28,7 +28,7 @@ export const ModalActions: React.FC<ModalActionsProps> = ({
   overlay,
   bottomInset = 0,
   style,
-  gap = theme.spacing[12],
+  gap = theme.spacing[8],
   testId,
 }) => {
   const content = (
@@ -39,32 +39,30 @@ export const ModalActions: React.FC<ModalActionsProps> = ({
         { gap },
       ]}
     >
-      {React.Children.map(children, (child, index) => (
-        <View
-          key={index}
-          style={direction === "column" ? styles.buttonWrapperColumn : styles.buttonWrapperRow}
-        >
-          {child}
-        </View>
-      ))}
+      {React.Children.map(children, (child, index) => {
+        if (!child) return null;
+        return (
+          <View
+            key={index}
+            style={direction === "column" ? styles.buttonWrapperColumn : styles.buttonWrapperRow}
+          >
+            {child}
+          </View>
+        );
+      })}
     </View>
   );
-
-  if (!sticky) {
-    return (
-      <View testID={testId} accessibilityLabel={testId} style={[styles.flexContainer, style]}>
-        {content}
-      </View>
-    );
-  }
 
   return (
     <View
       testID={testId}
-      accessibilityLabel={testId}
-      style={[styles.stickyContainer, { bottom: bottomInset }, style]}
+      style={[
+        sticky ? styles.stickyContainer : styles.flexContainer,
+        sticky && { bottom: bottomInset },
+        style,
+      ]}
     >
-      {overlay && <View style={StyleSheet.absoluteFill}>{overlay}</View>}
+      {sticky && overlay && <View style={StyleSheet.absoluteFill}>{overlay}</View>}
       {content}
     </View>
   );
@@ -84,15 +82,18 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     width: "100%",
+    alignItems: "stretch",
   },
   actionsRow: {
     flexDirection: "row",
+    alignItems: "stretch",
   },
   actionsColumn: {
     flexDirection: "column",
   },
   buttonWrapperRow: {
     flex: 1,
+    justifyContent: "center",
   },
   buttonWrapperColumn: {
     width: "100%",
