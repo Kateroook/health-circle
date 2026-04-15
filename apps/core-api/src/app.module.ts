@@ -90,6 +90,7 @@ import { UsersModule } from './users/users.module';
         FIREBASE_PROJECT_ID: Joi.string().required(),
         FIREBASE_CLIENT_EMAIL: Joi.string().required(),
         FIREBASE_PRIVATE_KEY: Joi.string().required(),
+        CRON_STATUS_REFRESH_RATE: Joi.string().optional().default('*/5 * * * *'),
 
         // Status & Roll-call
         STATUS_EXPIRY_SECONDS: Joi.number().default(8 * 60 * 60),
@@ -98,6 +99,7 @@ import { UsersModule } from './users/users.module';
 
         // Alerts.in.ua
         ALERTS_TOKEN: Joi.string().required(),
+        ALERTS_API_URL: Joi.string().required(),
       }),
     }),
     PostgresModule.register(entities, migrations, subscribers),

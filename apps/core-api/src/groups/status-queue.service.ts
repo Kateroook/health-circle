@@ -24,7 +24,8 @@ export class StatusQueueService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.queueService.schedule('handle-status-transitions', '*/5 * * * *');
+    const refreshRate = this.configService.get<string>('CRON_STATUS_REFRESH_RATE', '*/5 * * * *');
+    await this.queueService.schedule('handle-status-transitions', refreshRate);
     await this.queueService.work('handle-status-transitions', () => this.handleStatusTransitions());
   }
 
