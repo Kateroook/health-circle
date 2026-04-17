@@ -41,21 +41,21 @@ test.describe(
 
     [
       {
-        testName: '[RC-001] Initiate group roll-call by owner',
+        testName: '[GRP-058] Initiate group roll-call by owner',
         role: 'owner',
         expectedStatus: 201,
         tag: '@smoke',
         shouldUpdateDate: true,
       },
       {
-        testName: '[RC-002] Initiate group roll-call by member',
+        testName: '[GRP-059] Initiate group roll-call by member',
         role: 'member',
         expectedStatus: 201,
         tag: '@smoke',
         shouldUpdateDate: true,
       },
       {
-        testName: '[RC-003] Initiate group roll-call by non-member',
+        testName: '[GRP-060] Initiate group roll-call by non-member',
         role: 'non-member',
         expectedStatus: 403,
         tag: '@sanity',
@@ -73,7 +73,7 @@ test.describe(
           else if (options.role === 'member') currentApi = memberApi;
           else currentApi = nonMemberApi;
 
-          const rollCallResult = await currentApi.rollCall.initiateForGroup(ownerGroup.id!);
+          const rollCallResult = await currentApi.groups.initiateGroupRollCall(ownerGroup.id!);
 
           expect(rollCallResult.response.status()).toBe(options.expectedStatus);
 
@@ -89,30 +89,30 @@ test.describe(
     );
 
     test(
-      '[RC-004] Initiate group roll-call for non-existing group',
+      '[GRP-061] Initiate group roll-call for non-existing group',
       {
         tag: '@sanity',
       },
       async ({ api }) => {
-        const roll_callResult = await api.rollCall.initiateForGroup(utils.random.uuid());
+        const roll_callResult = await api.groups.initiateGroupRollCall(utils.random.uuid());
         expect(roll_callResult.response.status()).toBe(404);
       },
     );
 
     test(
-      '[RC-005] Initiate group roll-call without authorization',
+      '[GRP-062] Initiate group roll-call without authorization',
       {
         tag: '@sanity',
       },
       async ({ api }) => {
         await api.groups.clearTokens();
-        const roll_callResult = await api.rollCall.initiateForGroup(utils.random.uuid.toString());
+        const roll_callResult = await api.groups.initiateGroupRollCall(utils.random.uuid.toString());
         expect(roll_callResult.response.status()).toBe(401);
       },
     );
 
     test(
-      '[RC-006] Initiate group roll-call in an empty group',
+      '[GRP-063] Initiate group roll-call in an empty group',
       {
         tag: '@sanity',
       },
@@ -122,43 +122,48 @@ test.describe(
         secondOwnerGroup.id = createResult.data.id;
         secondOwnerGroup.inviteCode = createResult.data.inviteCode;
 
-        const roll_callResult = await api.rollCall.initiateForGroup(secondOwnerGroup.id!);
+        const roll_callResult = await api.groups.initiateGroupRollCall(secondOwnerGroup.id!);
         expect(roll_callResult.response.status()).toBe(201);
       },
     );
 
-    test.skip(
-      "[RC-007] Ignoring group call changes user's status",
+    test(
+      "[GRP-064] Ignoring group call changes user's status",
       {
-        tag: '@sanity',
+        tag: ['@sanity', '@bug'],
       },
       async ({ api }) => {
-        const getMemberBeforeRC = await memberApi.users.getUser(member.id!);
+        await memberApi.users.updateUserStatus({ status: 'SAFE' });
 
-        //sleep function or method (implemented in utils)
+        test.setTimeout(100000);
+        await utils.date.sleep(22000);
 
-        await api.rollCall.initiateForGroup(ownerGroup.id!);
+        await api.groups.initiateGroupRollCall(ownerGroup.id!);
+
+        await utils.date.sleep(42000);
         const getMemberAfterRC = await memberApi.users.getUser(member.id!);
 
-        expect(getMemberAfterRC.data.status).not.toBe(getMemberBeforeRC.data.status);
+        expect(getMemberAfterRC.data.status).toBe('UNKNOWN');
       },
     );
 
-    test.skip(
-      "[RC-008] Group call doesn't changes user\'s status after imidiate responce",
+    test(
+      "[GRP-065] Group call doesn't changes user\'s status after imidiate responce",
       {
         tag: '@sanity',
       },
       async ({ api }) => {
-        const getMemberBeforeRC = await memberApi.users.getUser(member.id!);
+        test.setTimeout(100000);
+        await utils.date.sleep(22000);
 
-        //sleep function or method (implemented in utils)
-
-        await api.rollCall.initiateForGroup(ownerGroup.id!);
+        await api.groups.initiateGroupRollCall(ownerGroup.id!);
         await memberApi.users.updateUserStatus({ status: 'SAFE' });
+
+        await utils.date.sleep(30000);
+
         const getMemberAfterRC = await memberApi.users.getUser(member.id!);
 
-        expect(getMemberAfterRC.data.status).toBe(getMemberBeforeRC.data.status);
+        expect(getMemberAfterRC.data.status).toBe('SAFE');
       },
     );
   },

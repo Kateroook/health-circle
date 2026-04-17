@@ -1,6 +1,6 @@
 import { APIRequestContext, APIResponse } from '@playwright/test';
-import { TestContext } from '../helpers/test-context';
 import { DbCleaner } from '../../db/db-cleaner';
+import { TestContext } from '../helpers/test-context';
 
 /**
  * Результат API запиту з типізованими даними
@@ -20,10 +20,10 @@ export abstract class BaseClient {
   protected baseURL: string;
   protected dbCleaner?: DbCleaner;
 
-  constructor(request: APIRequestContext, context: TestContext, dbCleaner?: DbCleaner) {
+  constructor(request: APIRequestContext, context: TestContext, dbCleaner?: DbCleaner, baseUrl?: string) {
     this.request = request;
     this.context = context;
-    this.baseURL = process.env.API_BASE_URL!;
+    this.baseURL = baseUrl || process.env.API_BASE_URL!;
     this.dbCleaner = dbCleaner;
   }
 

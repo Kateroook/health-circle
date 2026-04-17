@@ -1,8 +1,9 @@
-import React, { type ReactNode } from "react";
+import React, { useEffect, useRef, type ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import Modal from "react-native-modal";
 
 import { theme } from "@/src/theme/theme";
+import { markModalHidden, markModalVisible } from "./modalVisibility";
 
 type ModalContainerProps = {
   isVisible: boolean;
@@ -19,9 +20,32 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
   fullScreen = false,
   testId,
 }) => {
+  const reportedVisibleRef = useRef(false);
+
+  useEffect(() => {
+    if (isVisible && !reportedVisibleRef.current) {
+      markModalVisible();
+      reportedVisibleRef.current = true;
+    } else if (!isVisible && reportedVisibleRef.current) {
+      markModalHidden();
+      reportedVisibleRef.current = false;
+    }
+  }, [isVisible]);
+
+  useEffect(
+    () => () => {
+      if (reportedVisibleRef.current) {
+        markModalHidden();
+        reportedVisibleRef.current = false;
+      }
+    },
+    [],
+  );
+
   return (
     <Modal
       isVisible={isVisible}
+      coverScreen={false}
       onBackdropPress={onClose}
       onBackButtonPress={onClose}
       useNativeDriver
@@ -59,6 +83,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     margin: 0,
+    zIndex: 99999,
+    elevation: 9999,
   },
   fullScreenModal: {
     margin: 0,

@@ -145,3 +145,7 @@ export interface UpdateUserStatusResponse extends UserApiEntity {}
 export interface SaveFcmTokenResponse extends UserApiEntity {}
 
 export type ResetUserPasswordResponse = void;
+
+export interface RollCallResponse {
+  message: string;
+}

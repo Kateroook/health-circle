@@ -1,18 +1,19 @@
-import React from "react";
-import { View, StyleSheet } from "react-native";
 import { Button } from "@/src/components/Button";
+import { MemberProfileView } from "@/src/components/MemberProfileView";
 import { ModalContainer } from "@/src/components/modal/ModalContainer";
 import { theme } from "@/src/theme/theme";
 import { AntDesign } from "@expo/vector-icons";
-import { MemberProfileView } from "@/src/components/MemberProfileView";
+import React, { useState } from "react";
+import { StyleSheet, View } from "react-native";
 
 import { Member } from "@/src/types";
+import { ConfirmRollCallModal } from "./circle/actions/ConfirmRollCallModal";
 
 interface MemberDetailModalProps {
   member: Member | null;
   visible: boolean;
   onClose: () => void;
-  onRollCall?: () => void;
+  onRollCall?: (memberId: string) => void;
   canRollCall?: boolean;
 }
 
@@ -23,29 +24,50 @@ export default function MemberDetailModal({
   onRollCall,
   canRollCall,
 }: MemberDetailModalProps) {
-  return (
-    <ModalContainer isVisible={visible && !!member} onClose={onClose}>
-      {member && (
-        <>
-          <Button
-            shape="round"
-            hierarchy="tertiary"
-            size="small"
-            leadingIcon={<AntDesign name="close" size={16} color={theme.colors.content.primary} />}
-            onPress={onClose}
-            style={styles.closeButton}
-          />
+  const [isRollCallConfirmVisible, setIsRollCallConfirmVisible] = useState(false);
 
-          <View style={{ width: "100%", marginTop: theme.spacing[8] }}>
-            <MemberProfileView
-              member={member}
-              onRollCall={canRollCall ? onRollCall : undefined}
-              onMessage={() => {}}
+  return (
+    <>
+      <ModalContainer isVisible={visible && !!member} onClose={onClose}>
+        {member && (
+          <>
+            <Button
+              shape="round"
+              hierarchy="tertiary"
+              size="small"
+              leadingIcon={
+                <AntDesign name="close" size={16} color={theme.colors.content.primary} />
+              }
+              onPress={onClose}
+              style={styles.closeButton}
             />
-          </View>
-        </>
+
+            <View style={{ width: "100%", marginTop: theme.spacing[8] }}>
+              <MemberProfileView
+                member={member}
+                onRollCall={canRollCall ? onRollCall : undefined}
+                onRequestRollCall={
+                  canRollCall ? () => setIsRollCallConfirmVisible(true) : undefined
+                }
+                onMessage={() => {}}
+              />
+            </View>
+          </>
+        )}
+      </ModalContainer>
+
+      {member && (
+        <ConfirmRollCallModal
+          isVisible={isRollCallConfirmVisible}
+          onCancel={() => setIsRollCallConfirmVisible(false)}
+          onConfirm={async () => {
+            setIsRollCallConfirmVisible(false);
+            onRollCall?.(member.id);
+          }}
+          testId="profile:confirmRollCall:modal"
+        />
       )}
-    </ModalContainer>
+    </>
   );
 }
 

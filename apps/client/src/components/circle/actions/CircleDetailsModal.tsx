@@ -1,18 +1,19 @@
 import { useAnalytics } from "@/src/hooks/useAnalytics";
 import { useAuthStore } from "@/src/store/authStore";
-import { AntDesign } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
+import { initiatePersonalRollCall } from "@/src/api/api";
 import { setContactAlias } from "@/src/api/contacts";
-import { blockUser, initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
-import { Button } from "@/src/components/Button";
-import { BottomSheetContainer, ModalActions, ModalContainer } from "@/src/components/modal";
+import { blockUser, initiateRollCall } from "@/src/api/groups";
+import { BottomSheetContainer, ModalContainer } from "@/src/components/modal";
 import { theme } from "@/src/theme/theme";
 import { Member } from "@/src/types";
 import ConfirmationModal from "../../ConfirmationModal";
 import { MemberProfileView } from "../../MemberProfileView";
+import { ConfirmRollCallModal } from "./ConfirmRollCallModal";
 import CircleDetailsView from "./CircleDetailsView";
+import { RenameModal } from "./RenameModal";
 
 interface Props {
   visible: boolean;
@@ -55,6 +56,8 @@ export default function CircleDetailsModal({
   const [isLeaveVisible, setIsLeaveVisible] = useState(false);
   const [isBlockConfirmVisible, setIsBlockConfirmVisible] = useState(false);
   const [isRemoveConfirmVisible, setIsRemoveConfirmVisible] = useState(false);
+  const [isRollCallConfirmVisible, setIsRollCallConfirmVisible] = useState(false);
+  const [isRenameVisible, setIsRenameVisible] = useState(false);
 
   const user = useAuthStore().user;
   const isOwner = user?.id === ownerId;
@@ -64,6 +67,10 @@ export default function CircleDetailsModal({
     if (visible) {
       setView("details");
       setSelectedMember(null);
+      setIsRollCallConfirmVisible(false);
+      setIsRenameVisible(false);
+      setIsBlockConfirmVisible(false);
+      setIsRemoveConfirmVisible(false);
     }
   }, [visible]);
 
@@ -119,10 +126,11 @@ export default function CircleDetailsModal({
   };
 
   const handlePersonalRollCall = async () => {
-    if (selectedMember && circleId) {
+    if (selectedMember) {
       try {
-        await initiatePersonalRollCall(circleId, selectedMember.id);
+        await initiatePersonalRollCall(selectedMember.id);
         logEvent("initiate_personal_roll_call", { type: "individual" });
+        onMemberUpdated(); // Notify parent to refresh member data
         onRollCall();
       } catch (error) {
         console.error("Failed to initiate personal roll call:", error);
@@ -157,13 +165,51 @@ export default function CircleDetailsModal({
           <MemberProfileView
             member={selectedMember!}
             onRollCall={handlePersonalRollCall}
+            onRequestRollCall={() => setIsRollCallConfirmVisible(true)}
             onRename={handleInternalMemberRename}
+            onRequestRename={() => setIsRenameVisible(true)}
             onBlock={isOwner ? () => setIsBlockConfirmVisible(true) : undefined}
             onRemove={isOwner ? () => setIsRemoveConfirmVisible(true) : undefined}
+            onRequestRemove={isOwner ? () => setIsRemoveConfirmVisible(true) : undefined}
             isOwner={isOwner}
           />
         </View>
       </BottomSheetContainer>
+
+      <ConfirmRollCallModal
+        isVisible={isRollCallConfirmVisible}
+        onCancel={() => setIsRollCallConfirmVisible(false)}
+        onConfirm={async () => {
+          setIsRollCallConfirmVisible(false);
+          await handlePersonalRollCall();
+        }}
+        testId="profile:confirmRollCall:modal"
+      />
+
+      <RenameModal
+        isVisible={isRenameVisible}
+        title="Редагування імʼя"
+        placeholder="Введіть нове імʼя"
+        caption="Це імʼя буде відображатися у вашому колі"
+        initialValue={selectedMember?.fullName || selectedMember?.firstName || ""}
+        onCancel={() => setIsRenameVisible(false)}
+        onSave={async (newName) => {
+          await handleInternalMemberRename(newName);
+          setIsRenameVisible(false);
+        }}
+        extraAction={
+          selectedMember?.isAlias
+            ? {
+                label: "Відновити оригінальне імʼя",
+                onPress: async () => {
+                  await handleInternalMemberRename("");
+                  setIsRenameVisible(false);
+                },
+              }
+            : undefined
+        }
+        testId="profile:rename:modal"
+      />
 
       <ConfirmationModal
         isVisible={isDeleteVisible}

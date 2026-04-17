@@ -1,7 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 import { createJSONStorage, persist, StateStorage } from "zustand/middleware";
-import { apiFetch } from "../api/api";
+import { ApiError, apiFetch } from "../api/api";
 
 // Secure storage for Expo
 const secureStorage: StateStorage = {
@@ -48,10 +48,21 @@ interface AuthStoreState {
 
 const VALID_USER_STATUSES = new Set<User["status"]>(["SAFE", "DANGER", "UNKNOWN", "WAS_SAFE"]);
 
-const normalizeUser = (profile: Partial<User>): User => ({
-  ...(profile as User),
-  status: VALID_USER_STATUSES.has(profile.status as User["status"]) ? profile.status! : "UNKNOWN",
-});
+const resolveUserStatus = (
+  status?: Partial<User>["status"],
+  fallback: User["status"] = "UNKNOWN",
+): User["status"] =>
+  VALID_USER_STATUSES.has(status as User["status"]) ? (status as User["status"]) : fallback;
+
+const normalizeUser = (profile: Partial<User>, currentUser?: User | null): User =>
+  ({
+    ...(currentUser ?? {}),
+    ...(profile as Partial<User>),
+    status: resolveUserStatus(profile.status, currentUser?.status ?? "UNKNOWN"),
+  }) as User;
+
+const isAuthFailure = (error: unknown): error is ApiError =>
+  error instanceof ApiError && (error.status === 401 || error.status === 403);
 
 export const useAuthStore = create<AuthStoreState>()(
   persist(
@@ -65,6 +76,7 @@ export const useAuthStore = create<AuthStoreState>()(
 
       refreshProfile: async () => {
         const token = get().accessToken;
+        const currentUser = get().user;
 
         if (!token) {
           set({
@@ -86,7 +98,7 @@ export const useAuthStore = create<AuthStoreState>()(
           });
 
           set({
-            user: normalizeUser(profile as Partial<User>),
+            user: normalizeUser(profile as Partial<User>, currentUser),
             loading: false,
             isLoggedIn: true,
           });
@@ -111,12 +123,21 @@ export const useAuthStore = create<AuthStoreState>()(
             } catch {}
           }
 
+          if (isAuthFailure(error)) {
+            set({
+              user: null,
+              accessToken: null,
+              refreshToken: null,
+              loading: false,
+              isLoggedIn: false,
+            });
+            return;
+          }
+
           set({
-            user: null,
-            accessToken: null,
-            refreshToken: null,
+            user: currentUser,
             loading: false,
-            isLoggedIn: false,
+            isLoggedIn: true,
           });
         }
       },
@@ -169,7 +190,6 @@ export const useAuthStore = create<AuthStoreState>()(
           await get().refreshProfile();
 
           set({
-            isLoggedIn: true,
             loading: false,
           });
         } catch (error) {
@@ -204,7 +224,7 @@ export const useAuthStore = create<AuthStoreState>()(
       updateUser: (data) => {
         const currentUser = get().user;
         if (currentUser) {
-          set({ user: { ...currentUser, ...data } });
+          set({ user: normalizeUser(data, currentUser) });
         }
       },
     }),
@@ -215,6 +235,7 @@ export const useAuthStore = create<AuthStoreState>()(
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
+        user: state.user,
       }),
 
       // Refresh profile on startup

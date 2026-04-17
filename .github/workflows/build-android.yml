@@ -1,11 +1,20 @@
-name: Build Android APK
+name: Build Android
 
 on:
   workflow_dispatch:
+    inputs:
+      artifact_type:
+        description: 'Artifact Type (apk or aab)'
+        required: true
+        default: 'apk'
+        type: choice
+        options:
+          - apk
+          - aab
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build Android Artifact
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -44,12 +53,21 @@ jobs:
           # Decode the file directly to an absolute path in the workspace
           echo "${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}" | base64 --decode > ${{ github.workspace }}/apps/client/google-services.json
 
-      - name: Build Android APK
+      - name: Build Android Artifact
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL || env.EXPO_PUBLIC_API_URL }}
           GOOGLE_SERVICES_JSON: ${{ github.workspace }}/apps/client/google-services.json
-        run: eas build --platform android --profile preview --local --non-interactive --output build.apk
+        run: |
+          if [ "${{ github.event.inputs.artifact_type }}" == "aab" ]; then
+            PROFILE="production"
+            EXTENSION="aab"
+          else
+            PROFILE="preview"
+            EXTENSION="apk"
+          fi
+          eas build --platform android --profile $PROFILE --local --non-interactive --output build.$EXTENSION
+          echo "EXTENSION=$EXTENSION" >> $GITHUB_ENV
 
       - name: Define Artifact Name
         id: artifact_name
@@ -57,21 +75,21 @@ jobs:
           echo "NAME=health-circle-dev-${{ github.run_number }}-android" >> $GITHUB_OUTPUT
         shell: bash
 
-      - name: Rename APK
-        run: mv build.apk ${{ steps.artifact_name.outputs.NAME }}.apk
+      - name: Rename Artifact
+        run: mv build.${{ env.EXTENSION }} ${{ steps.artifact_name.outputs.NAME }}.${{ env.EXTENSION }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.artifact_name.outputs.NAME }}
-          path: apps/client/${{ steps.artifact_name.outputs.NAME }}.apk
+          path: apps/client/${{ steps.artifact_name.outputs.NAME }}.${{ env.EXTENSION }}
           retention-days: 7
 
       - name: Get Last Successful Head SHA
         id: last_sha
         if: success()
         run: |
-          SHA=$(gh run list --workflow "Build Android APK" --branch ${GITHUB_REF_NAME} --status success --limit 1 --json headSha --jq '.[0].headSha' || echo "")
+          SHA=$(gh run list --workflow "Build Android" --branch ${GITHUB_REF_NAME} --status success --limit 1 --json headSha --jq '.[0].headSha' || echo "")
           echo "SHA=$SHA" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ github.token }}
@@ -114,7 +132,7 @@ jobs:
           
           TEXT="✅ *Android Build Success*
 
-          📦 *Artifact:* ${ARTIFACT_NAME}.apk
+          📦 *Artifact:* ${ARTIFACT_NAME}.${{ env.EXTENSION }}
           🔢 *Run:* ${{ github.run_number }}
           🔗 [Download Artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
 

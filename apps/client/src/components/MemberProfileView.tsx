@@ -1,40 +1,44 @@
-import { AntDesign, Feather, FontAwesome6 } from "@expo/vector-icons";
+import { AntDesign, Feather, FontAwesome6, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
 import { Linking, Platform, StyleSheet, ToastAndroid, TouchableOpacity, View } from "react-native";
+import { useCurrentTime } from "../hooks/useCurrentTime";
 import { theme } from "../theme/theme";
 import { Member } from "../types";
+import { getRollCallText, getStatusText } from "../utils/dateUpdate";
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
-import { ConfirmRollCallModal } from "./circle/actions/ConfirmRollCallModal";
-import { RenameModal } from "./circle/actions/RenameModal";
-import ConfirmationModal from "./ConfirmationModal";
 import { StatusBadge } from "./StatusBadge";
 import { Typography } from "./typography";
-
 interface MemberProfileViewProps {
   member: Member;
-  onRollCall?: () => void;
+  onRollCall?: (memberId: string) => void;
+  onRequestRollCall?: () => void;
   onMessage?: () => void;
   onBlock?: () => void;
   onRemove?: () => void;
+  onRequestRemove?: () => void;
   onRename?: (newName: string) => void;
+  onRequestRename?: () => void;
   isOwner?: boolean;
 }
 
 export const MemberProfileView = ({
-  member,
+  member: initialMember,
   onRollCall,
+  onRequestRollCall,
   onMessage,
   onBlock,
   onRemove,
+  onRequestRemove,
   onRename,
+  onRequestRename,
   isOwner,
 }: MemberProfileViewProps) => {
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
+  const [member, setMember] = useState(initialMember);
   const [copied, setCopied] = useState(false);
-  const [isRemoveModalVisible, setIsRemoveModalVisible] = useState(false);
+
+  const currentTime = useCurrentTime();
 
   const handleContact = () => {
     if (member.phone) {
@@ -106,64 +110,12 @@ export const MemberProfileView = ({
 
   return (
     <View style={styles.container}>
-      {/* Rename Modal */}
-      <RenameModal
-        isVisible={isRenaming}
-        title="Редагування імʼя"
-        placeholder="Введіть нове імʼя"
-        caption="Це імʼя буде відображатися у вашому колі"
-        initialValue={member.fullName || member.firstName}
-        onCancel={() => setIsRenaming(false)}
-        onSave={(newName) => {
-          onRename?.(newName);
-          setIsRenaming(false);
-        }}
-        extraAction={
-          member.isAlias
-            ? {
-                label: "Відновити оригінальне імʼя",
-                onPress: () => {
-                  onRename?.("");
-                  setIsRenaming(false);
-                },
-              }
-            : undefined
-        }
-        testId="profile:rename:modal"
-      />
-
-      {/* Roll Call Modal */}
-      <ConfirmRollCallModal
-        isVisible={isRollCallModalVisible}
-        onCancel={() => setIsRollCallModalVisible(false)}
-        onConfirm={async () => {
-          setIsRollCallModalVisible(false);
-          onRollCall?.();
-        }}
-        testId="profile:confirmRollCall:modal"
-      />
-
-      {/* Remove Modal */}
-      <ConfirmationModal
-        isVisible={isRemoveModalVisible}
-        onCancel={() => setIsRemoveModalVisible(false)}
-        onConfirm={() => {
-          setIsRemoveModalVisible(false);
-          onRemove?.();
-        }}
-        title="Видалити учасника?"
-        message={`${member.fullName || member.firstName} буде видалено з кола`}
-        confirmText="Видалити"
-        cancelText="Назад"
-        confirmStyle="destructive"
-        testId="profile:remove:modal"
-      />
-
       <View style={styles.profileSection}>
         <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="xl" />
         <Typography variant="h2" tone="primary" style={styles.name}>
           {member.fullName || `${member.firstName} ${member.lastName}`}
         </Typography>
+
         <View style={[styles.statusContainer, { flexDirection: "column", gap: theme.spacing[8] }]}>
           <View style={styles.statusContainer}>
             <StatusBadge variant="pill" status={member.status} />
@@ -172,48 +124,47 @@ export const MemberProfileView = ({
                 shape="round"
                 hierarchy="secondary"
                 size="medium"
-                onPress={() => setIsRollCallModalVisible(true)}
+                onPress={() => {
+                  if (onRequestRollCall) {
+                    onRequestRollCall();
+                    return;
+                  }
+                  setMember((prev) => ({
+                    ...prev,
+                    lastPersonalRollCallAt: new Date().toISOString(),
+                  }));
+                  onRollCall(member.id);
+                }}
                 leadingIcon={<Feather name="rss" size={18} color={theme.colors.content.primary} />}
                 style={styles.rollCallIconButton}
                 testId="profile:rollCall:button"
               />
             )}
           </View>
-          <Typography variant="caption" tone="secondary">
-            {member.lastStatusUpdate
-              ? (() => {
-                  const date = new Date(member.lastStatusUpdate);
-                  const now = new Date();
-                  const diffMins = Math.floor((now.getTime() - date.getTime()) / 60000);
-                  const diffHours = Math.floor(diffMins / 60);
 
-                  const timeAgo =
-                    diffMins < 1
-                      ? "щойно"
-                      : diffMins < 60
-                        ? `${diffMins} хв тому`
-                        : diffHours < 24
-                          ? `${diffHours} год тому`
-                          : date.toLocaleDateString("uk-UA", {
-                              day: "2-digit",
-                              month: "2-digit",
-                            });
+          {member.alertStatus?.active && (
+            <View style={styles.alertNotificationRow}>
+              <MaterialCommunityIcons
+                name="bullhorn"
+                size={16}
+                color={theme.colors.content.secondary}
+              />
+              <Typography variant="caption" tone="secondary">
+                Повітряна тривога
+              </Typography>
+            </View>
+          )}
 
-                  const statusLabels: Record<string, string> = {
-                    SAFE: ``,
-                    WAS_SAFE: `нещодавно в безпеці`,
-                    DANGER: `потребує допомоги`,
-                    UNKNOWN: `востаннє відповів(ла)`,
-                  };
-
-                  const label = statusLabels[member.status] ?? "оновив(ла) статус";
-                  return `${label} · ${timeAgo}`;
-                })()
-              : "ще не відповідав(ла)"}
+          <Typography variant="caption" tone="secondary" style={{ textAlign: "center" }}>
+            {member.status === "UNKNOWN" && member.lastPersonalRollCallAt
+              ? getRollCallText(member.lastPersonalRollCallAt, currentTime)
+              : getStatusText(member, currentTime)}
           </Typography>
         </View>
+
         {renderLocation()}
       </View>
+
       <View style={styles.actionsColumn}>
         {onMessage && (
           <Button
@@ -231,7 +182,7 @@ export const MemberProfileView = ({
             hierarchy="secondary"
             shape="rectangle"
             size="medium"
-            onPress={() => setIsRenaming(true)}
+            onPress={() => onRequestRename?.()}
             testId="profile:rename:button"
           />
         )}
@@ -251,7 +202,7 @@ export const MemberProfileView = ({
             hierarchy="tertiary"
             shape="rectangle"
             size="medium"
-            onPress={() => setIsRemoveModalVisible(true)}
+            onPress={() => onRequestRemove?.()}
             textStyle={{ color: theme.colors.negative }}
             testId="profile:remove:button"
           />
@@ -282,6 +233,26 @@ const styles = StyleSheet.create({
   },
   rollCallIconButton: {
     marginLeft: theme.spacing[8],
+  },
+  alertNotificationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing[4],
+    paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[8],
+    borderRadius: theme.spacing[8],
+    backgroundColor: theme.colors.background.secondary,
+  },
+  rollCallNotificationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing[4],
+    paddingHorizontal: theme.spacing[8],
+    paddingVertical: theme.spacing[8],
+    borderRadius: theme.spacing[8],
+    backgroundColor: theme.colors.background.secondary,
   },
   locationContainer: {
     flexDirection: "row",

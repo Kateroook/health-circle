@@ -1,9 +1,11 @@
+import ConfirmationModal from "@/src/components/ConfirmationModal";
+import { useModal } from "@/src/components/modal";
 import { UserStatus } from "@/src/components/StatusBadge";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { useVideoPlayer, VideoView } from "expo-video";
 import React, { useEffect, useRef, useState } from "react";
-import { Alert, Animated, Pressable, StyleSheet, Vibration, View } from "react-native";
+import { Animated, Pressable, StyleSheet, Vibration, View } from "react-native";
 
 const VIDEO_SOURCE: Record<UserStatus, any> = {
   SAFE: require("@/src/assets/animations/status-safe.mp4"),
@@ -61,14 +63,11 @@ export const MainStatusButton: React.FC<MainStatusButtonProps> = ({
 
   const [displayedStatus, setDisplayedStatus] = useState(currentStatus);
   const [previousStatus, setPreviousStatus] = useState<UserStatus | null>(null);
+  const { openModal, closeModal } = useModal();
   const currentOpacity = useRef(new Animated.Value(1)).current;
   const previousOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (currentStatus === "UNKNOWN" && displayedStatus !== "UNKNOWN") {
-      return;
-    }
-
     if (currentStatus === displayedStatus) return;
 
     setPreviousStatus(displayedStatus);
@@ -103,7 +102,7 @@ export const MainStatusButton: React.FC<MainStatusButtonProps> = ({
     ]).start(() => {
       setPreviousStatus(null);
     });
-  }, [currentStatus]);
+  }, [currentStatus, currentOpacity, displayedStatus, previousOpacity, transitionScale]);
 
   const handlePressIn = () => {
     Animated.timing(scale, {
@@ -121,28 +120,62 @@ export const MainStatusButton: React.FC<MainStatusButtonProps> = ({
     }).start();
   };
 
+  const showStatusConfirmation = ({
+    title,
+    message,
+    confirmText,
+    confirmStyle = "default",
+    onConfirm,
+    testId,
+  }: {
+    title: string;
+    message: string;
+    confirmText: string;
+    confirmStyle?: "destructive" | "default";
+    onConfirm: () => void;
+    testId: string;
+  }) => {
+    openModal(
+      <ConfirmationModal
+        isVisible={true}
+        useContainer={false}
+        onCancel={closeModal}
+        onConfirm={() => {
+          closeModal();
+          onConfirm();
+        }}
+        title={title}
+        message={message}
+        cancelText="Скасувати"
+        confirmText={confirmText}
+        confirmStyle={confirmStyle}
+        testId={testId}
+        direction="column"
+      />,
+    );
+  };
+
   const handleShortPress = () => {
     Vibration.vibrate(50);
-    Alert.alert("Оновити статус?", "Ви повідомите іншим, що ви в безпеці.", [
-      { text: "Скасувати", style: "cancel" },
-      { text: "Так, я в безпеці", onPress: () => onUpdateStatus("SAFE") },
-    ]);
+    showStatusConfirmation({
+      title: "Ти в безпеці?",
+      message: "Ми повідомимо твоїм колам, що ти в порядку",
+      confirmText: "Я в безпеці",
+      onConfirm: () => onUpdateStatus("SAFE"),
+      testId: "mainStatus:safeConfirm",
+    });
   };
 
   const handleLongPress = () => {
     Vibration.vibrate([0, 100, 50, 100]);
-    Alert.alert(
-      "🆘 ПОТРІБНА ДОПОМОГА",
-      "Ви збираєтесь відправити сигнал тривоги всім учасникам ваших кіл. Продовжити?",
-      [
-        { text: "Скасувати", style: "cancel" },
-        {
-          text: "ТАК, ПОТРІБНА ДОПОМОГА",
-          style: "destructive",
-          onPress: () => onUpdateStatus("DANGER"),
-        },
-      ],
-    );
+    showStatusConfirmation({
+      title: "Потрібна допомога?",
+      message: "Сигнал тривоги буде миттєво надісланий усім учасникам твоїх кіл",
+      confirmText: "ТАК, ПОТРІБНА ДОПОМОГА",
+      confirmStyle: "destructive",
+      onConfirm: () => onUpdateStatus("DANGER"),
+      testId: "mainStatus:dangerConfirm",
+    });
   };
 
   return (
@@ -211,5 +244,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: theme.spacing[8],
     marginBottom: theme.spacing[48],
+  },
+  destructiveBtn: {
+    backgroundColor: theme.colors.negative,
   },
 });

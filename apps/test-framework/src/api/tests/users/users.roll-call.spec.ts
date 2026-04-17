@@ -6,9 +6,9 @@ import { utils } from '../../../utils/utils';
 import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe(
-  '/api/groups/{id}/members/{userId}/roll-call tests',
+  '/api/{id}/roll-call tests',
   {
-    tag: '@roll-call',
+    tag: '@user',
   },
   async () => {
     let owner: UserEntity;
@@ -41,25 +41,22 @@ test.describe(
 
     [
       {
-        testName: '[RC-009] Initiate personal roll-call by owner',
+        testName: '[USR-069] Initiate personal roll-call by owner',
         role: 'owner',
         tag: '@smoke',
         expectedStatus: 201,
-        shouldUpdateDate: true,
       },
       {
-        testName: '[RC-010] Initiate personal roll-call by member',
+        testName: '[USR-070] Initiate personal roll-call by member',
         role: 'member',
         tag: '@smoke',
         expectedStatus: 201,
-        shouldUpdateDate: true,
       },
       {
-        testName: '[RC-011] Initiate personal roll-call by non-member',
+        testName: '[USR-071] Initiate personal roll-call by non-member',
         role: 'non-member',
         tag: '@sanity',
         expectedStatus: 403,
-        shouldUpdateDate: false,
       },
     ].forEach((options) =>
       test(
@@ -86,44 +83,48 @@ test.describe(
             targetApi = api;
           }
 
-          const rollCallResult = await currentApi.rollCall.initiateForMember(ownerGroup.id!, targetID);
+          if (options.expectedStatus === 201) {
+            test.setTimeout(90000);
+            await utils.date.sleep(25000);
+          }
+
+          const rollCallResult = await currentApi.users.initiatePersonalRollCall(targetID);
 
           expect(rollCallResult.response.status()).toBe(options.expectedStatus);
 
+          const getUser = await targetApi.users.getUser(targetID);
           if (options.expectedStatus === 201) {
-            const getUser = await targetApi.users.getUser(targetID);
-
-            if (options.shouldUpdateDate) {
-              expect(typeof rollCallResult.data.message).toBe('string');
-              expect(rollCallResult.data.message.length).toBeGreaterThan(0);
-              expect(getUser.data.lastPersonalRollCallAt).toBeNull();
-              // expect(getUser.data.lastPersonalRollCallAt).not.toBeNull();
-            }
+            expect(typeof rollCallResult.data.message).toBe('string');
+            expect(rollCallResult.data.message.length).toBeGreaterThan(0);
+            expect(getUser.data.lastPersonalRollCallAt).not.toBeNull();
+          }
+          if (options.expectedStatus === 403) {
+            expect(getUser.data.lastPersonalRollCallAt).toBeNull();
           }
         },
       ),
     );
 
     test(
-      '[RC-012] Initiate personal roll-call for user NOT in group',
+      '[USR-072] Initiate personal roll-call for non-existing user',
       {
         tag: '@sanity',
       },
       async ({ api }) => {
-        const rollCallResult = await api.rollCall.initiateForMember(ownerGroup.id!, nonMember.id!);
+        const rollCallResult = await api.users.initiatePersonalRollCall(utils.random.uuid());
         expect(rollCallResult.response.status()).toBe(404);
       },
     );
 
     test(
-      '[RC-013] Personal roll-call spam protection',
+      '[USR-073] Personal roll-call spam protection',
       {
         tag: '@sanity',
       },
       async ({ api }) => {
         await memberApi.users.updateUserStatus({ status: 'SAFE' });
 
-        const rollCallResult = await api.rollCall.initiateForMember(ownerGroup.id!, member.id!);
+        const rollCallResult = await api.users.initiatePersonalRollCall(member.id!);
 
         expect(rollCallResult.response.status()).toBe(201);
         expect(rollCallResult.data.message.length).toBeGreaterThan(0);
@@ -131,71 +132,65 @@ test.describe(
     );
 
     test(
-      '[RC-014] Initiate personal roll-call without authorization',
+      '[USR-074] Initiate personal roll-call without authorization',
       {
         tag: '@sanity',
       },
       async ({ api }) => {
         await api.groups.clearTokens();
-        const rollCallResult = await api.rollCall.initiateForMember(ownerGroup.id!, member.id!);
+        const rollCallResult = await api.users.initiatePersonalRollCall(member.id!);
         expect(rollCallResult.response.status()).toBe(401);
       },
     );
 
     test(
-      '[RC-015] Initiate personal roll-call for yourself',
+      '[USR-075] Initiate personal roll-call for yourself',
       {
         tag: '@sanity',
       },
       async ({ api }) => {
-        const rollCallResult = await api.rollCall.initiateForMember(ownerGroup.id!, owner.id!);
-        expect(rollCallResult.response.status()).toBe(201);
+        const rollCallResult = await api.users.initiatePersonalRollCall(owner.id!);
+        expect(rollCallResult.response.status()).toBe(400);
       },
     );
 
     test(
-      '[RC-016] Initiate personal roll-call for non-existing user',
+      "[USR-077] Ignoring personal roll-call changes user's status",
       {
-        tag: '@sanity',
+        tag: ['@sanity', '@bug'],
       },
       async ({ api }) => {
-        const rollCallResult = await api.rollCall.initiateForMember(ownerGroup.id!, utils.random.uuid());
-        expect(rollCallResult.response.status()).toBe(404);
-      },
-    );
-
-    test.skip(
-      "[RC-017] Ignoring personal roll-call changes user's status",
-      {
-        tag: '@sanity',
-      },
-      async ({ api }) => {
-        const getMemberBeforeRC = await memberApi.users.getUser(member.id!);
-
-        //sleep function or method (implemented in utils)
-
-        await api.rollCall.initiateForMember(ownerGroup.id!, member.id!);
-        const getMemberAfterRC = await memberApi.users.getUser(member.id!);
-
-        expect(getMemberAfterRC.data.status).not.toBe(getMemberBeforeRC.data.status);
-      },
-    );
-
-    test.skip(
-      "[RC-018] Personal roll-call doesn't changes user's status after imidiate responce",
-      {
-        tag: '@sanity',
-      },
-      async ({ api }) => {
-        const getMemberBeforeRC = await memberApi.users.getUser(member.id!);
-
-        //sleep function or method (implemented in utils)
-
-        await api.rollCall.initiateForMember(ownerGroup.id!, member.id!);
         await memberApi.users.updateUserStatus({ status: 'SAFE' });
+
+        test.setTimeout(100000);
+        await utils.date.sleep(22000);
+
+        await api.users.initiatePersonalRollCall(member.id!);
+
+        await utils.date.sleep(42000);
         const getMemberAfterRC = await memberApi.users.getUser(member.id!);
 
-        expect(getMemberAfterRC.data.status).not.toBe(getMemberBeforeRC.data.status);
+        expect(getMemberAfterRC.data.status).toBe('UNKNOWN');
+      },
+    );
+
+    test(
+      "[USR-078] Personal roll-call doesn't changes user's status after imidiate responce",
+      {
+        tag: '@sanity',
+      },
+      async ({ api }) => {
+        test.setTimeout(100000);
+        await utils.date.sleep(22000);
+
+        await api.users.initiatePersonalRollCall(member.id!);
+        await memberApi.users.updateUserStatus({ status: 'SAFE' });
+
+        await utils.date.sleep(30000);
+
+        const getMemberAfterRC = await memberApi.users.getUser(member.id!);
+
+        expect(getMemberAfterRC.data.status).toBe('SAFE');
       },
     );
   },

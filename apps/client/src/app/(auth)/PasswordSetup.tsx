@@ -6,24 +6,17 @@ import { ScreenIds } from "@/src/utils/testIDs";
 import { Feather as Icon } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { showMessage } from "react-native-flash-message";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useToast } from "../../hooks/useToast";
 import { useAuthStore } from "../../store/authStore";
 import { formatErrorMessage } from "../../utils/error.util";
 import { validatePasswordComplexity } from "../../utils/passwordValidation.util";
 
 export default function PasswordSetup() {
+  const { showToast } = useToast();
   const { logEvent } = useAnalytics();
   const { email } = useLocalSearchParams<{ email: string }>();
   const login = useAuthStore((state) => state.login);
@@ -72,12 +65,6 @@ export default function PasswordSetup() {
         throw new Error("Не вдалося визначити email для автоматичного входу");
       }
       await login(normalizedEmail, password);
-      showMessage({
-        message: "Успіх",
-        description: "Ваш акаунт успішно підтверджено. Ви вже увійшли в застосунок.",
-        type: "success",
-        duration: 3000,
-      });
       logEvent("sign_up", { method: "form" });
       router.replace("/LocationPermissionScreen");
     } catch (e: any) {
@@ -96,9 +83,13 @@ export default function PasswordSetup() {
       });
       logEvent("resend_code");
       setCountdown(60);
-      Alert.alert("Успіх", "Код надіслано повторно");
+      showToast({ type: "success", title: "Код надіслано повторно" });
     } catch (e: any) {
-      Alert.alert("Помилка", formatErrorMessage(e));
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: formatErrorMessage(e),
+      });
     }
   }
 

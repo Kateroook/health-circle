@@ -5,10 +5,12 @@
   "main": "index.js",
   "scripts": {
     "start:emulator": "npx tsx ./src/scripts/start-emulator.ts",
+    "build:apk:dev": "npx tsx ./src/scripts/build-apk.ts --dev",
+    "build:apk:prod": "npx tsx ./src/scripts/build-apk.ts --prod",
     "test:mobile:run": "npm run start:emulator && npx wdio run ./src/mobile/wdio.conf.ts",
-    "test:api": "npx playwright test",
-    "build:apk": "cd ../client && rm -rf android && npx expo prebuild --platform android --clean && cd android && ./gradlew assembleRelease",
-    "test:mobile:e2e": "npm run build:apk && npm run test:mobile:run"
+    "test:mobile:e2e:dev": "npm run build:apk:dev && npm run test:mobile:run",
+    "test:mobile:e2e:prod": "npm run build:apk:prod && npm run test:mobile:run",
+    "test:api": "npx playwright test"
   },
   "keywords": [],
   "author": "",
