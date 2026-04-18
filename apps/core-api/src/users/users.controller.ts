@@ -186,6 +186,8 @@ export class UsersController {
   }
 
   @Post(':id/roll-call')
+  @ApiBearerAuth(AuthStrategies.userJwtAccess)
+  @UseGuards(UserJwtAccessGuard)
   @ApiOperation({ summary: 'Initiate a personal roll call for a user' })
   @ApiOkResponse({ description: 'Personal roll call initiated successfully' })
   async initiatePersonalRollCall(@Param('id') userId: string, @Req() req: AuthRequest) {
