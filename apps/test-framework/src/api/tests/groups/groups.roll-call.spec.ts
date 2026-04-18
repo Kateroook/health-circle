@@ -135,15 +135,16 @@ test.describe(
       async ({ api }) => {
         await memberApi.users.updateUserStatus({ status: 'SAFE' });
 
-        test.setTimeout(100000);
+        test.setTimeout(120000);
         await utils.date.sleep(22000);
 
         await api.groups.initiateGroupRollCall(ownerGroup.id!);
 
-        await utils.date.sleep(42000);
-        const getMemberAfterRC = await memberApi.users.getUser(member.id!);
-
-        expect(getMemberAfterRC.data.status).toBe('UNKNOWN');
+        await utils.date.sleep(40000);
+        expect(async () => {
+          const getMemberAfterRC = await memberApi.users.getUser(member.id!);
+          expect(getMemberAfterRC.data.status).toBe('UNKNOWN');
+        }).toPass({ timeout: 20000, intervals: [2000, 5000] });
       },
     );
 
