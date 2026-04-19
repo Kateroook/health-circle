@@ -86,7 +86,7 @@ export default function TabLayout() {
     <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <CustomTabBar {...props} />}>
       <Tabs.Screen name="Dashboard" />
       <Tabs.Screen name="Circles" />
-      <Tabs.Screen name="Settings" />
+      <Tabs.Screen name="settings" />
     </Tabs>
   );
 }
