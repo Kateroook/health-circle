@@ -142,7 +142,7 @@ describe('GroupService', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockImplementation((key) => {
-              if (key === 'ROLL_CALL_TIMEOUT_MINUTES') return 60;
+              if (key === 'ROLL_CALL_TIMEOUT_SECONDS') return 60 * 60;
               return null;
             }),
           },

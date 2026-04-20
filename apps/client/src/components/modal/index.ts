@@ -5,6 +5,7 @@
  */
 export { ModalProvider } from "./ModalProvider";
 export { useModal } from "./useModal";
+export { useAnyModalVisible } from "./modalVisibility";
 export { ModalContainer } from "./ModalContainer";
 export { BottomSheetContainer } from "./BottomSheetContainer";
 export { ModalHeader } from "./ModalHeader";

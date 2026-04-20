@@ -7,7 +7,6 @@ import { Feather as Icon } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Alert,
   Dimensions,
   Image,
   KeyboardAvoidingView,
@@ -21,12 +20,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useToast } from "../../hooks/useToast";
 import { formatErrorMessage } from "../../utils/error.util";
 import { validatePasswordComplexity } from "../../utils/passwordValidation.util";
 
 const { width, height } = Dimensions.get("window");
 
 export default function ResetPassword() {
+  const { showToast } = useToast();
   const { logEvent } = useAnalytics();
   const { email } = useLocalSearchParams<{ email: string }>();
 
@@ -87,9 +88,13 @@ export default function ResetPassword() {
         body: JSON.stringify({ email }),
       });
       setCountdown(60);
-      Alert.alert("Успіх", "Код надіслано повторно на вашу пошту");
+      showToast({ type: "success", title: "Код надіслано повторно на вашу пошту" });
     } catch (e: any) {
-      Alert.alert("Помилка", formatErrorMessage(e));
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: formatErrorMessage(e),
+      });
     }
   }
 

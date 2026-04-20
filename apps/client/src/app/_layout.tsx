@@ -1,10 +1,11 @@
 import { ModalProvider } from "@/src/components/modal";
+import { ToastProvider } from "@/src/components/Toast/ToastProvider";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Easing, Image, StyleSheet, View } from "react-native";
-import FlashMessage from "react-native-flash-message";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { useFcmToken } from "../hooks/useFcmToken";
 import { useLocation } from "../hooks/useLocation";
@@ -26,89 +27,44 @@ const useAppFonts = () => {
 
 // ─── Custom Loader ────────────────────────────────────────────────────────────
 
-function CustomLoader({ onFinish }: { onFinish: () => void }) {
-  // Icon entrance
+const TEXT_IN_MS = 300;
+const EXIT_PAUSE_MIN_MS = 800;
+const EXIT_PAUSE_MAX_MS = 1200;
+
+function CustomLoader({
+  fontsLoaded,
+  authLoading,
+  onFinish,
+}: {
+  fontsLoaded: boolean;
+  authLoading: boolean;
+  onFinish: () => void;
+}) {
+  const onFinishRef = useRef(onFinish);
+  onFinishRef.current = onFinish;
+
+  const fontsLoadedRef = useRef(fontsLoaded);
+  fontsLoadedRef.current = fontsLoaded;
+  const authLoadingRef = useRef(authLoading);
+  authLoadingRef.current = authLoading;
+
   const iconScale = useRef(new Animated.Value(0)).current;
   const iconOpacity = useRef(new Animated.Value(0)).current;
 
-  // Title entrance
-  const titleTranslateY = useRef(new Animated.Value(18)).current;
+  const titleTranslateY = useRef(new Animated.Value(12)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
-
-  // Tagline entrance
+  const taglineTranslateY = useRef(new Animated.Value(8)).current;
   const taglineOpacity = useRef(new Animated.Value(0)).current;
 
-  // Dots (breathing pulse)
   const dot1 = useRef(new Animated.Value(0.3)).current;
   const dot2 = useRef(new Animated.Value(0.3)).current;
   const dot3 = useRef(new Animated.Value(0.3)).current;
 
-  // Exit: whole screen fades + scales slightly up
   const screenOpacity = useRef(new Animated.Value(1)).current;
   const screenScale = useRef(new Animated.Value(1)).current;
 
-  useEffect(() => {
-    // 1. Icon bounce-in
-    Animated.sequence([
-      Animated.parallel([
-        Animated.spring(iconScale, {
-          toValue: 1,
-          tension: 60,
-          friction: 5,
-          useNativeDriver: true,
-        }),
-        Animated.timing(iconOpacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]),
-      // 2. Title slides up
-      Animated.parallel([
-        Animated.timing(titleTranslateY, {
-          toValue: 0,
-          duration: 420,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(titleOpacity, {
-          toValue: 1,
-          duration: 420,
-          useNativeDriver: true,
-        }),
-      ]),
-      // 3. Tagline fades in
-      Animated.timing(taglineOpacity, {
-        toValue: 1,
-        duration: 350,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      // 4. Pulse dots
-      startDotLoop();
-
-      // 5. After a short pause, exit animation
-      setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(screenOpacity, {
-            toValue: 0,
-            duration: 500,
-            easing: Easing.in(Easing.cubic),
-            useNativeDriver: true,
-          }),
-          Animated.timing(screenScale, {
-            toValue: 1.06,
-            duration: 500,
-            easing: Easing.in(Easing.cubic),
-            useNativeDriver: true,
-          }),
-        ]).start(onFinish);
-      }, 1400);
-    });
-  }, []);
-
-  const pulseDot = (anim: Animated.Value, delay: number) =>
-    Animated.loop(
+  function pulseDot(anim: Animated.Value, delay: number) {
+    return Animated.loop(
       Animated.sequence([
         Animated.delay(delay),
         Animated.timing(anim, {
@@ -125,57 +81,180 @@ function CustomLoader({ onFinish }: { onFinish: () => void }) {
         }),
       ]),
     );
+  }
 
-  const startDotLoop = () => {
-    pulseDot(dot1, 0).start();
-    pulseDot(dot2, 180).start();
-    pulseDot(dot3, 360).start();
+  const textEntranceDoneRef = useRef(false);
+  const exitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dotLoopsRef = useRef<ReturnType<typeof pulseDot>[]>([]);
+
+  const scheduleExitIfReady = () => {
+    if (!fontsLoadedRef.current || authLoadingRef.current || !textEntranceDoneRef.current) return;
+    if (exitTimeoutRef.current !== null) return;
+
+    const pauseMs =
+      EXIT_PAUSE_MIN_MS + Math.round(Math.random() * (EXIT_PAUSE_MAX_MS - EXIT_PAUSE_MIN_MS));
+    exitTimeoutRef.current = setTimeout(() => {
+      exitTimeoutRef.current = null;
+      Animated.parallel([
+        Animated.timing(screenOpacity, {
+          toValue: 0,
+          duration: 550,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(screenScale, {
+          toValue: 1.06,
+          duration: 550,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start(() => onFinishRef.current());
+    }, pauseMs);
   };
+
+  const scheduleExitIfReadyRef = useRef(scheduleExitIfReady);
+  scheduleExitIfReadyRef.current = scheduleExitIfReady;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    Animated.parallel([
+      Animated.spring(iconScale, {
+        toValue: 1,
+        tension: 60,
+        friction: 5,
+        useNativeDriver: true,
+      }),
+      Animated.timing(iconOpacity, {
+        toValue: 1,
+        duration: 280,
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (!finished || cancelled) return;
+      dotLoopsRef.current = [pulseDot(dot1, 0), pulseDot(dot2, 180), pulseDot(dot3, 360)];
+      dotLoopsRef.current.forEach((l) => l.start());
+    });
+
+    return () => {
+      cancelled = true;
+      dotLoopsRef.current.forEach((l) => l.stop());
+      dotLoopsRef.current = [];
+      if (exitTimeoutRef.current) {
+        clearTimeout(exitTimeoutRef.current);
+        exitTimeoutRef.current = null;
+      }
+    };
+  }, [dot1, dot2, dot3, iconOpacity, iconScale]);
+
+  useEffect(() => {
+    if (!fontsLoaded) return;
+
+    let cancelled = false;
+
+    titleTranslateY.setValue(12);
+    titleOpacity.setValue(0);
+    taglineTranslateY.setValue(8);
+    taglineOpacity.setValue(0);
+    textEntranceDoneRef.current = false;
+
+    Animated.parallel([
+      Animated.timing(titleTranslateY, {
+        toValue: 0,
+        duration: TEXT_IN_MS,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(titleOpacity, {
+        toValue: 1,
+        duration: TEXT_IN_MS,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(taglineTranslateY, {
+        toValue: 0,
+        duration: TEXT_IN_MS,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(taglineOpacity, {
+        toValue: 1,
+        duration: TEXT_IN_MS,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (!finished || cancelled) return;
+      textEntranceDoneRef.current = true;
+      scheduleExitIfReadyRef.current();
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fontsLoaded]);
+
+  useEffect(() => {
+    scheduleExitIfReadyRef.current();
+  }, [fontsLoaded, authLoading]);
 
   return (
     <Animated.View
       style={[styles.loaderRoot, { opacity: screenOpacity, transform: [{ scale: screenScale }] }]}
     >
-      {/* Icon */}
-      <Animated.View
-        style={{
-          opacity: iconOpacity,
-          transform: [{ scale: iconScale }],
-          marginBottom: 16,
-        }}
-      >
-        <Image
-          source={require("../assets/images/icon.png")}
-          style={styles.icon}
-          resizeMode="contain"
-        />
-      </Animated.View>
+      <SafeAreaView style={styles.loaderSafe} edges={["top", "bottom"]}>
+        {/* Icon */}
+        <Animated.View
+          style={{
+            opacity: iconOpacity,
+            transform: [{ scale: iconScale }],
+            marginBottom: 16,
+          }}
+        >
+          <Image
+            source={require("../assets/images/icon.png")}
+            style={styles.icon}
+            resizeMode="contain"
+          />
+        </Animated.View>
 
-      {/* App name */}
-      <Animated.Text
-        style={[
-          styles.appName,
-          {
-            opacity: titleOpacity,
-            transform: [{ translateY: titleTranslateY }],
-          },
-        ]}
-      >
-        HealthCircle
-      </Animated.Text>
+        <View style={styles.loaderTextColumn}>
+          {fontsLoaded ? (
+            <>
+              <Animated.Text
+                style={[
+                  styles.appName,
+                  {
+                    opacity: titleOpacity,
+                    transform: [{ translateY: titleTranslateY }],
+                  },
+                ]}
+              >
+                HealthCircle
+              </Animated.Text>
+              <Animated.Text
+                style={[
+                  styles.tagline,
+                  {
+                    opacity: taglineOpacity,
+                    transform: [{ translateY: taglineTranslateY }],
+                  },
+                ]}
+              >
+                {/* твій простір для спокою */}
+                завжди будьте на зв’язку з близькими
+              </Animated.Text>
+            </>
+          ) : null}
+        </View>
 
-      {/* Tagline */}
-      <Animated.Text style={[styles.tagline, { opacity: taglineOpacity }]}>
-        {/* твій простір для спокою */}
-        завжди будьте на зв’язку з близькими
-      </Animated.Text>
-
-      {/* Breathing dots */}
-      <View style={styles.dotsRow}>
-        {[dot1, dot2, dot3].map((anim, i) => (
-          <Animated.View key={i} style={[styles.dot, { opacity: anim }]} />
-        ))}
-      </View>
+        {/* Breathing dots */}
+        <View style={styles.dotsRow}>
+          {[dot1, dot2, dot3].map((anim, i) => (
+            <Animated.View key={i} style={[styles.dot, { opacity: anim }]} />
+          ))}
+        </View>
+      </SafeAreaView>
     </Animated.View>
   );
 }
@@ -184,11 +263,12 @@ function CustomLoader({ onFinish }: { onFinish: () => void }) {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
-  const { loading, user } = useAuthStore();
+  const { loading: authLoading, user } = useAuthStore();
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const hasCompletedOnboarding = useAuthStore((s) => s.hasCompletedOnboarding);
 
   const [loaderDone, setLoaderDone] = useState(false);
+  const handleLoaderFinish = useCallback(() => setLoaderDone(true), []);
 
   useFcmToken();
   useLocation();
@@ -212,32 +292,38 @@ export default function RootLayout() {
   }, [fontError]);
 
   useEffect(() => {
-    if (fontsLoaded && !loading) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, loading]);
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
-  // Show custom loader while fonts / auth are loading OR loader animation not done
-  if (!fontsLoaded || loading || !loaderDone) {
-    return <CustomLoader onFinish={() => setLoaderDone(true)} />;
+  const showLoader = !loaderDone;
+
+  if (showLoader) {
+    return (
+      <CustomLoader
+        fontsLoaded={fontsLoaded}
+        authLoading={authLoading}
+        onFinish={handleLoaderFinish}
+      />
+    );
   }
 
   return (
-    <ModalProvider>
-      <React.Fragment>
-        <StatusBar style="auto" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Protected guard={isLoggedIn}>
-            <Stack.Screen name="(tabs)" />
-          </Stack.Protected>
-          <Stack.Protected guard={!isLoggedIn && !hasCompletedOnboarding}>
-            <Stack.Screen name="(onboarding)/index" />
-          </Stack.Protected>
-          <Stack.Screen name="(auth)" />
-        </Stack>
-        <FlashMessage position="top" />
-      </React.Fragment>
-    </ModalProvider>
+    <ToastProvider>
+      <ModalProvider>
+        <React.Fragment>
+          <StatusBar style="auto" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Protected guard={isLoggedIn}>
+              <Stack.Screen name="(tabs)" />
+            </Stack.Protected>
+            <Stack.Protected guard={!isLoggedIn && !hasCompletedOnboarding}>
+              <Stack.Screen name="(onboarding)/index" />
+            </Stack.Protected>
+            <Stack.Screen name="(auth)" />
+          </Stack>
+        </React.Fragment>
+      </ModalProvider>
+    </ToastProvider>
   );
 }
 
@@ -252,8 +338,18 @@ const styles = StyleSheet.create({
   loaderRoot: {
     flex: 1,
     backgroundColor: BG,
+  },
+  loaderSafe: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 28,
+  },
+  loaderTextColumn: {
+    width: "100%",
+    maxWidth: 400,
+    alignItems: "center",
+    marginBottom: 40,
   },
   glowRing: {
     position: "absolute",
@@ -274,13 +370,16 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     color: TEXT_DARK,
     marginBottom: 8,
+    textAlign: "center",
   },
   tagline: {
     fontFamily: "Karla-Regular",
     fontSize: 14,
     color: TEXT_MUTED,
     letterSpacing: 0.3,
-    marginBottom: 40,
+    textAlign: "center",
+    lineHeight: 22,
+    width: "100%",
   },
   dotsRow: {
     flexDirection: "row",

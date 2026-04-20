@@ -24,7 +24,8 @@ export class StatusQueueService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.queueService.schedule('handle-status-transitions', '*/5 * * * *');
+    const refreshRate = this.configService.get<string>('CRON_STATUS_REFRESH_RATE', '*/5 * * * *');
+    await this.queueService.schedule('handle-status-transitions', refreshRate);
     await this.queueService.work('handle-status-transitions', () => this.handleStatusTransitions());
   }
 
@@ -35,8 +36,8 @@ export class StatusQueueService implements OnModuleInit {
   }
 
   private async handleRollCallTimeouts() {
-    const timeoutMinutes = this.configService.get<number>('ROLL_CALL_TIMEOUT_MINUTES', 60);
-    const timeoutThreshold = new Date(Date.now() - timeoutMinutes * 60 * 1000);
+    const timeoutSeconds = this.configService.get<number>('ROLL_CALL_TIMEOUT_SECONDS', 60 * 60);
+    const timeoutThreshold = new Date(Date.now() - timeoutSeconds * 1000);
 
     const groupsWithRecentRollCall = await this.groupRepository.find({
       where: {
@@ -106,8 +107,8 @@ export class StatusQueueService implements OnModuleInit {
   }
 
   private async handleStatusExpiry() {
-    const expiryHours = this.configService.get<number>('STATUS_EXPIRY_HOURS', 8);
-    const expiryThreshold = new Date(Date.now() - expiryHours * 60 * 60 * 1000);
+    const expirySeconds = this.configService.get<number>('STATUS_EXPIRY_SECONDS', 8 * 60 * 60);
+    const expiryThreshold = new Date(Date.now() - expirySeconds * 1000);
 
     const expiredUsers = await this.userRepository.find({
       where: {

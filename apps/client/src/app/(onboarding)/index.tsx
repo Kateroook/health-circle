@@ -24,8 +24,8 @@ const IS_COMPACT_HEIGHT = SCREEN_HEIGHT < 760;
 const PAGE_HORIZONTAL_PADDING = 16;
 const COPY_BLOCK_WIDTH = Math.min(361, SCREEN_WIDTH - PAGE_HORIZONTAL_PADDING * 2);
 const COPY_BLOCK_MIN_HEIGHT = 150;
-const SLIDE_TOP_PADDING = IS_COMPACT_HEIGHT ? 48 : 58;
-const COPY_TO_ARTWORK_GAP = 28;
+const SLIDE_TOP_PADDING = IS_COMPACT_HEIGHT ? 44 : 54;
+const COPY_TO_ARTWORK_GAP = 24;
 const PHONE_ART_WIDTH = 247;
 const PHONE_ART_HEIGHT = 500;
 const REFERENCE_SCREEN_WIDTH = 390;
@@ -33,16 +33,16 @@ const REFERENCE_PHONE_TOP = 247;
 const REFERENCE_PHONE_LEFT = (REFERENCE_SCREEN_WIDTH - PHONE_ART_WIDTH) / 2;
 
 const onboardingDecorations = {
-  arrowLeft: require("@/src/assets/images/onboarding/arrow-left.png"),
-  arrowRight: require("@/src/assets/images/onboarding/arrow-right.png"),
-  arrowUp: require("@/src/assets/images/onboarding/arrow-up.png"),
-  burst: require("@/src/assets/images/onboarding/burst.png"),
-  dashedLineDown: require("@/src/assets/images/onboarding/dashed-line-down.png"),
-  dashedLine: require("@/src/assets/images/onboarding/dashed-line.png"),
-  sparkles: require("@/src/assets/images/onboarding/sparkles.png"),
+  arrow1: require("@/src/assets/images/onboarding/Arrow 1.png"),
+  arrow2: require("@/src/assets/images/onboarding/Arrow 2.png"),
+  arrow22: require("@/src/assets/images/onboarding/Arrow 2-2.png"),
+  arrow3: require("@/src/assets/images/onboarding/Arrow 3.png"),
+  arrow32: require("@/src/assets/images/onboarding/Arrow 3-2.png"),
+  sparkVector: require("@/src/assets/images/onboarding/Spark vector.png"),
+  vector: require("@/src/assets/images/onboarding/Vector.png"),
 } as const;
 
-type SlideKey = "status" | "mood" | "circles";
+type SlideKey = "status" | "circles" | "circleDetails" | "rollCall" | "memberProfile";
 
 type SlideDecoration = {
   key: string;
@@ -88,79 +88,25 @@ const slides: Slide[] = [
     title: "Один дотик,\nі близькі знають",
     subtitle:
       "Познач, що з тобою все гаразд під час тривоги. Близькі миттєво отримають сповіщення, навіть без інтернету.",
-    image: require("@/src/assets/images/onboarding/onbord-mob1.png"),
+    image: require("@/src/assets/images/onboarding/Main Screen mockup.png"),
     decorations: [
       createDecoration({
         key: "status-arrow",
-        source: onboardingDecorations.arrowLeft,
-        width: 92,
-        height: 86.5,
-        top: 388,
-        left: 252,
+        source: onboardingDecorations.arrow1,
+        width: 90,
+        height: 69,
+        top: 438,
+        left: 260,
         rotation: 0,
       }),
       createDecoration({
-        key: "status-dashed-line",
-        source: onboardingDecorations.dashedLine,
-        width: 35.5,
-        height: 35.3,
-        top: 727,
-        left: 46,
+        key: "status-spark",
+        source: onboardingDecorations.sparkVector,
+        width: 34,
+        height: 36,
+        top: 711,
+        left: 43,
         rotation: 0,
-      }),
-    ],
-  },
-  {
-    key: "mood",
-    title: "Відстежуй настрій",
-    subtitle:
-      "Зрозумій як твій настрій змінюється з часом, помічай важливі інсайти в собі та інших",
-    image: require("@/src/assets/images/onboarding/onbord-mob2.png"),
-    decorations: [
-      createDecoration({
-        key: "mood-arrow",
-        source: onboardingDecorations.arrowRight,
-        width: 96,
-        height: 52.4,
-        top: 485,
-        left: 25,
-        rotation: 0,
-      }),
-      createDecoration({
-        key: "mood-left-sparkles",
-        source: onboardingDecorations.sparkles,
-        width: 73.6,
-        height: 64.9,
-        top: 344,
-        left: 0,
-        rotation: -24.9,
-      }),
-      createDecoration({
-        key: "mood-right-sparkles",
-        source: onboardingDecorations.sparkles,
-        width: 87.8,
-        height: 77.4,
-        top: 321,
-        left: 298.5,
-        rotation: -174.6,
-      }),
-      createDecoration({
-        key: "mood-burst-top",
-        source: onboardingDecorations.burst,
-        width: 15.9,
-        height: 17.7,
-        top: 317,
-        left: 41,
-        rotation: -2.3,
-      }),
-      createDecoration({
-        key: "mood-burst-bottom",
-        source: onboardingDecorations.burst,
-        width: 15.9,
-        height: 17.7,
-        top: 335,
-        left: 25,
-        rotation: -2.3,
       }),
     ],
   },
@@ -168,24 +114,78 @@ const slides: Slide[] = [
     key: "circles",
     title: "Створюй свої Кола",
     subtitle: "Додавай найближчих до нового або приєднуйся до існуючого кола за кодом",
-    image: require("@/src/assets/images/onboarding/onbord-mob3.png"),
+    image: require("@/src/assets/images/onboarding/Circles mockup.png"),
     decorations: [
       createDecoration({
         key: "circles-arrow",
-        source: onboardingDecorations.arrowUp,
-        width: 50,
-        height: 83.6,
-        top: 314.1,
-        left: 295.5,
+        source: onboardingDecorations.arrow2,
+        width: 58,
+        height: 97,
+        top: 303,
+        left: 290,
         rotation: 0,
       }),
       createDecoration({
-        key: "circles-dashed-line",
-        source: onboardingDecorations.dashedLineDown,
-        width: 33.2,
-        height: 33.2,
-        top: 743,
-        left: 153,
+        key: "circles-vector",
+        source: onboardingDecorations.vector,
+        width: 23,
+        height: 17.5,
+        top: 752,
+        left: 185,
+        rotation: 0,
+      }),
+    ],
+  },
+  {
+    key: "circleDetails",
+    title: "Будь в курсі безпеки\nблизьких",
+    subtitle:
+      "Запускай перекличку, відстежуй статуси учасників Кола та миттєво реагуй на сигнали тривоги",
+    image: require("@/src/assets/images/onboarding/Circle Details mockup.png"),
+    decorations: [
+      createDecoration({
+        key: "details-arrow",
+        source: onboardingDecorations.arrow3,
+        width: 67,
+        height: 102,
+        top: 286,
+        left: 286,
+        rotation: 0,
+      }),
+    ],
+  },
+  {
+    key: "rollCall",
+    title: "Перекличка одним\nдотиком",
+    subtitle:
+      "Не витрачай час на повідомлення кожному. Один тап - і все Коло отримає запит про стан безпеки",
+    image: require("@/src/assets/images/onboarding/Circle Rollcall Request mockup.png"),
+    decorations: [
+      createDecoration({
+        key: "rollcall-arrow",
+        source: onboardingDecorations.arrow32,
+        width: 86,
+        height: 46.8,
+        top: 487,
+        left: 256,
+        rotation: 0,
+      }),
+    ],
+  },
+  {
+    key: "memberProfile",
+    title: "Швидкий зв'язок з\nучасником",
+    subtitle:
+      "Надсилайте персональні повідомлення або миттєві запити статусу, щоб переконатися, що все гаразд",
+    image: require("@/src/assets/images/onboarding/Member Profile Modal mockup.png"),
+    decorations: [
+      createDecoration({
+        key: "member-arrow",
+        source: onboardingDecorations.arrow22,
+        width: 101,
+        height: 48,
+        top: 591,
+        left: 46,
         rotation: 0,
       }),
     ],
@@ -231,15 +231,17 @@ export default function OnboardingScreen() {
       <StatusBar style="dark" hidden />
       <View style={styles.container}>
         {!isAuthPage && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Закрити онбординг"
-            onPress={handleSkipToAuth}
-            style={styles.closeButton}
-            testID="onboarding:close:button"
-          >
-            <Feather name="x" size={12} color={theme.colors.content.onColor} />
-          </Pressable>
+          <View style={styles.skipRow}>
+            <Button
+              label="Пропустити"
+              hierarchy="tertiary"
+              size="small"
+              shape="rectangle"
+              onPress={handleSkipToAuth}
+              style={styles.skipButton}
+              testId="onboarding:close:button"
+            />
+          </View>
         )}
 
         <ScrollView
@@ -257,7 +259,7 @@ export default function OnboardingScreen() {
               slide={slide}
               index={index}
               activeIndex={activeIndex}
-              pageCount={pageCount}
+              pageCount={slides.length}
               onScrollToPage={scrollToPage}
             />
           ))}
@@ -443,17 +445,19 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  closeButton: {
+  skipRow: {
     position: "absolute",
-    top: IS_COMPACT_HEIGHT ? 10 : 14,
-    right: 12,
-    width: 20,
-    height: 20,
-    borderRadius: 999,
-    backgroundColor: "#1F2024",
-    alignItems: "center",
-    justifyContent: "center",
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: "flex-end",
+    paddingHorizontal: theme.spacing[16],
+    paddingTop: theme.spacing[6],
     zIndex: 10,
+  },
+  skipButton: {
+    minHeight: 32,
+    paddingHorizontal: theme.spacing[6],
   },
   page: {
     width: SCREEN_WIDTH,
@@ -468,7 +472,7 @@ const styles = StyleSheet.create({
   copyBlock: {
     width: COPY_BLOCK_WIDTH,
     minHeight: COPY_BLOCK_MIN_HEIGHT,
-    gap: 10,
+    gap: 8,
     marginBottom: COPY_TO_ARTWORK_GAP,
   },
   centeredText: {
@@ -504,7 +508,6 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: "center",
     justifyContent: "center",
-    width: 56,
     marginBottom: 8,
   },
   dot: {

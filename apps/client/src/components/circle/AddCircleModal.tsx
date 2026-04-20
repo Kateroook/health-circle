@@ -5,10 +5,11 @@ import { theme } from "@/src/theme/theme";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React, { useState } from "react";
-import { Alert, Image, Share, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { Image, Share, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useToast } from "../../hooks/useToast";
 import { formatErrorMessage } from "../../utils/error.util";
 import { Button } from "../Button";
 import { Typography } from "../typography";
@@ -20,6 +21,7 @@ interface AddCircleModalProps {
 }
 
 const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpdated }) => {
+  const { showToast } = useToast();
   const { logEvent } = useAnalytics();
   const [activeTab, setActiveTab] = useState<"join" | "create">("join");
 
@@ -35,6 +37,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(generatedCode);
+    showToast({ type: "success", title: "Скопійовано", compact: true });
   };
 
   // --- CREATE CIRCLE ---
@@ -50,9 +53,10 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
       setGeneratedCode(code);
       setCreateStep(2);
       if (onUpdated) onUpdated();
+      showToast({ type: "success", title: "Коло створено", compact: true });
     } catch (error: any) {
       const msg = formatErrorMessage(error, "Не вдалося створити коло. Спробуйте ще раз.");
-      Alert.alert("Помилка", msg);
+      showToast({ type: "error", title: "Помилка", subtitle: msg });
       console.error("Create circle error:", error);
     } finally {
       setIsCreating(false);
@@ -62,7 +66,11 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
   // --- JOIN CIRCLE ---
   const handleJoinCircle = async () => {
     if (joinCode.length !== 6) {
-      Alert.alert("Помилка", "Будь ласка, введіть повний код");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Будь ласка, введіть повний код",
+      });
       return;
     }
     const code = joinCode;
@@ -73,12 +81,12 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
         body: JSON.stringify({ code }),
       });
       logEvent("join_circle");
-      Alert.alert("Успіх", "Ви приєдналися до кола");
+      showToast({ type: "success", title: "Ви приєдналися до кола" });
       if (onUpdated) onUpdated();
       onClose();
     } catch (error: any) {
       const msg = formatErrorMessage(error, "Не вдалося приєднатися до кола. Перевірте код.");
-      Alert.alert("Помилка", msg);
+      showToast({ type: "error", title: "Помилка", subtitle: msg });
       console.error("Join circle error:", error);
     } finally {
       setIsJoining(false);

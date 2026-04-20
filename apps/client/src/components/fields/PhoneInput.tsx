@@ -22,6 +22,7 @@ const COUNTRY_CODES = [
 
 export interface PhoneInputProps extends Omit<TextFieldProps, "value" | "onChangeText"> {
   value: string;
+  testId?: string;
   onChangeText: (text: string) => void;
 }
 

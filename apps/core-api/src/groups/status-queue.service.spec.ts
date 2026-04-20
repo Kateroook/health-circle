@@ -44,8 +44,8 @@ describe('StatusQueueService', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn().mockImplementation((key) => {
-              if (key === 'ROLL_CALL_TIMEOUT_MINUTES') return 60;
-              if (key === 'STATUS_EXPIRY_HOURS') return 8;
+              if (key === 'ROLL_CALL_TIMEOUT_SECONDS') return 60 * 60;
+              if (key === 'STATUS_EXPIRY_SECONDS') return 8 * 60 * 60;
               return null;
             }),
           },
@@ -101,12 +101,12 @@ describe('StatusQueueService', () => {
       expect(usersService.updateStatus).toHaveBeenCalledWith('user-1', UserStatus.UNKNOWN, { memberUserIds: ['user-1'] });
     });
 
-    it('should respect ROLL_CALL_TIMEOUT_MINUTES from config', async () => {
+    it('should respect ROLL_CALL_TIMEOUT_SECONDS from config', async () => {
       // Mock 30 minutes instead of default 60
       const configService = (service as any).configService as jest.Mocked<ConfigService>;
       configService.get.mockImplementation((key) => {
-        if (key === 'ROLL_CALL_TIMEOUT_MINUTES') return 30;
-        return 60; // default for others
+        if (key === 'ROLL_CALL_TIMEOUT_SECONDS') return 30 * 60;
+        return 60 * 60; // default for others
       });
 
       const fortyMinutesAgo = new Date(Date.now() - 40 * 60 * 1000);
@@ -136,8 +136,8 @@ describe('StatusQueueService', () => {
 
       // Reset mock for other tests
       configService.get.mockImplementation((key) => {
-        if (key === 'ROLL_CALL_TIMEOUT_MINUTES') return 60;
-        if (key === 'STATUS_EXPIRY_HOURS') return 8;
+        if (key === 'ROLL_CALL_TIMEOUT_SECONDS') return 60 * 60;
+        if (key === 'STATUS_EXPIRY_SECONDS') return 8 * 60 * 60;
         return null;
       });
     });

@@ -1,9 +1,9 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity } from "react-native";
+import { StyleSheet } from "react-native";
 
 import { theme } from "@/src/theme/theme";
+import { Button } from "./Button";
 import { ModalActions, ModalContainer, ModalHeader } from "./modal";
-import { Typography } from "./typography";
 
 interface ConfirmationModalProps {
   isVisible: boolean;
@@ -16,8 +16,9 @@ interface ConfirmationModalProps {
   confirmStyle?: "destructive" | "default";
   isLoading?: boolean;
   testId?: string;
+  useContainer?: boolean;
+  direction?: "row" | "column";
 }
-
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   isVisible,
   onCancel,
@@ -29,73 +30,67 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   confirmStyle = "destructive",
   isLoading = false,
   testId,
+  useContainer = true,
+  direction = "row",
 }) => {
-  if (!isVisible) {
-    return null;
-  }
+  if (!isVisible) return null;
 
-  return (
-    <ModalContainer isVisible={isVisible} onClose={onCancel} testId={testId}>
+  const cancelButton = (
+    <Button
+      label={cancelText}
+      hierarchy="secondary"
+      size="medium"
+      shape="rectangle"
+      onPress={onCancel}
+      disabled={isLoading}
+      testId={testId ? `${testId}:cancel:button` : undefined}
+      style={styles.fullWidth} // Ensure it fills the wrapper
+    />
+  );
+
+  const confirmButton = (
+    <Button
+      label={isLoading ? "..." : confirmText}
+      hierarchy="primary"
+      size="medium"
+      shape="rectangle"
+      onPress={onConfirm}
+      disabled={isLoading}
+      style={[styles.fullWidth, confirmStyle === "destructive" && styles.destructiveBtn]}
+      testId={testId ? `${testId}:confirm:button` : undefined}
+    />
+  );
+
+  const content = (
+    <>
       <ModalHeader
         title={title}
         description={message}
         testId={testId ? `${testId}:header` : undefined}
       />
-      <ModalActions testId={testId ? `${testId}:actions` : undefined}>
-        <TouchableOpacity
-          style={[styles.btn, styles.cancelBtn]}
-          onPress={onCancel}
-          disabled={isLoading}
-          testID={testId ? `${testId}:cancel:button` : undefined}
-          accessibilityLabel={testId ? `${testId}:cancel:button` : undefined}
-        >
-          <Typography variant="subtitle1" weight="semibold" tone="primary">
-            {cancelText}
-          </Typography>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.btn,
-            confirmStyle === "destructive" ? styles.destructiveBtn : styles.confirmBtn,
-            isLoading && styles.disabled,
-          ]}
-          onPress={onConfirm}
-          disabled={isLoading}
-          testID={testId ? `${testId}:confirm:button` : undefined}
-          accessibilityLabel={testId ? `${testId}:confirm:button` : undefined}
-        >
-          <Typography
-            variant="subtitle1"
-            tone={confirmStyle === "destructive" ? "onColor" : "onColor"}
-          >
-            {isLoading ? "..." : confirmText}
-          </Typography>
-        </TouchableOpacity>
+      <ModalActions testId={testId ? `${testId}:actions` : undefined} direction={direction}>
+        {/* In Column: Confirm is top. In Row: Cancel is left (order depends on your UX) */}
+        {direction === "column" ? confirmButton : cancelButton}
+        {direction === "column" ? cancelButton : confirmButton}
       </ModalActions>
+    </>
+  );
+
+  return useContainer ? (
+    <ModalContainer isVisible={isVisible} onClose={onCancel} testId={testId}>
+      {content}
     </ModalContainer>
+  ) : (
+    content
   );
 };
 
 const styles = StyleSheet.create({
-  btn: {
-    height: theme.spacing[48],
-    borderRadius: theme.radius.lg,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cancelBtn: {
-    backgroundColor: theme.colors.background.tertiary,
-  },
   destructiveBtn: {
     backgroundColor: theme.colors.negative,
   },
-  confirmBtn: {
-    backgroundColor: theme.colors.primaryB,
-  },
-  disabled: {
-    opacity: 0.6,
+  fullWidth: {
+    width: "100%",
   },
 });
-
 export default ConfirmationModal;
