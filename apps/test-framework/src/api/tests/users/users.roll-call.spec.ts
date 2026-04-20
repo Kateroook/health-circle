@@ -20,6 +20,14 @@ test.describe(
 
     let ownerGroup: GroupEntity;
 
+    test.setTimeout(120000);
+
+    enum time_intervals {
+      t_20s = 20000,
+      t_30s = 30000,
+      t_40s = 40000,
+    }
+
     test.beforeEach(async ({ spawnUser, spawnApi, api }) => {
       owner = await spawnUser();
       await api.auth.login({ identifier: owner.email, password: owner.password });
@@ -84,8 +92,7 @@ test.describe(
           }
 
           if (options.expectedStatus === 201) {
-            test.setTimeout(90000);
-            await utils.date.sleep(25000);
+            await utils.date.sleep(time_intervals.t_30s);
           }
 
           const rollCallResult = await currentApi.users.initiatePersonalRollCall(targetID);
@@ -128,6 +135,9 @@ test.describe(
 
         expect(rollCallResult.response.status()).toBe(201);
         expect(rollCallResult.data.message.length).toBeGreaterThan(0);
+
+        const getUser = await memberApi.users.getUser(member.id!);
+        expect(getUser.data.lastPersonalRollCallAt).toBeNull();
       },
     );
 
@@ -162,34 +172,31 @@ test.describe(
       async ({ api }) => {
         await memberApi.users.updateUserStatus({ status: 'SAFE' });
 
-        test.setTimeout(120000);
-
-        await utils.date.sleep(22000);
+        await utils.date.sleep(time_intervals.t_30s);
 
         await api.users.initiatePersonalRollCall(member.id!);
 
-        await utils.date.sleep(40000);
+        await utils.date.sleep(time_intervals.t_40s);
 
         await expect(async () => {
           const getMemberAfterRC = await memberApi.users.getUser(member.id!);
           expect(getMemberAfterRC.data.status).toBe('UNKNOWN');
-        }).toPass({ timeout: 20000, intervals: [2000, 5000] });
+        }).toPass({ timeout: time_intervals.t_20s, intervals: [2000, 5000] });
       },
     );
 
     test(
-      "[USR-078] Personal roll-call doesn't changes user's status after imidiate responce",
+      "[USR-078] Personal roll-call doesn't changes user's status after imidiate response",
       {
         tag: '@sanity',
       },
       async ({ api }) => {
-        test.setTimeout(100000);
-        await utils.date.sleep(22000);
+        await utils.date.sleep(time_intervals.t_20s);
 
         await api.users.initiatePersonalRollCall(member.id!);
         await memberApi.users.updateUserStatus({ status: 'SAFE' });
 
-        await utils.date.sleep(30000);
+        await utils.date.sleep(time_intervals.t_30s);
 
         const getMemberAfterRC = await memberApi.users.getUser(member.id!);
 
