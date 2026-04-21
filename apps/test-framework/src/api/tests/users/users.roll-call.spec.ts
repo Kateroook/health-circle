@@ -1,3 +1,4 @@
+import { timeout } from 'src/utils/wait-helper';
 import { ApiClientFactory } from '../../../core/api/api-client-factory';
 import { GroupFactory } from '../../../core/data/factories/group-factory';
 import { GroupEntity } from '../../../core/types/entites/group-interface';
@@ -8,7 +9,7 @@ import { expect, test } from '../../fixtures/api-fixture';
 test.describe(
   '/api/{id}/roll-call tests',
   {
-    tag: '@user',
+    tag: ['@user', '@roll-call'],
   },
   async () => {
     let owner: UserEntity;
@@ -21,12 +22,6 @@ test.describe(
     let ownerGroup: GroupEntity;
 
     test.setTimeout(120000);
-
-    enum time_intervals {
-      t_20s = 20000,
-      t_30s = 30000,
-      t_40s = 40000,
-    }
 
     test.beforeEach(async ({ spawnUser, spawnApi, api }) => {
       owner = await spawnUser();
@@ -92,7 +87,7 @@ test.describe(
           }
 
           if (options.expectedStatus === 201) {
-            await utils.date.sleep(time_intervals.t_30s);
+            await utils.wait.sleep(timeout.gracePeriod + timeout.short);
           }
 
           const rollCallResult = await currentApi.users.initiatePersonalRollCall(targetID);
@@ -147,7 +142,7 @@ test.describe(
         tag: '@sanity',
       },
       async ({ api }) => {
-        await api.groups.clearTokens();
+        api.groups.clearTokens();
         const rollCallResult = await api.users.initiatePersonalRollCall(member.id!);
         expect(rollCallResult.response.status()).toBe(401);
       },
@@ -172,16 +167,16 @@ test.describe(
       async ({ api }) => {
         await memberApi.users.updateUserStatus({ status: 'SAFE' });
 
-        await utils.date.sleep(time_intervals.t_30s);
+        await utils.wait.sleep(timeout.gracePeriod + timeout.short);
 
         await api.users.initiatePersonalRollCall(member.id!);
 
-        await utils.date.sleep(time_intervals.t_40s);
+        await utils.wait.sleep(timeout.rollCallTimeout + timeout.cronTimeout);
 
         await expect(async () => {
           const getMemberAfterRC = await memberApi.users.getUser(member.id!);
           expect(getMemberAfterRC.data.status).toBe('UNKNOWN');
-        }).toPass({ timeout: time_intervals.t_20s, intervals: [2000, 5000] });
+        }).toPass({ timeout: timeout.cronTimeout * 3, intervals: [timeout.medium, timeout.long] }); //TODO: adjust intervals after api fix
       },
     );
 
@@ -191,12 +186,11 @@ test.describe(
         tag: '@sanity',
       },
       async ({ api }) => {
-        await utils.date.sleep(time_intervals.t_20s);
-
+        await utils.wait.sleep(timeout.gracePeriod + timeout.short);
         await api.users.initiatePersonalRollCall(member.id!);
         await memberApi.users.updateUserStatus({ status: 'SAFE' });
 
-        await utils.date.sleep(time_intervals.t_30s);
+        await utils.wait.sleep(timeout.rollCallTimeout - timeout.extraLong);
 
         const getMemberAfterRC = await memberApi.users.getUser(member.id!);
 
