@@ -111,30 +111,14 @@ export const useLocationStore = create<LocationState>((set, get) => ({
       });
       get().setLocation(location);
 
-      // Perform reverse geocoding and sync immediately
-      const [place] = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      if (place) {
-        const geoInfo = {
-          region: place.region || place.city || "",
-          district: place.district || place.subregion || place.street || "",
-        };
-        get().setGeographicInfo(geoInfo);
-
-        // Sync to backend
-        try {
-          const { updateUserLocation } = require("../api/api");
-          await updateUserLocation({
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-            ...geoInfo,
-          });
-        } catch (syncErr) {
-          console.error("Failed to sync location to backend:", syncErr);
-        }
+      try {
+        const { updateUserLocation } = require("../api/api");
+        await updateUserLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+      } catch (syncErr) {
+        console.error("Failed to sync location to backend:", syncErr);
       }
     } catch (err) {
       console.error("Failed to get current position:", err);
