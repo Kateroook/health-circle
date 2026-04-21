@@ -24,28 +24,29 @@ export default function EditProfileScreen() {
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
   const updateUser = useAuthStore((s) => s.updateUser);
 
-  const [firstName, setFirstName] = useState(user?.firstName || "");
-  const [middleName, setMiddleName] = useState(user?.middleName || "");
-  const [lastName, setLastName] = useState(user?.lastName || "");
-  const [phone, setPhone] = useState(user?.phone || "");
-  const [region, setRegion] = useState(user?.region || "");
-  const [district, setDistrict] = useState(user?.district || "");
-  const [alertRegionUid, setAlertRegionUid] = useState<number | null>(user?.alertRegionUid ?? null);
+  const [firstName, setFirstName] = useState(() => user?.firstName || "");
+  const [middleName, setMiddleName] = useState(() => user?.middleName || "");
+  const [lastName, setLastName] = useState(() => user?.lastName || "");
+  const [phone, setPhone] = useState(() => user?.phone || "");
+  const [region, setRegion] = useState(() => user?.region || "");
+  const [district, setDistrict] = useState(() => user?.district || "");
+  const [alertRegionUid, setAlertRegionUid] = useState<number | null>(
+    () => user?.alertRegionUid ?? null,
+  );
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(() =>
+    user?.id ? getAvatarUrl(user.id, user.avatarUpdatedAt) : null,
+  );
+
   const [alertRegionName, setAlertRegionName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
   const [isDeleteAvatarVisible, setIsDeleteAvatarVisible] = useState(false);
 
   useEffect(() => {
-    setFirstName(user?.firstName || "");
-    setMiddleName(user?.middleName || "");
-    setLastName(user?.lastName || "");
-    setPhone(user?.phone || "");
-    setRegion(user?.region || "");
-    setDistrict(user?.district || "");
-    setAlertRegionUid(user?.alertRegionUid ?? null);
-    if (user?.id) setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
-  }, [user]);
+    if (user?.id) {
+      setAvatarUrl(getAvatarUrl(user.id, user.avatarUpdatedAt));
+      setImageError(false);
+    }
+  }, [user?.id, user?.avatarUpdatedAt]);
 
   const validate = () => {
     const errors: string[] = [];
