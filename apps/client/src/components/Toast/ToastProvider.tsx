@@ -5,6 +5,7 @@ import React, { createContext, useCallback, useContext, useMemo, type ComponentP
 import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FullWindowOverlay } from "react-native-screens";
+// eslint-disable-next-line import/no-unresolved
 import Toast, { type ToastConfig } from "react-native-toast-message";
 import type { ShowToastOptions, ToastType } from "./types";
 
