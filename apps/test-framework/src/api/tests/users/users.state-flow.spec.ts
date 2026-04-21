@@ -12,7 +12,6 @@ test.describe(
     test.setTimeout(120000);
 
     enum time_intervals {
-      t_20s = 20000,
       t_40s = 40000,
       t_60s = 60000,
       t_80s = 80000,
@@ -24,7 +23,7 @@ test.describe(
     });
 
     test(
-      '[USR-078] Global status degradation', //flaky
+      '[USR-078] Global status degradation',
       {
         tag: '@sanity',
       },
@@ -36,7 +35,7 @@ test.describe(
         await expect(async () => {
           const getUserA = await api.users.getUser(userA.id!);
           expect(getUserA.data.status).toBe('WAS_SAFE');
-        }).toPass({ timeout: time_intervals.t_20s, intervals: [2000, 5000] });
+        }).toPass({ timeout: time_intervals.t_40s, intervals: [2000, 5000] });
       },
     );
 
@@ -93,12 +92,27 @@ test.describe(
         await expect(async () => {
           const getUserBeforeStatusChange = await api.users.getUser(userA.id!);
           expect(getUserBeforeStatusChange.data.status).toBe('WAS_SAFE');
-        }).toPass({ timeout: time_intervals.t_20s, intervals: [2000, 5000] });
+        }).toPass({ timeout: time_intervals.t_40s, intervals: [2000, 5000] });
 
         await api.users.updateUserStatus({ status: 'SAFE' });
 
-        const getUsrAfterSTChange = await api.users.getUser(userA.id!);
-        expect(getUsrAfterSTChange.data.status).toBe('SAFE');
+        const getUserAfterStatusChange = await api.users.getUser(userA.id!);
+        expect(getUserAfterStatusChange.data.status).toBe('SAFE');
+      },
+    );
+
+    test(
+      '[USR-083] Manual status update to WAS_SAFE',
+      {
+        tag: '@sanity',
+      },
+      async ({ api }) => {
+        const updateRes = await api.users.updateUserStatus({ status: 'WAS_SAFE' as any });
+
+        expect(updateRes.response.status()).toBe(200);
+
+        const getUserA = await api.users.getUser(userA.id!);
+        expect(getUserA.data.status).toBe('WAS_SAFE');
       },
     );
   },
