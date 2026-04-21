@@ -8,35 +8,35 @@ import { Member } from "../types";
 import { getRollCallText, getStatusText } from "../utils/dateUpdate";
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
-import { ConfirmRollCallModal } from "./circle/actions/ConfirmRollCallModal";
-import { RenameModal } from "./circle/actions/RenameModal";
-import ConfirmationModal from "./ConfirmationModal";
 import { StatusBadge } from "./StatusBadge";
 import { Typography } from "./typography";
 interface MemberProfileViewProps {
   member: Member;
   onRollCall?: (memberId: string) => void;
+  onRequestRollCall?: () => void;
   onMessage?: () => void;
   onBlock?: () => void;
   onRemove?: () => void;
+  onRequestRemove?: () => void;
   onRename?: (newName: string) => void;
+  onRequestRename?: () => void;
   isOwner?: boolean;
 }
 
 export const MemberProfileView = ({
   member: initialMember,
   onRollCall,
+  onRequestRollCall,
   onMessage,
   onBlock,
   onRemove,
+  onRequestRemove,
   onRename,
+  onRequestRename,
   isOwner,
 }: MemberProfileViewProps) => {
   const [member, setMember] = useState(initialMember);
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [isRemoveModalVisible, setIsRemoveModalVisible] = useState(false);
 
   const currentTime = useCurrentTime();
 
@@ -110,61 +110,6 @@ export const MemberProfileView = ({
 
   return (
     <View style={styles.container}>
-      {/* Rename Modal */}
-      <RenameModal
-        isVisible={isRenaming}
-        title="Редагування імʼя"
-        placeholder="Введіть нове імʼя"
-        caption="Це імʼя буде відображатися у вашому колі"
-        initialValue={member.fullName || member.firstName}
-        onCancel={() => setIsRenaming(false)}
-        onSave={(newName) => {
-          onRename?.(newName);
-          setIsRenaming(false);
-        }}
-        extraAction={
-          member.isAlias
-            ? {
-                label: "Відновити оригінальне імʼя",
-                onPress: () => {
-                  onRename?.("");
-                  setIsRenaming(false);
-                },
-              }
-            : undefined
-        }
-        testId="profile:rename:modal"
-      />
-
-      {/* Roll Call Modal */}
-      <ConfirmRollCallModal
-        isVisible={isRollCallModalVisible}
-        onCancel={() => setIsRollCallModalVisible(false)}
-        onConfirm={async () => {
-          setIsRollCallModalVisible(false);
-          // Update local member state immediately
-          setMember((prev) => ({ ...prev, lastPersonalRollCallAt: new Date().toISOString() }));
-          onRollCall?.(member.id);
-        }}
-        testId="profile:confirmRollCall:modal"
-      />
-
-      {/* Remove Modal */}
-      <ConfirmationModal
-        isVisible={isRemoveModalVisible}
-        onCancel={() => setIsRemoveModalVisible(false)}
-        onConfirm={() => {
-          setIsRemoveModalVisible(false);
-          onRemove?.();
-        }}
-        title="Видалити учасника?"
-        message={`${member.fullName || member.firstName} буде видалено з кола`}
-        confirmText="Видалити"
-        cancelText="Назад"
-        confirmStyle="destructive"
-        testId="profile:remove:modal"
-      />
-
       <View style={styles.profileSection}>
         <Avatar userId={member.id} avatarUpdatedAt={member.avatarUpdatedAt} size="xl" />
         <Typography variant="h2" tone="primary" style={styles.name}>
@@ -179,7 +124,17 @@ export const MemberProfileView = ({
                 shape="round"
                 hierarchy="secondary"
                 size="medium"
-                onPress={() => setIsRollCallModalVisible(true)}
+                onPress={() => {
+                  if (onRequestRollCall) {
+                    onRequestRollCall();
+                    return;
+                  }
+                  setMember((prev) => ({
+                    ...prev,
+                    lastPersonalRollCallAt: new Date().toISOString(),
+                  }));
+                  onRollCall(member.id);
+                }}
                 leadingIcon={<Feather name="rss" size={18} color={theme.colors.content.primary} />}
                 style={styles.rollCallIconButton}
                 testId="profile:rollCall:button"
@@ -227,7 +182,7 @@ export const MemberProfileView = ({
             hierarchy="secondary"
             shape="rectangle"
             size="medium"
-            onPress={() => setIsRenaming(true)}
+            onPress={() => onRequestRename?.()}
             testId="profile:rename:button"
           />
         )}
@@ -247,7 +202,7 @@ export const MemberProfileView = ({
             hierarchy="tertiary"
             shape="rectangle"
             size="medium"
-            onPress={() => setIsRemoveModalVisible(true)}
+            onPress={() => onRequestRemove?.()}
             textStyle={{ color: theme.colors.negative }}
             testId="profile:remove:button"
           />

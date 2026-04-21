@@ -91,11 +91,12 @@ import { UsersModule } from './users/users.module';
         FIREBASE_PROJECT_ID: Joi.string().required(),
         FIREBASE_CLIENT_EMAIL: Joi.string().required(),
         FIREBASE_PRIVATE_KEY: Joi.string().required(),
+        CRON_STATUS_REFRESH_RATE: Joi.string().optional().default('*/5 * * * *'),
 
         // Status & Roll-call
-        STATUS_EXPIRY_HOURS: Joi.number().default(8),
-        ROLL_CALL_TIMEOUT_MINUTES: Joi.number().default(60),
-        PERSONAL_ROLL_CALL_GRACE_MINUTES: Joi.number().default(15),
+        STATUS_EXPIRY_SECONDS: Joi.number().default(8 * 60 * 60),
+        ROLL_CALL_TIMEOUT_SECONDS: Joi.number().default(60 * 60),
+        PERSONAL_ROLL_CALL_GRACE_SECONDS: Joi.number().default(15 * 60),
 
         // Alerts.in.ua
         ALERTS_TOKEN: Joi.string().required(),
@@ -105,6 +106,7 @@ import { UsersModule } from './users/users.module';
         TWILIO_ACCOUNT_SID: Joi.string().when('SMS_ENABLED', { is: true, then: Joi.required(), otherwise: Joi.optional() }),
         TWILIO_AUTH_TOKEN: Joi.string().when('SMS_ENABLED', { is: true, then: Joi.required(), otherwise: Joi.optional() }),
         TWILIO_PHONE_NUMBER: Joi.string().when('SMS_ENABLED', { is: true, then: Joi.required(), otherwise: Joi.optional() }),
+        ALERTS_API_URL: Joi.string().required(),
       }),
     }),
     PostgresModule.register(entities, migrations, subscribers),

@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, Logger, NotFoundException, StreamableFile } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, StreamableFile } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AlertRegionResolverService } from 'src/alerts/alert-region-resolver.service';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
@@ -15,6 +16,8 @@ import { GeocodingService } from 'src/geocoding/geocoding.service';
 import { GroupEntity } from 'src/groups/entities/group.entity';
 import { GroupBlockListEntity } from 'src/groups/entities/group-block-list.entity';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
+import { NotificationTemplates, NotificationType } from 'src/notifications/notification-types';
+import { NotificationsService } from 'src/notifications/notifications.service';
 import { STATUS_UPDATE_SIDE_EFFECTS_QUEUE } from 'src/notifications/status-update.queue.constants';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import type { FindOptionsWhere } from 'typeorm';
@@ -52,6 +55,8 @@ export class UsersService {
     private readonly alertRegionResolver: AlertRegionResolverService,
     private readonly geocodingService: GeocodingService,
     private readonly firestoreSyncService: FirestoreSyncService,
+    private readonly notificationsService: NotificationsService,
+    private readonly configService: ConfigService,
   ) {}
 
   async getNotificationSettingsInternal(userId: string): Promise<UserNotificationSettingsEntity> {
@@ -442,5 +447,47 @@ export class UsersService {
 
   private async resolveAlertRegionUid(region?: string, district?: string): Promise<number | null> {
     return this.alertRegionResolver.resolve(region, district);
+  }
+
+  async initiatePersonalRollCall(targetUserId: string, requesterId: string) {
+    if (targetUserId === requesterId) {
+      throw new BadRequestException('Не можна надіслати перекличку самому собі');
+    }
+    const targetUser = await this.findOneInternal(targetUserId);
+    if (!targetUser) throw new NotFoundException('Користувача не знайдено');
+
+    const requesterMemberships = await this.memberRepository.find({
+      where: { userId: requesterId },
+    });
+    const targetMemberships = await this.memberRepository.find({
+      where: { userId: targetUserId },
+    });
+
+    const requesterGroupIds = new Set(requesterMemberships.map((m) => m.groupId));
+    const sharedGroupIds = targetMemberships.map((m) => m.groupId).filter((id) => requesterGroupIds.has(id));
+
+    if (sharedGroupIds.length === 0) {
+      throw new ForbiddenException('Ви не перебуваєте в спільному колі з цим користувачем');
+    }
+
+    const graceSeconds = this.configService.get<number>('PERSONAL_ROLL_CALL_GRACE_SECONDS', 15 * 60);
+    const graceThreshold = new Date(Date.now() - graceSeconds * 1000);
+
+    if (targetUser.lastStatusUpdate > graceThreshold) {
+      return { message: 'Користувач нещодавно оновив статус, додатковий запит не потрібен' };
+    }
+
+    await this.updateLastPersonalRollCallAt(targetUserId);
+
+    const tokens = await this.getTokensForUsers(
+      [targetUserId],
+      NotificationTemplates[NotificationType.PERSONAL_ROLL_CALL].permissionKey,
+    );
+
+    if (tokens.length > 0) {
+      await this.notificationsService.sendMulticastByType(tokens, NotificationType.PERSONAL_ROLL_CALL, {}, {});
+    }
+
+    return { message: 'Вимогу оновлення статусу надіслано' };
   }
 }

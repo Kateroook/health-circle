@@ -1,14 +1,15 @@
-import { apiFetch } from "@/src/api/api";
+import { apiFetch, initiatePersonalRollCall } from "@/src/api/api";
 import { setContactAlias } from "@/src/api/contacts";
-import { blockUser, initiatePersonalRollCall, initiateRollCall } from "@/src/api/groups";
+import { blockUser, initiateRollCall } from "@/src/api/groups";
 import { Button } from "@/src/components/Button";
 import CircleActionsModal from "@/src/components/circle/actions/CircleActionsModal";
 import { ConfirmRollCallModal } from "@/src/components/circle/actions/ConfirmRollCallModal";
-
 import AddCircleModal from "@/src/components/circle/AddCircleModal";
 import CircleItem from "@/src/components/circle/CircleItem";
 import { MemberList } from "@/src/components/dashboard/MemberList";
 import { MemberProfileModal } from "@/src/components/dashboard/MemberProfileModal";
+import { CircleDetailSkeleton } from "@/src/components/Skeleton";
+import { CirclesSkeletonList } from "@/src/components/Skeleton/CircleItemSkeleton";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
@@ -20,9 +21,9 @@ import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useToast } from "../../hooks/useToast";
 
 import {
-  Alert,
   Animated,
   BackHandler,
   Easing,
@@ -36,64 +37,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-// ─── Skeleton loader for circle items ────────────────────────────────────────
-
-function SkeletonCircleItem() {
-  const shimmer = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(shimmer, {
-          toValue: 0,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
-  }, []);
-
-  const opacity = shimmer.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.6],
-  });
-
-  return (
-    <Animated.View style={[styles.skeletonCard, { opacity }]}>
-      <View style={styles.skeletonHeader}>
-        <View style={styles.skeletonTitle} />
-        <View style={styles.skeletonMenu} />
-      </View>
-
-      {/* Імітація Members (Аватари що накладаються) */}
-      <View style={styles.skeletonMembersRow}>
-        {[0, 1, 2, 3].map((i) => (
-          <View
-            key={i}
-            style={[styles.skeletonAvatarCircle, { marginLeft: i === 0 ? 0 : -12, zIndex: 5 - i }]}
-          />
-        ))}
-      </View>
-    </Animated.View>
-  );
-}
-function CirclesSkeletonList() {
-  return (
-    <View style={styles.listContainer}>
-      {[0, 1, 2].map((i) => (
-        <SkeletonCircleItem key={i} />
-      ))}
-    </View>
-  );
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
@@ -156,6 +99,7 @@ function EmptyCircles({ onAdd }: { onAdd: () => void }) {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function CirclesScreen() {
+  const { showToast } = useToast();
   const user = useAuthStore().user;
   const { logEvent } = useAnalytics();
 
@@ -165,6 +109,7 @@ export default function CirclesScreen() {
   const [circles, setCircles] = useState<Circle[]>([]);
   const [showCircleDetail, setShowCircleDetail] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const hasLoadedCirclesOnceRef = useRef(false);
 
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
@@ -184,7 +129,9 @@ export default function CirclesScreen() {
   }, [circles]);
 
   const fetchCircles = useCallback(async () => {
-    setIsLoading(true);
+    if (!hasLoadedCirclesOnceRef.current) {
+      setIsLoading(true);
+    }
     try {
       const data = await apiFetch("/groups", { method: "GET" });
       const circlesWithStatus = data.map((circle: any) => ({
@@ -199,6 +146,7 @@ export default function CirclesScreen() {
       console.error("Error loading circles:", error);
     } finally {
       setIsLoading(false);
+      hasLoadedCirclesOnceRef.current = true;
     }
   }, []);
 
@@ -246,61 +194,32 @@ export default function CirclesScreen() {
 
   const isOwner = activeCircle && user?.id === activeCircle.owner.id;
 
-  const handleLeave = () => {
-    Alert.alert("Покинути коло?", "Ви впевнені?", [
-      { text: "Скасувати", style: "cancel" },
-      {
-        text: "Покинути",
-        style: "destructive",
-        onPress: async () => {
-          if (!activeCircle) return;
-          try {
-            await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
-            setShowCircleDetail(false);
-            fetchCircles();
-          } catch {
-            Alert.alert("Помилка", "Не вдалося покинути");
-          }
-        },
-      },
-    ]);
-  };
-
-  const handleRenameSubmit = async () => {
-    if (!renameValue.trim() || !activeCircle) return;
-    try {
-      await apiFetch("/groups", {
-        method: "PUT",
-        body: JSON.stringify({ id: activeCircle.id, name: renameValue.trim() }),
-      });
-      setIsRenameModalVisible(false);
-      fetchCircles();
-    } catch {
-      Alert.alert("Помилка", "Не вдалося перейменувати");
-    }
-  };
-
   const handleRollCall = () => {
     setIsRollCallModalVisible(true);
   };
 
   const handlePersonalRollCall = async (member: Member) => {
-    if (!activeCircle) return;
     try {
-      await initiatePersonalRollCall(activeCircle.id, member.id);
+      await initiatePersonalRollCall(member.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
-      setActiveCircle((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          members: prev.members.map((m) =>
-            m.id === member.id ? { ...m, lastPersonalRollCallAt: new Date().toISOString() } : m,
-          ),
-        };
-      });
-      Alert.alert("Успіх", "Запит на перекличку надіслано");
+      if (activeCircle) {
+        setActiveCircle((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            members: prev.members.map((m) =>
+              m.id === member.id ? { ...m, lastPersonalRollCallAt: new Date().toISOString() } : m,
+            ),
+          };
+        });
+      }
+      showToast({ type: "success", title: "Запит на перекличку надіслано" });
     } catch {
-      Alert.alert("Помилка", "Не вдалося надіслати запит");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося надіслати запит",
+      });
     }
   };
 
@@ -312,9 +231,13 @@ export default function CirclesScreen() {
       setIsMemberModalVisible(false);
       setSelectedMember(null);
       fetchCircles();
-      Alert.alert("Успіх", "Користувача заблоковано");
+      showToast({ type: "success", title: "Користувача заблоковано" });
     } catch {
-      Alert.alert("Помилка", "Не вдалося заблокувати користувача");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося заблокувати користувача",
+      });
     }
   };
 
@@ -325,9 +248,13 @@ export default function CirclesScreen() {
       setIsMemberModalVisible(false);
       setSelectedMember(null);
       fetchCircles();
-      Alert.alert("Успіх", "Ім'я оновлено");
+      showToast({ type: "success", title: "Ім'я оновлено" });
     } catch {
-      Alert.alert("Помилка", "Не вдалося оновити ім'я");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося оновити ім'я",
+      });
     }
   };
 
@@ -335,11 +262,15 @@ export default function CirclesScreen() {
     if (!activeCircle) return;
     try {
       await initiateRollCall(activeCircle.id);
-      Alert.alert("Успіх", "Перекличку розпочато");
+      showToast({ type: "success", title: "Перекличку розпочато", compact: true });
       fetchCircles();
     } catch (error) {
       console.error("Failed to initiate roll call:", error);
-      Alert.alert("Помилка", "Не вдалося розпочати перекличку");
+      showToast({
+        type: "error",
+        title: "Помилка",
+        subtitle: "Не вдалося розпочати перекличку",
+      });
     }
   };
 
@@ -365,92 +296,101 @@ export default function CirclesScreen() {
         testId="circles:confirmRollCall:modal"
       />
       {showCircleDetail && activeCircle ? (
-        <ScrollView contentContainerStyle={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Button
-              shape="round"
-              hierarchy="tertiary"
-              size="small"
-              leadingIcon={
-                <MaterialIcons
-                  name="keyboard-arrow-left"
-                  size={24}
-                  color={theme.colors.content.primary}
-                />
-              }
-              onPress={() => {
-                setShowCircleDetail(false);
-                setActiveCircle(null);
-              }}
-              testId="circleDetail:back:button"
-            />
-            <View style={styles.detailTitleBlock}>
-              <Typography variant="h1" tone="primary">
-                {activeCircle.name}
-              </Typography>
-              {activeCircle.inviteCode && (
+        <>
+          {isLoading ? (
+            <CircleDetailSkeleton />
+          ) : (
+            <ScrollView contentContainerStyle={styles.content}>
+              {/* Header */}
+              <View style={styles.header}>
                 <Button
-                  label={`Код: ${activeCircle.inviteCode}`}
-                  hierarchy="secondary"
-                  shape="pill"
+                  shape="round"
+                  hierarchy="tertiary"
                   size="small"
-                  trailingIcon={
-                    <Ionicons name="copy" size={14} color={theme.colors.content.secondary} />
+                  leadingIcon={
+                    <MaterialIcons
+                      name="keyboard-arrow-left"
+                      size={24}
+                      color={theme.colors.content.primary}
+                    />
                   }
-                  onPress={async () => {
-                    await Clipboard.setStringAsync(activeCircle.inviteCode);
+                  onPress={() => {
+                    setShowCircleDetail(false);
+                    setActiveCircle(null);
                   }}
-                  style={{ alignSelf: "flex-start" }}
-                  testId="circleDetail:copyCode:button"
+                  testId="circleDetail:back:button"
                 />
-              )}
-            </View>
-            <Button
-              shape="round"
-              hierarchy="accent"
-              size="medium"
-              leadingIcon={
-                <MaterialIcons name="edit" size={20} color={theme.colors.content.onColor} />
-              }
-              onPress={() => setIsActionsVisible(true)}
-              testId="circleDetail:actions:button"
-            />
-          </View>
-
-          <ScrollView contentContainerStyle={styles.detailContent}>
-            <View style={styles.statsCard}>
-              <View style={styles.statsHeader}>
-                <Typography variant="subtitle1">{activeCircle.members.length} учасників</Typography>
+                <View style={styles.detailTitleBlock}>
+                  <Typography variant="h1" tone="primary">
+                    {activeCircle.name}
+                  </Typography>
+                  {activeCircle.inviteCode && (
+                    <Button
+                      label={`Код: ${activeCircle.inviteCode}`}
+                      hierarchy="secondary"
+                      shape="pill"
+                      size="small"
+                      trailingIcon={
+                        <Ionicons name="copy" size={14} color={theme.colors.content.secondary} />
+                      }
+                      onPress={async () => {
+                        await Clipboard.setStringAsync(activeCircle.inviteCode);
+                        showToast({ type: "success", title: "Скопійовано", compact: true });
+                      }}
+                      style={{ alignSelf: "flex-start" }}
+                      testId="circleDetail:copyCode:button"
+                    />
+                  )}
+                </View>
                 <Button
-                  label="Перекличка"
+                  shape="round"
                   hierarchy="accent"
-                  shape="pill"
-                  size="small"
-                  trailingIcon={
-                    <Feather name="rss" size={16} color={theme.colors.content.onColor} />
+                  size="medium"
+                  leadingIcon={
+                    <MaterialIcons name="edit" size={20} color={theme.colors.content.onColor} />
                   }
-                  onPress={handleRollCall}
-                  testId="circleDetail:rollCall:button"
+                  onPress={() => setIsActionsVisible(true)}
+                  testId="circleDetail:actions:button"
                 />
               </View>
-              <Typography variant="body2">
-                {unknownCount} не відповіли,{"\n"}
-                {wasSafeCount} нещодавно в безпеці, {safeCount} в безпеці
-              </Typography>
-            </View>
 
-            <View style={styles.membersList}>
-              <MemberList
-                members={activeCircle.members}
-                hasGroups={circles.length > 0}
-                onMemberPress={(member) => {
-                  setSelectedMember(member);
-                  setIsMemberModalVisible(true);
-                }}
-              />
-            </View>
-          </ScrollView>
+              <ScrollView contentContainerStyle={styles.detailContent}>
+                <View style={styles.statsCard}>
+                  <View style={styles.statsHeader}>
+                    <Typography variant="subtitle1">
+                      {activeCircle.members.length} учасників
+                    </Typography>
+                    <Button
+                      label="Перекличка"
+                      hierarchy="accent"
+                      shape="pill"
+                      size="small"
+                      trailingIcon={
+                        <Feather name="rss" size={16} color={theme.colors.content.onColor} />
+                      }
+                      onPress={handleRollCall}
+                      testId="circleDetail:rollCall:button"
+                    />
+                  </View>
+                  <Typography variant="body2">
+                    {unknownCount} не відповіли,{"\n"}
+                    {wasSafeCount} нещодавно в безпеці, {safeCount} в безпеці
+                  </Typography>
+                </View>
+
+                <View style={styles.membersList}>
+                  <MemberList
+                    members={activeCircle.members}
+                    hasGroups={circles.length > 0}
+                    onMemberPress={(member) => {
+                      setSelectedMember(member);
+                      setIsMemberModalVisible(true);
+                    }}
+                  />
+                </View>
+              </ScrollView>
+            </ScrollView>
+          )}
 
           <CircleActionsModal
             visible={isActionsVisible}
@@ -462,43 +402,90 @@ export default function CirclesScreen() {
             members={activeCircle?.members || []}
             onSaveMembers={async (updatedMembers) => {
               if (!activeCircle) return;
-              await apiFetch("/groups", {
-                method: "PUT",
-                body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
-              });
-              setIsActionsVisible(false);
-              fetchCircles();
+              try {
+                await apiFetch("/groups", {
+                  method: "PUT",
+                  body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
+                });
+                setIsActionsVisible(false);
+                fetchCircles();
+                showToast({ type: "success", title: "Склад кола оновлено" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося зберегти склад кола",
+                });
+              }
             }}
             onRename={async (newName) => {
               if (!activeCircle) return;
-              await apiFetch("/groups", {
-                method: "PUT",
-                body: JSON.stringify({ id: activeCircle.id, name: newName }),
-              });
-              setIsActionsVisible(false);
-              fetchCircles();
+              try {
+                await apiFetch("/groups", {
+                  method: "PUT",
+                  body: JSON.stringify({ id: activeCircle.id, name: newName }),
+                });
+                setIsActionsVisible(false);
+                fetchCircles();
+                showToast({ type: "success", title: "Назву кола оновлено" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося перейменувати коло",
+                });
+              }
             }}
             onDelete={async () => {
               if (!activeCircle) return;
-              await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
-              setIsActionsVisible(false);
-              setShowCircleDetail(false);
-              fetchCircles();
+              try {
+                await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
+                setIsActionsVisible(false);
+                setShowCircleDetail(false);
+                setActiveCircle(null);
+                fetchCircles();
+                showToast({ type: "success", title: "Коло видалено" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося видалити коло",
+                });
+              }
             }}
             onLeave={async () => {
               if (!activeCircle) return;
-              await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
-              setIsActionsVisible(false);
-              setShowCircleDetail(false);
-              fetchCircles();
+              try {
+                await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
+                setIsActionsVisible(false);
+                setShowCircleDetail(false);
+                setActiveCircle(null);
+                fetchCircles();
+                showToast({ type: "success", title: "Ви покинули коло" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося покинути коло",
+                });
+              }
             }}
             onRegenerateInvite={async () => {
               if (!activeCircle) return;
-              const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
-                method: "POST",
-              });
-              setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
-              fetchCircles();
+              try {
+                const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
+                  method: "POST",
+                });
+                setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+                fetchCircles();
+                showToast({ type: "success", title: "Код запрошення оновлено", compact: true });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося оновити код",
+                });
+              }
             }}
             onRollCall={handleRollCallConfirmed}
           />
@@ -526,14 +513,23 @@ export default function CirclesScreen() {
                 setIsMemberModalVisible(false);
                 setSelectedMember(null);
                 fetchCircles();
+                showToast({
+                  type: "success",
+                  title: "Учасника видалено з кола",
+                  compact: true,
+                });
               } catch {
-                Alert.alert("Помилка", "Не вдалося видалити учасника");
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося видалити учасника",
+                });
               }
             }}
             onBlock={handleBlockUser}
             onRename={handleMemberRename}
           />
-        </ScrollView>
+        </>
       ) : (
         <>
           <ScrollView contentContainerStyle={styles.content}>
@@ -589,41 +585,88 @@ export default function CirclesScreen() {
             members={activeCircle?.members || []}
             onSaveMembers={async (updatedMembers) => {
               if (!activeCircle) return;
-              await apiFetch("/groups", {
-                method: "PUT",
-                body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
-              });
-              setIsActionsVisible(false);
-              fetchCircles();
+              try {
+                await apiFetch("/groups", {
+                  method: "PUT",
+                  body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
+                });
+                setIsActionsVisible(false);
+                fetchCircles();
+                showToast({ type: "success", title: "Склад кола оновлено" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося зберегти склад кола",
+                });
+              }
             }}
             onRename={async (newName) => {
               if (!activeCircle) return;
-              await apiFetch("/groups", {
-                method: "PUT",
-                body: JSON.stringify({ id: activeCircle.id, name: newName }),
-              });
-              setIsActionsVisible(false);
-              fetchCircles();
+              try {
+                await apiFetch("/groups", {
+                  method: "PUT",
+                  body: JSON.stringify({ id: activeCircle.id, name: newName }),
+                });
+                setIsActionsVisible(false);
+                fetchCircles();
+                showToast({ type: "success", title: "Назву кола оновлено" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося перейменувати коло",
+                });
+              }
             }}
             onDelete={async () => {
               if (!activeCircle) return;
-              await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
-              setIsActionsVisible(false);
-              fetchCircles();
+              try {
+                await apiFetch(`/groups/${activeCircle.id}`, { method: "DELETE" });
+                setIsActionsVisible(false);
+                setActiveCircle(null);
+                fetchCircles();
+                showToast({ type: "success", title: "Коло видалено" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося видалити коло",
+                });
+              }
             }}
             onLeave={async () => {
               if (!activeCircle) return;
-              await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
-              setIsActionsVisible(false);
-              fetchCircles();
+              try {
+                await apiFetch(`/groups/${activeCircle.id}/leave`, { method: "POST" });
+                setIsActionsVisible(false);
+                setActiveCircle(null);
+                fetchCircles();
+                showToast({ type: "success", title: "Ви покинули коло" });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося покинути коло",
+                });
+              }
             }}
             onRegenerateInvite={async () => {
               if (!activeCircle) return;
-              const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
-                method: "POST",
-              });
-              setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
-              fetchCircles();
+              try {
+                const { code } = await apiFetch(`/groups/${activeCircle.id}/invite`, {
+                  method: "POST",
+                });
+                setActiveCircle((prev) => (prev ? { ...prev, inviteCode: code } : prev));
+                fetchCircles();
+                showToast({ type: "success", title: "Код запрошення оновлено", compact: true });
+              } catch {
+                showToast({
+                  type: "error",
+                  title: "Помилка",
+                  subtitle: "Не вдалося оновити код",
+                });
+              }
             }}
             onRollCall={handleRollCallConfirmed}
           />
@@ -645,45 +688,6 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     marginTop: theme.spacing[16],
-  },
-
-  // ── Skeleton ──────────────────────────────────────────────────────────────
-  // Оновлені стилі для Skeleton, що повторюють CircleItem
-  skeletonCard: {
-    backgroundColor: theme.colors.background.secondary,
-    borderRadius: theme.radius.xl,
-    padding: theme.spacing[16],
-    marginBottom: theme.spacing[12],
-  },
-  skeletonHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: theme.spacing[16], // Збільшено для відповідності структурі
-  },
-  skeletonTitle: {
-    height: 18,
-    width: "40%",
-    borderRadius: 9,
-    backgroundColor: theme.colors.border.opaque,
-  },
-  skeletonMenu: {
-    width: 24,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: theme.colors.border.opaque,
-  },
-  skeletonMembersRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  skeletonAvatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.border.opaque,
-    borderWidth: 2,
-    borderColor: theme.colors.background.secondary, // Створює ефект розрізу між фейковими аватарами
   },
 
   // ── Empty state ───────────────────────────────────────────────────────────
