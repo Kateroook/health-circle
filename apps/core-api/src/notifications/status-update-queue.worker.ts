@@ -47,7 +47,7 @@ export class StatusUpdateQueueWorker implements OnModuleInit {
     const notificationType = isUnknown ? NotificationType.UNKNOWN_STATUS : NotificationType.STATUS_UPDATE;
     const template = NotificationTemplates[notificationType];
 
-    const recipients = memberUserIds ?? [];
+    const recipients = (memberUserIds ?? []).filter((id) => id !== senderUserId);
     const tokens = await this.usersService.getTokensForUsers(recipients, template.permissionKey);
 
     const devSendToSelf = this.configService.get<boolean>('DEV_SEND_PUSH_TO_SENDER', false);

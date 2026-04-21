@@ -96,9 +96,11 @@ export class UsersService {
       .filter((u) => {
         if (!u.fcmToken) return false;
         const settings = u.notificationSettings;
-        if (!settings) return true;
-        if (!settings.enabled) return false;
-        if (settingKey && settings.prefs && settings.prefs[settingKey] === false) {
+        const enabled = settings ? settings.enabled : true;
+        if (!enabled) return false;
+
+        const prefs = settings?.prefs ?? UserNotificationSettingsEntity.DEFAULT_PREFS;
+        if (settingKey && prefs[settingKey] === false) {
           return false;
         }
         return true;
@@ -117,9 +119,11 @@ export class UsersService {
       .filter((u) => {
         if (!u.phone) return false;
         const settings = u.notificationSettings;
-        if (!settings) return true;
-        if (!settings.enabled) return false;
-        if (settingKey && settings.prefs && settings.prefs[settingKey] === false) {
+        const enabled = settings ? settings.enabled : true;
+        if (!enabled) return false;
+
+        const prefs = settings?.prefs ?? UserNotificationSettingsEntity.DEFAULT_PREFS;
+        if (settingKey && prefs[settingKey] === false) {
           return false;
         }
         return true;
