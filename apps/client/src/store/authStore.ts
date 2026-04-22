@@ -23,6 +23,8 @@ interface User {
   region?: string | null;
   district?: string | null;
   alertRegionUid?: number | null;
+  smsCode?: string;
+  smsTargetNumber?: string;
 }
 
 interface AuthStoreState {

@@ -41,8 +41,11 @@ export class TwilioSmsProvider implements SmsProvider {
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.log('SMS errorData', errorData);
         this.logger.error(`Failed to send SMS via Twilio: ${JSON.stringify(errorData)}`);
       } else {
+        const responseData = await response.json();
+        console.log('SMS responseData', responseData);
         this.logger.log(`SMS sent successfully to ${to}`);
       }
     } catch (error) {

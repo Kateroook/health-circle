@@ -42,6 +42,10 @@ export class UserEntity {
   @Column({ type: 'varchar', nullable: true })
   phone: string | null;
 
+  @Index({ unique: true, where: 'sms_code IS NOT NULL' })
+  @Column({ name: 'sms_code', type: 'varchar' })
+  smsCode: string;
+
   @Column({ type: 'timestamptz', nullable: true, select: false })
   lastLoginDate: Date;
 

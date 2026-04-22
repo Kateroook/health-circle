@@ -2,6 +2,8 @@ import { apiFetch, initiatePersonalRollCall, updateMyStatus } from "@/src/api/ap
 import { setContactAlias } from "@/src/api/contacts";
 import { blockUser } from "@/src/api/groups";
 import { UserStatus } from "@/src/components/StatusBadge";
+import { useModal } from "@/src/components/modal";
+import ConfirmationModal from "@/src/components/ConfirmationModal";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
@@ -24,9 +26,12 @@ import { DashboardHeader } from "../../components/dashboard/DashboardHeader";
 import { GroupFilters } from "../../components/dashboard/GroupFilters";
 import { MainStatusButton } from "../../components/dashboard/MainStatusButton";
 import { MemberList } from "../../components/dashboard/MemberList";
+import NetInfo from "@react-native-community/netinfo";
+import * as SMS from "expo-sms";
 
 // --- DashboardScreen ---
 export default function DashboardScreen() {
+  const { openModal, closeModal } = useModal();
   const { loading, withLoading } = useLoadingState(true);
   const { showToast } = useToast();
   const { logEvent } = useAnalytics();
@@ -92,6 +97,65 @@ export default function DashboardScreen() {
   );
 
   const handleStatusUpdate = async (newStatus: UserStatus) => {
+    // Check connectivity
+    const state = await NetInfo.fetch();
+    const isOnline = state.isConnected && state.isInternetReachable !== false;
+
+    if (!isOnline) {
+      if (!user?.smsCode || !user?.smsTargetNumber) {
+        showToast({
+          type: "error",
+          title: "Офлайн режим",
+          subtitle: "Немає інтернету та відсутні дані для SMS. Статус не оновлено.",
+        });
+        return;
+      }
+
+      // If offline and it's DANGER (or user confirmed for other status), offer SMS
+      const isAvailable = await SMS.isAvailableAsync();
+      if (!isAvailable) {
+        showToast({
+          type: "error",
+          title: "Помилка",
+          subtitle: "SMS-сервіс недоступний на цьому пристрої",
+        });
+        return;
+      }
+
+      // Format SMS: HC-XXXXXXXXXX [STATUS]
+      // Status mapping: SAFE (default), DANGER, WAS_SAFE
+      let statusToken = "";
+      if (newStatus === "DANGER") statusToken = " DANGER";
+      else if (newStatus === "WAS_SAFE") statusToken = " WAS_SAFE";
+      // SAFE is the default if no token provided in our parser, or we can add " SAFE"
+      else if (newStatus === "SAFE") statusToken = " SAFE";
+
+      const messageBody = `${user.smsCode}${statusToken}`;
+
+      openModal(
+        <ConfirmationModal
+          isVisible={true}
+          onCancel={closeModal}
+          onConfirm={async () => {
+            closeModal();
+            try {
+              await SMS.sendSMSAsync([user.smsTargetNumber!], messageBody);
+              logEvent("update_status_sms_initiated", { status: newStatus });
+            } catch (e) {
+              console.error("SMS error:", e);
+            }
+          }}
+          title="Відсутній інтернет"
+          message={`Бажаєте оновити статус через SMS? (Буде надіслано код на номер ${user.smsTargetNumber})`}
+          confirmText="Надіслати SMS"
+          cancelText="Скасувати"
+          confirmStyle="default"
+          testId="dashboard:offlineSms:modal"
+        />,
+      );
+      return;
+    }
+
     try {
       await updateMyStatus(newStatus);
       logEvent("update_status", { status: newStatus });
