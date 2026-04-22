@@ -91,11 +91,11 @@ class ResetPasswordScreen extends BaseScreen {
     await this.tap(this.resetButton);
   }
 
-  async clickBack() {
+  async clickBackButton() {
     await this.tap(this.backButton);
   }
 
-  async clickResendPassword() {
+  async clickResendCodeLink() {
     await this.tap(this.resendCodeLink);
   }
 }

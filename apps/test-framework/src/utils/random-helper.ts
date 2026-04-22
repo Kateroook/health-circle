@@ -88,109 +88,47 @@ export class RandomHelper {
     return `${prefix}${nanoid(10)}@${domain}`;
   }
 
-  phone(country: 'ua' | 'us' | 'uk' | 'de' | 'pl' = 'ua') {
+  countryCode(country: 'ua' | 'us' | 'uk' | 'de' | 'pl' | 'fr' | 'it' | 'es' | 'cz' | 'at' = 'ua'): string {
+    const codes = {
+      ua: '+380',
+      us: '+1',
+      uk: '+44',
+      de: '+49',
+      pl: '+48',
+      fr: '+33',
+      it: '+39',
+      es: '+34',
+      cz: '+420',
+      at: '+43',
+    };
+    return codes[country];
+  }
+  phone(
+    country: 'ua' | 'us' | 'uk' | 'de' | 'pl' | 'fr' | 'it' | 'es' | 'cz' | 'at' = 'ua',
+    withCountryCode: boolean = false,
+  ) {
     const config = {
-      ua: {
-        code: '+380',
-        operators: [
-          '67',
-          '68',
-          '96',
-          '97',
-          '98', // Kyivstar
-          '50',
-          '66',
-          '95',
-          '99', // Vodafone
-          '63',
-          '73',
-          '93', // lifecell
-          '91', // Укртелеком
-          '92', // Tele2
-        ],
-        subscriberLength: 7,
-      },
-      us: {
-        code: '+1',
-        operators: [
-          '201',
-          '202',
-          '212',
-          '213',
-          '312', // AT&T
-          '310',
-          '415',
-          '424',
-          '469',
-          '512', // T-Mobile
-          '614',
-          '646',
-          '702',
-          '713',
-          '818', // Verizon
-        ],
-        subscriberLength: 7,
-      },
-      uk: {
-        code: '+44',
-        operators: [
-          '7400',
-          '7500',
-          '7700',
-          '7800', // EE
-          '7300',
-          '7400', // O2
-          '7900',
-          '7800', // Vodafone UK
-          '7700',
-          '7600', // Three
-        ],
-        subscriberLength: 6,
-      },
-      de: {
-        code: '+49',
-        operators: [
-          '151',
-          '152',
-          '157', // Telekom
-          '160',
-          '170',
-          '171', // Vodafone DE
-          '159',
-          '176',
-          '177', // O2 DE
-        ],
-        subscriberLength: 7,
-      },
-      pl: {
-        code: '+48',
-        operators: [
-          '500',
-          '501',
-          '502',
-          '503', // Orange PL
-          '510',
-          '511',
-          '512',
-          '513', // Play
-          '600',
-          '601',
-          '602',
-          '603', // T-Mobile PL
-          '720',
-          '721',
-          '722',
-          '723', // Plus
-        ],
-        subscriberLength: 6,
-      },
+      ua: { operators: ['67', '68', '96', '97', '98', '50', '66', '95', '99', '63', '73', '93'], subscriberLength: 7 },
+      us: { operators: ['201', '212', '312', '415', '617'], subscriberLength: 7 },
+      uk: { operators: ['7400', '7700', '7900'], subscriberLength: 6 },
+      de: { operators: ['151', '160', '170', '176'], subscriberLength: 7 },
+      pl: { operators: ['500', '510', '600', '720'], subscriberLength: 6 },
+      // Нові країни:
+      fr: { operators: ['6', '7'], subscriberLength: 8 }, // Французькі мобільні починаються з 6 або 7
+      it: { operators: ['320', '330', '340', '360'], subscriberLength: 7 },
+      es: { operators: ['6', '7'], subscriberLength: 8 }, // Іспанські мобільні
+      cz: { operators: ['601', '602', '702', '720'], subscriberLength: 6 },
+      at: { operators: ['650', '660', '664', '676'], subscriberLength: 7 },
     };
 
-    const { code, operators, subscriberLength } = config[country];
+    const { operators, subscriberLength } = config[country];
+    const code = this.countryCode(country);
     const operator = faker.helpers.arrayElement(operators);
     const subscriber = Array.from({ length: subscriberLength }, () => faker.number.int({ min: 0, max: 9 })).join('');
 
-    return `${code}${operator}${subscriber}`;
+    const fullNumber = `${operator}${subscriber}`;
+
+    return withCountryCode ? `${code}${fullNumber}` : fullNumber;
   }
 
   groupName() {

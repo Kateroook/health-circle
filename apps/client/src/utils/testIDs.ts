@@ -12,3 +12,9 @@ export const ScreenIds = {
   dashboard: "screen:dashboard:container",
   settings: "screen:settings:container",
 };
+
+export const ComponentsIds = {
+  newCircleModal: "component:newCircle:modal",
+  userModal: "component:user:modal",
+  userList: "component:user:modal",
+};

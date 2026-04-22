@@ -26,12 +26,14 @@ class OnboardingScreen extends BaseScreen {
     return $('~onboarding:login:button');
   }
 
-  async closeOnboarding() {
+  async clickSkipOnboardingButton() {
     await this.tap(this.closeButton);
   }
 
   async onboarding() {
     await this.waitForIsShown();
+    await this.tap(this.nextButton);
+    await this.tap(this.nextButton);
     await this.tap(this.nextButton);
     await this.tap(this.nextButton);
     await this.tap(this.nextButton);

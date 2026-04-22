@@ -66,7 +66,7 @@ class PasswordSetupScreen extends BaseScreen {
     await this.tap(this.confirmButton);
   }
 
-  async clickBack() {
+  async clickBackButton() {
     await this.tap(this.backButton);
   }
 

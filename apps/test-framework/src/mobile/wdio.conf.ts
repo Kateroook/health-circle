@@ -1,8 +1,8 @@
 import { browser } from '@wdio/globals';
-import path from 'path';
 import { BackendProvider } from '../core/backend-provider';
 
 export const config: WebdriverIO.Config = {
+  maxInstances: 1,
   //Where to find tests
   specs: ['./tests/**/*.spec.ts'],
   protocol: 'http',
@@ -27,14 +27,15 @@ export const config: WebdriverIO.Config = {
   //Platform settings
   capabilities: [
     {
-      'appium:noReset': false,
+      'appium:noReset': true,
+      'appium:fullReset': false,
       'appium:shouldTerminateApp': true,
-      'appium:enforceAppInstall': true,
+      'appium:enforceAppInstall': false,
       'appium:platformName': 'Android',
       'appium:automationName': 'UiAutomator2',
       'appium:platformVersion': process.env.APPIUM__PLATFORM_VERSION!,
       'appium:deviceName': process.env.APPIUM__DEVICE_NAME!,
-      'appium:app': path.join(process.cwd(), '../client/android/app/build/outputs/apk/release/app-release.apk'),
+      'appium:app': 'C:/apps/health-circle-dev-63-android.apk',
       'appium:autoGrantPermissions': true,
       'appium:newCommandTimeout': 300,
       'appium:udid': process.env.APPIUM__DEVICE_NAME!,

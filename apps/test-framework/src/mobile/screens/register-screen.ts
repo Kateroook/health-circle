@@ -1,4 +1,5 @@
 import { ScreenIds } from '../../../../client/src/utils/testIDs';
+import { utils } from '../../utils/utils';
 import BaseScreen from './base-screen';
 
 class RegisterScreen extends BaseScreen {
@@ -89,31 +90,43 @@ class RegisterScreen extends BaseScreen {
   async fillNameInfo(lastName?: string, firstName?: string, middleName?: string) {
     await this.fillLastName(lastName);
     await this.fillFirstName(firstName);
-    await this.fillMiddleName(middleName);
+    if (middleName) {
+      await this.fillMiddleName(middleName);
+    }
     await this.tap(this.nextButton);
   }
 
-  async registration(
-    countryCode?: string,
-    phone?: string,
-    email?: string,
-    lastName?: string,
-    firstName?: string,
-    middleName?: string,
-  ) {
+  async registration(data?: {
+    countryCode?: string;
+    phone?: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    middleName?: string;
+  }) {
+    const countryCode = data?.countryCode ?? utils.random.countryCode();
+    const phone = data?.phone ?? utils.random.phone();
+    const email = data?.email ?? utils.random.email();
+    const firstName = data?.firstName ?? utils.random.firstName();
+    const lastName = data?.lastName ?? utils.random.lastName();
+
+    const middleName = data?.middleName;
+
     await this.fillContactInfo(countryCode, phone, email);
+
     await this.fillNameInfo(lastName, firstName, middleName);
+    return { countryCode, phone, email, firstName, lastName, middleName };
   }
 
   async clickNextButton() {
     await this.tap(this.nextButton);
   }
 
-  async clickLoginRedirection() {
+  async clickLoginLink() {
     await this.tap(this.loginLink);
   }
 
-  async clickBack() {
+  async clickBackButton() {
     await this.tap(this.backButton);
   }
 }
