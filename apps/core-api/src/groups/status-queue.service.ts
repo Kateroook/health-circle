@@ -75,9 +75,11 @@ export class StatusQueueService implements OnModuleInit {
 
             if (usersToUpdate.length > 0) {
               this.logger.log(`Timed out ${usersToUpdate.length} users in group ${group.name} due to roll call`);
-              for (const user of usersToUpdate) {
-                await this.usersService.updateStatus(user.id, UserStatus.UNKNOWN, { memberUserIds: groupMemberIds });
-              }
+              await Promise.all(
+                usersToUpdate.map((user) =>
+                  this.usersService.updateStatus(user.id, UserStatus.UNKNOWN, { memberUserIds: groupMemberIds }),
+                ),
+              );
             }
           } catch (error: unknown) {
             this.logger.error(`Failed processing roll call timeout for groupId=${group.id}: ${String(error)}`);
@@ -100,9 +102,7 @@ export class StatusQueueService implements OnModuleInit {
 
     if (personalUsersToNotify.length > 0) {
       this.logger.log(`Timed out ${personalUsersToNotify.length} users due to personal roll call`);
-      for (const u of personalUsersToNotify) {
-        await this.usersService.updateStatus(u.id, UserStatus.UNKNOWN);
-      }
+      await Promise.all(personalUsersToNotify.map((u) => this.usersService.updateStatus(u.id, UserStatus.UNKNOWN)));
     }
   }
 
@@ -119,9 +119,9 @@ export class StatusQueueService implements OnModuleInit {
 
     if (expiredUsers.length > 0) {
       this.logger.log(`Expiring status for ${expiredUsers.length} users (SAFE -> WAS_SAFE)`);
-      for (const u of expiredUsers) {
-        await this.usersService.updateStatus(u.id, UserStatus.WAS_SAFE);
-      }
+      await Promise.all(
+        expiredUsers.map((u) => this.usersService.updateStatus(u.id, UserStatus.WAS_SAFE, { memberUserIds: [] })), //no need to send push notifications for this transition
+      );
     }
   }
 }
