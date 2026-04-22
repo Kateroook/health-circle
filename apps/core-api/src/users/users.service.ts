@@ -135,7 +135,7 @@ export class UsersService {
 
     // If memberUserIds are not provided, find all members from all groups the user belongs to
     let targetMemberIds = options?.memberUserIds;
-    if (!targetMemberIds || targetMemberIds.length === 0) {
+    if (!targetMemberIds) {
       const memberships = await this.memberRepository.find({
         where: { userId },
         select: ['groupId'],
