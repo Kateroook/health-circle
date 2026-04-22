@@ -113,7 +113,7 @@ export function useFcmToken() {
       unsubscribeOnMessage();
     };
   }, [
-    user,
+    user?.id,
     accessToken,
     isPushEnabled,
     hasPromptedForNotifications,
