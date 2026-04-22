@@ -2,6 +2,7 @@ import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 import { createJSONStorage, persist, StateStorage } from "zustand/middleware";
 import { ApiError, apiFetch } from "../api/api";
+import { logger } from "../utils/logger";
 
 // Secure storage for Expo
 const secureStorage: StateStorage = {
@@ -103,7 +104,7 @@ export const useAuthStore = create<AuthStoreState>()(
             isLoggedIn: true,
           });
         } catch (error) {
-          console.error("Profile fetch failed, trying refresh:", error);
+          logger.error("Profile fetch failed, trying refresh:", error);
 
           // Try refreshing the session before giving up
           const refreshed = await get().refreshSession();
@@ -162,7 +163,7 @@ export const useAuthStore = create<AuthStoreState>()(
           }
           return false;
         } catch (error) {
-          console.error("Session refresh failed:", error);
+          logger.error("Session refresh failed:", error);
           return false;
         }
       },

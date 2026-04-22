@@ -1,4 +1,5 @@
 import { saveFcmTokenToBackend } from "@/src/api/api";
+import { logger } from "@/src/utils/logger";
 import { useAuthStore } from "@/src/store/authStore";
 import { useSettingsStore } from "@/src/store/settingsStore";
 import messaging from "@react-native-firebase/messaging";
@@ -29,11 +30,11 @@ export function useFcmToken() {
     try {
       const fcmToken = await messaging().getToken();
       if (fcmToken) {
-        console.log("FCM Token:", fcmToken);
+        logger.info("FCM Token:", fcmToken);
         await saveFcmTokenToBackend(fcmToken);
       }
     } catch (error) {
-      console.error("Error getting FCM token:", error);
+      logger.error("Error getting FCM token:", error);
     }
   }, []);
 
@@ -60,7 +61,7 @@ export function useFcmToken() {
         return false;
       }
     } catch (error) {
-      console.error("FCM Permission error:", error);
+      logger.error("FCM Permission error:", error);
       return false;
     }
   }, [getAndSaveToken, setPushEnabled, setHasPromptedForNotifications]);
@@ -89,12 +90,12 @@ export function useFcmToken() {
     checkPermission();
 
     const unsubscribeTokenRefresh = messaging().onTokenRefresh(async (newToken) => {
-      console.log("FCM Token Refreshed:", newToken);
+      logger.info("FCM Token Refreshed:", newToken);
       await saveFcmTokenToBackend(newToken);
     });
 
     const unsubscribeOnMessage = messaging().onMessage(async (remoteMessage) => {
-      console.log("A new FCM message arrived!", JSON.stringify(remoteMessage));
+      logger.info("A new FCM message arrived!", JSON.stringify(remoteMessage));
 
       if (remoteMessage.notification) {
         // Display a notification manually for foreground

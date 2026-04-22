@@ -7,6 +7,7 @@ import { useSyncSignal } from "@/src/hooks/useSyncSignal";
 import { useAuthStore } from "@/src/store/authStore";
 import { useLocationStore } from "@/src/store/locationStore";
 import { theme } from "@/src/theme/theme";
+import { logger } from "@/src/utils/logger";
 import { ScreenIds } from "@/src/utils/testIDs";
 import { useFocusEffect } from "expo-router";
 import { useAnalytics } from "../../hooks/useAnalytics";
@@ -66,7 +67,7 @@ export default function DashboardScreen() {
       const data = await apiFetch("/groups", { method: "GET" });
       setGroups(data);
     } catch (error) {
-      console.error("Error loading groups:", error);
+      logger.error("Error loading groups:", error);
     }
   }, [withLoading]);
 
@@ -75,7 +76,7 @@ export default function DashboardScreen() {
       const data = (await apiFetch("/alerts/status", { method: "GET" })) as MyAlertStatus;
       setMyAlertStatus(data);
     } catch (error) {
-      console.error("Error loading alert status:", error);
+      logger.error("Error loading alert status:", error);
     }
   }, []);
 
