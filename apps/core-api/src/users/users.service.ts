@@ -19,6 +19,7 @@ import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { NotificationTemplates, NotificationType } from 'src/notifications/notification-types';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { STATUS_UPDATE_SIDE_EFFECTS_QUEUE } from 'src/notifications/status-update.queue.constants';
+import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import type { FindOptionsWhere } from 'typeorm';
 import { EntityManager, In, QueryRunner, Repository } from 'typeorm';
@@ -57,6 +58,7 @@ export class UsersService {
     private readonly firestoreSyncService: FirestoreSyncService,
     private readonly notificationsService: NotificationsService,
     private readonly configService: ConfigService,
+    private readonly securityService: SecurityService,
   ) {}
 
   async getNotificationSettingsInternal(userId: string): Promise<UserNotificationSettingsEntity> {
@@ -207,6 +209,21 @@ export class UsersService {
     return { message: 'Token updated' };
   }
 
+  async findBySmsCode(code: string): Promise<UserEntity | null> {
+    return this.repository.findOne({ where: { smsCode: code }, select: ['id', 'smsCode', 'firstName', 'lastName'] });
+  }
+
+  private async generateUniqueSmsCode(): Promise<string> {
+    let code = '';
+    let isUnique = false;
+    while (!isUnique) {
+      code = this.securityService.generateSmsCode();
+      const existing = await this.findBySmsCode(code);
+      if (!existing) isUnique = true;
+    }
+    return code;
+  }
+
   async upsertFile(
     userId: string,
     file: Express.Multer.File,
@@ -318,6 +335,7 @@ export class UsersService {
       (item as any).notificationSettings = this.notificationSettingsRepository.create({
         prefs: UserNotificationSettingsEntity.DEFAULT_PREFS,
       });
+      (item as any).smsCode = await this.generateUniqueSmsCode();
     }
 
     // Auto-resolve alertRegionUid from coordinates OR region/district text

@@ -10,13 +10,14 @@ import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../../api/api";
+import { useNotifSettings } from "../../../hooks/settings/useNotifSettings";
 import { useFcmToken } from "../../../hooks/useFcmToken";
 import { useToast } from "../../../hooks/useToast";
-import { useNotifSettings } from "../../../hooks/settings/useNotifSettings";
 import { useAuthStore } from "../../../store/authStore";
 
 export default function SecurityScreen() {
   const { showToast } = useToast();
+  const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { requestPermission } = useFcmToken();
   const { notifSettings, isPushEnabled, setPushEnabled, updateNotifSetting } = useNotifSettings();
