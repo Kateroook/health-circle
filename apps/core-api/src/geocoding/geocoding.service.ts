@@ -20,7 +20,7 @@ export class GeocodingService {
         throw new Error(`Photon API returned ${response.status}`);
       }
 
-      const data = (await response.json());
+      const data = await response.json();
       const features = data.features || [];
 
       if (features.length === 0) {

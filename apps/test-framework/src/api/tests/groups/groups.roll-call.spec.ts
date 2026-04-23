@@ -21,7 +21,7 @@ test.describe(
 
     let ownerGroup: GroupEntity;
 
-    test.setTimeout(120000);
+    test.setTimeout(120_000);
 
     test.beforeEach(async ({ spawnUser, spawnApi, api }) => {
       owner = await spawnUser();
@@ -78,12 +78,12 @@ test.describe(
 
           const rollCallResult = await currentApi.groups.initiateGroupRollCall(ownerGroup.id!);
 
-          expect(rollCallResult.response.status()).toBe(options.expectedStatus);
+          expect(rollCallResult.response).toHaveStatus(options.expectedStatus);
 
           const updatedGroupRes = await api.groups.getGroup(ownerGroup.id!);
 
           if (options.shouldUpdateDate) {
-            expect(updatedGroupRes.data.lastRollCallAt).not.toBeNull();
+            expect(updatedGroupRes.data.lastRollCallAt).toBeDefined();
           } else {
             expect(updatedGroupRes.data.lastRollCallAt).toBeNull();
           }
@@ -98,7 +98,7 @@ test.describe(
       },
       async ({ api }) => {
         const roll_callResult = await api.groups.initiateGroupRollCall(utils.random.uuid());
-        expect(roll_callResult.response.status()).toBe(404);
+        expect(roll_callResult.response).toHaveStatus(404);
       },
     );
 
@@ -110,7 +110,7 @@ test.describe(
       async ({ api }) => {
         await api.groups.clearTokens();
         const roll_callResult = await api.groups.initiateGroupRollCall(utils.random.uuid.toString());
-        expect(roll_callResult.response.status()).toBe(401);
+        expect(roll_callResult.response).toHaveStatus(401);
       },
     );
 
@@ -126,7 +126,7 @@ test.describe(
         secondOwnerGroup.inviteCode = createResult.data.inviteCode;
 
         const roll_callResult = await api.groups.initiateGroupRollCall(secondOwnerGroup.id!);
-        expect(roll_callResult.response.status()).toBe(201);
+        expect(roll_callResult.response).toHaveStatus(201);
       },
     );
 
