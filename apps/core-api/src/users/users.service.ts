@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, StreamableFile } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config/dist/config.service';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AlertRegionResolverService } from 'src/alerts/alert-region-resolver.service';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
@@ -12,12 +12,14 @@ import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { ContactEntity } from 'src/contacts/entities/contact.entity';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { GeocodingService } from 'src/geocoding/geocoding.service';
 import { GroupEntity } from 'src/groups/entities/group.entity';
 import { GroupBlockListEntity } from 'src/groups/entities/group-block-list.entity';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { NotificationTemplates, NotificationType } from 'src/notifications/notification-types';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { STATUS_UPDATE_SIDE_EFFECTS_QUEUE } from 'src/notifications/status-update.queue.constants';
+import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import type { FindOptionsWhere } from 'typeorm';
 import { EntityManager, In, QueryRunner, Repository } from 'typeorm';
@@ -52,9 +54,11 @@ export class UsersService {
     @InjectRepository(UserNotificationSettingsEntity)
     protected readonly notificationSettingsRepository: Repository<UserNotificationSettingsEntity>,
     private readonly alertRegionResolver: AlertRegionResolverService,
+    private readonly geocodingService: GeocodingService,
     private readonly firestoreSyncService: FirestoreSyncService,
     private readonly notificationsService: NotificationsService,
     private readonly configService: ConfigService,
+    private readonly securityService: SecurityService,
   ) {}
 
   async getNotificationSettingsInternal(userId: string): Promise<UserNotificationSettingsEntity> {
@@ -99,14 +103,39 @@ export class UsersService {
       .filter((u) => {
         if (!u.fcmToken) return false;
         const settings = u.notificationSettings;
-        if (!settings) return true;
-        if (!settings.enabled) return false;
-        if (settingKey && settings.prefs && settings.prefs[settingKey] === false) {
+        const enabled = settings ? settings.enabled : true;
+        if (!enabled) return false;
+
+        const prefs = settings?.prefs ?? UserNotificationSettingsEntity.DEFAULT_PREFS;
+        if (settingKey && prefs[settingKey] === false) {
           return false;
         }
         return true;
       })
       .map((u) => u.fcmToken as string);
+  }
+
+  async getPhoneNumbersForUsers(userIds: string[], settingKey?: string): Promise<string[]> {
+    const users = await this.repository.find({
+      where: { id: In(userIds) },
+      select: ['id', 'phone'],
+      relations: ['notificationSettings'],
+    });
+
+    return users
+      .filter((u) => {
+        if (!u.phone) return false;
+        const settings = u.notificationSettings;
+        const enabled = settings ? settings.enabled : true;
+        if (!enabled) return false;
+
+        const prefs = settings?.prefs ?? UserNotificationSettingsEntity.DEFAULT_PREFS;
+        if (settingKey && prefs[settingKey] === false) {
+          return false;
+        }
+        return true;
+      })
+      .map((u) => u.phone as string);
   }
 
   private async isAvatarViewAllowed(targetUserId: string, requesterUserId: string): Promise<boolean> {
@@ -135,7 +164,7 @@ export class UsersService {
 
     // If memberUserIds are not provided, find all members from all groups the user belongs to
     let targetMemberIds = options?.memberUserIds;
-    if (!targetMemberIds || targetMemberIds.length === 0) {
+    if (!targetMemberIds) {
       const memberships = await this.memberRepository.find({
         where: { userId },
         select: ['groupId'],
@@ -178,6 +207,21 @@ export class UsersService {
   async saveFcmToken(userId: string, token: string) {
     await this.repository.update({ id: userId }, { fcmToken: token });
     return { message: 'Token updated' };
+  }
+
+  async findBySmsCode(code: string): Promise<UserEntity | null> {
+    return this.repository.findOne({ where: { smsCode: code }, select: ['id', 'smsCode', 'firstName', 'lastName'] });
+  }
+
+  private async generateUniqueSmsCode(): Promise<string> {
+    let code = '';
+    let isUnique = false;
+    while (!isUnique) {
+      code = this.securityService.generateSmsCode();
+      const existing = await this.findBySmsCode(code);
+      if (!existing) isUnique = true;
+    }
+    return code;
   }
 
   async upsertFile(
@@ -291,13 +335,34 @@ export class UsersService {
       (item as any).notificationSettings = this.notificationSettingsRepository.create({
         prefs: UserNotificationSettingsEntity.DEFAULT_PREFS,
       });
+      (item as any).smsCode = await this.generateUniqueSmsCode();
     }
 
-    // Auto-resolve alertRegionUid from region/district text only if client didn't send one directly
-    if (!item.alertRegionUid && (item.region || item.district)) {
-      const resolvedUid = await this.resolveAlertRegionUid(item.region, item.district);
-      if (resolvedUid) {
-        item.alertRegionUid = resolvedUid;
+    // Auto-resolve alertRegionUid from coordinates OR region/district text
+    if (!item.alertRegionUid) {
+      if (item.latitude && item.longitude) {
+        // Step 1: Reverse geocode to get reliable Ukrainian names
+        const geo = await this.geocodingService.reverseGeocode(item.latitude, item.longitude);
+        if (geo) {
+          // Auto-fill region/district strings if they are missing
+          if (!item.region) item.region = geo.region || undefined;
+          if (!item.district) item.district = geo.district || geo.city || undefined;
+
+          // Step 2: Resolve the UID using these reliable names
+          const resolvedUid = await this.alertRegionResolver.resolve(
+            geo.region || undefined,
+            geo.district || geo.city || undefined,
+          );
+          if (resolvedUid) {
+            item.alertRegionUid = resolvedUid;
+          }
+        }
+      } else if (item.region || item.district) {
+        // Fallback to string-based resolution if no coordinates
+        const resolvedUid = await this.alertRegionResolver.resolve(item.region, item.district);
+        if (resolvedUid) {
+          item.alertRegionUid = resolvedUid;
+        }
       }
     }
 

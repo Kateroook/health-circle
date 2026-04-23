@@ -32,5 +32,5 @@ export function useSyncSignal(onSync: () => void) {
     );
 
     return () => unsubscribe();
-  }, [user, onSync]);
+  }, [user?.id, onSync]);
 }

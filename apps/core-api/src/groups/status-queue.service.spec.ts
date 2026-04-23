@@ -226,7 +226,7 @@ describe('StatusQueueService', () => {
 
       await service.handleStatusTransitions();
 
-      expect(usersService.updateStatus).toHaveBeenCalledWith('user-1', UserStatus.WAS_SAFE);
+      expect(usersService.updateStatus).toHaveBeenCalledWith('user-1', UserStatus.WAS_SAFE, { memberUserIds: [] });
     });
   });
 });

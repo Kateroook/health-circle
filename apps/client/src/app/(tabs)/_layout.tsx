@@ -86,7 +86,7 @@ export default function TabLayout() {
     <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <CustomTabBar {...props} />}>
       <Tabs.Screen name="Dashboard" />
       <Tabs.Screen name="Circles" />
-      <Tabs.Screen name="Settings" />
+      <Tabs.Screen name="settings" />
     </Tabs>
   );
 }
@@ -97,8 +97,8 @@ const styles = StyleSheet.create({
     left: 32,
     right: 32,
     height: 56,
-    zIndex: 0,
-    elevation: 0,
+    zIndex: 100,
+    elevation: 8,
     backgroundColor: "#000",
     borderRadius: 30,
     flexDirection: "row",

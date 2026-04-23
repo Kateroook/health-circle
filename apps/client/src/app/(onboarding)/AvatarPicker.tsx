@@ -5,13 +5,14 @@ import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { ScreenIds } from "@/src/utils/testIDs";
 import { AntDesign } from "@expo/vector-icons";
+import { Asset } from "expo-asset";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { FlatList, Image, Pressable, StyleSheet, View } from "react-native";
+import { FlatList, Image, ImageSourcePropType, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const DEFAULT_AVATARS: { id: string; source: ReturnType<typeof require> }[] = [
+const DEFAULT_AVATARS: { id: string; source: ImageSourcePropType }[] = [
   { id: "cool", source: require("@/src/assets/images/avatars/avatar-cool.png") },
   { id: "duckling", source: require("@/src/assets/images/avatars/avatar-duckling.png") },
   { id: "chillguy", source: require("@/src/assets/images/avatars/avatar-chillguy.png") },
@@ -26,14 +27,13 @@ const AVATAR_SIZE = 200;
 const GRID_ITEM_SIZE = 72;
 const NUM_COLUMNS = 4;
 
+type AvatarItem = { id: string; source: ImageSourcePropType };
+
 export default function AvatarPickerScreen() {
   const user = useAuthStore((s: ReturnType<typeof useAuthStore.getState>) => s.user);
   const updateUser = useAuthStore((s: ReturnType<typeof useAuthStore.getState>) => s.updateUser);
 
-  const [selectedAvatar, setSelectedAvatar] = useState<{
-    id: string;
-    source: ReturnType<typeof require>;
-  } | null>(null);
+  const [selectedAvatar, setSelectedAvatar] = useState<AvatarItem | null>(null);
   const [customImage, setCustomImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -52,25 +52,28 @@ export default function AvatarPickerScreen() {
     }
   };
 
-  const handleSelectDefault = (avatar: { id: string; source: ReturnType<typeof require> }) => {
+  const handleSelectDefault = (avatar: AvatarItem) => {
     setSelectedAvatar(avatar);
     setCustomImage(null);
   };
 
   const handleNext = async () => {
-    // Нічого не вибрано — просто пропускаємо
     if (!customImage && !selectedAvatar) {
       finish();
       return;
     }
 
-    // Завантаження кастомного фото
-    if (customImage && user?.id) {
-      setLoading(true);
-      try {
+    if (!user?.id) {
+      finish();
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (customImage) {
         const filename = customImage.split("/").pop()!;
         const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : "image";
+        const type = match ? `image/${match[1]}` : "image/jpeg";
         const response = await apiUploadFile(`/users/${user.id}/avatar`, {
           uri: customImage,
           name: filename,
@@ -79,19 +82,29 @@ export default function AvatarPickerScreen() {
         if (response?.avatarUpdatedAt) {
           updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
         }
-      } catch (e) {
-        console.error("Avatar upload error:", e);
-      } finally {
-        setLoading(false);
+      } else if (selectedAvatar) {
+        const asset = await Asset.fromModule(selectedAvatar.source as number).downloadAsync();
+        const uri = asset.localUri ?? asset.uri;
+        const filename = `avatar-${selectedAvatar.id}.png`;
+        const response = await apiUploadFile(`/users/${user.id}/avatar`, {
+          uri,
+          name: filename,
+          type: "image/png",
+        });
+        if (response?.avatarUpdatedAt) {
+          updateUser({ avatarUpdatedAt: response.avatarUpdatedAt });
+        }
       }
+    } catch (e) {
+      console.error("Avatar upload error:", e);
+    } finally {
+      setLoading(false);
     }
-
-    // TODO: завантаження дефолтного аватару (поки пропускаємо — сервер може не підтримувати)
 
     finish();
   };
 
-  const previewSource = customImage
+  const previewSource: ImageSourcePropType | null = customImage
     ? { uri: customImage }
     : selectedAvatar
       ? selectedAvatar.source
@@ -144,12 +157,12 @@ export default function AvatarPickerScreen() {
 
       <FlatList
         data={DEFAULT_AVATARS}
-        keyExtractor={(item: { id: string; source: ReturnType<typeof require> }) => item.id}
+        keyExtractor={(item: AvatarItem) => item.id}
         numColumns={NUM_COLUMNS}
         scrollEnabled={false}
         contentContainerStyle={styles.grid}
         columnWrapperStyle={styles.gridRow}
-        renderItem={({ item }: { item: { id: string; source: ReturnType<typeof require> } }) => {
+        renderItem={({ item }: { item: AvatarItem }) => {
           const isSelected = selectedAvatar?.id === item.id;
           return (
             <Pressable

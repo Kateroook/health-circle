@@ -1,4 +1,5 @@
 import { ModalProvider } from "@/src/components/modal";
+import { PortalProvider } from "@/src/components/modal/PortalProvider";
 import { ToastProvider } from "@/src/components/Toast/ToastProvider";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
@@ -308,22 +309,24 @@ export default function RootLayout() {
   }
 
   return (
-    <ToastProvider>
-      <ModalProvider>
-        <React.Fragment>
-          <StatusBar style="auto" />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Protected guard={isLoggedIn}>
-              <Stack.Screen name="(tabs)" />
-            </Stack.Protected>
-            <Stack.Protected guard={!isLoggedIn && !hasCompletedOnboarding}>
-              <Stack.Screen name="(onboarding)/index" />
-            </Stack.Protected>
-            <Stack.Screen name="(auth)" />
-          </Stack>
-        </React.Fragment>
-      </ModalProvider>
-    </ToastProvider>
+    <PortalProvider>
+      <ToastProvider>
+        <ModalProvider>
+          <React.Fragment>
+            <StatusBar style="auto" />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Protected guard={isLoggedIn}>
+                <Stack.Screen name="(tabs)" />
+              </Stack.Protected>
+              <Stack.Protected guard={!isLoggedIn && !hasCompletedOnboarding}>
+                <Stack.Screen name="(onboarding)/index" />
+              </Stack.Protected>
+              <Stack.Screen name="(auth)" />
+            </Stack>
+          </React.Fragment>
+        </ModalProvider>
+      </ToastProvider>
+    </PortalProvider>
   );
 }
 

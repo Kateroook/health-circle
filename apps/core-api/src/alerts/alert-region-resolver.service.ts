@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { GeocodingService } from 'src/geocoding/geocoding.service';
 import { Repository } from 'typeorm';
 
 import { AlertsRegionEntity } from './entities/alerts-region.entity';
@@ -66,6 +67,7 @@ export class AlertRegionResolverService {
   constructor(
     @InjectRepository(AlertsRegionEntity)
     private readonly alertsRegionRepository: Repository<AlertsRegionEntity>,
+    private readonly geocodingService: GeocodingService,
   ) {}
 
   async resolve(region?: string, district?: string): Promise<number | null> {
@@ -87,6 +89,17 @@ export class AlertRegionResolverService {
       .getOne();
 
     return match ? match.uid : oblast.uid;
+  }
+
+  async resolveByCoordinates(lat: number, lon: number): Promise<number | null> {
+    const geo = await this.geocodingService.reverseGeocode(lat, lon);
+    if (!geo) return null;
+
+    // First try resolving by the reliable names from geocoder
+    const resolved = await this.resolve(geo.region || undefined, geo.district || geo.city || undefined);
+    if (resolved) return resolved;
+
+    return null;
   }
 
   private normalizeRegionName(region?: string): string | null {

@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, type ReactNode } from "react";
+import React, { useEffect, useId, useRef, type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { theme } from "@/src/theme/theme";
 import { markModalHidden, markModalVisible } from "./modalVisibility";
+import { Portal } from "./PortalProvider";
 
 type BottomSheetContainerProps = {
   isVisible: boolean;
@@ -41,31 +42,35 @@ export const BottomSheetContainer: React.FC<BottomSheetContainerProps> = ({
     [],
   );
 
+  const id = useId();
+
   return (
-    <Modal
-      isVisible={isVisible}
-      coverScreen={false}
-      onBackdropPress={onClose}
-      onBackButtonPress={onClose}
-      onSwipeComplete={onClose}
-      swipeDirection="down"
-      useNativeDriver
-      useNativeDriverForBackdrop
-      backdropColor={theme.colors.background.overlay}
-      backdropOpacity={1}
-      propagateSwipe
-      style={styles.modal}
-    >
-      <SafeAreaView
-        edges={["bottom"]}
-        testID={testId}
-        accessibilityLabel={testId}
-        style={styles.sheet}
+    <Portal id={id} group="modals">
+      <Modal
+        isVisible={isVisible}
+        coverScreen={false}
+        onBackdropPress={onClose}
+        onBackButtonPress={onClose}
+        onSwipeComplete={onClose}
+        swipeDirection="down"
+        useNativeDriver
+        useNativeDriverForBackdrop
+        backdropColor={theme.colors.background.overlay}
+        backdropOpacity={1}
+        propagateSwipe
+        style={styles.modal}
       >
-        <View style={styles.grabber} />
-        <View style={styles.container}>{children}</View>
-      </SafeAreaView>
-    </Modal>
+        <SafeAreaView
+          edges={["bottom"]}
+          testID={testId}
+          accessibilityLabel={testId}
+          style={styles.sheet}
+        >
+          <View style={styles.grabber} />
+          <View style={styles.container}>{children}</View>
+        </SafeAreaView>
+      </Modal>
+    </Portal>
   );
 };
 
@@ -74,7 +79,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     margin: 0,
     zIndex: 99999,
-    elevation: 9999,
+    elevation: 20,
   },
   sheet: {
     backgroundColor: theme.colors.background.secondary,

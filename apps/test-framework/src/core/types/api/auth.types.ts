@@ -1,6 +1,6 @@
-import { UserStatus } from './common.types';
-
 // ============ Auth DTOs ============
+
+import { UserStatus } from './common.types';
 
 export interface UserLoginDto {
   identifier: string;
@@ -34,6 +34,7 @@ export interface UserProfileDto {
   middleName?: string;
   lastName: string;
   fullName: string | null;
+  status: UserStatus;
   email: string | null;
   phone: string | null;
   avatarUpdatedAt?: Date;
