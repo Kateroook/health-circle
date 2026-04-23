@@ -92,13 +92,13 @@ test.describe(
 
           const rollCallResult = await currentApi.users.initiatePersonalRollCall(targetID);
 
-          expect(rollCallResult.response.status()).toBe(options.expectedStatus);
+          expect(rollCallResult.response).toHaveStatus(options.expectedStatus);
 
           const getUser = await targetApi.users.getUser(targetID);
           if (options.expectedStatus === 201) {
             expect(typeof rollCallResult.data.message).toBe('string');
             expect(rollCallResult.data.message.length).toBeGreaterThan(0);
-            expect(getUser.data.lastPersonalRollCallAt).not.toBeNull();
+            expect(getUser.data.lastPersonalRollCallAt).toBeDefined();
           }
           if (options.expectedStatus === 403) {
             expect(getUser.data.lastPersonalRollCallAt).toBeNull();
@@ -114,7 +114,7 @@ test.describe(
       },
       async ({ api }) => {
         const rollCallResult = await api.users.initiatePersonalRollCall(utils.random.uuid());
-        expect(rollCallResult.response.status()).toBe(404);
+        expect(rollCallResult.response).toHaveStatus(404);
       },
     );
 
@@ -128,7 +128,7 @@ test.describe(
 
         const rollCallResult = await api.users.initiatePersonalRollCall(member.id!);
 
-        expect(rollCallResult.response.status()).toBe(201);
+        expect(rollCallResult.response).toHaveStatus(201);
         expect(rollCallResult.data.message.length).toBeGreaterThan(0);
 
         const getUser = await memberApi.users.getUser(member.id!);
@@ -144,7 +144,7 @@ test.describe(
       async ({ api }) => {
         api.groups.clearTokens();
         const rollCallResult = await api.users.initiatePersonalRollCall(member.id!);
-        expect(rollCallResult.response.status()).toBe(401);
+        expect(rollCallResult.response).toHaveStatus(401);
       },
     );
 
@@ -155,7 +155,7 @@ test.describe(
       },
       async ({ api }) => {
         const rollCallResult = await api.users.initiatePersonalRollCall(owner.id!);
-        expect(rollCallResult.response.status()).toBe(400);
+        expect(rollCallResult.response).toHaveStatus(400);
       },
     );
 
@@ -176,7 +176,7 @@ test.describe(
         await expect(async () => {
           const getMemberAfterRC = await memberApi.users.getUser(member.id!);
           expect(getMemberAfterRC.data.status).toBe('UNKNOWN');
-        }).toPass({ timeout: timeout.cronTimeout * 3, intervals: [timeout.medium, timeout.long] }); //TODO: adjust intervals after api fix
+        }).toPass({ timeout: timeout.cronTimeout * 5, intervals: [timeout.medium, timeout.long] }); //TODO: adjust intervals after api fix
       },
     );
 

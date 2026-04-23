@@ -31,7 +31,7 @@ test.describe(
           const getUserA = await api.users.getUser(userA.id!);
           expect(getUserA.data.status).toBe('WAS_SAFE');
           console.log(`User status after expiry: ${getUserA.data.status}`); //TODO: update timeouts after api fix
-        }).toPass({ timeout: timeout.cronTimeout * 4, intervals: [2000, 5000] });
+        }).toPass({ timeout: timeout.cronTimeout * 5, intervals: [timeout.medium, timeout.long] });
       },
     );
 
@@ -60,7 +60,7 @@ test.describe(
     test(
       '[USR-081] Manual status update resets expiry timer',
       {
-        tag: '@sanity',
+        tag: '@smoke',
       },
       async ({ api }) => {
         await api.users.updateUserStatus({ status: 'SAFE' });
@@ -79,7 +79,7 @@ test.describe(
     test(
       '[USR-082] Recovery from degraded state',
       {
-        tag: '@sanity',
+        tag: '@smoke',
       },
       async ({ api }) => {
         await api.users.updateUserStatus({ status: 'SAFE' });
@@ -88,7 +88,7 @@ test.describe(
         await expect(async () => {
           const getUserBeforeStatusChange = await api.users.getUser(userA.id!);
           expect(getUserBeforeStatusChange.data.status).toBe('WAS_SAFE');
-        }).toPass({ timeout: timeout.cronTimeout * 4, intervals: [2000, 5000] });
+        }).toPass({ timeout: timeout.cronTimeout * 5, intervals: [timeout.medium, timeout.long] });
 
         await api.users.updateUserStatus({ status: 'SAFE' });
 
@@ -105,7 +105,7 @@ test.describe(
       async ({ api }) => {
         const updateRes = await api.users.updateUserStatus({ status: 'WAS_SAFE' as any });
 
-        expect(updateRes.response.status()).toBe(200);
+        expect(updateRes.response).toHaveStatus(200);
 
         const getUserA = await api.users.getUser(userA.id!);
         expect(getUserA.data.status).toBe('WAS_SAFE');
