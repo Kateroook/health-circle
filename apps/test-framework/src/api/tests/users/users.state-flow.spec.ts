@@ -1,5 +1,6 @@
 import { UserEntity } from '@core/types/entites/user-interface';
 import { utils } from 'src/utils/utils';
+import { timeout } from 'src/utils/wait-helper';
 import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe(
@@ -9,13 +10,7 @@ test.describe(
   },
   async () => {
     let userA: UserEntity;
-    test.setTimeout(120000);
-
-    enum time_intervals {
-      t_40s = 40000,
-      t_60s = 60000,
-      t_80s = 80000,
-    }
+    test.setTimeout(120_000);
 
     test.beforeEach(async ({ spawnUser, api }) => {
       userA = await spawnUser();
@@ -30,12 +25,13 @@ test.describe(
       async ({ api }) => {
         await api.users.updateUserStatus({ status: 'SAFE' });
 
-        await utils.date.sleep(time_intervals.t_60s);
+        await utils.wait.sleep(timeout.statusExpiry + timeout.cronTimeout);
 
         await expect(async () => {
           const getUserA = await api.users.getUser(userA.id!);
           expect(getUserA.data.status).toBe('WAS_SAFE');
-        }).toPass({ timeout: time_intervals.t_40s, intervals: [2000, 5000] });
+          console.log(`User status after expiry: ${getUserA.data.status}`); //TODO: update timeouts after api fix
+        }).toPass({ timeout: timeout.cronTimeout * 4, intervals: [2000, 5000] });
       },
     );
 
@@ -54,7 +50,7 @@ test.describe(
       test(options.testName, async ({ api }) => {
         await api.users.updateUserStatus({ status: options.status as any });
 
-        await utils.date.sleep(time_intervals.t_80s);
+        await utils.wait.sleep(timeout.statusExpiry + timeout.extraLong * 2);
 
         const getUserA = await api.users.getUser(userA.id!);
         expect(getUserA.data.status).toBe(options.status);
@@ -69,11 +65,11 @@ test.describe(
       async ({ api }) => {
         await api.users.updateUserStatus({ status: 'SAFE' });
 
-        await utils.date.sleep(time_intervals.t_40s);
+        await utils.wait.sleep(timeout.statusExpiry - timeout.cronTimeout);
 
         await api.users.updateUserStatus({ status: 'SAFE' });
 
-        await utils.date.sleep(time_intervals.t_40s);
+        await utils.wait.sleep(timeout.statusExpiry - timeout.cronTimeout);
 
         const getUserA = await api.users.getUser(userA.id!);
         expect(getUserA.data.status).toBe('SAFE');
@@ -87,12 +83,12 @@ test.describe(
       },
       async ({ api }) => {
         await api.users.updateUserStatus({ status: 'SAFE' });
-        await utils.date.sleep(time_intervals.t_60s);
+        await utils.wait.sleep(timeout.statusExpiry + timeout.cronTimeout);
 
         await expect(async () => {
           const getUserBeforeStatusChange = await api.users.getUser(userA.id!);
           expect(getUserBeforeStatusChange.data.status).toBe('WAS_SAFE');
-        }).toPass({ timeout: time_intervals.t_40s, intervals: [2000, 5000] });
+        }).toPass({ timeout: timeout.cronTimeout * 4, intervals: [2000, 5000] });
 
         await api.users.updateUserStatus({ status: 'SAFE' });
 

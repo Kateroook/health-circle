@@ -21,7 +21,7 @@ test.describe(
 
     let ownerGroup: GroupEntity;
 
-    test.setTimeout(120000);
+    test.setTimeout(120_000);
 
     test.beforeEach(async ({ spawnUser, spawnApi, api }) => {
       owner = await spawnUser();
