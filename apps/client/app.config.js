@@ -11,14 +11,18 @@ export default {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.vlad-risenhin.health-circle",
-      googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST || "./GoogleService-Info.plist",
+      bundleIdentifier: "com.healthcircle.app",
+      googleServicesFile: process.env.GOOGLE_SERVICES_IOS || "./GoogleService-Info.plist",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+        NSLocationWhenInUseUsageDescription:
+          "Allow Health Circle to access your location to share your safety status with your circles.",
+        NSLocationAlwaysAndWhenInUseUsageDescription:
+          "Allow Health Circle to access your location even in the background to keep your circles updated on your safety.",
       },
     },
     android: {
-      package: "com.vlad_risenhin.health_circle",
+      package: "com.healthcircle.app",
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
