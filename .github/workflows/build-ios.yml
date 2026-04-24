@@ -1,0 +1,81 @@
+name: Build iOS App v2
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - feat/ios-build
+
+jobs:
+  build:
+    name: Build iOS App
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./apps/client
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: apps/client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Restore GoogleService-Info.plist
+        run: |
+          echo "${{ secrets.FIREBASE_GOOGLE_SERVICE_INFO_PLIST }}" | base64 --decode > GoogleService-Info.plist
+          if [ -s "GoogleService-Info.plist" ]; then
+            echo "✅ GoogleService-Info.plist restored successfully"
+            ls -al GoogleService-Info.plist
+          else
+            echo "❌ Failed to restore GoogleService-Info.plist"
+            exit 1
+          fi
+
+      - name: Verify Environment and Dependencies
+        run: |
+          echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          echo "Xcode version: $(xcodebuild -version | head -n 1)"
+          echo "CocoaPods version: $(pod --version)"
+          echo "Current directory: $(pwd)"
+          ls -R . | grep -E "GoogleService|app\.config|package\.json"
+
+      - name: Prebuild iOS (Diagnostics)
+        run: npx expo prebuild --platform ios --no-install
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GOOGLE_SERVICE_INFO_PLIST: ${{ github.workspace }}/apps/client/GoogleService-Info.plist
+
+      - name: Build iOS Simulator App
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL || env.EXPO_PUBLIC_API_URL }}
+          GOOGLE_SERVICE_INFO_PLIST: ${{ github.workspace }}/apps/client/GoogleService-Info.plist
+        run: eas build --platform ios --profile simulator --local --non-interactive --output build.tar.gz --verbose-logs
+
+      - name: Define Artifact Name
+        id: artifact_name
+        run: |
+          echo "NAME=health-circle-dev-${{ github.run_number }}-ios" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Rename Build Archive
+        run: mv build.tar.gz ${{ steps.artifact_name.outputs.NAME }}.tar.gz
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.artifact_name.outputs.NAME }}
+          path: apps/client/${{ steps.artifact_name.outputs.NAME }}.tar.gz
+          retention-days: 7

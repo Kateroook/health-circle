@@ -12,7 +12,9 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.healthcircle.app",
+      googleServicesFile: process.env.GOOGLE_SERVICES_IOS || "./GoogleService-Info.plist",
       infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
         NSLocationWhenInUseUsageDescription:
           "Allow Health Circle to access your location to share your safety status with your circles.",
         NSLocationAlwaysAndWhenInUseUsageDescription:
@@ -39,6 +41,8 @@ export default {
     plugins: [
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
+      "./plugins/withPodfileAllowNonModularIncludes.js",
+      "./plugins/withFirestorePrebuilt.js",
       "expo-notifications",
       "expo-router",
       "expo-location",
@@ -60,7 +64,10 @@ export default {
           android: {
             usesCleartextTraffic: false,
           },
-          ios: {},
+          ios: {
+            useFrameworks: "static",
+            forceStaticLinking: ["RNFBApp", "RNFBMessaging", "RNFBFirestore", "FirebaseFirestore"],
+          },
         },
       ],
     ],

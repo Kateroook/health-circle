@@ -1,12 +1,28 @@
 {
+  "cli": {
+    "appVersionSource": "local",
+    "promptToConfigurePushNotifications": false
+  },
   "build": {
     "preview": {
       "distribution": "internal"
+    },
+    "simulator": {
+      "ios": {
+        "simulator": true
+      }
     },
     "production": {
       "distribution": "store",
       "android": {
         "buildType": "app-bundle"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6761667888"
       }
     }
   }
