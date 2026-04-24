@@ -26,6 +26,7 @@ export class UserProfileDto {
       sessionId?: string;
       isPasswordExpired?: boolean;
       isPasswordRevoked?: boolean;
+      smsTargetNumber?: string;
     },
   ) {
     this.id = user.id;
@@ -40,6 +41,11 @@ export class UserProfileDto {
     this.region = user.region;
     this.district = user.district;
     this.alertRegionUid = user.alertRegionUid;
+    this.smsCode = user.smsCode;
+    this.smsTargetNumber = user.smsTargetNumber;
     this.sessionId = user.sessionId;
   }
+
+  smsCode: string;
+  smsTargetNumber?: string;
 }

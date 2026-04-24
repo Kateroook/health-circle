@@ -61,4 +61,13 @@ export class SecurityService {
   generateRandomToken(length = 32): string {
     return randomBytes(length).toString('hex');
   }
+
+  generateSmsCode(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/1/0 to avoid confusion
+    let suffix = '';
+    for (let i = 0; i < 10; i++) {
+      suffix += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return `HC-${suffix}`;
+  }
 }

@@ -5,6 +5,7 @@ import {
   GetUserResponse,
   ModifyUserRequest,
   ModifyUserResponse,
+  RollCallResponse,
   SaveFcmTokenResponse,
   UpdateUserStatusRequest,
   UpdateUserStatusResponse,
@@ -144,5 +145,13 @@ export class UserClient extends BaseClient {
     return await this.put<SaveFcmTokenResponse>('/api/users/fcm-token', {
       data: { token },
     });
+  }
+
+  /**
+   * POST /api/users/{id}/roll-call
+   * Почати персональну перекличку
+   */
+  public async initiatePersonalRollCall(userId: string): Promise<ApiResult<RollCallResponse>> {
+    return await this.post<RollCallResponse>(`/api/users/${userId}/roll-call`);
   }
 }

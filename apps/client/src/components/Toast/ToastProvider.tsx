@@ -4,8 +4,8 @@ import { Feather } from "@expo/vector-icons";
 import React, { createContext, useCallback, useContext, useMemo, type ComponentProps } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FullWindowOverlay } from "react-native-screens";
 import Toast, { type ToastConfig } from "react-native-toast-message";
+import { Portal } from "../modal/PortalProvider";
 import type { ShowToastOptions, ToastType } from "./types";
 
 type ToastContextValue = {
@@ -181,12 +181,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <FullWindowOverlay>
-        <View pointerEvents="box-none" style={styles.hostLayer}>
-          <Toast config={toastConfig} topOffset={insets.top + theme.spacing[8]} />
-        </View>
-      </FullWindowOverlay>
+      <GlobalToast />
     </ToastContext.Provider>
+  );
+}
+
+export function GlobalToast() {
+  const insets = useSafeAreaInsets();
+  return (
+    <Portal id="global-toast" group="toasts">
+      <View pointerEvents="box-none" style={styles.hostLayer}>
+        <Toast config={toastConfig} topOffset={insets.top + theme.spacing[8]} />
+      </View>
+    </Portal>
   );
 }
 
@@ -214,7 +221,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 30,
   },
   compactIconCircle: {
     width: 20,
@@ -241,7 +248,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 16,
-    elevation: 4,
+    elevation: 30,
   },
   iconCircle: {
     width: 32,

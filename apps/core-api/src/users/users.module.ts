@@ -1,12 +1,15 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AlertsModule } from 'src/alerts/alerts.module';
 import { UserUniqueConstraint } from 'src/common/constraints/user-unique.constraint';
 import { ConfirmationsModule } from 'src/confirmations/confirmations.module';
 import { ContactEntity } from 'src/contacts/entities/contact.entity';
 import { ExternalFilesModule } from 'src/external-files/external-files.module';
+import { GeocodingModule } from 'src/geocoding/geocoding.module';
 import { NotificationsModule } from 'src/notifications/notifications.module';
 import { StatusUpdateQueueWorker } from 'src/notifications/status-update-queue.worker';
+import { SecurityModule } from 'src/security/security.module';
+import { SmsModule } from 'src/sms/sms.module';
 import { UserActivitiesModule } from 'src/user-activities/user-activities.module';
 
 import { GroupEntity } from '../groups/entities/group.entity';
@@ -37,6 +40,9 @@ import { UsersService } from './users.service';
     ExternalFilesModule,
     NotificationsModule,
     AlertsModule,
+    forwardRef(() => SmsModule),
+    GeocodingModule,
+    SecurityModule,
   ],
   providers: [UsersService, UserUniqueConstraint, SessionActivityService, StatusUpdateQueueWorker],
   controllers: [UsersController],

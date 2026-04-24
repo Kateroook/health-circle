@@ -1,4 +1,5 @@
 import { UserEntity } from '@core/types/entites/user-interface';
+import { AlertRegions } from '../../../core/data/regions';
 import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe('GET /api/alerts/status Статус тривоги користувача', { tag: '@alerts' }, async () => {
@@ -21,25 +22,25 @@ test.describe('GET /api/alerts/status Статус тривоги користу
   test('[ALT-012] Get status while 1 active alerts is present on server', { tag: '@sanity' }, async ({ api }) => {
     await api.users.modifyUser({
       id: user.id!,
-      alertRegionUid: 14,
+      alertRegionUid: AlertRegions.KYIV_OBLAST.uid,
     } as any);
 
-    await api.alertsMock.startAlert({ uid: 14, title: 'Київська область' } as any);
+    await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
     await api.alerts.triggerSync();
 
     const statusRes = await api.alerts.getMyAlertStatus();
     expect(statusRes.response.status()).toBe(200);
     expect(statusRes.data.active).toBe(true);
-    expect(statusRes.data.userAlertRegionUid).toBe(14);
+    expect(statusRes.data.userAlertRegionUid).toBe(AlertRegions.KYIV_OBLAST.uid);
     expect(statusRes.data.alert).not.toBeNull();
   });
 
   test('[ALT-013] Check DTO structure', { tag: '@sanity' }, async ({ api }) => {
     await api.users.modifyUser({
       id: user.id!,
-      alertRegionUid: 14,
+      alertRegionUid: AlertRegions.KYIV_OBLAST.uid,
     } as any);
-    await api.alertsMock.startAlert({ uid: 14, title: 'Київська область' } as any);
+    await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
     await api.alerts.triggerSync();
 
     const statusRes = await api.alerts.getMyAlertStatus();
@@ -69,18 +70,18 @@ test.describe('GET /api/alerts/status Статус тривоги користу
   test('[ALT-014] Check consistency with /active', { tag: '@sanity' }, async ({ api }) => {
     await api.users.modifyUser({
       id: user.id!,
-      alertRegionUid: 14,
+      alertRegionUid: AlertRegions.KYIV_OBLAST.uid,
     } as any);
 
-    await api.alertsMock.startAlert({ uid: 27, title: 'Львівська область' } as any);
+    await api.alertsMock.startAlert(AlertRegions.LVIV_OBLAST);
     await api.alerts.triggerSync();
 
     const activeAlerts = await api.alerts.getActiveAlerts();
-    expect(activeAlerts.data).toContain(27);
+    expect(activeAlerts.data).toContain(AlertRegions.LVIV_OBLAST.uid);
 
     const statusRes = await api.alerts.getMyAlertStatus();
     expect(statusRes.data.active).toBe(false);
-    expect(statusRes.data.userAlertRegionUid).toBe(14);
+    expect(statusRes.data.userAlertRegionUid).toBe(AlertRegions.KYIV_OBLAST.uid);
   });
 
   test('[ALT-015] Get status of alerts without authorization', { tag: '@sanity' }, async ({ api }) => {

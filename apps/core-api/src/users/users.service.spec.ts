@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
 import { NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config/dist/config.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AlertRegionResolverService } from 'src/alerts/alert-region-resolver.service';
@@ -11,10 +12,12 @@ import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ContactEntity } from 'src/contacts/entities/contact.entity';
 import { ExternalFilesEntity } from 'src/external-files/entities/external-files.entity';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { GeocodingService } from 'src/geocoding/geocoding.service';
 import { GroupEntity } from 'src/groups/entities/group.entity';
 import { GroupBlockListEntity } from 'src/groups/entities/group-block-list.entity';
 import { GroupMemberEntity } from 'src/groups/entities/group-member.entity';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 import { STATUS_UPDATE_SIDE_EFFECTS_QUEUE } from 'src/notifications/status-update.queue.constants';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { UserEntity } from 'src/users/entities/user.entity';
@@ -154,6 +157,10 @@ describe('UsersService', () => {
     resolve: jest.fn().mockResolvedValue(null),
   });
 
+  const mockGeocodingService = () => ({
+    reverseGeocode: jest.fn().mockResolvedValue(null),
+  });
+
   //
   // BEFORE EACH
   //
@@ -167,6 +174,8 @@ describe('UsersService', () => {
         { provide: UserActivitiesService, useValue: mockUserActivitiesService() },
         { provide: ExternalFilesService, useValue: mockExternalFilesService() },
         { provide: FirestoreSyncService, useValue: { sendSyncSignal: jest.fn() } },
+        { provide: NotificationsService, useValue: { send: jest.fn() } },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
         { provide: getRepositoryToken(GroupEntity), useValue: createRepoMock() },
         { provide: getRepositoryToken(GroupBlockListEntity), useValue: createRepoMock() },
         { provide: getRepositoryToken(GroupMemberEntity), useValue: createRepoMock() },
@@ -174,6 +183,7 @@ describe('UsersService', () => {
         { provide: getRepositoryToken(UserNotificationSettingsEntity), useValue: createRepoMock() },
         { provide: QueueService, useValue: mockQueueService() },
         { provide: AlertRegionResolverService, useValue: mockAlertRegionResolver() },
+        { provide: GeocodingService, useValue: mockGeocodingService() },
         { provide: SessionActivityService, useValue: { trackActivity: jest.fn() } },
       ],
     }).compile();

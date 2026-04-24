@@ -1,8 +1,10 @@
+import { logger } from "../utils/logger";
+
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
   (process.env.NODE_ENV === "development"
     ? "http://localhost:3001/api"
-    : "http://34.116.132.120:3001/api");
+    : "https://health-circle-production.up.railway.app/api");
 
 export class ApiError extends Error {
   status: number;
@@ -41,13 +43,11 @@ export async function apiFetch(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (__DEV__) {
-    console.log(`[apiFetch] → ${url}`, {
-      method: options.method || "GET",
-      body: options.body ? tryParse(options.body) : undefined,
-      headers,
-    });
-  }
+  logger.api(`[apiFetch] → ${url}`, {
+    method: options.method || "GET",
+    body: options.body ? tryParse(options.body) : undefined,
+    headers,
+  });
 
   const res = await fetch(url, {
     ...options,
@@ -56,13 +56,11 @@ export async function apiFetch(
 
   const text = await res.text();
 
-  if (__DEV__) {
-    console.log(`[apiFetch] ← ${res.status} ${res.statusText}`, {
-      ok: res.ok,
-      url,
-      preview: previewJson(text),
-    });
-  }
+  logger.api(`[apiFetch] ← ${res.status} ${res.statusText}`, {
+    ok: res.ok,
+    url,
+    preview: previewJson(text),
+  });
 
   if (!res.ok) {
     // Auto-refresh on 401: try to refresh the session and retry the request once
@@ -91,7 +89,7 @@ export async function apiFetch(
   try {
     return JSON.parse(text);
   } catch (err) {
-    if (__DEV__) console.log("[apiFetch] JSON parse error:", err);
+    logger.error("[apiFetch] JSON parse error:", err);
     return null;
   }
 }
@@ -121,9 +119,7 @@ export async function apiUploadFile(
   const formData = new FormData();
   formData.append("file", file as any);
 
-  if (__DEV__) {
-    console.log(`[apiUploadFile] → ${API_URL}${path}`, { file });
-  }
+  logger.api(`[apiUploadFile] → ${API_URL}${path}`, { file });
 
   const res = await apiFetch(path, {
     method: "PUT",
@@ -133,9 +129,7 @@ export async function apiUploadFile(
     },
   });
 
-  if (__DEV__) {
-    console.log(`[apiUploadFile] ← Success`, { path });
-  }
+  logger.api(`[apiUploadFile] ← Success`, { path });
 
   return res;
 }

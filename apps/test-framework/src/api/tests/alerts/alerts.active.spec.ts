@@ -1,3 +1,4 @@
+import { AlertRegions } from '../../../core/data/regions';
 import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe('GET /api/alerts/active Активні тривоги', { tag: '@alerts' }, async () => {
@@ -16,7 +17,7 @@ test.describe('GET /api/alerts/active Активні тривоги', { tag: '@a
   });
 
   test('[ALT-002] Get list with one active alert', { tag: '@sanity' }, async ({ api }) => {
-    await api.alertsMock.startAlert({ uid: 14, title: 'Київська область' });
+    await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
     await api.alerts.triggerSync();
 
     const getAlerts = await api.alerts.getActiveAlerts();
@@ -25,9 +26,9 @@ test.describe('GET /api/alerts/active Активні тривоги', { tag: '@a
   });
 
   test('[ALT-003] Get list with few active alerts', { tag: '@sanity' }, async ({ api }) => {
-    await api.alertsMock.startAlert({ uid: 14, title: 'Київська область' });
-    await api.alertsMock.startAlert({ uid: 27, title: 'Львівська область' });
-    await api.alertsMock.startAlert({ uid: 18, title: 'Одеська область' });
+    await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
+    await api.alertsMock.startAlert(AlertRegions.LVIV_OBLAST);
+    await api.alertsMock.startAlert(AlertRegions.ODESA_OBLAST);
     await api.alerts.triggerSync();
 
     const getAlerts = await api.alerts.getActiveAlerts();

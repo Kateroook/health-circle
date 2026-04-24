@@ -65,6 +65,8 @@ export interface ListItemProps {
   status?: UserStatus;
   /** Hide the right-side chevron icon (compact layout). Defaults to false. */
   hideChevron?: boolean;
+  /** Custom icon to show on the right side (compact layout). */
+  trailingIcon?: React.ReactNode;
   testId?: string;
 }
 
@@ -118,6 +120,7 @@ export const ListItem: React.FC<ListItemProps> = ({
   checked = false,
   status,
   hideChevron = false,
+  trailingIcon,
   testId,
 }) => {
   const isCompact = layout === "compact";
@@ -161,6 +164,9 @@ export const ListItem: React.FC<ListItemProps> = ({
   const renderTailArtwork = () => {
     switch (layout) {
       case "compact":
+        if (trailingIcon) {
+          return <View style={styles.tailArrowFrame}>{trailingIcon}</View>;
+        }
         if (hideChevron) return null;
         return (
           <View style={styles.tailArrowFrame}>
