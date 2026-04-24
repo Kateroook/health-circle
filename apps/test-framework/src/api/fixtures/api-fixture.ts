@@ -1,14 +1,16 @@
-import { APIRequestContext, test as base } from '@playwright/test';
-import { DbManager } from '../../core/db/db-manager';
-import { UserRepository } from '../../core/db/repositories/user-repository';
-import { GroupRepository } from '../../core/db/repositories/group-repository';
-import { ContactRepository } from '../../core/db/repositories/contact-repository';
-import { ConfirmationCodeRepository } from '../../core/db/repositories/confirmation-code-repository';
-import { DbCleaner } from '../../core/db/db-cleaner';
-import { ApiClientFactory } from '../../core/api/api-client-factory';
+import { test as base, mergeExpects } from '@playwright/test';
 import { Kysely } from 'kysely';
+import { ApiClientFactory } from '../../core/api/api-client-factory';
+import { expect as statusExpect } from '../../core/api/helpers/response-checker';
+import { BackendProvider } from '../../core/backend-provider';
+import { DbCleaner } from '../../core/db/db-cleaner';
+import { DbManager } from '../../core/db/db-manager';
+import { ConfirmationCodeRepository } from '../../core/db/repositories/confirmation-code-repository';
+import { ContactRepository } from '../../core/db/repositories/contact-repository';
+import { GroupRepository } from '../../core/db/repositories/group-repository';
+import { UserRepository } from '../../core/db/repositories/user-repository';
 import { Database } from '../../core/db/schema';
-
+import { UserEntity } from '../../core/types/entites/user-interface';
 export type ApiFixture = {
   db: Kysely<Database>;
 };
@@ -24,59 +26,50 @@ export const workerTest = base.extend<{}, ApiFixture>({
 });
 
 export type MyFixture = {
+  backendProvider: BackendProvider;
   userRepository: UserRepository;
   groupRepository: GroupRepository;
   contactRepository: ContactRepository;
   confirmationCodeRepository: ConfirmationCodeRepository;
   dbCleaner: DbCleaner;
   api: ApiClientFactory;
-  spawnApi: Promise<ApiClientFactory>;
+  spawnApi: () => Promise<ApiClientFactory>;
+  spawnUser: (overrides?: Partial<UserEntity>) => Promise<UserEntity>;
 };
 
 export const test = workerTest.extend<MyFixture>({
-  dbCleaner: async ({ db: dbClient }, use) => {
-    const dbCleaner = new DbCleaner(dbClient);
-    await use(dbCleaner);
-    await dbCleaner.cleanup();
+  backendProvider: async ({ db, request }, use) => {
+    const provider = await BackendProvider.init(db, request);
+    await use(provider);
+    await provider.cleanup();
+    await provider.dispose();
   },
-  userRepository: async ({ db: dbClient, dbCleaner }, use) => {
-    await use(new UserRepository(dbClient, dbCleaner));
+  dbCleaner: async ({ backendProvider }, use) => {
+    await use(backendProvider.dbCleaner);
   },
-  groupRepository: async ({ db: dbClient, dbCleaner }, use) => {
-    await use(new GroupRepository(dbClient, dbCleaner));
+  userRepository: async ({ backendProvider }, use) => {
+    await use(backendProvider.userRepository);
   },
-  contactRepository: async ({ db: dbClient, dbCleaner }, use) => {
-    await use(new ContactRepository(dbClient, dbCleaner));
+  groupRepository: async ({ backendProvider }, use) => {
+    await use(backendProvider.groupRepository);
   },
-  confirmationCodeRepository: async ({ db: dbClient, dbCleaner }, use) => {
-    await use(new ConfirmationCodeRepository(dbClient, dbCleaner));
+  contactRepository: async ({ backendProvider }, use) => {
+    await use(backendProvider.contactRepository);
   },
-
-  api: async ({ dbCleaner, request }, use) => {
-    const api = new ApiClientFactory({
-      request: request,
-      dbCleaner: dbCleaner,
-    });
-    await use(api);
+  confirmationCodeRepository: async ({ backendProvider }, use) => {
+    await use(backendProvider.confirmationCodeRepository);
   },
 
-  spawnApi: async ({ playwright, dbCleaner }, use) => {
-    const contexts: APIRequestContext[] = [];
+  api: async ({ backendProvider }, use) => {
+    await use(backendProvider.api);
+  },
 
-    const spawn = async () => {
-      const context = await playwright.request.newContext();
-      contexts.push(context);
-
-      return new ApiClientFactory({
-        request: context,
-        dbCleaner: dbCleaner,
-      });
-    };
-
-    await use(spawn());
-
-    for (const context of contexts) {
-      await context.dispose();
-    }
+  spawnApi: async ({ backendProvider }, use) => {
+    await use(() => backendProvider.spawnApi());
+  },
+  spawnUser: async ({ backendProvider }, use) => {
+    await use(() => backendProvider.spawnUser());
   },
 });
+
+export const expect = mergeExpects(statusExpect);

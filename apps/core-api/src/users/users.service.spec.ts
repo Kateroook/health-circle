@@ -1,20 +1,31 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
 import { NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config/dist/config.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { AlertRegionResolverService } from 'src/alerts/alert-region-resolver.service';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
-import { ExternalFilesEntity } from 'src/common/entities/external-files.entity';
-import { UserEntity } from 'src/common/entities/user.entity';
-import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
 import { UserActivityTypes } from 'src/common/enums/user-activity-types';
 import { UserStatus } from 'src/common/enums/user-status';
+import { QueueService } from 'src/common/queue/queue.service';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
+import { ContactEntity } from 'src/contacts/entities/contact.entity';
+import { ExternalFilesEntity } from 'src/external-files/entities/external-files.entity';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
+import { GeocodingService } from 'src/geocoding/geocoding.service';
+import { GroupEntity } from 'src/groups/entities/group.entity';
+import { GroupBlockListEntity } from 'src/groups/entities/group-block-list.entity';
+import { GroupMemberEntity } from 'src/groups/entities/group-member.entity';
+import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
+import { STATUS_UPDATE_SIDE_EFFECTS_QUEUE } from 'src/notifications/status-update.queue.constants';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
-import { EntityManager, Repository, SelectQueryBuilder, UpdateResult } from 'typeorm';
+import { UserEntity } from 'src/users/entities/user.entity';
+import { UserNotificationSettingsEntity } from 'src/users/entities/user-notification-settings.entity';
+import { UserPasswordEntity } from 'src/users/entities/user-password.entity';
+import { EntityManager, In, Repository, UpdateResult } from 'typeorm';
 
+import { SessionActivityService } from './session-activity.service';
 import { UsersService } from './users.service';
 
 jest.mock('firebase-admin', () => {
@@ -37,25 +48,30 @@ describe('UsersService', () => {
   let service: UsersService;
 
   let repository: jest.Mocked<Repository<UserEntity>>;
+  let groupRepository: jest.Mocked<Repository<GroupEntity>>;
+  let blockListRepository: jest.Mocked<Repository<GroupBlockListEntity>>;
+  let memberRepository: jest.Mocked<Repository<GroupMemberEntity>>;
+  let contactRepository: jest.Mocked<Repository<ContactEntity>>;
   let userActivitiesService: jest.Mocked<UserActivitiesService>;
   let externalFilesService: jest.Mocked<ExternalFilesService>;
-  let notificationsService: jest.Mocked<NotificationsService>;
+  let queueService: jest.Mocked<QueueService>;
+  let firestoreSyncService: jest.Mocked<FirestoreSyncService>;
 
   const mockUser = {
     id: 'user1',
     firstName: 'John',
     lastName: 'Doe',
-    fcmToken: null,
+    fcmToken: 'token-abc',
     status: UserStatus.UNKNOWN,
     groups: [
       {
         members: [
-          { id: 'user1', fcmToken: null },
-          { id: 'user2', fcmToken: 'token-abc' },
+          { id: 'user1', fcmToken: 'token-abc' },
+          { id: 'user2', fcmToken: 'token-xyz' },
         ],
       },
     ],
-  } as UserEntity;
+  } as unknown as UserEntity;
 
   const mockUserProfile: UserProfileDto = {
     id: 'user1',
@@ -71,36 +87,52 @@ describe('UsersService', () => {
   // MOCK FACTORIES
   //
   const createRepoMock = () => {
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      innerJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getExists: jest.fn(),
+      getOne: jest.fn(),
+      getRawOne: jest.fn(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
     return {
       findOne: jest.fn(),
+      findOneBy: jest.fn(),
+      find: jest.fn(),
       update: jest.fn(),
       save: jest.fn(),
       remove: jest.fn(),
+      delete: jest.fn(),
       existsBy: jest.fn(),
       create: jest.fn(),
 
       manager: {
         transaction: jest.fn().mockImplementation((fn) => {
-          // Create a mock transaction manager
           const trx = {
             findOne: jest.fn(),
             save: jest.fn(),
             remove: jest.fn(),
             queryRunner: {},
-          } as unknown as EntityManager; // Force cast to EntityManager
+            getRepository: jest.fn().mockImplementation((entity) => {
+              if (entity === UserEntity) return repository;
+              if (entity === GroupMemberEntity) return memberRepository;
+              return createRepoMock();
+            }),
+          } as unknown as EntityManager;
           return fn(trx);
         }),
+        getRepository: jest.fn().mockImplementation((entity) => {
+          if (entity === UserEntity) return repository;
+          if (entity === GroupMemberEntity) return memberRepository;
+          return createRepoMock();
+        }),
       },
-      createQueryBuilder: jest.fn(() => ({
-        select: jest.fn().mockReturnThis(),
-        innerJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-        getOne: jest.fn(),
-        getMany: jest.fn().mockResolvedValue([]),
-      })),
-    } as unknown as jest.Mocked<Repository<UserEntity>>;
+      createQueryBuilder: jest.fn(() => qb),
+    } as unknown as jest.Mocked<Repository<any>>;
   };
 
   const mockConfirmationsService = () => ({
@@ -117,8 +149,16 @@ describe('UsersService', () => {
     delete: jest.fn(),
   });
 
-  const mockNotificationsService = () => ({
-    sendMulticast: jest.fn(),
+  const mockQueueService = () => ({
+    send: jest.fn().mockResolvedValue(undefined),
+  });
+
+  const mockAlertRegionResolver = () => ({
+    resolve: jest.fn().mockResolvedValue(null),
+  });
+
+  const mockGeocodingService = () => ({
+    reverseGeocode: jest.fn().mockResolvedValue(null),
   });
 
   //
@@ -133,17 +173,31 @@ describe('UsersService', () => {
         { provide: ConfirmationsService, useValue: mockConfirmationsService() },
         { provide: UserActivitiesService, useValue: mockUserActivitiesService() },
         { provide: ExternalFilesService, useValue: mockExternalFilesService() },
-        { provide: NotificationsService, useValue: mockNotificationsService() },
-        { provide: ConfigService, useValue: {} },
+        { provide: FirestoreSyncService, useValue: { sendSyncSignal: jest.fn() } },
+        { provide: NotificationsService, useValue: { send: jest.fn() } },
+        { provide: ConfigService, useValue: { get: jest.fn() } },
+        { provide: getRepositoryToken(GroupEntity), useValue: createRepoMock() },
+        { provide: getRepositoryToken(GroupBlockListEntity), useValue: createRepoMock() },
+        { provide: getRepositoryToken(GroupMemberEntity), useValue: createRepoMock() },
+        { provide: getRepositoryToken(ContactEntity), useValue: createRepoMock() },
+        { provide: getRepositoryToken(UserNotificationSettingsEntity), useValue: createRepoMock() },
+        { provide: QueueService, useValue: mockQueueService() },
+        { provide: AlertRegionResolverService, useValue: mockAlertRegionResolver() },
+        { provide: GeocodingService, useValue: mockGeocodingService() },
+        { provide: SessionActivityService, useValue: { trackActivity: jest.fn() } },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
-
     repository = module.get(getRepositoryToken(UserEntity));
+    groupRepository = module.get(getRepositoryToken(GroupEntity));
+    blockListRepository = module.get(getRepositoryToken(GroupBlockListEntity));
+    memberRepository = module.get(getRepositoryToken(GroupMemberEntity));
+    contactRepository = module.get(getRepositoryToken(ContactEntity));
     userActivitiesService = module.get(UserActivitiesService);
     externalFilesService = module.get(ExternalFilesService);
-    notificationsService = module.get(NotificationsService);
+    queueService = module.get(QueueService);
+    firestoreSyncService = module.get(FirestoreSyncService);
   });
 
   //
@@ -151,31 +205,18 @@ describe('UsersService', () => {
   //
 
   describe('updateStatus', () => {
-    it('updates status and sends push', async () => {
+    it('updates status and enqueues side-effects', async () => {
       repository.findOne.mockResolvedValue(mockUser);
       repository.save.mockResolvedValue(mockUser);
 
-      const qbMock = {
-        select: jest.fn().mockReturnThis(),
-        innerJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([{ id: 'user2', fcmToken: 'token-abc' }]),
-      };
-      repository.createQueryBuilder.mockReturnValue(qbMock as any);
-
-      await service.updateStatus('user1', UserStatus.SAFE);
+      await service.updateStatus('user1', UserStatus.SAFE, { memberUserIds: ['user2'] });
 
       expect(repository.save).toHaveBeenCalled();
-      expect(notificationsService.sendMulticast).toHaveBeenCalledWith(
-        ['token-abc'],
-        expect.any(String),
-        expect.any(String),
-        expect.objectContaining({
-          userId: mockUser.id,
-          status: UserStatus.SAFE,
-        }),
-      );
+      expect(queueService.send).toHaveBeenCalledWith(STATUS_UPDATE_SIDE_EFFECTS_QUEUE, {
+        senderUserId: mockUser.id,
+        status: UserStatus.SAFE,
+        memberUserIds: ['user2'],
+      });
     });
 
     it('returns undefined if user not found', async () => {
@@ -183,6 +224,7 @@ describe('UsersService', () => {
 
       const res = await service.updateStatus('x', UserStatus.SAFE);
       expect(res).toBeUndefined();
+      expect(queueService.send).not.toHaveBeenCalled();
     });
   });
 
@@ -212,11 +254,15 @@ describe('UsersService', () => {
 
       externalFilesService.replaceFile.mockResolvedValue({ id: 'file123' } as ExternalFilesEntity);
 
-      await service.upsertFile('user1', {
-        originalname: 'a.png',
-        buffer: Buffer.from('123'),
-        mimetype: 'image/png',
-      } as Express.Multer.File);
+      await service.upsertFile(
+        'user1',
+        {
+          originalname: 'a.png',
+          buffer: Buffer.from('123'),
+          mimetype: 'image/png',
+        } as Express.Multer.File,
+        'user1',
+      );
 
       expect(externalFilesService.replaceFile).toHaveBeenCalled();
 
@@ -238,22 +284,42 @@ describe('UsersService', () => {
 
       (repository.manager.transaction as jest.Mock).mockImplementation((fn) => fn(trx));
 
-      await expect(service.upsertFile('x', {} as Express.Multer.File)).rejects.toThrow(NotFoundException);
+      await expect(service.upsertFile('x', {} as Express.Multer.File, 'x')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getFile', () => {
-    it('returns stream', async () => {
+    it('returns stream if same user', async () => {
       repository.findOne.mockResolvedValue({ file: { id: 'f1' } } as UserEntity);
       externalFilesService.getStreamableFile.mockReturnValue('STREAM' as any);
 
-      const res = await service.getFile('u1');
+      const res = await service.getFile('u1', 'u1');
       expect(res).toBe('STREAM');
+    });
+
+    it('returns stream if users share a group', async () => {
+      repository.findOne.mockResolvedValue({ file: { id: 'f1' } } as UserEntity);
+      externalFilesService.getStreamableFile.mockReturnValue('STREAM' as any);
+
+      const qb = memberRepository.createQueryBuilder();
+      (qb.getExists as jest.Mock).mockResolvedValue(true);
+
+      const res = await service.getFile('target-user', 'requester-user');
+      expect(res).toBe('STREAM');
+      expect(qb.getExists).toHaveBeenCalled();
     });
 
     it('throws if no user', async () => {
       repository.findOne.mockResolvedValue(null);
-      await expect(service.getFile('x')).rejects.toThrow(NotFoundException);
+      await expect(service.getFile('x', 'x')).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws if not same user and no shared group', async () => {
+      repository.findOne.mockResolvedValue({ file: { id: 'f1' } } as UserEntity);
+      const qb = memberRepository.createQueryBuilder();
+      (qb.getExists as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.getFile('u1', 'u2')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -266,7 +332,7 @@ describe('UsersService', () => {
         queryRunner: {},
       } as unknown as EntityManager;
 
-      await service.removeFile('u1', manager);
+      await service.removeFile('u1', 'u1', manager);
 
       expect(externalFilesService.delete).toHaveBeenCalledWith('f1', manager.queryRunner);
 
@@ -281,31 +347,21 @@ describe('UsersService', () => {
         queryRunner: {},
       } as unknown as EntityManager;
 
-      await expect(service.removeFile('x', manager)).rejects.toThrow(NotFoundException);
+      await expect(service.removeFile('x', 'x', manager)).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getOne', () => {
     it('returns user', async () => {
-      // Mocking the query builder chain
-      const qbMock = {
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(mockUser),
-      };
-      repository.createQueryBuilder.mockReturnValue(qbMock as unknown as SelectQueryBuilder<UserEntity>);
+      repository.findOneBy.mockResolvedValue(mockUser);
 
       const res = await service.getOne('user1', mockUserProfile);
       expect(res).toEqual(mockUser);
-      expect(repository.createQueryBuilder).toHaveBeenCalledWith('users');
-      expect(qbMock.where).toHaveBeenCalledWith('users.id = :id', { id: 'user1' });
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 'user1' });
     });
 
     it('throws if not found', async () => {
-      const qbMock = {
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(null),
-      };
-      repository.createQueryBuilder.mockReturnValue(qbMock as any);
+      repository.findOneBy.mockResolvedValue(null);
 
       await expect(service.getOne('x', { id: 'x' } as any)).rejects.toThrow(NotFoundException);
     });
@@ -323,6 +379,57 @@ describe('UsersService', () => {
       );
 
       expect(userActivitiesService.logActivity).toHaveBeenCalledWith(UserActivityTypes.createUser, {}, { userId: 'u1' });
+    });
+
+    it('creates new user with location info', async () => {
+      repository.save.mockResolvedValue({
+        id: 'u1',
+        email: 'a@a.com',
+        latitude: 50.4501,
+        longitude: 30.5234,
+        region: 'Kyiv',
+        district: 'Shevchenkivskyi',
+      } as UserEntity);
+
+      const res = await service.save(
+        {
+          email: 'a@a.com',
+          latitude: 50.4501,
+          longitude: 30.5234,
+          region: 'Kyiv',
+          district: 'Shevchenkivskyi',
+        } as any,
+        {} as any,
+        true,
+        { id: 'u1' } as any,
+      );
+
+      expect(res.latitude).toBe(50.4501);
+      expect(res.district).toBe('Shevchenkivskyi');
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          latitude: 50.4501,
+          district: 'Shevchenkivskyi',
+        }),
+      );
+    });
+
+    it('modifies existing user with location info', async () => {
+      repository.existsBy.mockResolvedValue(true);
+      repository.save.mockResolvedValue({
+        id: 'u1',
+        latitude: 49.8397,
+        longitude: 24.0297,
+      } as UserEntity);
+
+      await service.save({ id: 'u1', latitude: 49.8397, longitude: 24.0297 } as any, {} as any, false, { id: 'u1' } as any);
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          latitude: 49.8397,
+          longitude: 24.0297,
+        }),
+      );
     });
 
     it('modifies existing user', async () => {
@@ -349,6 +456,42 @@ describe('UsersService', () => {
     });
   });
 
+  describe('getTokensForUsers', () => {
+    it('returns tokens for users with enabled notifications', async () => {
+      const users = [
+        { id: 'u1', fcmToken: 't1', notificationSettings: { enabled: true, prefs: { k: true } } },
+        { id: 'u2', fcmToken: 't2', notificationSettings: { enabled: true, prefs: { k: false } } },
+        { id: 'u3', fcmToken: 't3', notificationSettings: { enabled: false } },
+        { id: 'u4', fcmToken: null },
+        { id: 'u5', fcmToken: 't5', notificationSettings: null },
+      ] as any[];
+
+      repository.find.mockResolvedValue(users);
+
+      const tokens = await service.getTokensForUsers(['u1', 'u2', 'u3', 'u4', 'u5'], 'k');
+
+      // u1: has token, enabled, pref k is true -> YES
+      // u2: has token, enabled, pref k is false -> NO
+      // u3: has token, disabled -> NO
+      // u4: no token -> NO
+      // u5: has token, no settings record (defaults to true) -> YES
+      expect(tokens).toEqual(['t1', 't5']);
+    });
+
+    it('returns all tokens if no settingKey provided and enabled', async () => {
+      const users = [
+        { id: 'u1', fcmToken: 't1', notificationSettings: { enabled: true } },
+        { id: 'u2', fcmToken: 't2', notificationSettings: null },
+      ] as any[];
+
+      repository.find.mockResolvedValue(users);
+
+      const tokens = await service.getTokensForUsers(['u1', 'u2']);
+
+      expect(tokens).toEqual(['t1', 't2']);
+    });
+  });
+
   describe('resetPassword', () => {
     it('sends a password reset code when user exists', async () => {
       repository.findOne.mockResolvedValue({ id: 'user1', email: 'test@example.com' } as UserEntity);
@@ -366,19 +509,63 @@ describe('UsersService', () => {
   });
 
   describe('remove', () => {
-    it('removes user', async () => {
-      repository.findOne.mockResolvedValue({ id: 'u1' } as UserEntity);
-      repository.remove.mockResolvedValue({} as UserEntity);
+    it('removes a member user from groups, contacts, and syncs impacted users', async () => {
+      memberRepository.find
+        .mockResolvedValueOnce([{ groupId: 'g1', userId: 'u1' } as GroupMemberEntity])
+        .mockResolvedValueOnce([
+          { groupId: 'g1', userId: 'u1' } as GroupMemberEntity,
+          { groupId: 'g1', userId: 'u2' } as GroupMemberEntity,
+          { groupId: 'g1', userId: 'u3' } as GroupMemberEntity,
+        ]);
+      groupRepository.find.mockResolvedValueOnce([]);
+      groupRepository.find.mockResolvedValueOnce([]);
+      memberRepository.delete.mockResolvedValue({ affected: 1 } as any);
+      contactRepository.delete.mockResolvedValue({ affected: 2 } as any);
+      repository.delete.mockResolvedValue({ affected: 1 } as any);
 
       const res = await service.remove('u1', { id: 'u1' } as any, {} as any);
 
-      expect(repository.save).toHaveBeenCalled();
+      expect(memberRepository.delete).toHaveBeenCalledWith({ userId: 'u1' });
+      expect(contactRepository.delete).toHaveBeenCalledWith([{ ownerId: 'u1' }, { targetId: 'u1' }]);
+      expect(groupRepository.delete).not.toHaveBeenCalled();
+      expect(repository.delete).toHaveBeenCalledWith('u1');
+      expect(firestoreSyncService.sendSyncSignal).toHaveBeenCalledWith(['u2', 'u3']);
       expect(userActivitiesService.logActivity).toHaveBeenCalled();
       expect(res).toEqual({ success: true });
     });
 
+    it('removes owned groups before deleting the owner and syncs affected members', async () => {
+      memberRepository.find
+        .mockResolvedValueOnce([{ groupId: 'g-owner', userId: 'owner-1' } as GroupMemberEntity])
+        .mockResolvedValueOnce([
+          { groupId: 'g-owner', userId: 'owner-1' } as GroupMemberEntity,
+          { groupId: 'g-owner', userId: 'member-1' } as GroupMemberEntity,
+        ]);
+      groupRepository.find
+        .mockResolvedValueOnce([{ id: 'g-owner', ownerId: 'owner-1' } as GroupEntity])
+        .mockResolvedValueOnce([{ id: 'g-owner', ownerId: 'owner-1' } as GroupEntity]);
+      blockListRepository.delete.mockResolvedValue({ affected: 1 } as any);
+      memberRepository.delete.mockResolvedValue({ affected: 1 } as any);
+      groupRepository.delete.mockResolvedValue({ affected: 1 } as any);
+      contactRepository.delete.mockResolvedValue({ affected: 0 } as any);
+      repository.delete.mockResolvedValue({ affected: 1 } as any);
+
+      await service.remove('owner-1', { id: 'owner-1' } as any, {} as any);
+
+      expect(blockListRepository.delete).toHaveBeenCalledWith({ groupId: In(['g-owner']) });
+      expect(memberRepository.delete).toHaveBeenCalledWith({ groupId: In(['g-owner']) });
+      expect(groupRepository.delete).toHaveBeenCalledWith({ id: In(['g-owner']) });
+      expect(memberRepository.delete).toHaveBeenCalledWith({ userId: 'owner-1' });
+      expect(firestoreSyncService.sendSyncSignal).toHaveBeenCalledWith(['member-1']);
+    });
+
     it('throws if not found', async () => {
-      repository.findOne.mockResolvedValue(null);
+      memberRepository.find.mockResolvedValueOnce([]);
+      groupRepository.find.mockResolvedValueOnce([]);
+      groupRepository.find.mockResolvedValueOnce([]);
+      memberRepository.delete.mockResolvedValue({ affected: 0 } as any);
+      contactRepository.delete.mockResolvedValue({ affected: 0 } as any);
+      repository.delete.mockResolvedValue({ affected: 0 } as any);
 
       await expect(service.remove('x', { id: 'x' } as any, {} as any)).rejects.toThrow(NotFoundException);
     });

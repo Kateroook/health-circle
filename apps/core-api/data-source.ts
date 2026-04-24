@@ -14,8 +14,8 @@ export default new DataSource({
   ssl: db.ssl ? { rejectUnauthorized: false } : false,
   synchronize: false,
   logging: true,
-  migrations: [process.cwd() + '/src/common/migrations/[0-9]*.ts'],
-  entities: [process.cwd() + '/src/common/entities/*.ts'],
+  migrations: [process.cwd() + '/src/common/migrations/*.ts'],
+  entities: [process.cwd() + '/src/**/*.entity.ts'],
   migrationsTableName: '_migrations',
   namingStrategy: new SnakeNamingStrategy(),
 });

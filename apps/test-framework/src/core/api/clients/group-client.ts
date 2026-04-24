@@ -1,15 +1,16 @@
-import { BaseClient, ApiResult } from './base-client';
 import {
-  GetAllGroupsResponse,
-  GetGroupResponse,
   CreateGroupRequest,
   CreateGroupResponse,
-  UpdateGroupRequest,
-  UpdateGroupResponse,
+  GetAllGroupsResponse,
+  GetBlockedUsersResponse,
+  GetGroupResponse,
   JoinGroupRequest,
   RegenerateInviteResponse,
-  GetBlockedUsersResponse,
+  RollCallResponse,
+  UpdateGroupRequest,
+  UpdateGroupResponse,
 } from '../../types/api';
+import { ApiResult, BaseClient } from './base-client';
 
 /**
  * GroupClient - клієнт для роботи з Groups API
@@ -38,7 +39,7 @@ export class GroupClient extends BaseClient {
    */
   public async createGroup(data: CreateGroupRequest): Promise<ApiResult<CreateGroupResponse>> {
     const result = await this.post<CreateGroupResponse>('/api/groups', {
-      data,
+      data: { name: data.name },
     });
 
     // Автоматично зберігаємо ID створеної групи
@@ -112,5 +113,13 @@ export class GroupClient extends BaseClient {
    */
   public async unblockUser(groupId: string, userId: string): Promise<ApiResult<void>> {
     return await this.delete<void>(`/api/groups/${groupId}/block/${userId}`);
+  }
+
+  /**
+   * POST /api/groups/{id}/roll-call
+   * Почати перекличку для групи
+   */
+  public async initiateGroupRollCall(groupId: string): Promise<ApiResult<RollCallResponse>> {
+    return await this.post<RollCallResponse>(`/api/groups/${groupId}/roll-call`);
   }
 }

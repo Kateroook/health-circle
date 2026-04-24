@@ -1,0 +1,23 @@
+# Скомпільований код (JavaScript)
+dist/
+build/
+
+# Залежності
+node_modules/
+
+# Змінні оточення
+.env
+.env.test
+.env.local
+*.env
+
+# Логи
+npm-debug.log
+yarn-error.log
+*.log
+
+# Файли конфігурації редакторів та ОС
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

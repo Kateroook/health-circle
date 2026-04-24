@@ -1,0 +1,60 @@
+name: Test Android Build (Windows)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - test/windows-build
+
+jobs:
+  test-windows:
+    name: Build Android (Windows Runner)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: apps/client/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          cd apps/client
+          npm ci
+
+      - name: Restore google-services.json
+        shell: bash
+        run: |
+          cd apps/client
+          if [ -n "${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}" ]; then
+            echo "${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}" | base64 --decode > google-services.json
+          else
+            echo "Google Services JSON secret not found, creating a placeholder"
+            echo "{}" > google-services.json
+          fi
+
+      - name: Expo Prebuild
+        shell: bash
+        run: |
+          cd apps/client
+          npx expo prebuild --platform android --no-install
+
+      - name: Build Android Debug
+        shell: bash
+        run: |
+          cd apps/client/android
+          ./gradlew :app:assembleDebug --no-daemon
+        env:
+          GOOGLE_SERVICES_JSON: ../google-services.json

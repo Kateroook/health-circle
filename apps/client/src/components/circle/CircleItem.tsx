@@ -1,20 +1,10 @@
-import { COLORS } from "@/src/theme/colors";
+import { theme } from "@/src/theme/theme";
+import { Member } from "@/src/types";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import MemberAvatar from "../MemberAvatar";
-
-export interface Member {
-  id: string;
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  fullName?: string;
-  isAlias?: boolean;
-  avatarUpdatedAt?: string;
-  status: "SAFE" | "DANGER" | "UNKNOWN";
-  active?: boolean;
-}
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { MemberAvatar } from "../MemberAvatar";
+import { Typography } from "../typography";
 
 interface CircleItemProps {
   title: string;
@@ -22,37 +12,64 @@ interface CircleItemProps {
   extraCount?: number;
   onMenuPress?: () => void;
   onPress?: () => void;
+  testId?: string;
 }
-
+const MAX_VISIBLE = 5;
 const CircleItem: React.FC<CircleItemProps> = ({
   title,
   members,
   extraCount,
   onMenuPress,
   onPress,
+  testId,
 }) => {
+  const visibleMembers = members.slice(0, MAX_VISIBLE);
+  const overflow = extraCount ?? (members.length > MAX_VISIBLE ? members.length - MAX_VISIBLE : 0);
+
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.9}
+      testID={testId}
+      accessibilityLabel={testId}
+    >
       <View style={styles.header}>
-        <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-          {title}
-        </Text>
+        <View style={styles.titleContainer}>
+          <Typography variant="h3" weight="bold" numberOfLines={1} ellipsizeMode="tail">
+            {title}
+          </Typography>
+        </View>
         <TouchableOpacity
+          style={styles.menuButton}
           onPress={onMenuPress}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          testID={testId ? `${testId}:menu:button` : undefined}
+          accessibilityLabel={testId ? `${testId}:menu:button` : undefined}
         >
-          <MaterialCommunityIcons name="dots-horizontal" size={24} color={COLORS.TEXT_GRAY} />
+          <MaterialCommunityIcons
+            name="dots-horizontal"
+            size={24}
+            color={theme.colors.content.tertiary}
+          />
         </TouchableOpacity>
       </View>
 
       <View style={styles.members}>
-        {members.slice(0, 5).map((member) => (
-          <MemberAvatar key={member.id} member={member} />
+        {visibleMembers.map((member, index) => (
+          <MemberAvatar
+            key={member.id}
+            member={member}
+            size="lg"
+            style={[styles.avatarOverlap, { zIndex: MAX_VISIBLE - index }]}
+          />
         ))}
 
-        {(members.length > 5 || extraCount) && (
-          <View style={[styles.avatarWrapper, styles.extra]}>
-            <Text style={styles.extraText}>+{extraCount || members.length - 5}</Text>
+        {overflow > 0 && (
+          <View style={[styles.avatarWrapper, styles.extraBubble, { zIndex: 0 }]}>
+            <Typography variant="subtitle1" tone="secondary">
+              +{overflow}
+            </Typography>
           </View>
         )}
       </View>
@@ -62,64 +79,45 @@ const CircleItem: React.FC<CircleItemProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.xl,
+    padding: theme.spacing[16],
+    marginBottom: theme.spacing[8],
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: theme.spacing[8],
   },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: COLORS.TEXT_DARK,
+  titleContainer: {
     flex: 1,
-    maxWidth: "82%",
-    marginRight: 20,
+    minWidth: 0,
+    marginRight: theme.spacing[8],
+  },
+  menuButton: {
+    flexShrink: 0,
   },
   members: {
     flexDirection: "row",
   },
   avatarWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "white",
-    borderWidth: 3,
-    marginRight: -10,
+    marginRight: -12,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1,
   },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#EEE",
+  avatarOverlap: {
+    marginRight: -12,
   },
-  initialsContainer: {
+  extraBubble: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.radius.circle,
+    backgroundColor: theme.colors.background.tertiary,
+    borderWidth: theme.borderWidth.md,
+    borderColor: "white",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#D1D5DB",
-  },
-  initialsText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#4B5563",
-  },
-  extra: {
-    backgroundColor: "#E5E5EA",
-    borderColor: "white",
-    zIndex: 0,
-  },
-  extraText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.TEXT_DARK,
   },
 });
 

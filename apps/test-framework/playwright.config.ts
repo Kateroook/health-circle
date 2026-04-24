@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
@@ -24,13 +24,11 @@ export default defineConfig({
     extraHTTPHeaders: {
       'Content-Type': 'application/json',
     },
-    isolate: true,
   },
 
   projects: [
     {
       name: 'API Tests',
-      use: { ...devices['Desktop Chrome'] },
     },
   ],
 });

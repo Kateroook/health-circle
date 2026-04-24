@@ -21,10 +21,4 @@ export default () => ({
     database: process.env.POSTGRES_DB_NAME,
     ssl: process.env.POSTGRES_SSL === 'true',
   },
-  cron: {
-    missedFilesEnabled: process.env.CRON_MISSED_FILES_ENABLED === 'true',
-    missedFilesRule: process.env.CRON_MISSED_FILES_RULE,
-    unlinkedFilesEnabled: process.env.CRON_UNLINKED_FILES_ENABLED === 'true',
-    unlinkedFilesRule: process.env.CRON_UNLINKED_FILES_RULE,
-  },
 });

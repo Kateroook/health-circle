@@ -1,6 +1,6 @@
 export default {
   expo: {
-    name: "health-circle",
+    name: "Health Circle",
     slug: "health-circle",
     version: "1.0.0",
     orientation: "portrait",
@@ -25,10 +25,8 @@ export default {
       package: "com.healthcircle.app",
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON || "./google-services.json",
       adaptiveIcon: {
-        backgroundColor: "#E6F4FE",
-        foregroundImage: "./src/assets/images/android-icon-foreground.png",
-        backgroundImage: "./src/assets/images/android-icon-background.png",
-        monochromeImage: "./src/assets/images/android-icon-monochrome.png",
+        backgroundColor: "#f5f7fa",
+        foregroundImage: "./src/assets/images/icon.png",
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
@@ -36,15 +34,18 @@ export default {
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
       ],
     },
     plugins: [
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
-      "./plugins/withNotifeeProjectGradle.js",
       "./plugins/withPodfileAllowNonModularIncludes.js",
       "./plugins/withFirestorePrebuilt.js",
+      "expo-notifications",
       "expo-router",
+      "expo-location",
       [
         "expo-splash-screen",
         {
@@ -61,7 +62,7 @@ export default {
         "expo-build-properties",
         {
           android: {
-            usesCleartextTraffic: true,
+            usesCleartextTraffic: false,
           },
           ios: {
             useFrameworks: "static",

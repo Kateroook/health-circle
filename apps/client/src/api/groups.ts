@@ -17,3 +17,9 @@ export async function getBlockedUsers(groupId: string) {
     method: "GET",
   });
 }
+
+export async function initiateRollCall(groupId: string) {
+  return apiFetch(`/groups/${groupId}/roll-call`, {
+    method: "POST",
+  });
+}

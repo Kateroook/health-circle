@@ -4,3 +4,12 @@ dist/
 .expo/
 .next/
 build/
+ios/
+android/
+vendor/
+*.apk
+*.jks
+*.plist
+*.xcworkspace
+*.xcodeproj
+package-lock.json

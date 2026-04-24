@@ -5,8 +5,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ExternalFilesEntity } from 'src/common/entities/external-files.entity';
 import { FileParam } from 'src/common/types/file-param';
+import { ExternalFilesEntity } from 'src/external-files/entities/external-files.entity';
 import { QueryRunner, Repository } from 'typeorm';
 
 import { ExternalFilesService } from './external-files.service';
@@ -22,6 +22,7 @@ jest.mock('fs', () => {
       readFile: jest.fn(),
       writeFile: jest.fn(),
       unlink: jest.fn(),
+      readdir: jest.fn(),
     },
   };
 });
@@ -73,6 +74,7 @@ describe('ExternalFilesService', () => {
           useValue: {
             createQueryBuilder: jest.fn(() => mockQb),
             findOne: jest.fn(),
+            find: jest.fn(),
             save: jest.fn(),
             softDelete: jest.fn(),
           },
@@ -224,6 +226,25 @@ describe('ExternalFilesService', () => {
       await service.delete('file-123', mockQr);
       expect(mockQr.manager.getRepository).toHaveBeenCalledWith(ExternalFilesEntity);
       expect(repository.softDelete).toHaveBeenCalled();
+    });
+  });
+
+  describe('cleanup', () => {
+    it('should identify files in dir not in db and vice versa', async () => {
+      const dirFiles = ['file1.png', 'orphan.png'];
+      const dbFiles = [
+        { id: '1', externalId: 'file1.png' },
+        { id: '2', externalId: 'missing.png' },
+      ];
+
+      (fs.promises.readdir as jest.Mock).mockResolvedValue(dirFiles);
+      repository.find.mockResolvedValue(dbFiles as any);
+
+      const result = await service.cleanup();
+
+      expect(result.onlyInDir).toEqual(['orphan.png']);
+      expect(result.onlyInDbIds).toEqual(['2']);
+      expect(repository.find).toHaveBeenCalledWith({ select: ['id', 'externalId'] });
     });
   });
 });

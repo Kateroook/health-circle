@@ -1,9 +1,9 @@
-import { UserStatus } from './common.types';
-
 // ============ Auth DTOs ============
 
+import { UserStatus } from './common.types';
+
 export interface UserLoginDto {
-  email: string;
+  identifier: string;
   password: string;
 }
 
@@ -34,6 +34,7 @@ export interface UserProfileDto {
   middleName?: string;
   lastName: string;
   fullName: string | null;
+  status: UserStatus;
   email: string | null;
   phone: string | null;
   avatarUpdatedAt?: Date;
@@ -58,6 +59,8 @@ export interface ResetPasswordRequest {
 export interface ChangePasswordRequest extends UserChangePasswordDto {}
 
 export interface ForgotPasswordRequest extends ForgotPasswordDto {}
+
+export interface ResendRegistrationCodeRequest extends ForgotPasswordDto {}
 
 // ============ Response Types ============
 

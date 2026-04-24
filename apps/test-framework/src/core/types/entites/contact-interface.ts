@@ -1,4 +1,4 @@
-import { UserEntity } from "./user-interface";
+import { UserEntity } from './user-interface';
 
 export interface ContactEntity {
   id?: string;

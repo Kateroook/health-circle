@@ -1,7 +1,8 @@
 import * as SecureStore from "expo-secure-store";
 import { create } from "zustand";
 import { createJSONStorage, persist, StateStorage } from "zustand/middleware";
-import { apiFetch } from "../api/api";
+import { ApiError, apiFetch } from "../api/api";
+import { logger } from "../utils/logger";
 
 // Secure storage for Expo
 const secureStorage: StateStorage = {
@@ -17,9 +18,14 @@ interface User {
   middleName?: string | null;
   lastName: string;
   fullName?: string;
-  phone: string;
+  phone: string | null;
   avatarUpdatedAt?: string;
-  status: "SAFE" | "DANGER" | "UNKNOWN";
+  status: "SAFE" | "DANGER" | "UNKNOWN" | "WAS_SAFE";
+  region?: string | null;
+  district?: string | null;
+  alertRegionUid?: number | null;
+  smsCode?: string;
+  smsTargetNumber?: string;
 }
 
 interface AuthStoreState {
@@ -43,6 +49,24 @@ interface AuthStoreState {
   updateUser: (data: Partial<User>) => void;
 }
 
+const VALID_USER_STATUSES = new Set<User["status"]>(["SAFE", "DANGER", "UNKNOWN", "WAS_SAFE"]);
+
+const resolveUserStatus = (
+  status?: Partial<User>["status"],
+  fallback: User["status"] = "UNKNOWN",
+): User["status"] =>
+  VALID_USER_STATUSES.has(status as User["status"]) ? (status as User["status"]) : fallback;
+
+const normalizeUser = (profile: Partial<User>, currentUser?: User | null): User =>
+  ({
+    ...(currentUser ?? {}),
+    ...(profile as Partial<User>),
+    status: resolveUserStatus(profile.status, currentUser?.status ?? "UNKNOWN"),
+  }) as User;
+
+const isAuthFailure = (error: unknown): error is ApiError =>
+  error instanceof ApiError && (error.status === 401 || error.status === 403);
+
 export const useAuthStore = create<AuthStoreState>()(
   persist(
     (set, get) => ({
@@ -55,6 +79,7 @@ export const useAuthStore = create<AuthStoreState>()(
 
       refreshProfile: async () => {
         const token = get().accessToken;
+        const currentUser = get().user;
 
         if (!token) {
           set({
@@ -76,12 +101,12 @@ export const useAuthStore = create<AuthStoreState>()(
           });
 
           set({
-            user: profile as User,
+            user: normalizeUser(profile as Partial<User>, currentUser),
             loading: false,
             isLoggedIn: true,
           });
         } catch (error) {
-          console.error("Profile fetch failed, trying refresh:", error);
+          logger.error("Profile fetch failed, trying refresh:", error);
 
           // Try refreshing the session before giving up
           const refreshed = await get().refreshSession();
@@ -93,7 +118,7 @@ export const useAuthStore = create<AuthStoreState>()(
                 headers: { Authorization: `Bearer ${newToken}` },
               });
               set({
-                user: profile as User,
+                user: normalizeUser(profile as Partial<User>),
                 loading: false,
                 isLoggedIn: true,
               });
@@ -101,12 +126,21 @@ export const useAuthStore = create<AuthStoreState>()(
             } catch {}
           }
 
+          if (isAuthFailure(error)) {
+            set({
+              user: null,
+              accessToken: null,
+              refreshToken: null,
+              loading: false,
+              isLoggedIn: false,
+            });
+            return;
+          }
+
           set({
-            user: null,
-            accessToken: null,
-            refreshToken: null,
+            user: currentUser,
             loading: false,
-            isLoggedIn: false,
+            isLoggedIn: true,
           });
         }
       },
@@ -131,7 +165,7 @@ export const useAuthStore = create<AuthStoreState>()(
           }
           return false;
         } catch (error) {
-          console.error("Session refresh failed:", error);
+          logger.error("Session refresh failed:", error);
           return false;
         }
       },
@@ -159,7 +193,6 @@ export const useAuthStore = create<AuthStoreState>()(
           await get().refreshProfile();
 
           set({
-            isLoggedIn: true,
             loading: false,
           });
         } catch (error) {
@@ -194,7 +227,7 @@ export const useAuthStore = create<AuthStoreState>()(
       updateUser: (data) => {
         const currentUser = get().user;
         if (currentUser) {
-          set({ user: { ...currentUser, ...data } });
+          set({ user: normalizeUser(data, currentUser) });
         }
       },
     }),
@@ -205,6 +238,7 @@ export const useAuthStore = create<AuthStoreState>()(
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
+        user: state.user,
       }),
 
       // Refresh profile on startup

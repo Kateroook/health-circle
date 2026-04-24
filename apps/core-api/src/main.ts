@@ -1,4 +1,8 @@
+import { setDefaultResultOrder } from 'node:dns';
+
 import { ValidationPipe } from '@nestjs/common';
+
+setDefaultResultOrder('ipv4first');
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -6,7 +10,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { useContainer } from 'class-validator';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import * as admin from 'firebase-admin';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { types } from 'pg';
@@ -20,17 +23,16 @@ async function bootstrap() {
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
   app.setGlobalPrefix('api');
 
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-
   app.useLogger(app.get(Logger));
 
   const configService = app.get(ConfigService);
+
+  const trustProxyEnv = configService.get<string>('TRUST_PROXY');
+  const trustProxyValue = trustProxyEnv ?? (process.env.NODE_ENV === 'production' ? '1' : '0');
+  if (trustProxyValue !== '0' && trustProxyValue !== 'false') {
+    const numeric = Number(trustProxyValue);
+    app.set('trust proxy', Number.isFinite(numeric) ? numeric : trustProxyValue === 'true');
+  }
 
   app.use(cookieParser());
   app.use(helmet());
@@ -42,6 +44,8 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,
       whitelist: true,
+      forbidNonWhitelisted: true,
+      forbidUnknownValues: true,
     }),
   );
 
@@ -52,11 +56,21 @@ async function bootstrap() {
       .setVersion('1.0')
       .addBearerAuth(
         {
-          type: 'http', // must be 'http'
-          scheme: 'bearer', // must be 'bearer'
-          bearerFormat: 'JWT', // optional, just for display
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Access Token',
         },
-        AuthStrategies.userJwtAccess, // your internal name, used in @ApiBearerAuth()
+        AuthStrategies.userJwtAccess,
+      )
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Refresh Token',
+        },
+        AuthStrategies.userJwtRefresh,
       )
       .build();
     const document = SwaggerModule.createDocument(app, config);

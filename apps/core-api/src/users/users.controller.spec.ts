@@ -1,8 +1,8 @@
 import { StreamableFile } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserEntity } from 'src/common/entities/user.entity';
 import { UserStatus } from 'src/common/enums/user-status';
 import { AuthRequest } from 'src/common/types/auth-request';
+import { UserEntity } from 'src/users/entities/user.entity';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { ModifyUserDto } from './dto/modify-user.dto';
@@ -73,9 +73,9 @@ describe('UsersController', () => {
       service.getFile.mockResolvedValue(stream);
 
       const params = { id: 'user-id-123' };
-      const response = await controller.getAvatar(params);
+      const response = await controller.getAvatar(params, mockRequest);
 
-      expect(service.getFile).toHaveBeenCalledWith(params.id);
+      expect(service.getFile).toHaveBeenCalledWith(params.id, mockRequest.user.id);
       expect(response).toBe(stream);
     });
   });
@@ -144,19 +144,6 @@ describe('UsersController', () => {
     });
   });
 
-  describe('resetPassword', () => {
-    it('should call reset password service', async () => {
-      const params = { id: 'user-id-123' };
-      const expectedResult = { success: true, message: 'Код для скидання паролю надіслано на пошту' };
-      service.resetPassword.mockResolvedValue(expectedResult);
-
-      const response = await controller.resetPassword(params, mockRequest);
-
-      expect(service.resetPassword).toHaveBeenCalledWith(params.id, mockRequest.metadata);
-      expect(response).toBe(expectedResult);
-    });
-  });
-
   describe('uploadAvatar', () => {
     it('should upload avatar file', async () => {
       const params = { id: 'user-id-123' };
@@ -168,9 +155,9 @@ describe('UsersController', () => {
       const result = new UserEntity();
       service.upsertFile.mockResolvedValue(result);
 
-      const response = await controller.uploadAvatar(params, mockFile);
+      const response = await controller.uploadAvatar(params, mockFile, mockRequest);
 
-      expect(service.upsertFile).toHaveBeenCalledWith(params.id, mockFile);
+      expect(service.upsertFile).toHaveBeenCalledWith(params.id, mockFile, mockRequest.user.id);
       expect(response).toBe(result);
     });
   });
@@ -192,9 +179,9 @@ describe('UsersController', () => {
       const params = { id: 'user-id-123' };
       service.removeFile.mockResolvedValue(undefined);
 
-      await controller.removeLogo(params);
+      await controller.removeLogo(params, mockRequest);
 
-      expect(service.removeFile).toHaveBeenCalledWith(params.id);
+      expect(service.removeFile).toHaveBeenCalledWith(params.id, mockRequest.user.id);
     });
   });
 });

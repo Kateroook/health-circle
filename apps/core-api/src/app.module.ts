@@ -1,15 +1,16 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import Joi from 'joi';
 import { SecurityModule } from 'src/security/security.module';
 
+import { AlertsModule } from './alerts/alerts.module';
 import { AuthModule } from './auth/auth.module';
 import { entities } from './common/entities';
 import { GlobalThrottlerGuard } from './common/guards/global-throttler.guard';
 import { migrations } from './common/migrations';
+import { QueueModule } from './common/queue/queue.module';
 import { subscribers } from './common/subscribers';
 import { ContactsModule } from './contacts/contacts.module';
 import { EmailModule } from './email/email.module';
@@ -20,11 +21,13 @@ import { LoggingModule } from './logging/logging.module';
 import { DeviceInfoMiddleware } from './middleware/device-info.middleware';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PostgresModule } from './postgres/postgres.module';
+import { SmsModule } from './sms/sms.module';
 import { UserActivitiesModule } from './user-activities/user-activities.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
+    QueueModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [`.env`],
@@ -32,8 +35,10 @@ import { UsersModule } from './users/users.module';
         // General
         NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
         PORT: Joi.number().required(),
+        TRUST_PROXY: Joi.string().optional().allow('0', '1', 'true', 'false'),
         API_DOCS_ENABLED: Joi.string().optional().default('false').allow('true', 'false'),
         THROTTLER_ENABLED: Joi.string().optional().default('true').allow('true', 'false'),
+        DEV_SEND_PUSH_TO_SENDER: Joi.boolean().optional().default(false),
         // PostgreSQL
         POSTGRES_HOST: Joi.string().required(),
         POSTGRES_PORT: Joi.number().required(),
@@ -43,12 +48,13 @@ import { UsersModule } from './users/users.module';
         POSTGRES_IS_LOGGING_ENABLED: Joi.string().optional().default('false').allow('true', 'false'),
         POSTGRES_SSL: Joi.string().optional().default('false').allow('true', 'false'),
         // Logger (PostgreSQL)
-        LOG_DB_HOST: Joi.string().required(),
-        LOG_DB_PORT: Joi.number().required(),
-        LOG_DB_USER: Joi.string().required(),
-        LOG_DB_PASS: Joi.string().required(),
-        LOG_DB_NAME: Joi.string().required(),
-        LOG_DB_TABLE: Joi.string().required(),
+        LOG_DB_ENABLED: Joi.string().optional().default('true').allow('true', 'false'),
+        LOG_DB_HOST: Joi.string().when('LOG_DB_ENABLED', { is: 'true', then: Joi.required(), otherwise: Joi.optional() }),
+        LOG_DB_PORT: Joi.number().when('LOG_DB_ENABLED', { is: 'true', then: Joi.required(), otherwise: Joi.optional() }),
+        LOG_DB_USER: Joi.string().when('LOG_DB_ENABLED', { is: 'true', then: Joi.required(), otherwise: Joi.optional() }),
+        LOG_DB_PASS: Joi.string().when('LOG_DB_ENABLED', { is: 'true', then: Joi.required(), otherwise: Joi.optional() }),
+        LOG_DB_NAME: Joi.string().when('LOG_DB_ENABLED', { is: 'true', then: Joi.required(), otherwise: Joi.optional() }),
+        LOG_DB_TABLE: Joi.string().when('LOG_DB_ENABLED', { is: 'true', then: Joi.required(), otherwise: Joi.optional() }),
         LOG_DB_SSL: Joi.string().optional().default('false').allow('true', 'false'),
         LOG_STD_OUT: Joi.string().optional().default('false').allow('true', 'false'),
         LOG_LEVEL: Joi.string().optional().valid('trace', 'debug', 'info', 'warn', 'error', 'fatal'),
@@ -85,6 +91,22 @@ import { UsersModule } from './users/users.module';
         FIREBASE_PROJECT_ID: Joi.string().required(),
         FIREBASE_CLIENT_EMAIL: Joi.string().required(),
         FIREBASE_PRIVATE_KEY: Joi.string().required(),
+        CRON_STATUS_REFRESH_RATE: Joi.string().optional().default('*/5 * * * *'),
+
+        // Status & Roll-call
+        STATUS_EXPIRY_SECONDS: Joi.number().default(8 * 60 * 60),
+        ROLL_CALL_TIMEOUT_SECONDS: Joi.number().default(60 * 60),
+        PERSONAL_ROLL_CALL_GRACE_SECONDS: Joi.number().default(15 * 60),
+
+        // Alerts.in.ua
+        ALERTS_TOKEN: Joi.string().required(),
+
+        // SMS
+        SMS_ENABLED: Joi.boolean().optional().default(false),
+        TWILIO_ACCOUNT_SID: Joi.string().when('SMS_ENABLED', { is: true, then: Joi.required(), otherwise: Joi.optional() }),
+        TWILIO_AUTH_TOKEN: Joi.string().when('SMS_ENABLED', { is: true, then: Joi.required(), otherwise: Joi.optional() }),
+        TWILIO_PHONE_NUMBER: Joi.string().when('SMS_ENABLED', { is: true, then: Joi.required(), otherwise: Joi.optional() }),
+        ALERTS_API_URL: Joi.string().required(),
       }),
     }),
     PostgresModule.register(entities, migrations, subscribers),
@@ -97,9 +119,10 @@ import { UsersModule } from './users/users.module';
     GroupsModule,
     ExternalFilesModule,
     ContactsModule,
-    ScheduleModule.forRoot(),
     NotificationsModule,
     HealthModule,
+    AlertsModule,
+    SmsModule,
     ThrottlerModule.forRoot([
       {
         name: 'short',

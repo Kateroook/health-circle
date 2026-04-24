@@ -1,22 +1,28 @@
+import { Button } from "@/src/components/Button";
+import { PhoneInput } from "@/src/components/fields/PhoneInput";
+import { TextField } from "@/src/components/fields/TextField";
+import { Typography } from "@/src/components/typography";
+import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { showMessage } from "react-native-flash-message";
+import { useEffect, useState } from "react";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../api/api";
+import { useAnalytics } from "../../hooks/useAnalytics";
+import { useToast } from "../../hooks/useToast";
 import { cleanObj } from "../../utils/clean.util";
 import { formatErrorMessage } from "../../utils/error.util";
 
 export default function Register() {
+  const { showToast } = useToast();
+  const { logEvent } = useAnalytics();
+
+  useEffect(() => {
+    logEvent("registration_started");
+  }, []);
+
   const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState({
     phone: "",
@@ -27,9 +33,13 @@ export default function Register() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-
-  // Відстежуємо, які кроки вже пройшли валідацію (щоб показувати індикатори помилок)
   const [validatedSteps, setValidatedSteps] = useState<Set<number>>(new Set());
+
+  // Після реєстрації показуємо екран геолокації
+  const [showLocationScreen, setShowLocationScreen] = useState(false);
+
+  // Локальна змінна — чи дозволив користувач геолокацію
+  const [locationGranted, setLocationGranted] = useState<boolean | null>(null);
 
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -47,11 +57,11 @@ export default function Register() {
 
     if (step === 1) {
       const cleanPhone = form.phone.replace(/\s/g, "");
-      const phoneRegex = /^\+380\d{9}$/;
+      const phoneRegex = /^\+[1-9]\d{6,14}$/;
       if (!cleanPhone) {
         newErrors.phone = "Поле номера телефону є обовʼязковим";
       } else if (!phoneRegex.test(cleanPhone)) {
-        newErrors.phone = "Формат: +380XXXXXXXXX";
+        newErrors.phone = "Некоректний формат (наприклад: +380...)";
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -63,27 +73,30 @@ export default function Register() {
     }
 
     if (step === 2) {
-      if (!form.lastName.trim()) {
+      const trimmedLastName = form.lastName.trim();
+      const trimmedFirstName = form.firstName.trim();
+
+      if (!trimmedLastName) {
         newErrors.lastName = "Поле прізвища є обовʼязковим";
-      } else if (form.lastName.length < 2) {
+      } else if (trimmedLastName.length < 2) {
         newErrors.lastName = "Прізвище має містити не менше 2 символів";
-      } else if (form.lastName.length > 50) {
+      } else if (trimmedLastName.length > 50) {
         newErrors.lastName = "Прізвище має містити не більше 50 символів";
       }
 
-      if (!form.firstName.trim()) {
+      if (!trimmedFirstName) {
         newErrors.firstName = "Поле імені є обовʼязковим";
-      } else if (form.firstName.length < 2) {
+      } else if (trimmedFirstName.length < 2) {
         newErrors.firstName = "Імʼя має містити не менше 2 символів";
-      } else if (form.firstName.length > 50) {
+      } else if (trimmedFirstName.length > 50) {
         newErrors.firstName = "Імʼя має містити не більше 50 символів";
       }
 
       if (form.middleName.trim()) {
         if (form.middleName.length < 2) {
-          newErrors.middleName = "По-батькові має містити не менше 2 символів";
+          newErrors.middleName = "По батькові має містити не менше 2 символів";
         } else if (form.middleName.length > 50) {
-          newErrors.middleName = "По-батькові має містити не більше 50 символів";
+          newErrors.middleName = "По батькові має містити не більше 50 символів";
         }
       }
     }
@@ -93,13 +106,11 @@ export default function Register() {
   };
 
   const handleNext = async () => {
-    // Позначаємо, що цей крок вже валідувався
     setValidatedSteps((prev) => new Set([...prev, step]));
-
     const isValid = validateCurrentStep();
-
     if (isValid) {
       if (step === 1) {
+        logEvent("registration_step_2");
         setStep(2);
       } else {
         await handleRegister();
@@ -111,59 +122,8 @@ export default function Register() {
     setStep((prev) => (prev > 1 ? ((prev - 1) as 1 | 2) : prev));
   };
 
-  const renderInput = (
-    value: string,
-    error: string | undefined,
-    placeholder: string,
-    keyboardType: "phone-pad" | "email-address" | "default" = "default",
-    secureTextEntry = false,
-    onChangeText: (text: string) => void,
-    autoCapitalize: "none" | "words" = "words",
-  ) => {
-    const hasBeenValidated = validatedSteps.has(step);
-    const isFilled = value.trim().length > 0;
-    const hasError = !!error;
-
-    let indicatorStyle = null;
-    let symbol = null;
-
-    if (hasBeenValidated) {
-      if (hasError) {
-        indicatorStyle = styles.statusError;
-        symbol = "!";
-      } else if (isFilled) {
-        indicatorStyle = styles.statusSuccess;
-        symbol = "✓";
-      }
-    }
-
-    return (
-      <View style={styles.inputWrapper}>
-        <TextInput
-          placeholder={placeholder}
-          value={value}
-          onChangeText={onChangeText}
-          keyboardType={keyboardType}
-          secureTextEntry={secureTextEntry}
-          autoCapitalize={autoCapitalize}
-          style={[
-            styles.input,
-            hasError ? styles.inputError : isFilled && !hasError ? styles.inputValid : null,
-          ]}
-          placeholderTextColor="#999"
-        />
-
-        {indicatorStyle && (
-          <View style={[styles.statusIndicator, indicatorStyle]}>
-            <Text style={styles.statusSymbol}>{symbol}</Text>
-          </View>
-        )}
-      </View>
-    );
-  };
-
   async function handleRegister() {
-    setValidatedSteps((prev) => new Set([...prev, 2])); // позначаємо останній крок
+    setValidatedSteps((prev) => new Set([...prev, 2]));
     if (!validateCurrentStep()) return;
 
     setLoading(true);
@@ -177,30 +137,87 @@ export default function Register() {
           }),
         ),
       });
+      // Переходимо на PasswordSetup, а після нього покажемо екран геолокації
       router.replace({ pathname: "/PasswordSetup", params: { email: form.email } });
+      // Показуємо екран геолокації після PasswordSetup
+      setShowLocationScreen(true);
     } catch (e: any) {
       const errorMsg = formatErrorMessage(e);
       const isConflict =
         errorMsg.toLowerCase().includes("вже використовується") ||
         errorMsg.toLowerCase().includes("already exists");
 
-      if (isConflict) {
-        setStep(1);
-      }
+      if (isConflict) setStep(1);
 
-      showMessage({
-        message: "Помилка реєстрації",
-        description: errorMsg,
-        type: "danger",
-        duration: 5000,
+      showToast({
+        type: "error",
+        title: "Помилка реєстрації",
+        subtitle: errorMsg,
       });
     } finally {
       setLoading(false);
     }
   }
 
+  // Завершення реєстрації після екрана геолокації
+  const handleLocationAllow = () => {
+    setLocationGranted(true);
+    setShowLocationScreen(false);
+    router.replace("/");
+  };
+
+  const handleLocationSkip = () => {
+    setLocationGranted(false);
+    setShowLocationScreen(false);
+    router.replace("/");
+  };
+
+  const renderInput = (
+    label: string,
+    value: string,
+    error: string | undefined,
+    placeholder: string,
+    keyboardType: "phone-pad" | "email-address" | "default" = "default",
+    onChangeText: (text: string) => void,
+    autoCapitalize: "none" | "words" = "words",
+    maxLength?: number,
+    isPhone?: boolean,
+    required?: boolean,
+  ) => (
+    <>
+      {isPhone ? (
+        <PhoneInput
+          label={label}
+          placeholder={placeholder}
+          value={value}
+          onChangeText={onChangeText}
+          autoCapitalize={autoCapitalize}
+          required={required}
+          errorMessage={error}
+          testId={`auth:${isPhone ? "phone" : "email"}:input`}
+        />
+      ) : (
+        <TextField
+          label={label}
+          placeholder={placeholder}
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          required={required}
+          errorMessage={error}
+          testId={`auth:${label === "Прізвище" ? "lastName" : label === "Ім'я" ? "firstName" : "middleName"}:input`}
+        />
+      )}
+    </>
+  );
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={styles.safeArea}
+      testID={ScreenIds.register}
+      accessibilityLabel={ScreenIds.register}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
@@ -211,43 +228,56 @@ export default function Register() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
+          {step > 1 && (
+            <Button
+              shape="round"
+              hierarchy="tertiary"
+              size="medium"
+              leadingIcon={
+                <Icon name="arrow-left" size={24} color={theme.colors.content.primary} />
+              }
+              onPress={handleBack}
+              style={{ alignSelf: "flex-start" }}
+              testId="auth:back:button"
+            />
+          )}
+
           <View style={styles.header}>
-            <Text style={styles.title}>
+            <Typography variant="h2" tone="primary" style={styles.title}>
               {step === 1 ? "Введи номер телефону та електронну пошту" : "Як тебе звати?"}
-            </Text>
+            </Typography>
           </View>
 
-          {/* Form */}
           <View style={styles.formContainer}>
             {step === 1 && (
               <>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Номер телефону</Text>
                   {renderInput(
+                    "Номер телефону",
                     form.phone,
                     errors.phone,
-                    "+380 XX XXX XX XX",
+                    "XX XXX XX XX",
                     "phone-pad",
-                    false,
                     (v) => handleChange("phone", v),
                     "words",
+                    15,
+                    true,
+                    true,
                   )}
-                  {errors.phone && <Text style={styles.fieldError}>{errors.phone}</Text>}
                 </View>
-
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Електронна пошта</Text>
                   {renderInput(
+                    "Електронна пошта",
                     form.email,
                     errors.email,
                     "example@mail.com",
                     "email-address",
-                    false,
                     (v) => handleChange("email", v),
                     "none",
+                    100,
+                    false,
+                    true,
                   )}
-                  {errors.email && <Text style={styles.fieldError}>{errors.email}</Text>}
                 </View>
               </>
             )}
@@ -255,75 +285,76 @@ export default function Register() {
             {step === 2 && (
               <>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Прізвище</Text>
                   {renderInput(
+                    "Прізвище",
                     form.lastName,
                     errors.lastName,
                     "Введіть прізвище",
                     "default",
-                    false,
                     (v) => handleChange("lastName", v),
+                    "words",
+                    50,
+                    false,
+                    true,
                   )}
-                  {errors.lastName && <Text style={styles.fieldError}>{errors.lastName}</Text>}
                 </View>
-
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>{"Ім'я"}</Text>
                   {renderInput(
+                    "Ім'я",
                     form.firstName,
                     errors.firstName,
                     "Введіть ім'я",
                     "default",
-                    false,
                     (v) => handleChange("firstName", v),
+                    "words",
+                    50,
+                    false,
+                    true,
                   )}
-                  {errors.firstName && <Text style={styles.fieldError}>{errors.firstName}</Text>}
                 </View>
-
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>По батькові</Text>
                   {renderInput(
+                    "По батькові",
                     form.middleName,
                     errors.middleName,
                     "Введіть по батькові (опціонально)",
                     "default",
-                    false,
                     (v) => handleChange("middleName", v),
+                    "words",
+                    50,
+                    false,
+                    false,
                   )}
-                  {errors.middleName && <Text style={styles.fieldError}>{errors.middleName}</Text>}
                 </View>
               </>
             )}
 
-            {/* Removed redundant step 3 password fields */}
-
-            {/* Buttons */}
             <View style={styles.buttonsContainer}>
-              <TouchableOpacity
-                style={[styles.primaryButton, loading && styles.buttonDisabled]}
-                onPress={handleNext}
+              <Button
+                label={loading ? "Зачекайте..." : step < 2 ? "Далі" : "Зареєструватися"}
+                hierarchy="primary"
+                shape="rectangle"
+                size="medium"
+                loading={loading}
                 disabled={loading}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {loading ? "Зачекайте..." : step < 2 ? "Далі" : "Зареєструватися"}
-                </Text>
-              </TouchableOpacity>
-
-              {step > 1 && (
-                <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                  <Text style={styles.backButtonText}>Назад</Text>
-                </TouchableOpacity>
-              )}
+                onPress={handleNext}
+                style={{ width: "100%" }}
+                testId="auth:next:button"
+              />
             </View>
           </View>
 
-          {/* Footer */}
-          <Text style={styles.footer}>
+          <Typography variant="body2" tone="primary" style={styles.footer}>
             Вже є акаунт?{" "}
-            <Text style={styles.footerLink} onPress={() => router.push("/Login")}>
+            <Typography
+              variant="body2"
+              tone="primary"
+              weight="bold"
+              onPress={() => router.push("/Login")}
+            >
               Увійти
-            </Text>
-          </Text>
+            </Typography>
+          </Typography>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -333,148 +364,36 @@ export default function Register() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: theme.colors.background.primary,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingHorizontal: theme.spacing[16],
+    paddingTop: theme.spacing[56],
+    paddingBottom: theme.spacing[40],
   },
   header: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: theme.spacing[32],
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1A1A1A",
-    marginBottom: 8,
     textAlign: "center",
   },
   formContainer: {
-    marginBottom: 24,
+    marginBottom: theme.spacing[16],
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: theme.spacing[16],
   },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
-  },
-
-  inputWrapper: {
-    position: "relative",
-  },
-
-  input: {
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    paddingRight: 48,
-    borderRadius: 10,
-    fontSize: 16,
-    color: "#1A1A1A",
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-  },
-
-  inputError: {
-    borderColor: "#FF6B6B",
-  },
-
-  inputValid: {
-    borderColor: "#4CAF50",
-  },
-
-  statusIndicator: {
-    position: "absolute",
-    right: 16,
-    top: "50%",
-    marginTop: -10,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  statusSuccess: {
-    backgroundColor: "#4CAF50",
-  },
-
-  statusError: {
-    backgroundColor: "#FF6B6B",
-  },
-
-  statusSymbol: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "bold",
-    lineHeight: 20,
-  },
-
-  fieldError: {
-    color: "#FF6B6B",
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-
   buttonsContainer: {
-    marginTop: 16,
-    gap: 12,
+    paddingTop: theme.spacing[8],
+    gap: theme.spacing[16],
   },
-
-  primaryButton: {
-    backgroundColor: "#000000",
-    paddingVertical: 16,
-    borderRadius: 25,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-
-  buttonDisabled: {
-    backgroundColor: "#000000",
-    opacity: 0.7,
-  },
-
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
-  },
-
-  backButton: {
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-
-  backButtonText: {
-    color: "#000000",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-
   footer: {
     textAlign: "center",
-    fontSize: 14,
-    color: "#666",
-    marginTop: 24,
-    marginBottom: 20,
-  },
-
-  footerLink: {
-    color: "#000000",
-    fontWeight: "600",
+    marginTop: theme.spacing[16],
   },
 });

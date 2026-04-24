@@ -1,23 +1,23 @@
-import { COLORS } from "@/src/theme/colors";
-import { AntDesign, Feather, MaterialIcons } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import MemberAvatar from "../../MemberAvatar";
-
-import { Member } from "../CircleItem";
-
-type DetailsMember = Member & { mood?: string };
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { MemberAvatar } from "../../MemberAvatar";
+import { ListItem } from "../../ListItem";
+import { Typography } from "../../typography";
+import { theme } from "@/src/theme/theme";
+import { Member } from "@/src/types";
 
 interface CircleDetailsViewProps {
   name: string;
   inviteCode: string;
-  members: DetailsMember[];
+  members: Member[];
   isOwner: boolean;
   onClose: () => void;
   onRenamePress: () => void;
   onUnsubscribePress: () => void;
-  onMemberPress: (member: DetailsMember) => void;
+  onMemberPress: (member: Member) => void;
+  onRollCallPress: () => void;
 }
 
 export default function CircleDetailsView({
@@ -27,174 +27,228 @@ export default function CircleDetailsView({
   isOwner,
   onClose,
   onRenamePress,
-  onUnsubscribePress,
   onMemberPress,
+  onRollCallPress,
 }: CircleDetailsViewProps) {
   const handleCopy = async () => {
     await Clipboard.setStringAsync(inviteCode);
   };
 
+  const unknownCount = members.filter((m) => m.status === "UNKNOWN" || !m.status).length;
+  const safeCount = members.filter((m) => m.status === "SAFE").length;
+  const wasSafeCount = members.filter((m) => m.status === "WAS_SAFE").length;
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{name}</Text>
+    <View style={styles.outerContainer}>
+      <View style={styles.headerArea}>
+        <View style={styles.headerTop}>
+          <View style={styles.titleInfo}>
+            <TouchableOpacity onPress={onClose} style={styles.backArrow}>
+              <AntDesign name="left" size={24} color={theme.colors.content.primary} />
+            </TouchableOpacity>
+            <Typography variant="h2" weight="bold" style={styles.title} numberOfLines={1}>
+              {name}
+            </Typography>
+          </View>
+        </View>
+
+        <View style={styles.codeWrapper}>
+          <View style={styles.codeContainer}>
+            <Typography variant="body2" weight="semibold" style={styles.codeText}>
+              Код: {inviteCode}
+            </Typography>
+            <TouchableOpacity
+              onPress={handleCopy}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.copyButton}
+            >
+              <AntDesign name="copy" size={16} color={theme.colors.content.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
         {isOwner && (
           <TouchableOpacity onPress={onRenamePress} style={styles.editButton}>
-            <AntDesign name="edit" size={20} color={COLORS.PRIMARY_BLUE} />
+            <AntDesign name="edit" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         )}
       </View>
 
-      <View style={styles.codeContainer}>
-        <Text style={styles.codeText}>Код: {inviteCode}</Text>
-        <TouchableOpacity onPress={handleCopy} style={styles.copyButton}>
-          <Feather name="copy" size={16} color={COLORS.TEXT_DARK} />
-        </TouchableOpacity>
+      <View style={styles.statsCard}>
+        <View style={styles.statsHeader}>
+          <Typography variant="h3" weight="bold" style={styles.membersCountText}>
+            {members.length} учасників
+          </Typography>
+          <TouchableOpacity onPress={onRollCallPress} style={styles.rollCallButton}>
+            <Typography variant="body2" weight="bold" style={styles.rollCallButtonText}>
+              Перекличка
+            </Typography>
+            <Feather name="rss" size={16} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+        <Typography variant="body2" weight="regular" style={styles.statsSummaryText}>
+          {unknownCount} не відповіли,{"\n"}
+          {wasSafeCount} нещодавно в безпеці, {safeCount} в безпеці
+        </Typography>
       </View>
 
-      <ScrollView style={styles.membersList}>
-        {members.map((member) => (
-          <View key={member.id} style={styles.memberCard}>
-            <View style={styles.memberHeader}>
-              <View style={styles.memberInfo}>
-                <MemberAvatar member={{ ...member, status: member.status || "UNKNOWN" }} />
-                <View style={styles.memberNameContainer}>
-                  <Text style={styles.memberName}>
-                    {member.fullName || `${member.firstName} ${member.lastName}`.trim()}
-                  </Text>
-                  <View style={styles.statusContainer}>
-                    <Text style={styles.statusText}>
-                      {member.status === "SAFE"
-                        ? "В безпеці"
-                        : member.status === "DANGER"
-                          ? "У небезпеці"
-                          : "Невідомо"}
-                    </Text>
-                    <MaterialIcons name="notifications" size={16} color={COLORS.PRIMARY_BLUE} />
-                  </View>
-                  <View style={styles.moodContainer}>
-                    <Text style={styles.moodLabel}>НАСТРІЙ</Text>
-                    <View style={styles.moodValueContainer}>
-                      <Text style={styles.moodText}>{member.mood || "Не відмітився"}</Text>
-                      <MaterialIcons name="notifications" size={16} color={COLORS.PRIMARY_BLUE} />
-                    </View>
-                  </View>
-                </View>
-              </View>
-              <TouchableOpacity onPress={() => onMemberPress(member)}>
-                <MaterialIcons name="more-horiz" size={24} color={COLORS.TEXT_GRAY} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
+      <ScrollView
+        style={styles.membersList}
+        contentContainerStyle={styles.membersListContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.membersCard}>
+          {members.map((member, index) => (
+            <ListItem
+              key={member.id}
+              layout="stateBadge"
+              label={member.fullName || `${member.firstName} ${member.lastName}`.trim()}
+              subLabel={
+                member.status === "SAFE"
+                  ? "У безпеці"
+                  : member.status === "WAS_SAFE"
+                    ? "Був у безпеці"
+                    : "Невідомо"
+              }
+              supportCaption={
+                member.status === "SAFE"
+                  ? "19:05"
+                  : member.status === "WAS_SAFE"
+                    ? "У безпеці о 18:56"
+                    : "19:05"
+              }
+              status={member.status}
+              renderAvatar={() => <MemberAvatar member={member} />}
+              onPress={() => onMemberPress(member)}
+              showDivider={index < members.length - 1}
+            />
+          ))}
+        </View>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
+    backgroundColor: theme.colors.background.primary,
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: theme.spacing[64],
   },
-  header: {
+  headerArea: {
+    paddingHorizontal: theme.spacing[20],
+    marginBottom: theme.spacing[20],
+    position: "relative",
+  },
+  headerTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
+  titleInfo: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
+    flex: 1,
+    marginRight: theme.spacing[16],
+  },
+  backArrow: {
+    marginRight: theme.spacing[16],
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: COLORS.TEXT_DARK,
+    color: theme.colors.content.primary,
   },
   editButton: {
-    padding: 8,
-    backgroundColor: COLORS.PRIMARY_BLUE + "20", // Light blue background
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: theme.colors.accent,
+    borderRadius: 18,
+    shadowColor: theme.colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+    position: "absolute",
+    right: theme.spacing[20],
+    top: 0,
+  },
+  codeWrapper: {
+    flexDirection: "row",
+    paddingLeft: 40,
+    marginTop: 8,
   },
   codeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EEF2F6",
-    alignSelf: "flex-start",
+    backgroundColor: theme.colors.background.tertiary,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
-    marginBottom: 20,
+    borderRadius: theme.radius.md,
   },
   codeText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.TEXT_DARK,
-    marginRight: 8,
+    color: theme.colors.content.primary,
+    marginRight: 10,
   },
   copyButton: {
-    padding: 4,
+    padding: 2,
   },
-  membersList: {
-    flex: 1,
-  },
-  memberCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    backgroundColor: "#fff", // Use explicit white if card bg is different
+  statsCard: {
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.xl,
+    marginHorizontal: theme.spacing[20],
+    padding: theme.spacing[20],
+    marginBottom: theme.spacing[20],
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: 10,
     elevation: 2,
   },
-  memberHeader: {
+  statsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+    marginBottom: 12,
   },
-  memberInfo: {
-    flexDirection: "row",
-    flex: 1,
+  membersCountText: {
+    color: theme.colors.content.primary,
   },
-  memberNameContainer: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  memberName: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: COLORS.TEXT_DARK,
-    marginBottom: 4,
-  },
-  statusContainer: {
+  rollCallButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    backgroundColor: theme.colors.accent,
+    paddingHorizontal: theme.spacing[16],
+    paddingVertical: theme.spacing[10],
+    borderRadius: 14,
     gap: 6,
+    shadowColor: theme.colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  statusText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.TEXT_DARK,
+  rollCallButtonText: {
+    color: "#FFFFFF",
   },
-  moodContainer: {
-    marginTop: 4,
+  statsSummaryText: {
+    color: theme.colors.content.primary,
+    lineHeight: 18,
+    opacity: 0.8,
   },
-  moodLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: COLORS.TEXT_GRAY,
-    textTransform: "uppercase",
-    marginBottom: 2,
+  membersList: {
+    paddingHorizontal: theme.spacing[20],
   },
-  moodValueContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+  membersListContent: {
+    paddingBottom: 40,
   },
-  moodText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.TEXT_DARK,
+  membersCard: {
+    backgroundColor: theme.colors.background.secondary,
+    borderRadius: theme.radius.xl,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
 });

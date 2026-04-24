@@ -1,4 +1,4 @@
-import firestore from "@react-native-firebase/firestore";
+import { collection, doc, getFirestore, onSnapshot } from "@react-native-firebase/firestore";
 import { useEffect } from "react";
 import { useAuthStore } from "../store/authStore";
 
@@ -13,9 +13,11 @@ export function useSyncSignal(onSync: () => void) {
   useEffect(() => {
     if (!user || !user.id) return;
 
-    const documentRef = firestore().collection("user_sync").doc(user.id);
+    const db = getFirestore();
+    const documentRef = doc(collection(db, "user_sync"), user.id);
 
-    const unsubscribe = documentRef.onSnapshot(
+    const unsubscribe = onSnapshot(
+      documentRef,
       (docSnapshot) => {
         // Trigger sync when the document updates
         // To prevent initial redundant fetch, you can optionally check `docSnapshot.metadata.hasPendingWrites`

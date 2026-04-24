@@ -4,7 +4,7 @@ import { ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface 
 import { ModifyUserDto } from 'src/users/dto/modify-user.dto';
 import { Repository } from 'typeorm';
 
-import { UserEntity } from '../entities/user.entity';
+import { UserEntity } from '../../users/entities/user.entity';
 
 @ValidatorConstraint({ name: 'IsUserUnique', async: true })
 @Injectable()
@@ -26,8 +26,6 @@ export class UserUniqueConstraint implements ValidatorConstraintInterface {
     if (dto.id) {
       qb.andWhere('user.id != :id', { id: dto.id });
     }
-
-    qb.andWhere('user.isRegistered = :isRegistered', { isRegistered: true });
 
     const exists = await qb.getExists();
     return !exists;

@@ -1,13 +1,13 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
-import { ConfirmationCodeEntity } from 'src/common/entities/confirmation-code.entity';
-import { UserEntity } from 'src/common/entities/user.entity';
 import { EmailService } from 'src/email/email.service';
+import { UserEntity } from 'src/users/entities/user.entity';
 import { IsNull, Repository } from 'typeorm';
 
 import { SecurityService } from '../security/security.service';
+import { ConfirmationCodeEntity } from './entities/confirmation-code.entity';
 import { ConfirmationTypes } from './enums/confirmation-type';
 
 @Injectable()
@@ -65,15 +65,22 @@ export class ConfirmationsService {
   }
 
   // todo: regenerate code if expired
-  async verifyCode(type: ConfirmationTypes, email: string, code: string) {
-    const user = await this.usersRepository.findOne({ where: { email, lockedAt: IsNull() } });
+  async verifyCode(type: ConfirmationTypes, email: string, code: string): Promise<UserProfileDto> {
+    if (typeof email !== 'string' || !email.trim()) throw new BadRequestException('Email обовʼязковий');
+    if (typeof code !== 'string' || !code.trim()) throw new BadRequestException('Відсутній код');
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedCode = code.trim();
+
+    const user = await this.usersRepository.findOne({ where: { email: normalizedEmail, lockedAt: IsNull() } });
     if (!user) throw new UnauthorizedException('Невірні облікові дані');
     const savedCode = await this.codeRepository.findOne({
       where: { user: { id: user.id }, type },
     });
-    const isCodeValid = savedCode && savedCode.code === code && savedCode.expiresAt > new Date();
+    const isCodeValid = savedCode && savedCode.code === normalizedCode && savedCode.expiresAt > new Date();
     if (!isCodeValid) throw new UnauthorizedException('Недійсний або протермінований токен');
-    return new UserProfileDto(user);
+    const smsTargetNumber = this.configService.get<string>('TWILIO_PHONE_NUMBER');
+    return new UserProfileDto({ ...user, smsTargetNumber });
   }
 
   async consumeToken(userId: string): Promise<void> {

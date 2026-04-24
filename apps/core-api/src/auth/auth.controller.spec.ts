@@ -5,11 +5,13 @@ import { instanceToPlain } from 'class-transformer';
 import { Response } from 'express';
 import { AuthRequest } from 'src/common/types/auth-request';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
+import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
+import { ResendRegistrationCodeDto } from './dto/resend-registration-code.dto';
 import { SetupPasswordDto } from './dto/token-query.dto';
 import { UserChangePasswordDto } from './dto/user-change-password.dto';
 import { UserSetupPasswordDto } from './dto/user-setup-password.dto';
@@ -26,6 +28,7 @@ describe('AuthController', () => {
     setupPassword: jest.fn(),
     changePassword: jest.fn(),
     forgotPassword: jest.fn(),
+    resendRegistrationCode: jest.fn(),
     resetPassword: jest.fn(),
   };
 
@@ -33,7 +36,9 @@ describe('AuthController', () => {
     get: jest.fn(),
   };
 
-  const mockConfirmationsService = {};
+  const mockConfirmationsService = {
+    verifyCode: jest.fn(),
+  };
 
   // Mock Request & Response
   const mockUser = {
@@ -41,6 +46,10 @@ describe('AuthController', () => {
     email: 'test@test.com',
     firstName: 'John',
     lastName: 'Doe',
+    status: 'WAS_SAFE',
+    region: 'Kyiv',
+    district: 'Shevchenkivskyi',
+    alertRegionUid: 31,
   };
 
   const mockRequest = {
@@ -119,27 +128,25 @@ describe('AuthController', () => {
   });
 
   describe('setupPassword', () => {
-    it('should call authService.setupPassword', async () => {
-      // Updated to match your SetupPasswordDto
+    it('should verify confirmation code, call authService.setupPassword and return success', async () => {
       const query: SetupPasswordDto = {
         email: 'test@test.com',
         code: '123456',
       };
 
-      // Updated to match your UserSetupPasswordDto
       const body: UserSetupPasswordDto = {
         newPassword: 'NewPassword123!',
         confirmNewPassword: 'NewPassword123!',
       };
 
-      const expectedResult = { success: true };
+      mockConfirmationsService.verifyCode.mockResolvedValue(mockRequest.user);
+      mockAuthService.setupPassword.mockResolvedValue(undefined);
 
-      mockAuthService.setupPassword.mockResolvedValue(expectedResult as any);
+      const result = await controller.setupPassword(query, body);
 
-      const result = await controller.setupPassword(query, body, mockRequest);
-
+      expect(mockConfirmationsService.verifyCode).toHaveBeenCalledWith(ConfirmationTypes.REGISTRATION, 'test@test.com', '123456');
       expect(authService.setupPassword).toHaveBeenCalledWith(mockRequest.user, body);
-      expect(result).toBe(expectedResult);
+      expect(result).toEqual({ success: true, message: 'Пароль успішно встановлено' });
     });
   });
 
@@ -151,6 +158,8 @@ describe('AuthController', () => {
       expect(result).toEqual(instanceToPlain(mockUser));
       expect(result).toHaveProperty('id', 'user-123');
       expect(result).toHaveProperty('email', 'test@test.com');
+      expect(result).toHaveProperty('status', 'WAS_SAFE');
+      expect(result).toHaveProperty('alertRegionUid', 31);
     });
   });
 
@@ -173,12 +182,30 @@ describe('AuthController', () => {
   describe('forgotPassword', () => {
     it('should delegate to authService.forgotPassword and return success', async () => {
       const body: ForgotPasswordDto = { email: 'test@test.com' };
-      mockAuthService.forgotPassword.mockResolvedValue(undefined);
+      mockAuthService.forgotPassword.mockResolvedValue(true);
 
       const result = await controller.forgotPassword(body);
 
       expect(authService.forgotPassword).toHaveBeenCalledWith('test@test.com');
-      expect(result).toEqual({ success: true, message: 'Код для скидання паролю надіслано на вашу пошту' });
+      expect(result).toEqual({
+        success: true,
+        message: 'Якщо обліковий запис існує, ми надішлемо інструкції для скидання паролю на вашу пошту',
+      });
+    });
+  });
+
+  describe('resendRegistrationCode', () => {
+    it('should delegate to authService.resendRegistrationCode and return success', async () => {
+      const body: ResendRegistrationCodeDto = { email: 'test@test.com' };
+      mockAuthService.resendRegistrationCode.mockResolvedValue(true);
+
+      const result = await controller.resendRegistrationCode(body);
+
+      expect(authService.resendRegistrationCode).toHaveBeenCalledWith('test@test.com');
+      expect(result).toEqual({
+        success: true,
+        message: 'Якщо реєстрація ще не завершена, ми надішлемо код підтвердження повторно',
+      });
     });
   });
 
@@ -191,8 +218,15 @@ describe('AuthController', () => {
       };
       mockAuthService.resetPassword.mockResolvedValue(undefined);
 
-      const result = await controller.resetPassword(query, body, mockRequest);
+      mockConfirmationsService.verifyCode.mockResolvedValue(mockRequest.user);
 
+      const result = await controller.resetPassword(query, body);
+
+      expect(mockConfirmationsService.verifyCode).toHaveBeenCalledWith(
+        ConfirmationTypes.PASSWORD_RESET,
+        'test@test.com',
+        '123456',
+      );
       expect(authService.resetPassword).toHaveBeenCalledWith(mockRequest.user, body);
       expect(result).toEqual({ success: true, message: 'Пароль успішно скинуто' });
     });

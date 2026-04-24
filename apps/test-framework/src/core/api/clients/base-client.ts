@@ -1,7 +1,6 @@
 import { APIRequestContext, APIResponse } from '@playwright/test';
-import { TestContext } from '../helpers/test-context';
-import { config } from '../../../api/helpers/config';
 import { DbCleaner } from '../../db/db-cleaner';
+import { TestContext } from '../helpers/test-context';
 
 /**
  * Результат API запиту з типізованими даними
@@ -21,10 +20,10 @@ export abstract class BaseClient {
   protected baseURL: string;
   protected dbCleaner?: DbCleaner;
 
-  constructor(request: APIRequestContext, context: TestContext, dbCleaner?: DbCleaner) {
+  constructor(request: APIRequestContext, context: TestContext, dbCleaner?: DbCleaner, baseUrl?: string) {
     this.request = request;
     this.context = context;
-    this.baseURL = config.baseApiUrl;
+    this.baseURL = baseUrl || process.env.API_BASE_URL!;
     this.dbCleaner = dbCleaner;
   }
 
@@ -34,32 +33,42 @@ export abstract class BaseClient {
   protected getHeaders(customHeaders?: Record<string, string>): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...customHeaders,
     };
 
-    if (this.context.accessToken) {
+    if (this.context.accessToken && !customHeaders?.Authorization) {
       headers['Authorization'] = `Bearer ${this.context.accessToken}`;
     }
 
-    return headers;
+    const result: Record<string, string> = {
+      ...headers,
+      ...customHeaders,
+    };
+
+    return result;
   }
 
   /**
-   * Безпечно парсить JSON з відповіді
+   * Безпечно парсить JSON або Buffer з відповіді
    * Повертає null якщо response не ok або body порожній
    */
-  protected async safeJsonParse<T = any>(response: APIResponse): Promise<T | null> {
-    if (!response.ok()) {
-      return null;
-    }
+  protected async safeParse<T = any>(response: APIResponse): Promise<T | null> {
+    if (!response.ok()) return null;
 
     try {
-      const text = await response.text();
-      if (!text || text.trim() === '') {
-        return null;
+      const contentType = response.headers()['content-type'] ?? '';
+
+      if (contentType.includes('application/json')) {
+        const text = await response.text();
+        return text ? (JSON.parse(text) as T) : null;
       }
-      return JSON.parse(text) as T;
-    } catch (error) {
+
+      if (contentType.includes('image/') || contentType.includes('application/octet-stream')) {
+        return Buffer.from(await response.body()) as unknown as T;
+      }
+
+      const text = await response.text();
+      return text ? (JSON.parse(text) as T) : null;
+    } catch {
       return null;
     }
   }
@@ -84,7 +93,7 @@ export abstract class BaseClient {
       timeout: options?.timeout,
     });
 
-    const data = await this.safeJsonParse<T>(response);
+    const data = await this.safeParse<T>(response);
     return { data: data as T, response };
   }
 
@@ -112,7 +121,7 @@ export abstract class BaseClient {
       timeout: options?.timeout,
     });
 
-    const data = await this.safeJsonParse<T>(response);
+    const data = await this.safeParse<T>(response);
     return { data: data as T, response };
   }
 
@@ -140,7 +149,7 @@ export abstract class BaseClient {
       timeout: options?.timeout,
     });
 
-    const data = await this.safeJsonParse<T>(response);
+    const data = await this.safeParse<T>(response);
     return { data: data as T, response };
   }
 
@@ -166,7 +175,7 @@ export abstract class BaseClient {
       timeout: options?.timeout,
     });
 
-    const data = await this.safeJsonParse<T>(response);
+    const data = await this.safeParse<T>(response);
     return { data: data as T, response };
   }
 
@@ -190,7 +199,7 @@ export abstract class BaseClient {
       timeout: options?.timeout,
     });
 
-    const data = await this.safeJsonParse<T>(response);
+    const data = await this.safeParse<T>(response);
     return { data: data as T, response };
   }
 

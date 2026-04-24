@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserEntity } from 'src/common/entities/user.entity';
-import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
-import { UserSessionEntity } from 'src/common/entities/user-sessions.entity';
 import { ConfirmationsModule } from 'src/confirmations/confirmations.module';
 import { SecurityModule } from 'src/security/security.module';
 import { UserActivitiesModule } from 'src/user-activities/user-activities.module';
+import { UserEntity } from 'src/users/entities/user.entity';
+import { UserPasswordEntity } from 'src/users/entities/user-password.entity';
+import { UserSessionEntity } from 'src/users/entities/user-sessions.entity';
+import { UsersModule } from 'src/users/users.module';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -21,6 +22,7 @@ import { UserLocalStrategy } from './strategies/user-local.strategy';
     UserActivitiesModule,
     SecurityModule,
     ConfirmationsModule,
+    UsersModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, UserLocalStrategy, UserJwtAccessStrategy, UserJwtRefreshStrategy],

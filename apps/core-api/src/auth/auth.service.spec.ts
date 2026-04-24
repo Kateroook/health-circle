@@ -3,16 +3,19 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { createHash } from 'crypto';
 import { Response } from 'express';
 import { UserProfileDto } from 'src/common/dto/user-profile.dto';
-import { UserEntity } from 'src/common/entities/user.entity';
-import { UserPasswordEntity } from 'src/common/entities/user-password.entity';
-import { UserSessionEntity } from 'src/common/entities/user-sessions.entity';
+import { UserStatus } from 'src/common/enums/user-status';
 import { RequestMetadata } from 'src/common/types/request-metadata';
 import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
-import { Repository } from 'typeorm';
+import { UserEntity } from 'src/users/entities/user.entity';
+import { UserPasswordEntity } from 'src/users/entities/user-password.entity';
+import { UserSessionEntity } from 'src/users/entities/user-sessions.entity';
+import { SessionActivityService } from 'src/users/session-activity.service';
+import { IsNull, Repository } from 'typeorm';
 
 import { AuthService } from './auth.service';
 import { UserChangePasswordDto } from './dto/user-change-password.dto';
@@ -27,12 +30,17 @@ describe('AuthService', () => {
   let jwtService: jest.Mocked<JwtService>;
   let confirmationService: jest.Mocked<ConfirmationsService>;
   let userActivitiesService: jest.Mocked<UserActivitiesService>;
+  let sessionActivityService: jest.Mocked<SessionActivityService>;
 
   const mockUserEntity = {
     id: 'user-123',
     email: 'test@example.com',
     lockedAt: null,
     isRegistered: true,
+    status: UserStatus.WAS_SAFE,
+    region: 'Kyiv',
+    district: 'Shevchenkivskyi',
+    alertRegionUid: 31,
   } as unknown as UserEntity;
 
   const mockMetadata = {
@@ -91,6 +99,7 @@ describe('AuthService', () => {
             find: jest.fn(),
             create: jest.fn((dto: unknown) => dto as UserSessionEntity),
             save: jest.fn(),
+            update: jest.fn(),
           },
         },
         {
@@ -113,6 +122,12 @@ describe('AuthService', () => {
             setupPasswordCode: jest.fn(),
           },
         },
+        {
+          provide: SessionActivityService,
+          useValue: {
+            trackActivity: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -124,6 +139,7 @@ describe('AuthService', () => {
     jwtService = module.get(JwtService);
     confirmationService = module.get(ConfirmationsService);
     userActivitiesService = module.get(UserActivitiesService);
+    sessionActivityService = module.get(SessionActivityService);
   });
 
   it('should be defined', () => {
@@ -140,6 +156,8 @@ describe('AuthService', () => {
 
       expect(result).toBeInstanceOf(UserProfileDto);
       expect(result.id).toBe(mockUserEntity.id);
+      expect(result.status).toBe(UserStatus.WAS_SAFE);
+      expect(result.region).toBe('Kyiv');
     });
 
     it('should throw UnauthorizedException if user not found', async () => {
@@ -193,6 +211,8 @@ describe('AuthService', () => {
       const session = {
         id: 'sess-1',
         user: mockUserEntity,
+        revokedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
       } as UserSessionEntity;
       userSessionRepository.findOne.mockResolvedValue(session);
 
@@ -200,7 +220,7 @@ describe('AuthService', () => {
       const result = await service.verifyUser(payload, mockMetadata);
 
       expect(result.sessionId).toBe('sess-1');
-      expect(userSessionRepository.save).toHaveBeenCalled(); // updates lastUsedAt
+      expect(sessionActivityService.trackActivity).toHaveBeenCalledWith('sess-1', '127.0.0.1', expect.any(Object));
     });
 
     it('should throw UnauthorizedException if session missing', async () => {
@@ -208,9 +228,34 @@ describe('AuthService', () => {
       await expect(service.verifyUser({ sub: 'u', jti: 'j' }, mockMetadata)).rejects.toThrow(UnauthorizedException);
     });
 
+    it('should throw UnauthorizedException if session revoked', async () => {
+      userSessionRepository.findOne.mockResolvedValue({
+        id: 'sess-1',
+        user: mockUserEntity,
+        revokedAt: new Date(),
+        expiresAt: new Date(Date.now() + 60_000),
+      } as UserSessionEntity);
+
+      await expect(service.verifyUser({ sub: 'u', jti: 'j' }, mockMetadata)).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException if session expired', async () => {
+      userSessionRepository.findOne.mockResolvedValue({
+        id: 'sess-1',
+        user: mockUserEntity,
+        revokedAt: null,
+        expiresAt: new Date(Date.now() - 1_000),
+      } as UserSessionEntity);
+
+      await expect(service.verifyUser({ sub: 'u', jti: 'j' }, mockMetadata)).rejects.toThrow(UnauthorizedException);
+    });
+
     it('should throw ForbiddenException if user locked', async () => {
       userSessionRepository.findOne.mockResolvedValue({
+        id: 'sess-1',
         user: { ...mockUserEntity, lockedAt: new Date() },
+        revokedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
       } as UserSessionEntity);
       await expect(service.verifyUser({ sub: 'u', jti: 'j' }, mockMetadata)).rejects.toThrow(ForbiddenException);
     });
@@ -218,24 +263,128 @@ describe('AuthService', () => {
 
   describe('verifySession (Refresh Token Check)', () => {
     it('should return profile if token hash matches', async () => {
+      const fingerprint = createHash('sha256').update(`${mockMetadata.userAgent}-${mockMetadata.ipAddress}`).digest('hex');
       const session = {
         id: 'sess-1',
         user: mockUserEntity,
         tokenHash: 'hashed-token',
+        fingerprint,
+        userAgent: mockMetadata.userAgent,
+        revokedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
       } as UserSessionEntity;
       userSessionRepository.findOne.mockResolvedValue(session);
       securityService.validate.mockResolvedValue(true);
 
-      const result = await service.verifySession('raw-token', { sub: 'u', jti: 'j' });
+      const result = await service.verifySession('raw-token', { sub: 'u', jti: 'j', fgp: fingerprint }, mockMetadata);
       expect(result.sessionId).toBe('sess-1');
     });
 
+    it('should throw UnauthorizedException if session revoked (even if hash matches)', async () => {
+      const fingerprint = createHash('sha256').update(`${mockMetadata.userAgent}-${mockMetadata.ipAddress}`).digest('hex');
+      userSessionRepository.findOne.mockResolvedValue({
+        id: 'sess-1',
+        user: mockUserEntity,
+        tokenHash: 'hashed-token',
+        fingerprint,
+        userAgent: mockMetadata.userAgent,
+        revokedAt: new Date(),
+        expiresAt: new Date(Date.now() + 60_000),
+      } as UserSessionEntity);
+      securityService.validate.mockResolvedValue(true);
+
+      await expect(service.verifySession('raw-token', { sub: 'u', jti: 'j', fgp: fingerprint }, mockMetadata)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if session expired (even if hash matches)', async () => {
+      const fingerprint = createHash('sha256').update(`${mockMetadata.userAgent}-${mockMetadata.ipAddress}`).digest('hex');
+      userSessionRepository.findOne.mockResolvedValue({
+        id: 'sess-1',
+        user: mockUserEntity,
+        tokenHash: 'hashed-token',
+        fingerprint,
+        userAgent: mockMetadata.userAgent,
+        revokedAt: null,
+        expiresAt: new Date(Date.now() - 1_000),
+      } as UserSessionEntity);
+      securityService.validate.mockResolvedValue(true);
+
+      await expect(service.verifySession('raw-token', { sub: 'u', jti: 'j', fgp: fingerprint }, mockMetadata)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
     it('should throw UnauthorizedException if hash mismatch', async () => {
-      const session = { tokenHash: 'hashed-token' };
+      const session = {
+        tokenHash: 'hashed-token',
+        fingerprint: 'fgp-1',
+        userAgent: mockMetadata.userAgent,
+        revokedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
+      };
       userSessionRepository.findOne.mockResolvedValue(session as unknown as UserSessionEntity);
       securityService.validate.mockResolvedValue(false);
 
-      await expect(service.verifySession('t', { sub: 'u', jti: 'j' })).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifySession('t', { sub: 'u', jti: 'j', fgp: 'fgp-1' }, mockMetadata)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException if UA mismatch (even if legacy fgp matches)', async () => {
+      const legacyFingerprint = 'legacy-fgp';
+      const session = {
+        tokenHash: 'hashed-token',
+        fingerprint: legacyFingerprint,
+        userAgent: 'OldUA',
+        revokedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
+      };
+      userSessionRepository.findOne.mockResolvedValue(session as unknown as UserSessionEntity);
+      securityService.validate.mockResolvedValue(true);
+
+      const metadataWithNewUA = { ...mockMetadata, userAgent: 'NewUA' };
+
+      await expect(service.verifySession('t', { sub: 'u', jti: 'j', fgp: legacyFingerprint }, metadataWithNewUA)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should allow session if legacy fingerprint matches token AND User-Agent matches', async () => {
+      const legacyFingerprint = 'legacy-fgp'; // e.g. SHA256(UA + IP)
+      const session = {
+        id: 'sess-1',
+        user: mockUserEntity,
+        tokenHash: 'hashed-token',
+        fingerprint: legacyFingerprint,
+        userAgent: mockMetadata.userAgent,
+        revokedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
+      } as UserSessionEntity;
+      userSessionRepository.findOne.mockResolvedValue(session);
+      securityService.validate.mockResolvedValue(true);
+
+      // Even if current hash (UA only) is different, it should pass if fgp matches legacy
+      const result = await service.verifySession('raw-token', { sub: 'u', jti: 'j', fgp: legacyFingerprint }, mockMetadata);
+      expect(result.sessionId).toBe('sess-1');
+    });
+
+    it('should throw UnauthorizedException if fingerprints mismatch and not legacy match', async () => {
+      const session = {
+        tokenHash: 'hashed-token',
+        fingerprint: 'fgp-1',
+        userAgent: 'UA-1',
+        revokedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
+      };
+      userSessionRepository.findOne.mockResolvedValue(session as unknown as UserSessionEntity);
+      securityService.validate.mockResolvedValue(true);
+
+      // fgp-2 vs fgp-1
+      await expect(service.verifySession('t', { sub: 'u', jti: 'j', fgp: 'fgp-2' }, mockMetadata)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -252,18 +401,20 @@ describe('AuthService', () => {
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2); // Access + Refresh
       expect(result.accessToken).toBe('signed-token');
 
-      // 2. Old sessions revoked and new session saved with user updates
+      // 2. Old sessions revoked and new session saved
       expect(userSessionRepository.save).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({ revokedAt: expect.any(Date) as unknown }),
           expect.objectContaining({
-            user: expect.objectContaining({
-              id: userProfile.id,
-              lastLoginDate: expect.any(Date) as unknown,
-              failedLoginAttempts: 0,
-            }) as unknown,
+            user: expect.objectContaining({ id: userProfile.id }),
           }),
         ]),
+      );
+
+      // 3. User updates saved
+      expect(userRepository.update).toHaveBeenCalledWith(
+        userProfile.id,
+        expect.objectContaining({ failedLoginAttempts: 0, lastLoginDate: expect.any(Date) as unknown }),
       );
 
       // 3. Activity logged
@@ -358,6 +509,11 @@ describe('AuthService', () => {
         user: { id: userProfile.id },
         passwordHash: 'new-hash',
       });
+
+      expect(userSessionRepository.update).toHaveBeenCalledWith(
+        { user: { id: userProfile.id }, revokedAt: IsNull() },
+        { revokedAt: expect.any(Date) as unknown },
+      );
     });
 
     it('should throw BadRequestException if passwords do not match', async () => {
@@ -384,21 +540,61 @@ describe('AuthService', () => {
     it('should call setupPasswordCode when user exists and is not locked', async () => {
       userRepository.findOne.mockResolvedValue(mockUserEntity);
 
-      await service.forgotPassword('test@example.com');
+      await expect(service.forgotPassword('test@example.com')).resolves.toBe(true);
 
       expect(confirmationService.setupPasswordCode).toHaveBeenCalledWith('test@example.com', 'user-123', expect.anything());
     });
 
-    it('should throw NotFoundException if user does not exist', async () => {
+    it('should throw BadRequestException if user is not registered', async () => {
+      userRepository.findOne.mockResolvedValue({ ...mockUserEntity, isRegistered: false } as UserEntity);
+
+      await expect(service.forgotPassword('test@example.com')).rejects.toThrow(BadRequestException);
+      expect(confirmationService.setupPasswordCode).not.toHaveBeenCalled();
+    });
+
+    it('should not throw and should not call setupPasswordCode if user does not exist', async () => {
       userRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.forgotPassword('noone@test.com')).rejects.toThrow(NotFoundException);
+      await expect(service.forgotPassword('noone@test.com')).resolves.toBe(false);
+      expect(confirmationService.setupPasswordCode).not.toHaveBeenCalled();
     });
 
     it('should throw ForbiddenException if user is locked', async () => {
       userRepository.findOne.mockResolvedValue({ ...mockUserEntity, lockedAt: new Date() } as UserEntity);
 
       await expect(service.forgotPassword('test@example.com')).rejects.toThrow(ForbiddenException);
+      expect(confirmationService.setupPasswordCode).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resendRegistrationCode', () => {
+    it('should call setupPasswordCode when user exists, is not registered, and is not locked', async () => {
+      userRepository.findOne.mockResolvedValue({ ...mockUserEntity, isRegistered: false } as UserEntity);
+
+      await expect(service.resendRegistrationCode('test@example.com')).resolves.toBe(true);
+
+      expect(confirmationService.setupPasswordCode).toHaveBeenCalledWith('test@example.com', 'user-123', expect.anything());
+    });
+
+    it('should not throw and should not call setupPasswordCode if user is already registered', async () => {
+      userRepository.findOne.mockResolvedValue({ ...mockUserEntity, isRegistered: true } as UserEntity);
+
+      await expect(service.resendRegistrationCode('test@example.com')).resolves.toBe(false);
+      expect(confirmationService.setupPasswordCode).not.toHaveBeenCalled();
+    });
+
+    it('should not throw and should not call setupPasswordCode if user does not exist', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.resendRegistrationCode('noone@test.com')).resolves.toBe(false);
+      expect(confirmationService.setupPasswordCode).not.toHaveBeenCalled();
+    });
+
+    it('should not throw and should not call setupPasswordCode if user is locked', async () => {
+      userRepository.findOne.mockResolvedValue({ ...mockUserEntity, isRegistered: false, lockedAt: new Date() } as UserEntity);
+
+      await expect(service.resendRegistrationCode('test@example.com')).resolves.toBe(false);
+      expect(confirmationService.setupPasswordCode).not.toHaveBeenCalled();
     });
   });
 
@@ -433,6 +629,11 @@ describe('AuthService', () => {
 
       // Token consumed
       expect(confirmationService.consumeToken).toHaveBeenCalledWith(userProfile.id);
+
+      expect(userSessionRepository.update).toHaveBeenCalledWith(
+        { user: { id: userProfile.id }, revokedAt: IsNull() },
+        { revokedAt: expect.any(Date) as unknown },
+      );
     });
 
     it('should work even when no existing passwords to revoke', async () => {
@@ -447,6 +648,11 @@ describe('AuthService', () => {
         passwordHash: 'reset-hash',
       });
       expect(confirmationService.consumeToken).toHaveBeenCalledWith(userProfile.id);
+
+      expect(userSessionRepository.update).toHaveBeenCalledWith(
+        { user: { id: userProfile.id }, revokedAt: IsNull() },
+        { revokedAt: expect.any(Date) as unknown },
+      );
     });
 
     it('should throw BadRequestException if passwords do not match', async () => {
