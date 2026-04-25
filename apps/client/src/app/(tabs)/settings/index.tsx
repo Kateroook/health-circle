@@ -11,6 +11,7 @@ import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiFetch } from "../../../api/api";
+import { useNetworkStatus } from "../../../hooks/useNetworkStatus";
 import { useToast } from "../../../hooks/useToast";
 import { useAuthStore } from "../../../store/authStore";
 import { useLocationStore } from "../../../store/locationStore";
@@ -18,6 +19,7 @@ import { cleanObj } from "../../../utils/clean.util";
 
 export default function SettingsIndexScreen() {
   const { showToast } = useToast();
+  const { isOnline } = useNetworkStatus();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const refreshProfile = useAuthStore((s) => s.refreshProfile);
@@ -71,6 +73,13 @@ export default function SettingsIndexScreen() {
       testID={ScreenIds.settings}
       accessibilityLabel={ScreenIds.settings}
     >
+      {!isOnline && (
+        <View style={styles.offlineBanner}>
+          <Typography variant="caption" tone="onColor" style={{ textAlign: "center" }}>
+            Ви офлайн — деякі функції недоступні
+          </Typography>
+        </View>
+      )}
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.headerContainer}>
           <Avatar
@@ -201,6 +210,11 @@ export default function SettingsIndexScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background.primary },
+  offlineBanner: {
+    backgroundColor: theme.colors.content.secondary,
+    paddingVertical: theme.spacing[8],
+    paddingHorizontal: theme.spacing[16],
+  },
   scrollContent: { paddingHorizontal: theme.spacing[16], paddingBottom: 120 },
   headerContainer: {
     alignItems: "center",
