@@ -80,7 +80,7 @@ jobs:
       - name: Define Artifact Name
         id: artifact_name
         run: |
-          echo "NAME=health-circle-dev-${{ github.run_number }}-android" >> $GITHUB_OUTPUT
+          echo "NAME=health-circle-${{ github.event.inputs.environment }}-${{ github.run_number }}-android" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Rename Artifact
