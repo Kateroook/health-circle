@@ -35,6 +35,7 @@ export class AlertsService implements OnModuleInit {
   private hasInitialSyncCompleted = false;
   private readonly apiUrl: string;
   private regionHierarchy: Map<number, number[]> = new Map(); // parentUid -> childrenUids[]
+  private parentMap: Map<number, number> = new Map(); // childUid -> parentUid
 
   constructor(
     private readonly configService: ConfigService,
@@ -106,6 +107,7 @@ export class AlertsService implements OnModuleInit {
     const children = this.regionHierarchy.get(parent) || [];
     children.push(child);
     this.regionHierarchy.set(parent, children);
+    this.parentMap.set(child, parent);
   }
 
   async syncAlerts(isInitialSync = false) {
@@ -229,27 +231,7 @@ export class AlertsService implements OnModuleInit {
     const descendants = await this.getAllAffectedRegionUids(alertUid);
 
     // 2. If alert is for child (Hromada) -> we must notify users in all parents (Raion, Oblast)
-    // To do this, we find all UIDs that have this alertUid as a descendant.
-    const ancestors: number[] = [];
-    for (const [parent, children] of this.regionHierarchy.entries()) {
-      if (children.includes(alertUid)) {
-        ancestors.push(parent);
-        // Recursively find parents of this parent
-        let curr = parent;
-        let found = true;
-        while (found) {
-          found = false;
-          for (const [p, c] of this.regionHierarchy.entries()) {
-            if (c.includes(curr)) {
-              ancestors.push(p);
-              curr = p;
-              found = true;
-              break;
-            }
-          }
-        }
-      }
-    }
+    const ancestors = this.getAncestors(alertUid);
 
     const allUids = Array.from(new Set([...descendants, ...ancestors]));
     return this.userRepository.find({
@@ -322,18 +304,36 @@ export class AlertsService implements OnModuleInit {
     });
   }
 
+  private getAncestors(uid: number): number[] {
+    const ancestors: number[] = [];
+    let curr = this.parentMap.get(uid);
+    while (curr !== undefined) {
+      ancestors.push(curr);
+      curr = this.parentMap.get(curr);
+    }
+    return ancestors;
+  }
+
   private async signalUsersInRegions(regionUids: number[]) {
     if (regionUids.length === 0) return;
 
-    const allUsers: UserEntity[] = [];
+    const allAffectedUids = new Set<number>();
     for (const uid of regionUids) {
-      const users = await this.findUsersInHierarchy(uid);
-      allUsers.push(...users);
+      const descendants = await this.getAllAffectedRegionUids(uid);
+      const ancestors = this.getAncestors(uid);
+      descendants.forEach((d) => allAffectedUids.add(d));
+      ancestors.forEach((a) => allAffectedUids.add(a));
     }
 
-    const uniqueUserIds = Array.from(new Set(allUsers.map((u) => u.id)));
-    if (uniqueUserIds.length > 0) {
-      await this.firestoreSyncService.sendSyncSignal(uniqueUserIds);
+    // Single query for all users in all affected regions
+    const users = await this.userRepository.find({
+      where: { alertRegionUid: In(Array.from(allAffectedUids)) },
+      select: ['id'],
+    });
+
+    const userIds = users.map((u) => u.id);
+    if (userIds.length > 0) {
+      await this.firestoreSyncService.sendSyncSignal(userIds);
     }
   }
 }

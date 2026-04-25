@@ -28,6 +28,9 @@ export class PostgresModule {
             migrationsRun: true,
             synchronize: false,
             namingStrategy: new SnakeNamingStrategy(),
+            extra: {
+              max: configService.get<number>('POSTGRES_MAX_POOL', 5),
+            },
           }),
           inject: [ConfigService],
         }),

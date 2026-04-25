@@ -9,7 +9,10 @@ export class PostgresStream extends Stream.Writable {
 
   constructor(options: { connection: PoolConfig; tableName: string }) {
     super();
-    this.pool = new Pool(options.connection);
+    this.pool = new Pool({
+      ...options.connection,
+      max: 2, // Logging doesn't need many concurrent connections
+    });
     this.tableName = options.tableName;
     this._write = (chunk: unknown, enc: BufferEncoding, cb: (error?: Error | null) => void) =>
       this._writePgPool(chunk as Buffer, enc, cb);
