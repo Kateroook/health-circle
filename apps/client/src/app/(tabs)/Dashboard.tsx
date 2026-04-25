@@ -29,10 +29,13 @@ import { MainStatusButton } from "../../components/dashboard/MainStatusButton";
 import { MemberList } from "../../components/dashboard/MemberList";
 import NetInfo from "@react-native-community/netinfo";
 import * as SMS from "expo-sms";
+import * as SecureStore from "expo-secure-store";
+import { useNetworkStatus } from "../../hooks/useNetworkStatus";
 
 // --- DashboardScreen ---
 export default function DashboardScreen() {
   const { openModal, closeModal } = useModal();
+  const { isOnline } = useNetworkStatus();
   const { loading, withLoading } = useLoadingState(true);
   const { showToast } = useToast();
   const { logEvent } = useAnalytics();
@@ -58,11 +61,20 @@ export default function DashboardScreen() {
 
   const fetchGroups = useCallback(async () => {
     if (!hasLoadedGroupsOnceRef.current) {
+      // Load from cache first so offline startup shows something
+      try {
+        const cached = await SecureStore.getItemAsync("cached_groups");
+        if (cached) setGroups(JSON.parse(cached));
+      } catch {}
+
       try {
         await withLoading(async () => {
           const data = await apiFetch("/groups", { method: "GET" });
           setGroups(data);
+          SecureStore.setItemAsync("cached_groups", JSON.stringify(data)).catch(() => {});
         });
+      } catch {
+        // Offline — cached data already set above
       } finally {
         hasLoadedGroupsOnceRef.current = true;
       }
@@ -71,6 +83,7 @@ export default function DashboardScreen() {
     try {
       const data = await apiFetch("/groups", { method: "GET" });
       setGroups(data);
+      SecureStore.setItemAsync("cached_groups", JSON.stringify(data)).catch(() => {});
     } catch (error) {
       logger.error("Error loading groups:", error);
     }
@@ -289,6 +302,14 @@ export default function DashboardScreen() {
           onUpdateLocation={updateCurrentLocation}
         />
 
+        {!isOnline && (
+          <View style={styles.offlineBanner}>
+            <Typography variant="caption" tone="onColor" style={{ textAlign: "center" }}>
+              Ви офлайн — дані можуть бути застарілими. Статус можна оновити через SMS.
+            </Typography>
+          </View>
+        )}
+
         {myAlertStatus?.active && myAlertStatus.alert ? (
           <AlertBanner alert={myAlertStatus.alert} testId="dashboard:activeAlert:banner" />
         ) : null}
@@ -355,5 +376,12 @@ const styles = StyleSheet.create({
   sectionHeader: {
     marginBottom: theme.spacing[8],
     letterSpacing: 0.5,
+  },
+  offlineBanner: {
+    backgroundColor: theme.colors.content.secondary,
+    borderRadius: theme.radius.md,
+    paddingVertical: theme.spacing[8],
+    paddingHorizontal: theme.spacing[12],
+    marginBottom: theme.spacing[8],
   },
 });

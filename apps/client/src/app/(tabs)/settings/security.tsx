@@ -29,8 +29,8 @@ export default function SecurityScreen() {
   return (
     <SafeAreaView
       style={styles.container}
-      testID={`${ScreenIds.settings}:security`}
-      accessibilityLabel={`${ScreenIds.settings}:security`}
+      testID={ScreenIds.settingsSecurity}
+      accessibilityLabel={ScreenIds.settingsSecurity}
     >
       <View style={styles.screenHeader}>
         <Button

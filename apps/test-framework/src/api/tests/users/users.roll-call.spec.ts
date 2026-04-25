@@ -162,7 +162,7 @@ test.describe(
     test(
       "[USR-077] Ignoring personal roll-call changes user's status",
       {
-        tag: '@sanity',
+        tag: '@smoke',
       },
       async ({ api }) => {
         await memberApi.users.updateUserStatus({ status: 'SAFE' });
@@ -171,7 +171,7 @@ test.describe(
 
         await api.users.initiatePersonalRollCall(member.id!);
 
-        await utils.wait.sleep(timeout.rollCallTimeout + timeout.cronTimeout);
+        await utils.wait.sleep(timeout.rollCallTimeout);
 
         await expect(async () => {
           const getMemberAfterRC = await memberApi.users.getUser(member.id!);

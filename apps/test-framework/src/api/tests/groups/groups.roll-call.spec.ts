@@ -133,14 +133,14 @@ test.describe(
     test(
       "[GRP-064] Ignoring group call changes user's status",
       {
-        tag: '@sanity',
+        tag: '@smoke',
       },
       async ({ api }) => {
         await memberApi.users.updateUserStatus({ status: 'SAFE' });
 
         await api.groups.initiateGroupRollCall(ownerGroup.id!);
 
-        await utils.wait.sleep(timeout.rollCallTimeout + timeout.cronTimeout);
+        await utils.wait.sleep(timeout.rollCallTimeout);
 
         await expect(async () => {
           const getMemberAfterRC = await memberApi.users.getUser(member.id!);

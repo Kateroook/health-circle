@@ -22,7 +22,9 @@ import * as Clipboard from "expo-clipboard";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useAnalytics } from "../../hooks/useAnalytics";
+import { useNetworkStatus } from "../../hooks/useNetworkStatus";
 import { useToast } from "../../hooks/useToast";
+import * as SecureStore from "expo-secure-store";
 
 import {
   Animated,
@@ -103,6 +105,7 @@ export default function CirclesScreen() {
   const { showToast } = useToast();
   const user = useAuthStore().user;
   const { logEvent } = useAnalytics();
+  const { isOnline } = useNetworkStatus();
 
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isActionsVisible, setIsActionsVisible] = useState(false);
@@ -132,6 +135,18 @@ export default function CirclesScreen() {
   const fetchCircles = useCallback(async () => {
     if (!hasLoadedCirclesOnceRef.current) {
       setIsLoading(true);
+      // Load from cache immediately
+      try {
+        const cached = await SecureStore.getItemAsync("cached_groups");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const withStatus = parsed.map((c: any) => ({
+            ...c,
+            members: c.members.map((m: any) => ({ ...m, status: m.status || "UNKNOWN" })),
+          }));
+          setCircles(withStatus);
+        }
+      } catch {}
     }
     try {
       const data = await apiFetch("/groups", { method: "GET" });
@@ -143,6 +158,7 @@ export default function CirclesScreen() {
         })),
       }));
       setCircles(circlesWithStatus);
+      SecureStore.setItemAsync("cached_groups", JSON.stringify(data)).catch(() => {});
     } catch (error) {
       logger.error("Error loading circles:", error);
     } finally {
@@ -286,6 +302,13 @@ export default function CirclesScreen() {
       testID={ScreenIds.circles}
       accessibilityLabel={ScreenIds.circles}
     >
+      {!isOnline && (
+        <View style={styles.offlineBanner}>
+          <Typography variant="caption" tone="onColor" style={{ textAlign: "center" }}>
+            Ви офлайн — дані можуть бути застарілими
+          </Typography>
+        </View>
+      )}
       {/* Roll Call Modal  */}
       <ConfirmRollCallModal
         isVisible={isRollCallModalVisible}
@@ -679,6 +702,11 @@ export default function CirclesScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.colors.background.primary },
+  offlineBanner: {
+    backgroundColor: theme.colors.content.secondary,
+    paddingVertical: theme.spacing[8],
+    paddingHorizontal: theme.spacing[16],
+  },
   content: { paddingHorizontal: theme.spacing[16], paddingBottom: 140 },
   header: {
     flexDirection: "row",

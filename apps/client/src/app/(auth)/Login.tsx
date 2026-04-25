@@ -127,6 +127,7 @@ export default function Login() {
                 variant="body2"
                 tone="primary"
                 weight="bold"
+                testId="auth:forgotPassword:link"
                 onPress={() => router.push("/ForgotPassword")}
               >
                 Скинути
@@ -138,6 +139,7 @@ export default function Login() {
                 variant="body2"
                 tone="primary"
                 weight="bold"
+                testId="auth:register:link"
                 onPress={() => router.push("/Register")}
               >
                 Зареєструватися

@@ -1,0 +1,46 @@
+import { ScreenIds } from '../../../../client/src/utils/testIDs';
+import BaseScreen from './base-screen';
+
+class SettingsScreen extends BaseScreen {
+  constructor() {
+    super(`~${ScreenIds.settings}`, 'Settings');
+  }
+
+  get notificationsButton() {
+    return $('~settings:notifications:button');
+  }
+
+  get securityButton() {
+    return $('~settings:security:button');
+  }
+
+  get editProfileButton() {
+    return $('~settings:editProfile:button');
+  }
+
+  get updateLocationButton() {
+    return $('~settings:updateLocation:button');
+  }
+
+  get logoutButton() {
+    return $('~settings:logout:button');
+  }
+
+  get logoutModal() {
+    return $('~settings:logout:modal');
+  }
+
+  async goToNotifications() {
+    await this.notificationsButton.click();
+  }
+
+  async goToSecurity() {
+    await this.securityButton.click();
+  }
+
+  async goToEditProfile() {
+    await this.editProfileButton.click();
+  }
+}
+
+export default new SettingsScreen();

@@ -1,5 +1,5 @@
 import { $, expect as wdioExpect } from '@wdio/globals';
-import LoginScreen from '../screens/LoginScreen';
+import LoginScreen from '../screens/login-screen';
 
 describe('Basic tests to verify mobile part integrity', () => {
   it('should navigate to registration page and verify instructions text', async () => {

@@ -156,6 +156,7 @@ export default function ForgotPassword() {
                 variant="body2"
                 tone="primary"
                 weight="bold"
+                testId="auth:login:link"
                 onPress={() => router.back()}
               >
                 Увійти
