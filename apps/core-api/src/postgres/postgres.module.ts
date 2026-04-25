@@ -29,7 +29,7 @@ export class PostgresModule {
             synchronize: false,
             namingStrategy: new SnakeNamingStrategy(),
             extra: {
-              max: configService.get<number>('POSTGRES_MAX_POOL', 5),
+              max: configService.get<number>('POSTGRES_MAX_POOL', 10),
             },
           }),
           inject: [ConfigService],
