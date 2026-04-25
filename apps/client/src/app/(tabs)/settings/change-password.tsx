@@ -7,6 +7,7 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import { Dimensions, Image, Modal, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { apiFetch } from "../../../api/api";
 import { formatErrorMessage } from "../../../utils/error.util";
 
@@ -53,7 +54,11 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background.primary }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: theme.colors.background.primary }}
+      testID={ScreenIds.settingsChangePassword}
+      accessibilityLabel={ScreenIds.settingsChangePassword}
+    >
       <View style={styles.header}>
         <Button
           shape="round"

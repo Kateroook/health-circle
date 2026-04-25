@@ -7,6 +7,7 @@ import { router } from "expo-router";
 import React from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { useFcmToken } from "../../../hooks/useFcmToken";
 import { useToast } from "../../../hooks/useToast";
 import { useNotifSettings } from "../../../hooks/settings/useNotifSettings";
@@ -17,7 +18,11 @@ export default function NotificationsScreen() {
   const { notifSettings, isPushEnabled, setPushEnabled, updateNotifSetting } = useNotifSettings();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+      testID={ScreenIds.settingsNotifications}
+      accessibilityLabel={ScreenIds.settingsNotifications}
+    >
       <View style={styles.header}>
         <Button
           shape="round"
