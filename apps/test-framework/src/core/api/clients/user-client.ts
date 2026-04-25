@@ -115,6 +115,8 @@ export class UserClient extends BaseClient {
         email: data.email,
         phone: data.phone,
         alertRegionUid: (data as any).alertRegionUid,
+        latitude: (data as any).latitude,
+        longitude: (data as any).longitude,
       },
     });
   }

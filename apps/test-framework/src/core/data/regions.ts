@@ -32,3 +32,9 @@ export const AlertRegions: Record<string, AlertRegion> = {
   SEVASTOPOL: { uid: 30, title: 'м. Севастополь' },
   KYIV_CITY: { uid: 31, title: 'м. Київ' },
 } as const;
+
+export const RegionCoordinates = {
+  KYIV: { latitude: 50.4501, longitude: 30.5234 },
+  LVIV: { latitude: 49.8397, longitude: 24.0297 },
+  ODESA: { latitude: 46.4825, longitude: 30.7233 },
+} as const;
