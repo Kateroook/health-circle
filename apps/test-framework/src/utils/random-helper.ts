@@ -105,7 +105,7 @@ export class RandomHelper {
   }
   phone(
     country: 'ua' | 'us' | 'uk' | 'de' | 'pl' | 'fr' | 'it' | 'es' | 'cz' | 'at' = 'ua',
-    withCountryCode: boolean = false,
+    withCountryCode: boolean = true,
   ) {
     const config = {
       ua: {
