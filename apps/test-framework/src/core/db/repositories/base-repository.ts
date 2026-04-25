@@ -1,6 +1,6 @@
+import { CompiledQuery, Kysely } from 'kysely';
 import { DbCleaner } from '../db-cleaner';
 import { Database } from '../schema';
-import { CompiledQuery, Kysely } from 'kysely';
 
 export abstract class BaseRepository<T, K extends keyof Database> {
   protected readonly db: Kysely<Database>;

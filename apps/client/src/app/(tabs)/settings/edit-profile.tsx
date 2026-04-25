@@ -13,6 +13,7 @@ import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../../api/api";
 import { useToast } from "../../../hooks/useToast";
 import { useAuthStore } from "../../../store/authStore";
@@ -183,7 +184,11 @@ export default function EditProfileScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+      testID={ScreenIds.settingsEditProfile}
+      accessibilityLabel={ScreenIds.settingsEditProfile}
+    >
       <View style={styles.header}>
         <Button
           shape="round"

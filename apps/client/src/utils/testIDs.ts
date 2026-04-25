@@ -11,4 +11,14 @@ export const ScreenIds = {
   circles: "screen:circles:container",
   dashboard: "screen:dashboard:container",
   settings: "screen:settings:container",
+  settingsEditProfile: "screen:settings:editProfile:container",
+  settingsSecurity: "screen:settings:security:container",
+  settingsNotifications: "screen:settings:notifications:container",
+  settingsChangePassword: "screen:settings:changePassword:container",
+};
+
+export const ComponentsIds = {
+  newCircleModal: "component:newCircle:modal",
+  userModal: "component:user:modal",
+  userList: "component:user:list",
 };

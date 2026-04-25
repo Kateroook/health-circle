@@ -88,10 +88,27 @@ export class RandomHelper {
     return `${prefix}${nanoid(10)}@${domain}`;
   }
 
-  phone(country: 'ua' | 'us' | 'uk' | 'de' | 'pl' = 'ua') {
+  countryCode(country: 'ua' | 'us' | 'uk' | 'de' | 'pl' | 'fr' | 'it' | 'es' | 'cz' | 'at' = 'ua'): string {
+    const codes = {
+      ua: '+380',
+      us: '+1',
+      uk: '+44',
+      de: '+49',
+      pl: '+48',
+      fr: '+33',
+      it: '+39',
+      es: '+34',
+      cz: '+420',
+      at: '+43',
+    };
+    return codes[country];
+  }
+  phone(
+    country: 'ua' | 'us' | 'uk' | 'de' | 'pl' | 'fr' | 'it' | 'es' | 'cz' | 'at' = 'ua',
+    withCountryCode: boolean = true,
+  ) {
     const config = {
       ua: {
-        code: '+380',
         operators: [
           '67',
           '68',
@@ -111,7 +128,6 @@ export class RandomHelper {
         subscriberLength: 7,
       },
       us: {
-        code: '+1',
         operators: [
           '201',
           '202',
@@ -132,7 +148,6 @@ export class RandomHelper {
         subscriberLength: 7,
       },
       uk: {
-        code: '+44',
         operators: [
           '7400',
           '7500',
@@ -148,7 +163,6 @@ export class RandomHelper {
         subscriberLength: 6,
       },
       de: {
-        code: '+49',
         operators: [
           '151',
           '152',
@@ -163,7 +177,6 @@ export class RandomHelper {
         subscriberLength: 7,
       },
       pl: {
-        code: '+48',
         operators: [
           '500',
           '501',
@@ -184,13 +197,142 @@ export class RandomHelper {
         ],
         subscriberLength: 6,
       },
+      fr: {
+        operators: ['6', '7'],
+        subscriberLength: 8,
+      },
+      it: {
+        operators: [
+          '320',
+          '324',
+          '327',
+          '328',
+          '329', // WindTre
+          '330',
+          '331',
+          '333',
+          '334',
+          '335',
+          '336',
+          '337',
+          '338',
+          '339', // TIM
+          '340',
+          '342',
+          '344',
+          '345',
+          '346',
+          '347',
+          '348',
+          '349', // Vodafone
+          '360',
+          '366',
+          '368', // ТІМ (Old)
+          '380',
+          '388',
+          '389', // WindTre
+          '350',
+          '351',
+          '370', // MVNOs (Iliad, PosteMobile)
+        ],
+        subscriberLength: 7,
+      },
+      es: {
+        operators: ['6', '7'],
+        subscriberLength: 8,
+      },
+      cz: {
+        operators: [
+          '601',
+          '602',
+          '603',
+          '604',
+          '605',
+          '606',
+          '607',
+          '608',
+          '702',
+          '720',
+          '721',
+          '722',
+          '723',
+          '724',
+          '725',
+          '726',
+          '727',
+          '728',
+          '729',
+          '730',
+          '731',
+          '732',
+          '733',
+          '734',
+          '735',
+          '736',
+          '737',
+          '738',
+          '739',
+          '770',
+          '771',
+          '772',
+          '773',
+          '774',
+          '775',
+          '776',
+          '777',
+          '778',
+          '779',
+          '790',
+        ],
+        subscriberLength: 6,
+      },
+      at: {
+        operators: [
+          '650', // Tele.Ring
+          '660', // Drei
+          '664', // A1
+          '676', // T-Mobile
+          '677', // HoT
+          '680', // Bob
+          '681', // Yesss!
+          '688', // Ventocom
+          '699', // Orange/Drei
+        ],
+        subscriberLength: 7,
+      },
     };
 
-    const { code, operators, subscriberLength } = config[country];
+    const { operators, subscriberLength } = config[country];
+    const code = this.countryCode(country);
     const operator = faker.helpers.arrayElement(operators);
     const subscriber = Array.from({ length: subscriberLength }, () => faker.number.int({ min: 0, max: 9 })).join('');
 
-    return `${code}${operator}${subscriber}`;
+    const fullNumber = `${operator}${subscriber}`;
+
+    return withCountryCode ? `${code}${fullNumber}` : fullNumber;
+  }
+
+  phoneData() {
+    const countries: ('ua' | 'us' | 'uk' | 'de' | 'pl' | 'fr' | 'it' | 'es' | 'cz' | 'at')[] = [
+      'ua',
+      'us',
+      'uk',
+      'de',
+      'pl',
+      'fr',
+      'it',
+      'es',
+      'cz',
+      'at',
+    ];
+
+    const randomCountry = faker.helpers.arrayElement(countries);
+
+    return {
+      country: randomCountry,
+      code: this.countryCode(randomCountry),
+      number: this.phone(randomCountry, false),
+    };
   }
 
   groupName() {
