@@ -82,66 +82,75 @@ export const useAuthStore = create<AuthStoreState>()(
         const currentUser = get().user;
 
         if (!token) {
-          set({
-            user: null,
-            loading: false,
-            isLoggedIn: false,
-          });
+          set({ user: null, loading: false, isLoggedIn: false });
           return;
         }
 
+        // If we have a cached user but no network, use cache immediately
+        if (currentUser) {
+          try {
+            const profile = await apiFetch("/auth/profile", {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                Pragma: "no-cache",
+                Expires: "0",
+              },
+            });
+            set({
+              user: normalizeUser(profile as Partial<User>, currentUser),
+              loading: false,
+              isLoggedIn: true,
+            });
+          } catch (error) {
+            if (isAuthFailure(error)) {
+              // Token is invalid — try a token refresh
+              const refreshed = await get().refreshSession();
+              if (refreshed) {
+                try {
+                  const newToken = get().accessToken;
+                  const profile = await apiFetch("/auth/profile", {
+                    headers: { Authorization: `Bearer ${newToken}` },
+                  });
+                  set({
+                    user: normalizeUser(profile as Partial<User>),
+                    loading: false,
+                    isLoggedIn: true,
+                  });
+                  return;
+                } catch {}
+              }
+              // Refresh also failed — log out
+              set({
+                user: null,
+                accessToken: null,
+                refreshToken: null,
+                loading: false,
+                isLoggedIn: false,
+              });
+              return;
+            }
+
+            // Network error (offline) — use cached user
+            logger.error("Profile fetch failed (offline?), using cached user:", error);
+            set({ user: currentUser, loading: false, isLoggedIn: true });
+          }
+          return;
+        }
+
+        // No cached user — must fetch fresh
         try {
           const profile = await apiFetch("/auth/profile", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Cache-Control": "no-cache, no-store, must-revalidate",
-              Pragma: "no-cache",
-              Expires: "0",
-            },
+            headers: { Authorization: `Bearer ${token}` },
           });
-
           set({
-            user: normalizeUser(profile as Partial<User>, currentUser),
+            user: normalizeUser(profile as Partial<User>),
             loading: false,
             isLoggedIn: true,
           });
         } catch (error) {
-          logger.error("Profile fetch failed, trying refresh:", error);
-
-          // Try refreshing the session before giving up
-          const refreshed = await get().refreshSession();
-          if (refreshed) {
-            // Retry profile fetch with new token
-            try {
-              const newToken = get().accessToken;
-              const profile = await apiFetch("/auth/profile", {
-                headers: { Authorization: `Bearer ${newToken}` },
-              });
-              set({
-                user: normalizeUser(profile as Partial<User>),
-                loading: false,
-                isLoggedIn: true,
-              });
-              return;
-            } catch {}
-          }
-
-          if (isAuthFailure(error)) {
-            set({
-              user: null,
-              accessToken: null,
-              refreshToken: null,
-              loading: false,
-              isLoggedIn: false,
-            });
-            return;
-          }
-
-          set({
-            user: currentUser,
-            loading: false,
-            isLoggedIn: true,
-          });
+          logger.error("Profile fetch failed with no cached user:", error);
+          set({ user: null, loading: false, isLoggedIn: false });
         }
       },
 
