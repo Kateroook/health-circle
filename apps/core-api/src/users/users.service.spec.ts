@@ -19,6 +19,7 @@ import { GroupMemberEntity } from 'src/groups/entities/group-member.entity';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { STATUS_UPDATE_SIDE_EFFECTS_QUEUE } from 'src/notifications/status-update.queue.constants';
+import { SecurityService } from 'src/security/security.service';
 import { UserActivitiesService } from 'src/user-activities/user-activities.service';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { UserNotificationSettingsEntity } from 'src/users/entities/user-notification-settings.entity';
@@ -184,6 +185,10 @@ describe('UsersService', () => {
         { provide: QueueService, useValue: mockQueueService() },
         { provide: AlertRegionResolverService, useValue: mockAlertRegionResolver() },
         { provide: GeocodingService, useValue: mockGeocodingService() },
+        {
+          provide: SecurityService,
+          useValue: { hash: jest.fn(), validate: jest.fn(), generateSmsCode: jest.fn().mockReturnValue('HC-ABC123XYZ4') },
+        },
         { provide: SessionActivityService, useValue: { trackActivity: jest.fn() } },
       ],
     }).compile();
