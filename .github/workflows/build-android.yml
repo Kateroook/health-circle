@@ -3,6 +3,14 @@ name: Build Android
 on:
   workflow_dispatch:
     inputs:
+      environment:
+        description: 'Environment (prod or stage)'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - stage
       artifact_type:
         description: 'Artifact Type (apk or aab)'
         required: true
@@ -56,7 +64,7 @@ jobs:
       - name: Build Android Artifact
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL || env.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_API_URL: ${{ github.event.inputs.environment == 'prod' && secrets.EXPO_PUBLIC_API_URL || secrets.EXPO_PUBLIC_API_URL_STAGE }}
           GOOGLE_SERVICES_JSON: ${{ github.workspace }}/apps/client/google-services.json
         run: |
           if [ "${{ github.event.inputs.artifact_type }}" == "aab" ]; then
@@ -72,7 +80,7 @@ jobs:
       - name: Define Artifact Name
         id: artifact_name
         run: |
-          echo "NAME=health-circle-dev-${{ github.run_number }}-android" >> $GITHUB_OUTPUT
+          echo "NAME=health-circle-${{ github.event.inputs.environment }}-${{ github.run_number }}-android" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Rename Artifact

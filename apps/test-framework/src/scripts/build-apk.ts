@@ -6,12 +6,12 @@ import { join } from 'path';
 
 dotenv.config();
 const API_ENVIRONMENTS = {
-  dev: process.env.STAGING_API_BASE_URL,
+  stage: process.env.STAGING_API_BASE_URL,
   prod: process.env.PROD_API_BASE_URL,
 };
 
 const args = process.argv.slice(2);
-const envName = args.includes('--prod') ? 'prod' : 'dev';
+const envName = args.includes('--prod') ? 'prod' : 'stage';
 const apiUrl = API_ENVIRONMENTS[envName];
 
 const isWindows = platform() === 'win32';

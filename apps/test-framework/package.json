@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "start:emulator": "npx tsx ./src/scripts/start-emulator.ts",
-    "build:apk:dev": "npx tsx ./src/scripts/build-apk.ts --dev",
+    "build:apk:stage": "npx tsx ./src/scripts/build-apk.ts --stage",
     "build:apk:prod": "npx tsx ./src/scripts/build-apk.ts --prod",
     "test:mobile:run": "npm run start:emulator && npx wdio run ./src/mobile/wdio.conf.ts",
-    "test:mobile:e2e:dev": "npm run build:apk:dev && npm run test:mobile:run",
+    "test:mobile:e2e:stage": "npm run build:apk:stage && npm run test:mobile:run",
     "test:mobile:e2e:prod": "npm run build:apk:prod && npm run test:mobile:run",
     "test:api": "npx playwright test --grep \"@smoke\" --grep-invert \"@bug\""
   },
