@@ -96,7 +96,7 @@ class RegisterScreen extends BaseScreen {
     await this.tap(this.nextButton);
   }
 
-  async registration(data?: {
+  async register(data?: {
     countryCode?: string;
     phone?: string;
     email?: string;

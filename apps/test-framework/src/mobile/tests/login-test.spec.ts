@@ -6,7 +6,7 @@ import ResetPasswordScreen from '../screens/reset-password-screen';
 
 describe('Login', () => {
   it('[HC-54] Login with password reset', async () => {
-    const userData = await RegisterScreen.registration();
+    const userData = await RegisterScreen.register();
 
     const lastDbUser = await browser.backend.userRepository.getLast('createdAt');
 
@@ -14,18 +14,18 @@ describe('Login', () => {
     const otpCode = otpCodeRecord.code;
     const password = utils.random.password();
 
-    await PasswordSetupScreen.passwordSetup(otpCode, password, password);
+    await PasswordSetupScreen.setupPassword(otpCode, password, password);
     await LoginScreen.clickResetPasswordLink();
     const newOtpCodeRecord = await browser.backend.confirmationCodeRepository.getLastUserCode(lastDbUser!.id);
     const newOtpCode = newOtpCodeRecord.code;
     const newPassword = utils.random.password();
-    await ResetPasswordScreen.fullPasswordSetup(userData.email, newOtpCode, newPassword, newPassword);
+    await ResetPasswordScreen.setupPassword(userData.email, newOtpCode, newPassword, newPassword);
     await LoginScreen.login(userData.email, newPassword);
     //додати перевірку для наступного екрана
   });
 
   it('[HC-60] Login with old password after password reset without updating', async () => {
-    const userData = await RegisterScreen.registration();
+    const userData = await RegisterScreen.register();
 
     const lastDbUser = await browser.backend.userRepository.getLast('createdAt');
 
@@ -33,7 +33,7 @@ describe('Login', () => {
     const otpCode = otpCodeRecord.code;
     const password = utils.random.password();
 
-    await PasswordSetupScreen.passwordSetup(otpCode, password, password);
+    await PasswordSetupScreen.setupPassword(otpCode, password, password);
     await LoginScreen.clickResetPasswordLink();
     const newOtpCodeRecord = await browser.backend.confirmationCodeRepository.getLastUserCode(lastDbUser!.id);
     const newOtpCode = newOtpCodeRecord.code;

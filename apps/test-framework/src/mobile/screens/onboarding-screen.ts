@@ -30,7 +30,7 @@ class OnboardingScreen extends BaseScreen {
     await this.tap(this.closeButton);
   }
 
-  async onboarding() {
+  async completeOnboarding() {
     await this.waitForIsShown();
     await this.tap(this.nextButton);
     await this.tap(this.nextButton);

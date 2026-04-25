@@ -71,16 +71,16 @@ class ResetPasswordScreen extends BaseScreen {
     }
   }
 
-  async fillPasswords(newPassword?: string, confirmPassword?: string) {
+  async fillAndConfirmPassword(newPassword?: string, confirmPassword?: string) {
     await this.fillNewPassword(newPassword);
     await this.fillConfirmPassword(confirmPassword);
     await this.tap(this.resetButton);
   }
 
-  async fullPasswordSetup(email?: string, confirmCode?: string, password?: string, confirmPassword?: string) {
+  async setupPassword(email?: string, confirmCode?: string, password?: string, confirmPassword?: string) {
     await this.fillEmail(email);
     await this.fillConfirmCode(confirmCode);
-    await this.fillPasswords(password, confirmPassword);
+    await this.fillAndConfirmPassword(password, confirmPassword);
   }
 
   async clickLoginLink() {

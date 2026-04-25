@@ -2,7 +2,7 @@ import OnboardingScreen from '../screens/onboarding-screen';
 
 describe('Login', () => {
   it('[HC-167] Successfull onboarding', async () => {
-    await OnboardingScreen.onboarding();
+    await OnboardingScreen.completeOnboarding();
     //додати перевірку
   });
 

@@ -7,7 +7,7 @@ describe('Authorization', () => {
   it('[HC-74] Account creation with the first login', async () => {
     const middleName = utils.random.middleName();
 
-    const userData = await RegisterScreen.registration({ middleName });
+    const userData = await RegisterScreen.register({ middleName });
 
     const lastDbUser = await browser.backend.userRepository.getLast('createdAt');
     await expect(lastDbUser).toBeDefined();
@@ -23,7 +23,7 @@ describe('Authorization', () => {
     const otpCode = otpCodeRecord.code;
     const password = utils.random.password();
 
-    await PasswordSetupScreen.passwordSetup(otpCode, password, password);
+    await PasswordSetupScreen.setupPassword(otpCode, password, password);
     await LoginScreen.login(userData.email, password);
     //додати ще перевівірку, що показується перше вікно після логіну
   });

@@ -51,15 +51,15 @@ class PasswordSetupScreen extends BaseScreen {
     }
   }
 
-  async fillPasswords(password?: string, confirmPassword?: string) {
+  async fillAndConfirmPassword(password?: string, confirmPassword?: string) {
     await this.fillPassword(password);
     await this.fillConfirmPassword(confirmPassword);
     await this.tap(this.confirmButton);
   }
 
-  async passwordSetup(confirmCode?: string, password?: string, confirmPassword?: string) {
+  async setupPassword(confirmCode?: string, password?: string, confirmPassword?: string) {
     await this.fillConfirmCode(confirmCode);
-    await this.fillPasswords(password, confirmPassword);
+    await this.fillAndConfirmPassword(password, confirmPassword);
   }
 
   async clickConfirmButton() {

@@ -20,7 +20,7 @@ describe('Registration', () => {
       includeSpecial: true,
     });
 
-    const userData = await RegisterScreen.registration({ firstName, lastName });
+    const userData = await RegisterScreen.register({ firstName, lastName });
 
     const lastDbUser = await browser.backend.userRepository.getLast('createdAt');
     await expect(lastDbUser).toBeDefined();
@@ -33,19 +33,19 @@ describe('Registration', () => {
   });
 
   it('[HC-35] Confirmation email and password setting work correct', async () => {
-    const userData = await RegisterScreen.registration();
+    const userData = await RegisterScreen.register();
     const lastDbUser = await browser.backend.userRepository.getLast('createdAt');
     const otpCodeRecord = await browser.backend.confirmationCodeRepository.getLastUserCode(lastDbUser!.id);
     const otpCode = otpCodeRecord.code;
     const password = utils.random.password();
 
-    await passwordSetupScreen.passwordSetup(otpCode, password, password);
+    await passwordSetupScreen.setupPassword(otpCode, password, password);
     await LoginScreen.login(userData.email, password);
     //додати ще перевівірку, що показується перше вікно після логіну
   });
 
   it('[HC-47] Password setting up after entering expired or invalid confirmation code', async () => {
-    const userDate = await RegisterScreen.registration();
+    const userDate = await RegisterScreen.register();
 
     const lastDbUser = await browser.backend.userRepository.getLast('createdAt');
 
@@ -57,7 +57,7 @@ describe('Registration', () => {
     await expect(newOtpCodeRecord).not.toBe(otpCode);
     const password = utils.random.password();
 
-    await passwordSetupScreen.passwordSetup(otpCode, password, password);
+    await passwordSetupScreen.setupPassword(otpCode, password, password);
     await LoginScreen.login(userDate.email, password);
     //додати ще перевівірку, що показується перше вікно після логіну
   });
