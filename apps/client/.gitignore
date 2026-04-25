@@ -45,3 +45,4 @@ app-example
 *.apk
 
 google-services.json
+GoogleService-Info.plist

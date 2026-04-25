@@ -12,6 +12,7 @@ import { CircleDetailSkeleton } from "@/src/components/Skeleton";
 import { CirclesSkeletonList } from "@/src/components/Skeleton/CircleItemSkeleton";
 import { Typography } from "@/src/components/typography";
 import { useSyncSignal } from "@/src/hooks/useSyncSignal";
+import { logger } from "@/src/utils/logger";
 import { useAuthStore } from "@/src/store/authStore";
 import { theme } from "@/src/theme/theme";
 import { Circle, Member } from "@/src/types";
@@ -143,7 +144,7 @@ export default function CirclesScreen() {
       }));
       setCircles(circlesWithStatus);
     } catch (error) {
-      console.error("Error loading circles:", error);
+      logger.error("Error loading circles:", error);
     } finally {
       setIsLoading(false);
       hasLoadedCirclesOnceRef.current = true;
@@ -265,7 +266,7 @@ export default function CirclesScreen() {
       showToast({ type: "success", title: "Перекличку розпочато", compact: true });
       fetchCircles();
     } catch (error) {
-      console.error("Failed to initiate roll call:", error);
+      logger.error("Failed to initiate roll call:", error);
       showToast({
         type: "error",
         title: "Помилка",

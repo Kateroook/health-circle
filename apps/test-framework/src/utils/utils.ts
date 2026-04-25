@@ -1,5 +1,5 @@
-import { DateBuilder } from './date-helper';
 import { RandomHelper } from './random-helper';
+import { WaitHelper } from './wait-helper';
 
 export class Utils {
   private _random: RandomHelper;
@@ -9,8 +9,8 @@ export class Utils {
   get random() {
     return (this._random ??= new RandomHelper());
   }
-  get date() {
-    return new DateBuilder();
+  get wait() {
+    return new WaitHelper();
   }
 }
 

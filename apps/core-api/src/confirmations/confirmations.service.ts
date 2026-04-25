@@ -79,7 +79,8 @@ export class ConfirmationsService {
     });
     const isCodeValid = savedCode && savedCode.code === normalizedCode && savedCode.expiresAt > new Date();
     if (!isCodeValid) throw new UnauthorizedException('Недійсний або протермінований токен');
-    return new UserProfileDto(user);
+    const smsTargetNumber = this.configService.get<string>('TWILIO_PHONE_NUMBER');
+    return new UserProfileDto({ ...user, smsTargetNumber });
   }
 
   async consumeToken(userId: string): Promise<void> {

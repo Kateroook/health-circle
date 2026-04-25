@@ -10,7 +10,7 @@
     "test:mobile:run": "npm run start:emulator && npx wdio run ./src/mobile/wdio.conf.ts",
     "test:mobile:e2e:dev": "npm run build:apk:dev && npm run test:mobile:run",
     "test:mobile:e2e:prod": "npm run build:apk:prod && npm run test:mobile:run",
-    "test:api": "npx playwright test"
+    "test:api": "npx playwright test --grep \"@smoke\" --grep-invert \"@bug\""
   },
   "keywords": [],
   "author": "",

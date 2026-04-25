@@ -99,3 +99,7 @@ export type UnblockUserResponse = void;
 export interface GetBlockedUsersResponse {
   blockedUsers: UserApiEntity[];
 }
+
+export interface RollCallResponse {
+  message: string;
+}

@@ -113,6 +113,10 @@ export class AuthService {
     };
   }
 
+  private getSmsTargetNumber(): string | undefined {
+    return this.configService.get<string>('TWILIO_PHONE_NUMBER');
+  }
+
   async validateUser(identifier: string, password: string, metadata: RequestMetadata): Promise<UserProfileDto> {
     // Find user by email or phone
     const user = await this.userRepository.findOne({
@@ -147,7 +151,7 @@ export class AuthService {
       throw new UnauthorizedException('Невірні облікові дані');
     }
 
-    return new UserProfileDto({ ...user });
+    return new UserProfileDto({ ...user, smsTargetNumber: this.getSmsTargetNumber() });
   }
 
   async verifyUser(tokenPayload: UserTokenPayload, metadata: RequestMetadata): Promise<UserProfileDto> {
@@ -180,7 +184,7 @@ export class AuthService {
     // Debounced update of lastUsedAt, deviceInfo and ip for session
     this.sessionActivityService.trackActivity(session.id, metadata.ipAddress || '0.0.0.0', metadata.deviceInfo);
 
-    return new UserProfileDto({ ...user, sessionId: session.id });
+    return new UserProfileDto({ ...user, sessionId: session.id, smsTargetNumber: this.getSmsTargetNumber() });
   }
 
   async verifySession(token: string, tokenPayload: UserTokenPayload, metadata: RequestMetadata): Promise<UserProfileDto> {
@@ -212,7 +216,7 @@ export class AuthService {
     // Check if user exists and is active
     const { user } = session;
     if (user.lockedAt) throw new ForbiddenException('Користувача заблоковано');
-    return new UserProfileDto({ ...user, sessionId: session.id });
+    return new UserProfileDto({ ...user, sessionId: session.id, smsTargetNumber: this.getSmsTargetNumber() });
   }
 
   async login(user: UserProfileDto, metadata: RequestMetadata, _response: Response) {

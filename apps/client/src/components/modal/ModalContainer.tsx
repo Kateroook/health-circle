@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, type ReactNode } from "react";
+import React, { useEffect, useId, useRef, type ReactNode } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import Modal from "react-native-modal";
 
 import { theme } from "@/src/theme/theme";
 import { markModalHidden, markModalVisible } from "./modalVisibility";
+import { Portal } from "./PortalProvider";
 
 type ModalContainerProps = {
   isVisible: boolean;
@@ -42,39 +43,43 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
     [],
   );
 
+  const id = useId();
+
   return (
-    <Modal
-      isVisible={isVisible}
-      coverScreen={false}
-      onBackdropPress={onClose}
-      onBackButtonPress={onClose}
-      useNativeDriver
-      useNativeDriverForBackdrop
-      animationIn={fullScreen ? "slideInUp" : "zoomIn"}
-      animationOut={fullScreen ? "slideOutDown" : "zoomOut"}
-      animationInTiming={220}
-      animationOutTiming={180}
-      backdropTransitionInTiming={220}
-      backdropTransitionOutTiming={180}
-      backdropColor={theme.colors.background.overlay}
-      backdropOpacity={fullScreen ? 0 : 1}
-      style={[styles.modal, fullScreen && styles.fullScreenModal]}
-      hideModalContentWhileAnimating
-      accessibilityViewIsModal
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={[styles.keyboardWrapper, fullScreen && { flex: 1 }]}
+    <Portal id={id} group="modals">
+      <Modal
+        isVisible={isVisible}
+        coverScreen={false}
+        onBackdropPress={onClose}
+        onBackButtonPress={onClose}
+        useNativeDriver
+        useNativeDriverForBackdrop
+        animationIn={fullScreen ? "slideInUp" : "zoomIn"}
+        animationOut={fullScreen ? "slideOutDown" : "zoomOut"}
+        animationInTiming={220}
+        animationOutTiming={180}
+        backdropTransitionInTiming={220}
+        backdropTransitionOutTiming={180}
+        backdropColor={theme.colors.background.overlay}
+        backdropOpacity={fullScreen ? 0 : 1}
+        style={[styles.modal, fullScreen && styles.fullScreenModal]}
+        hideModalContentWhileAnimating
+        accessibilityViewIsModal
       >
-        <View
-          testID={testId}
-          accessibilityLabel={testId}
-          style={[styles.container, fullScreen && styles.fullScreenContainer]}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={[styles.keyboardWrapper, fullScreen && { flex: 1 }]}
         >
-          {children}
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+          <View
+            testID={testId}
+            accessibilityLabel={testId}
+            style={[styles.container, fullScreen && styles.fullScreenContainer]}
+          >
+            {children}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </Portal>
   );
 };
 
@@ -84,7 +89,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     margin: 0,
     zIndex: 99999,
-    elevation: 9999,
+    elevation: 20,
   },
   fullScreenModal: {
     margin: 0,
