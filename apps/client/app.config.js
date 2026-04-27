@@ -15,10 +15,14 @@ export default {
       googleServicesFile: process.env.GOOGLE_SERVICES_IOS || "./GoogleService-Info.plist",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+        UIBackgroundModes: ["fetch", "remote-notification"],
         NSLocationWhenInUseUsageDescription:
           "Allow Health Circle to access your location to share your safety status with your circles.",
-        NSLocationAlwaysAndWhenInUseUsageDescription:
-          "Allow Health Circle to access your location even in the background to keep your circles updated on your safety.",
+        NSCameraUsageDescription:
+          "Allow Health Circle to access your camera to take a profile picture.",
+        NSPhotoLibraryUsageDescription:
+          "Allow Health Circle to access your photo library to choose a profile picture.",
+        FirebaseAppDelegateProxyEnabled: true,
       },
     },
     android: {
