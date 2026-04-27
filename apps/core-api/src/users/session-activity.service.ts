@@ -39,8 +39,8 @@ export class SessionActivityService implements OnModuleDestroy {
 
     this.logger.debug(`Flushing ${entries.length} session activity updates`);
 
-    // Process in chunks to avoid spiking database concurrency
-    const chunkSize = 50;
+    // Process in smaller chunks to avoid saturating database concurrency
+    const chunkSize = 10;
     for (let i = 0; i < entries.length; i += chunkSize) {
       const chunk = entries.slice(i, i + chunkSize);
       await Promise.allSettled(

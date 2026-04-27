@@ -46,7 +46,7 @@ export class DeviceInfoMiddleware implements NestMiddleware {
     const deviceInfo = this.detector.detect(userAgent);
 
     // Lazy cache cleanup: if it grows too large, drop one oldest entry.
-    if (this.deviceInfoCache.size > 2000) {
+    if (this.deviceInfoCache.size > 500) {
       const firstKey = this.deviceInfoCache.keys().next().value as string | undefined;
       if (firstKey) this.deviceInfoCache.delete(firstKey);
     }

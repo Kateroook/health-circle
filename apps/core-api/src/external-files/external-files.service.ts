@@ -40,18 +40,17 @@ export class ExternalFilesService {
     );
   }
 
-  public async getFileByExternalId(externalId: string) {
-    const filePath = path.join(this.basePath, externalId);
-    return await fs.promises.readFile(filePath);
-  }
-
   public async getFile(id: string) {
     const externalFile = await this.repository.findOne({ where: { id } });
     if (!externalFile) throw new NotFoundException(`External file with id = ${id} not found`);
-    const file = await this.getFileByExternalId(externalFile.externalId);
 
+    const filePath = path.join(this.basePath, externalFile.externalId);
+    if (!fs.existsSync(filePath)) throw new NotFoundException(`File not found on disk`);
+
+    const stream = fs.createReadStream(filePath);
     const sanitizedFileName = externalFile.fileName.replace(/[^a-zA-Z0-9,.\-_ ()]/g, '_');
-    return new StreamableFile(Buffer.from(file.buffer), {
+
+    return new StreamableFile(stream, {
       type: externalFile.mimetype,
       disposition: `attachment; filename="${sanitizedFileName}"`,
       length: externalFile.size,
@@ -63,16 +62,19 @@ export class ExternalFilesService {
     externalId?: string;
     fileName?: string;
     mimetype?: string;
+    size?: number;
   }): Promise<StreamableFile> {
     if (file.id) {
       return this.getFile(file.id);
     }
     if (file.externalId) {
-      const buffer = await this.getFileByExternalId(file.externalId);
-      return new StreamableFile(buffer, {
+      const filePath = path.join(this.basePath, file.externalId);
+      if (!fs.existsSync(filePath)) throw new NotFoundException(`File not found on disk`);
+      const stream = fs.createReadStream(filePath);
+      return new StreamableFile(stream, {
         type: file.mimetype,
         disposition: `inline; filename="${file.fileName}"`,
-        length: buffer.length,
+        length: file.size,
       });
     }
     throw new NotFoundException('File not found');

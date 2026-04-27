@@ -21,6 +21,7 @@ import { QueueService } from './queue.service';
         return new PgBoss({
           connectionString: url,
           ssl,
+          max: 2, // Limit background job connections
         });
       },
       inject: [ConfigService],
