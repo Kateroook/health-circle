@@ -351,6 +351,10 @@ export class RandomHelper {
     return faker.helpers.arrayElement(array);
   }
 
+  pickFromObject(obj: Record<string, unknown>, count: number = 1) {
+    return faker.helpers.arrayElements(Object.values(obj), count);
+  }
+
   avatar(fileType?: '.png' | '.jpg' | '.jpeg') {
     const avatarsDir = path.resolve(__dirname, '../core/data/pictures/avatars');
 

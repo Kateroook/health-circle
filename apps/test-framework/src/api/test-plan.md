@@ -723,11 +723,16 @@
 
 ### 10.5 Наскрізні сценарії (Alerts flow)
 
-| ID          | Назва                           | Опис                                                                     |
-| ----------- | ------------------------------- | ------------------------------------------------------------------------ |
-| ALT-E2E-001 | Sync → Active                   | POST trigger-sync → GET active → перевірити що дані оновились            |
-| ALT-E2E-002 | Sync → Status                   | POST trigger-sync → GET status → статус відповідає новим даним           |
-| ALT-E2E-003 | Active ↔ Status консистентність | Якщо UID є в `/active` → `status.isActive === true`, якщо нема - `false` |
+| ID          | Назва                           | Опис                                                                                                            |
+| ----------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| ALT-E2E-001 | Sync → Active                   | POST trigger-sync → GET active → перевірити що дані оновились                                                   |
+| ALT-E2E-002 | Sync → Status                   | POST trigger-sync → GET status → статус відповідає новим даним                                                  |
+| ALT-E2E-003 | Active ↔ Status консистентність | Якщо UID є в `/active` → `status.isActive === true`, якщо нема - `false`                                        |
+| ALT-E2E-004 | Coordinates -> Alert            | PUT user (lat/lon без UID) → POST trigger-sync (тривога) → GET status → `isActive: true` та мапінг UID успішний |
+| ALT-E2E-005 | Alert → Деградація SAFE         | PUT status (SAFE) → POST trigger-sync (тривога) → GET user → статус змінився на `WAS_SAFE`                      |
+| ALT-E2E-006 | Alert → Ігнор DANGER            | PUT status (DANGER) → POST trigger-sync (тривога) → GET user → статус залишився `DANGER`                        |
+| ALT-E2E-007 | Alert → Ігнор UNKNOWN           | PUT status (UNKNOWN) → POST trigger-sync (тривога) → GET user → статус залишився `UNKNOWN`                      |
+| ALT-E2E-008 | Відбій → Status оновлення       | POST startAlert → GET status (true) → POST stopAlert → GET status (false)                                       |
 
 ---
 
