@@ -7,7 +7,7 @@ class LoginScreen extends BaseScreen {
   }
 
   get contactInput() {
-    return $('~auth:email:input');
+    return $('~auth:identifier:input');
   }
 
   get passwordInput() {

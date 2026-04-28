@@ -51,6 +51,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChangeText, ...
   const leadingArtwork = (
     <TouchableOpacity
       testID="auth:phone:prefix"
+      accessibilityLabel="auth:phone:prefix"
       style={styles.prefixContainer}
       onPress={() => setModalVisible(true)}
       activeOpacity={0.7}

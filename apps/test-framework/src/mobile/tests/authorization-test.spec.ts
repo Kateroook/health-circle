@@ -1,30 +1,38 @@
 import { utils } from '../../utils/utils';
-import LoginScreen from '../screens/login-screen';
+import OnboardingScreen from '../screens/onboarding-screen';
 import PasswordSetupScreen from '../screens/password-setup-screen';
+import PushPermissionScreen from '../screens/push-permission-screen';
 import RegisterScreen from '../screens/register-screen';
 
 describe('Authorization', () => {
-  it('[HC-74] Account creation with the first login', async () => {
+  it('[HC-74] Successful account creation', async () => {
+    await OnboardingScreen.clickSkipOnboardingButton();
+    await OnboardingScreen.clickregisterButton();
     const middleName = utils.random.middleName();
+    const phone = '689106572';
+    const userData = await RegisterScreen.register({ phone, middleName });
 
-    const userData = await RegisterScreen.register({ middleName });
-
-    const lastDbUser = await browser.backend.userRepository.getLast('createdAt');
+    const lastDbUser = await (global as any).backend.userRepository.waitForUserByEmail(userData.email);
     await expect(lastDbUser).toBeDefined();
     expect(lastDbUser).toMatchObject({
       email: userData.email.toLowerCase(),
-      phone: userData.phone,
+      phone: '+380689106572',
       firstName: userData.firstName,
       lastName: userData.lastName,
       middleName: middleName,
     });
 
-    const otpCodeRecord = await browser.backend.confirmationCodeRepository.getLastUserCode(lastDbUser!.id);
+    const otpCodeRecord = await (global as any).backend.confirmationCodeRepository.getLastUserCode(lastDbUser!.id);
     const otpCode = otpCodeRecord.code;
     const password = utils.random.password();
 
     await PasswordSetupScreen.setupPassword(otpCode, password, password);
-    await LoginScreen.login(userData.email, password);
-    //додати ще перевівірку, що показується перше вікно після логіну
+    await expect(PasswordSetupScreen.root).not.toBeDisplayed();
+
+    await PushPermissionScreen.clickAllowLocationButton();
+    await PushPermissionScreen.clickAllowPushButton();
+    await PushPermissionScreen.selectRandomAvatar();
+    await PushPermissionScreen.clickNextButton();
+    await expect(PushPermissionScreen.root).not.toBeDisplayed();
   });
 });

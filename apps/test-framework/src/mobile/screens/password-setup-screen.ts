@@ -33,7 +33,11 @@ class PasswordSetupScreen extends BaseScreen {
   async fillConfirmCode(confirmCode?: string) {
     await this.wait(this.confirmCodeInput);
     if (confirmCode) {
-      await this.confirmCodeInput.setValue(confirmCode);
+      await this.confirmCodeInput.click();
+
+      await browser.keys(confirmCode.split(''));
+
+      await browser.pause(200);
     }
   }
 
@@ -59,6 +63,9 @@ class PasswordSetupScreen extends BaseScreen {
 
   async setupPassword(confirmCode?: string, password?: string, confirmPassword?: string) {
     await this.fillConfirmCode(confirmCode);
+    if (await browser.isKeyboardShown()) {
+      await browser.hideKeyboard();
+    }
     await this.fillAndConfirmPassword(password, confirmPassword);
   }
 

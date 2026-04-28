@@ -8,7 +8,7 @@ class RegisterScreen extends BaseScreen {
   }
 
   get phonePrefix() {
-    return $('~auth:phone:prefix');
+    return $('[resource-id="auth:phone:prefix"]');
   }
   get phoneInput() {
     return $('~auth:phone:input');
@@ -43,11 +43,11 @@ class RegisterScreen extends BaseScreen {
 
   async fillPhone(phone?: string, countryCode?: string) {
     await this.wait(this.phoneInput);
-    if (countryCode) {
-      await this.tap(this.phonePrefix);
-      const targetCountry = this.countryOption(countryCode);
-      await this.tap(targetCountry);
-    }
+    //if (countryCode) {
+    // await this.tap(this.phonePrefix);
+    //const targetCountry = this.countryOption(countryCode);
+    //await this.tap(targetCountry);
+    //}
     if (phone) {
       await this.phoneInput.setValue(phone);
     }
