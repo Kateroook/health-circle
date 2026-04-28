@@ -121,8 +121,10 @@ export default function Login() {
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Typography variant="body2" tone="primary">
-              Забули пароль?{" "}
+            <View style={styles.footerRow}>
+              <Typography variant="body2" tone="primary">
+                Забули пароль?{" "}
+              </Typography>
               <Typography
                 variant="body2"
                 tone="primary"
@@ -132,9 +134,12 @@ export default function Login() {
               >
                 Скинути
               </Typography>
-            </Typography>
-            <Typography variant="body2" tone="primary">
-              Ще немає акаунту?{" "}
+            </View>
+
+            <View style={styles.footerRow}>
+              <Typography variant="body2" tone="primary">
+                Ще немає акаунту?{" "}
+              </Typography>
               <Typography
                 variant="body2"
                 tone="primary"
@@ -144,7 +149,7 @@ export default function Login() {
               >
                 Зареєструватися
               </Typography>
-            </Typography>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -202,5 +207,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: theme.spacing[16],
     marginTop: theme.spacing[24],
+  },
+
+  footerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
   },
 });

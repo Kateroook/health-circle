@@ -350,7 +350,7 @@ export default function Register() {
               variant="body2"
               tone="primary"
               weight="bold"
-              testID="auth:login:link"
+              testId="auth:login:link"
               onPress={() => router.push("/Login")}
             >
               Увійти
