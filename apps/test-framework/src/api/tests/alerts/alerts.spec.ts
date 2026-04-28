@@ -1,9 +1,12 @@
 import { UserEntity } from '@core/types/entites/user-interface';
-import { AlertRegions, RegionCoordinates } from '../../../core/data/regions';
+import { utils } from 'src/utils/utils';
+import { timeout } from 'src/utils/wait-helper';
+import { AlertRegion, AlertRegions } from '../../../core/data/regions';
 import { expect, test } from '../../fixtures/api-fixture';
 
 test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
-  test.describe('GET /api/alerts/active Активні тривоги', { tag: '@alerts' }, async () => {
+  let regions: AlertRegion[] = utils.random.pickFromObject(AlertRegions, 3) as AlertRegion[];
+  test.describe('GET /api/alerts/active (Active alerts)', { tag: '@alerts' }, async () => {
     test.beforeEach(async ({ api, spawnUser }) => {
       const user = await spawnUser();
       await api.auth.quickLogin(user.email, user.password);
@@ -12,40 +15,40 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
       await api.alerts.triggerSync();
     });
 
-    test('[ALT-001] Get list with no active alerts', async ({ api }) => {
+    test('[ALT-001] Get list with no active alerts', { tag: '@sanity' }, async ({ api }) => {
       const getAlerts = await api.alerts.getActiveAlerts();
-      expect(getAlerts.response.status()).toBe(200);
+      expect(getAlerts.response).toHaveStatus(200);
       expect(getAlerts.data).toEqual([]);
     });
 
     test('[ALT-002] Get list with one active alert', { tag: '@sanity' }, async ({ api }) => {
-      await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
+      await api.alertsMock.startAlert(regions[0]);
       await api.alerts.triggerSync();
 
       const getAlerts = await api.alerts.getActiveAlerts();
-      expect(getAlerts.response.status()).toBe(200);
+      expect(getAlerts.response).toHaveStatus(200);
       expect(getAlerts.data.length).toBe(1);
     });
 
     test('[ALT-003] Get list with few active alerts', { tag: '@sanity' }, async ({ api }) => {
-      await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
-      await api.alertsMock.startAlert(AlertRegions.LVIV_OBLAST);
-      await api.alertsMock.startAlert(AlertRegions.ODESA_OBLAST);
+      await api.alertsMock.startAlert(regions[0]);
+      await api.alertsMock.startAlert(regions[1]);
+      await api.alertsMock.startAlert(regions[2]);
       await api.alerts.triggerSync();
 
       const getAlerts = await api.alerts.getActiveAlerts();
-      expect(getAlerts.response.status()).toBe(200);
+      expect(getAlerts.response).toHaveStatus(200);
       expect(getAlerts.data.length).toBe(3);
     });
 
     test('[ALT-004] Get list with alerts without authorization', { tag: '@sanity' }, async ({ api }) => {
       api.alerts.clearTokens();
       const getAlerts = await api.alerts.getActiveAlerts();
-      expect(getAlerts.response.status()).toBe(401);
+      expect(getAlerts.response).toHaveStatus(401);
     });
   });
 
-  test.describe('POST /api/alerts/trigger-sync Тригер синхронізації', { tag: '@alerts' }, async () => {
+  test.describe('POST /api/alerts/trigger-sync (Sync trigger)', { tag: '@alerts' }, async () => {
     test.beforeEach(async ({ api, spawnUser }) => {
       const user = await spawnUser();
       await api.auth.quickLogin(user.email, user.password);
@@ -53,7 +56,7 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
 
     test('[ALT-005] Successfully synchronize alerts', { tag: '@sanity' }, async ({ api }) => {
       const syncTrigger = await api.alerts.triggerSync();
-      expect(syncTrigger.response.status()).toBe(201);
+      expect(syncTrigger.response).toHaveStatus(201);
       expect(syncTrigger.data).not.toBeNull();
     });
 
@@ -61,7 +64,7 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
       await api.alerts.triggerSync();
       const syncTrigger = await api.alerts.triggerSync();
 
-      expect(syncTrigger.response.status()).toBe(201);
+      expect(syncTrigger.response).toHaveStatus(201);
       expect(syncTrigger.data).not.toBeNull();
     });
 
@@ -69,11 +72,11 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
       api.alerts.clearTokens();
       const syncTrigger = await api.alerts.triggerSync();
 
-      expect(syncTrigger.response.status()).toBe(401);
+      expect(syncTrigger.response).toHaveStatus(401);
     });
   });
 
-  test.describe('GET /api/alerts/regions Список регіонів', { tag: '@alerts' }, async () => {
+  test.describe('GET /api/alerts/regions (Region list)', { tag: '@alerts' }, async () => {
     test.beforeEach(async ({ api, spawnUser }) => {
       const user = await spawnUser();
       await api.auth.quickLogin(user.email, user.password);
@@ -82,14 +85,14 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
     test('[ALT-008] Get regions from server', { tag: '@sanity' }, async ({ api }) => {
       const getRegions = await api.alerts.getRegions();
 
-      expect(getRegions.response.status()).toBe(200);
+      expect(getRegions.response).toHaveStatus(200);
       expect(getRegions.data.length).toBeGreaterThan(0);
     });
 
-    test('[ALT-009] Check structure of elments from regions', { tag: '@sanity' }, async ({ api }) => {
+    test('[ALT-009] Check structure of elements from regions', { tag: '@sanity' }, async ({ api }) => {
       const getRegions = await api.alerts.getRegions();
 
-      expect(getRegions.response.status()).toBe(200);
+      expect(getRegions.response).toHaveStatus(200);
       const invalidElements = getRegions.data.filter((el) => el.uid == null || el.name == null || el.type == null);
       expect(invalidElements.length).toBe(0);
     });
@@ -98,11 +101,11 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
       api.alerts.clearTokens();
       const getRegions = await api.alerts.getRegions();
 
-      expect(getRegions.response.status()).toBe(401);
+      expect(getRegions.response).toHaveStatus(401);
     });
   });
 
-  test.describe('GET /api/alerts/status Статус тривоги користувача', { tag: '@alerts' }, async () => {
+  test.describe('GET /api/alerts/status (User alert state)', { tag: '@alerts' }, async () => {
     let user: UserEntity;
 
     test.beforeEach(async ({ api, spawnUser }) => {
@@ -113,34 +116,34 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
       await api.alerts.triggerSync();
     });
 
-    test('[ALT-011] Get status while no active alerts is present on server', { tag: '@sanity' }, async ({ api }) => {
+    test('[ALT-011] Get status while no active alerts is present on server', { tag: '@smoke' }, async ({ api }) => {
       const getAlerts = await api.alerts.getMyAlertStatus();
-      expect(getAlerts.response.status()).toBe(200);
+      expect(getAlerts.response).toHaveStatus(200);
       expect(getAlerts.data.active).toBe(false);
     });
 
-    test('[ALT-012] Get status while 1 active alerts is present on server', { tag: '@sanity' }, async ({ api }) => {
+    test('[ALT-012] Get status while 1 active alerts is present on server', { tag: '@smoke' }, async ({ api }) => {
       await api.users.modifyUser({
         id: user.id!,
-        alertRegionUid: AlertRegions.KYIV_OBLAST.uid,
+        alertRegionUid: regions[0].uid,
       } as any);
 
-      await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
+      await api.alertsMock.startAlert(regions[0]);
       await api.alerts.triggerSync();
 
       const statusRes = await api.alerts.getMyAlertStatus();
-      expect(statusRes.response.status()).toBe(200);
+      expect(statusRes.response).toHaveStatus(200);
       expect(statusRes.data.active).toBe(true);
-      expect(statusRes.data.userAlertRegionUid).toBe(AlertRegions.KYIV_OBLAST.uid);
+      expect(statusRes.data.userAlertRegionUid).toBe(regions[0].uid);
       expect(statusRes.data.alert).not.toBeNull();
     });
 
     test('[ALT-013] Check DTO structure', { tag: '@sanity' }, async ({ api }) => {
       await api.users.modifyUser({
         id: user.id!,
-        alertRegionUid: AlertRegions.KYIV_OBLAST.uid,
+        alertRegionUid: regions[0].uid,
       } as any);
-      await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
+      await api.alertsMock.startAlert(regions[0]);
       await api.alerts.triggerSync();
 
       const statusRes = await api.alerts.getMyAlertStatus();
@@ -167,28 +170,28 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
       }
     });
 
-    test('[ALT-014] Check consistency with /active', { tag: '@sanity' }, async ({ api }) => {
+    test('[ALT-014] Check consistency with /active', { tag: '@smoke' }, async ({ api }) => {
       await api.users.modifyUser({
         id: user.id!,
-        alertRegionUid: AlertRegions.KYIV_OBLAST.uid,
+        alertRegionUid: regions[0].uid,
       } as any);
 
-      await api.alertsMock.startAlert(AlertRegions.LVIV_OBLAST);
+      await api.alertsMock.startAlert(regions[1]);
       await api.alerts.triggerSync();
 
       const activeAlerts = await api.alerts.getActiveAlerts();
-      expect(activeAlerts.data).toContain(AlertRegions.LVIV_OBLAST.uid);
+      expect(activeAlerts.data).toContain(regions[1].uid);
 
       const statusRes = await api.alerts.getMyAlertStatus();
       expect(statusRes.data.active).toBe(false);
-      expect(statusRes.data.userAlertRegionUid).toBe(AlertRegions.KYIV_OBLAST.uid);
+      expect(statusRes.data.userAlertRegionUid).toBe(regions[0].uid);
     });
 
     test('[ALT-015] Get status of alerts without authorization', { tag: '@sanity' }, async ({ api }) => {
       api.alerts.clearTokens();
 
       const getAlerts = await api.alerts.getMyAlertStatus();
-      expect(getAlerts.response.status()).toBe(401);
+      expect(getAlerts.response).toHaveStatus(401);
     });
   });
 
@@ -203,78 +206,69 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
       await api.alerts.triggerSync();
     });
 
-    test(
-      '[ALT-E2E-001] Sync -> Active: verify active alerts update after sync',
-      { tag: '@sanity' },
-      async ({ api }) => {
-        let activeAlerts = await api.alerts.getActiveAlerts();
-        expect(activeAlerts.data).toEqual([]);
+    test('[ALT-E2E-001] Sync -> Active: verify active alerts update after sync', { tag: '@smoke' }, async ({ api }) => {
+      let activeAlerts = await api.alerts.getActiveAlerts();
+      expect(activeAlerts.data).toEqual([]);
 
-        await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
-        await api.alerts.triggerSync();
+      await api.alertsMock.startAlert(regions[0]);
+      await api.alerts.triggerSync();
 
-        activeAlerts = await api.alerts.getActiveAlerts();
-        expect(activeAlerts.data).toContain(AlertRegions.KYIV_OBLAST.uid);
-        expect(activeAlerts.data.length).toBe(1);
-      },
-    );
+      activeAlerts = await api.alerts.getActiveAlerts();
+      expect(activeAlerts.data).toContain(regions[0].uid);
+      expect(activeAlerts.data.length).toBe(1);
+    });
 
     test(
       '[ALT-E2E-002] Sync -> Status: user status corresponds to new mocked data',
-      { tag: '@sanity' },
+      { tag: '@smoke' },
       async ({ api }) => {
-        await api.users.modifyUser({ id: user.id!, alertRegionUid: AlertRegions.KYIV_OBLAST.uid } as any);
+        await api.users.modifyUser({ id: user.id!, alertRegionUid: regions[0].uid } as any);
 
-        await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
+        await api.alertsMock.startAlert(regions[0]);
         await api.alerts.triggerSync();
 
         const statusRes = await api.alerts.getMyAlertStatus();
         expect(statusRes.data.active).toBe(true);
-        expect(statusRes.data.userAlertRegionUid).toBe(AlertRegions.KYIV_OBLAST.uid);
+        expect(statusRes.data.userAlertRegionUid).toBe(regions[0].uid);
       },
     );
 
-    test('[ALT-E2E-003] Active <-> Status consistency', { tag: '@sanity' }, async ({ api }) => {
-      await api.users.modifyUser({ id: user.id!, alertRegionUid: AlertRegions.KYIV_OBLAST.uid } as any);
+    test('[ALT-E2E-003] Active <-> Status consistency', { tag: '@smoke' }, async ({ api, spawnApi, spawnUser }) => {
+      const newUser = await spawnUser();
+      const noAlertApi = await spawnApi();
+      await noAlertApi.auth.login({ identifier: newUser.email, password: newUser.password });
 
-      await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
-      await api.alertsMock.startAlert(AlertRegions.LVIV_OBLAST);
+      await api.users.modifyUser({ id: user.id!, alertRegionUid: regions[0].uid } as any);
+      await noAlertApi.users.modifyUser({ id: newUser.id!, alertRegionUid: regions[1].uid } as any);
+
+      await api.alertsMock.startAlert(regions[0]);
       await api.alerts.triggerSync();
 
-      const activeAlertsRes = await api.alerts.getActiveAlerts();
-      const statusRes = await api.alerts.getMyAlertStatus();
+      const apiStatusRes = await api.alerts.getMyAlertStatus();
+      const noAlertsStatusRes = await noAlertApi.alerts.getMyAlertStatus();
 
-      const activeUids = activeAlertsRes.data;
-      const userUid = statusRes.data.userAlertRegionUid;
-
-      if (userUid && activeUids.includes(userUid)) {
-        expect(statusRes.data.active).toBe(true);
-      } else {
-        expect(statusRes.data.active).toBe(false);
-      }
-
-      expect(activeUids).toContain(AlertRegions.KYIV_OBLAST.uid);
-      expect(activeUids).toContain(AlertRegions.LVIV_OBLAST.uid);
-      expect(statusRes.data.active).toBe(true);
+      expect(apiStatusRes.data.active).toBe(true);
+      expect(noAlertsStatusRes.data.active).toBe(false);
     });
 
-    test.fixme(
+    test(
       '[ALT-E2E-004] Coordinates -> Alert matches user physical coordinates',
-      { tag: '@sanity' },
+      { tag: ['@smoke', '@bug'] },
       async ({ api }) => {
         await api.users.modifyUser({
           id: user.id!,
-          latitude: RegionCoordinates.LVIV.latitude,
-          longitude: RegionCoordinates.LVIV.longitude,
+          latitude: regions[0].coordinates?.latitude,
+          longitude: regions[0].coordinates?.longitude,
         } as any);
 
-        await api.alertsMock.startAlert(AlertRegions.LVIV_OBLAST);
+        await api.alertsMock.startAlert(regions[0]);
         await api.alerts.triggerSync();
 
-        const statusRes = await api.alerts.getMyAlertStatus();
-
-        expect(statusRes.data.active).toBe(true);
-        expect(statusRes.data.userAlertRegionUid).toBe(AlertRegions.LVIV_OBLAST.uid);
+        await expect(async () => {
+          const statusRes = await api.alerts.getMyAlertStatus();
+          expect(statusRes.data.active).toBe(true);
+          expect(statusRes.data.userAlertRegionUid).toBe(regions[0].uid);
+        }).toPass({ intervals: [timeout.cronTimeout, timeout.medium, timeout.long] });
       },
     );
 
@@ -282,48 +276,52 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
       {
         testName: '[ALT-E2E-005] Air alert automatically degrades user safety status',
         status: 'SAFE',
-        tag: '@sanity',
+        expectedStatus: 'WAS_SAFE',
+        tag: ['@smoke', '@bug'],
       },
       {
         testName: '[ALT-E2E-006] Air alert does not override existing DANGER status',
         status: 'DANGER',
-        tag: '@sanity',
+        expectedStatus: 'DANGER',
+        tag: ['@sanity', '@bug'],
       },
       {
         testName: '[ALT-E2E-007] Air alert does not override existing UNKNOWN status',
         status: 'UNKNOWN',
-        tag: '@sanity',
+        expectedStatus: 'UNKNOWN',
+        tag: ['@sanity', '@bug'],
       },
     ].forEach((options) =>
-      test.fixme(
+      test(
         options.testName,
         {
           tag: options.tag,
         },
         async ({ api }) => {
-          await api.users.modifyUser({ id: user.id!, alertRegionUid: AlertRegions.KYIV_OBLAST.uid } as any);
+          await api.users.modifyUser({ id: user.id!, alertRegionUid: regions[0].uid } as any);
           await api.users.updateUserStatus({ status: options.status as any });
 
-          await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
+          await api.alertsMock.startAlert(regions[0]);
           await api.alerts.triggerSync();
 
-          const userProfile = await api.users.getUser(user.id!);
-          if (options.status == 'SAFE') expect(userProfile.data.status).toBe('WAS_SAFE');
-          else expect(userProfile.data.status).toBe(options.status);
+          await expect(async () => {
+            const userProfile = await api.users.getUser(user.id!);
+            expect(userProfile.data.status).toBe(options.expectedStatus);
+          }).toPass({ intervals: [timeout.cronTimeout, timeout.medium, timeout.long] });
         },
       ),
     );
 
     test('[ALT-E2E-008] Status updates correctly when alert stops', { tag: '@sanity' }, async ({ api }) => {
-      await api.users.modifyUser({ id: user.id!, alertRegionUid: AlertRegions.KYIV_OBLAST.uid } as any);
+      await api.users.modifyUser({ id: user.id!, alertRegionUid: regions[0].uid } as any);
 
-      await api.alertsMock.startAlert(AlertRegions.KYIV_OBLAST);
+      await api.alertsMock.startAlert(regions[0]);
       await api.alerts.triggerSync();
 
       let statusRes = await api.alerts.getMyAlertStatus();
       expect(statusRes.data.active).toBe(true);
 
-      await api.alertsMock.stopAlert(AlertRegions.KYIV_OBLAST);
+      await api.alertsMock.stopAlert(regions[0]);
       await api.alerts.triggerSync();
 
       statusRes = await api.alerts.getMyAlertStatus();
