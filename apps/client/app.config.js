@@ -15,9 +15,13 @@ export default {
       googleServicesFile: process.env.GOOGLE_SERVICES_IOS || "./GoogleService-Info.plist",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
-        UIBackgroundModes: ["fetch", "remote-notification"],
+        UIBackgroundModes: ["fetch", "remote-notification", "location"],
         NSLocationWhenInUseUsageDescription:
           "Allow Health Circle to access your location to share your safety status with your circles.",
+        NSLocationAlwaysUsageDescription:
+          "Allow Health Circle to access your location in the background to keep your safety status updated and share it with your circles.",
+        NSLocationAlwaysAndWhenInUseUsageDescription:
+          "Allow Health Circle to access your location to share your safety status with your circles and provide real-time updates.",
         NSCameraUsageDescription:
           "Allow Health Circle to access your camera to take a profile picture.",
         NSPhotoLibraryUsageDescription:
@@ -40,6 +44,7 @@ export default {
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
       ],
     },
     plugins: [
@@ -49,7 +54,16 @@ export default {
       "./plugins/withFirestorePrebuilt.js",
       "expo-notifications",
       "expo-router",
-      "expo-location",
+      [
+        "expo-location",
+        {
+          locationAlwaysAndWhenInUseUsageDescription:
+            "Allow Health Circle to access your location to share your safety status with your circles and provide real-time updates.",
+          locationWhenInUseUsageDescription:
+            "Allow Health Circle to access your location to share your safety status with your circles.",
+          isAndroidBackgroundLocationEnabled: true,
+        },
+      ],
       [
         "expo-splash-screen",
         {
@@ -70,7 +84,15 @@ export default {
           },
           ios: {
             useFrameworks: "static",
-            forceStaticLinking: ["RNFBApp", "RNFBMessaging", "RNFBFirestore", "FirebaseFirestore"],
+            forceStaticLinking: [
+              "RNFBApp",
+              "RNFBMessaging",
+              "RNFBFirestore",
+              "FirebaseCore",
+              "FirebaseMessaging",
+              "FirebaseFirestore",
+              "FirebaseInstallations",
+            ],
           },
         },
       ],
