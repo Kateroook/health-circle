@@ -1,4 +1,5 @@
-import { browser } from '@wdio/globals';
+// import { browser } from '@wdio/globals';
+import path from 'path';
 import { BackendProvider } from '../core/backend-provider';
 
 export const config: WebdriverIO.Config = {
@@ -33,7 +34,7 @@ export const config: WebdriverIO.Config = {
       'appium:automationName': 'UiAutomator2',
       'appium:platformVersion': process.env.APPIUM__PLATFORM_VERSION!,
       'appium:deviceName': process.env.APPIUM__DEVICE_NAME!,
-      'appium:app': 'C:/apps/health-circle-stage-71-android.apk',
+      'appium:app': path.join(process.cwd(), '../client/android/app/build/outputs/apk/release/app-release.apk'),
       'appium:autoGrantPermissions': true,
       'appium:newCommandTimeout': 300,
       'appium:udid': process.env.APPIUM__DEVICE_NAME!,
@@ -49,19 +50,17 @@ export const config: WebdriverIO.Config = {
   },
 
   //BackendProvider integration
-  before: async function () {
+  beforeTest: async function () {
     // Add backendProvider globally into browser object,
     // so it'll be accessible in any test
-    console.log('>>> STARTING BACKEND INIT');
     const provider = await BackendProvider.init();
-    (global as any).backend = provider;
-    console.log('>>> BACKEND READY');
+    (global as any).browser.backend = provider;
   },
 
   afterTest: async function () {
     if ((browser as any).backend) {
-      await browser.backend.cleanup();
-      await browser.backend.dispose();
+      await (global as any).browser.backend.cleanup();
+      await (global as any).browser.backend.dispose();
     }
   },
 };

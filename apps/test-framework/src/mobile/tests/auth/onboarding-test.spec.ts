@@ -5,7 +5,7 @@ beforeEach(async () => {
   await driver.terminateApp(bundleId);
   await driver.activateApp(bundleId);
 });
-describe('Login', () => {
+describe('Onboarding', () => {
   it('[HC-167] Successfull onboarding', async () => {
     await OnboardingScreen.completeOnboarding();
     await expect(OnboardingScreen.registerButton).toBeDisplayed();
