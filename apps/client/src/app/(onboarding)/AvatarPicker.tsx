@@ -173,6 +173,8 @@ export default function AvatarPickerScreen() {
               onPress={() => handleSelectDefault(item)}
               style={[styles.gridItem, isSelected && styles.gridItemSelected]}
               testID={`auth:avatar:${item.id}:button`}
+              accessibilityLabel={`auth:avatar:${item.id}:button`}
+              accessibilityRole="button"
             >
               <Image source={item.source} style={styles.gridAvatar} />
             </Pressable>

@@ -11,11 +11,11 @@ class OnboardingScreen extends BaseScreen {
   }
 
   get nextButton() {
-    return $('~onboarding:nextSlide:button');
+    return $(`android=new UiSelector().resourceId("onboarding:nextSlide:button")`);
   }
 
   get prevButton() {
-    return $('~onboarding:prevSlide:button');
+    return $(`android=new UiSelector().resourceId("onboarding:prevSlide:button")`);
   }
 
   get registerButton() {
