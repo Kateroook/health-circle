@@ -1,4 +1,5 @@
 import { utils } from '../../utils/utils';
+import AvatarPickerScreen from '../screens/avatar-picker-screen';
 import OnboardingScreen from '../screens/onboarding-screen';
 import PasswordSetupScreen from '../screens/password-setup-screen';
 import PushPermissionScreen from '../screens/push-permission-screen';
@@ -9,14 +10,14 @@ describe('Authorization', () => {
     await OnboardingScreen.clickSkipOnboardingButton();
     await OnboardingScreen.clickregisterButton();
     const middleName = utils.random.middleName();
-    const phone = '689106572';
+    const phone = '689106573';
     const userData = await RegisterScreen.register({ phone, middleName });
 
     const lastDbUser = await (global as any).backend.userRepository.waitForUserByEmail(userData.email);
     await expect(lastDbUser).toBeDefined();
     expect(lastDbUser).toMatchObject({
       email: userData.email.toLowerCase(),
-      phone: '+380689106572',
+      phone: '+380689106573',
       firstName: userData.firstName,
       lastName: userData.lastName,
       middleName: middleName,
@@ -31,8 +32,8 @@ describe('Authorization', () => {
 
     await PushPermissionScreen.clickAllowLocationButton();
     await PushPermissionScreen.clickAllowPushButton();
-    await PushPermissionScreen.selectRandomAvatar();
-    await PushPermissionScreen.clickNextButton();
+    await AvatarPickerScreen.selectRandomAvatar();
+    await AvatarPickerScreen.clickNextButton();
     await expect(PushPermissionScreen.root).not.toBeDisplayed();
   });
 });
