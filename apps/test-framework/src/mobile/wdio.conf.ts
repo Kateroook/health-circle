@@ -9,6 +9,7 @@ export const config: WebdriverIO.Config = {
   hostname: '127.0.0.1',
   port: 4723,
   path: '/',
+  maxInstances: 1,
 
   services: [
     [
@@ -39,6 +40,7 @@ export const config: WebdriverIO.Config = {
       'appium:newCommandTimeout': 300,
       'appium:udid': process.env.APPIUM__DEVICE_NAME!,
       'appium:ignoreHiddenApiPolicyError': true,
+      'wdio:maxInstances': 1,
     },
   ],
 

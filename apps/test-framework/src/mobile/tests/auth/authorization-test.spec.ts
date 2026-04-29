@@ -1,39 +1,47 @@
-import { utils } from '../../../utils/utils';
+import { UserFactory } from '@core/data/factories/user-factory';
+import DashboardScreen from 'src/mobile/screens/dashboard-screen';
+import LocationPermissionScreen from 'src/mobile/screens/location-permission-screen';
 import AvatarPickerScreen from '../../screens/avatar-picker-screen';
-import OnboardingScreen from '../../screens/onboarding-screen';
 import PasswordSetupScreen from '../../screens/password-setup-screen';
 import PushPermissionScreen from '../../screens/push-permission-screen';
 import RegisterScreen from '../../screens/register-screen';
 
 describe('Authorization', () => {
   it('[HC-74] Successful account creation', async () => {
-    await OnboardingScreen.clickSkipOnboardingButton();
-    await OnboardingScreen.clickregisterButton();
-    const middleName = utils.random.middleName();
-    const phone = '689106573';
-    const userData = await RegisterScreen.register({ phoneWithoutCode: phone, middleName });
-
-    const lastDbUser = await (global as any).backend.userRepository.waitForUserByEmail(userData.email);
-    await expect(lastDbUser).toBeDefined();
-    expect(lastDbUser).toMatchObject({
-      email: userData.email.toLowerCase(),
-      phone: '+380689106573',
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      middleName: middleName,
+    let user = UserFactory.createRandomUser();
+    console.log(user);
+    await RegisterScreen.openDirectly();
+    await RegisterScreen.register({
+      countryCode: user.countryCode,
+      phoneWithoutCode: user.phoneWithoutCode,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
     });
 
-    const otpCodeRecord = await (global as any).backend.confirmationCodeRepository.getLastUserCode(lastDbUser!.id);
-    const otpCode = otpCodeRecord.code;
-    const password = utils.random.password();
+    await PasswordSetupScreen.waitForIsShown();
 
-    await PasswordSetupScreen.setupPassword(otpCode, password, password);
-    await expect(PasswordSetupScreen.root).not.toBeDisplayed();
+    const userDbRow = (
+      await browser.backend.userRepository.findBy({
+        phone: user.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      })
+    )[0];
+    console.log(userDbRow);
+    user.id = userDbRow.id;
+    browser.backend.dbCleaner.add('users', user.id);
 
-    await PushPermissionScreen.clickAllowLocationButton();
-    await PushPermissionScreen.clickAllowPushButton();
-    await AvatarPickerScreen.selectRandomAvatar();
-    await AvatarPickerScreen.clickNextButton();
-    await expect(PushPermissionScreen.root).not.toBeDisplayed();
+    const confirmationCode = (await browser.backend.confirmationCodeRepository.getLastUserCode(user.id)).code;
+
+    await PasswordSetupScreen.setupPassword(confirmationCode, user.password, user.password);
+
+    await LocationPermissionScreen.clickSkipLocationButton();
+    await PushPermissionScreen.clickSkipPushButton();
+    await AvatarPickerScreen.clickSkipAvatarButton();
+
+    await DashboardScreen.waitForIsShown();
+
+    //TODO: assert current button state is "Невідомо" (optional)
   });
 });

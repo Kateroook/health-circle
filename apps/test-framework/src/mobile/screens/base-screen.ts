@@ -1,7 +1,7 @@
 import { $ } from '@wdio/globals';
 
 export default class BaseScreen {
-  private selector: string;
+  protected selector: string;
   private readonly scheme: string = 'client';
   private readonly path?: string;
 

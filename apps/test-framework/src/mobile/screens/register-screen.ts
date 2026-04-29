@@ -8,7 +8,7 @@ class RegisterScreen extends BaseScreen {
   }
 
   get phonePrefix() {
-    return $('[resource-id="auth:phone:prefix"]');
+    return $('~auth:phone:prefix');
   }
   get phoneInput() {
     return $('~auth:phone:input');

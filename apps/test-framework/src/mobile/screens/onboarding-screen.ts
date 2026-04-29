@@ -32,19 +32,29 @@ class OnboardingScreen extends BaseScreen {
 
   async completeOnboarding() {
     await this.waitForIsShown();
-    await this.tap(this.nextButton);
-    await this.tap(this.nextButton);
-    await this.tap(this.nextButton);
-    await this.tap(this.nextButton);
-    await this.tap(this.nextButton);
+    await this.swipeNext();
+    await this.swipeNext();
+    await this.swipeNext();
+    await this.swipeNext();
+    await this.swipeNext();
   }
 
-  async clickprevButton() {
-    await this.tap(this.prevButton);
+  async swipePrevious() {
+    await browser.swipe({
+      direction: 'right',
+      scrollableElement: this.root,
+      percent: 0.8,
+      duration: 100,
+    });
   }
 
-  async clicknextButton() {
-    await this.tap(this.nextButton);
+  async swipeNext() {
+    await browser.swipe({
+      direction: 'left',
+      scrollableElement: this.root,
+      percent: 0.8,
+      duration: 100,
+    });
   }
 
   async clickregisterButton() {
