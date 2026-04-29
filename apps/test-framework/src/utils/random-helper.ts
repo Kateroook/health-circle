@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import { customAlphabet, nanoid } from 'nanoid';
 import * as path from 'path';
 
+export type ccTLD = 'ua' | 'us' | 'uk' | 'de' | 'pl' | 'fr' | 'it' | 'es' | 'cz' | 'at';
 export class RandomHelper {
   public static readonly CHARSETS = {
     UPPERCASE: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
@@ -88,7 +89,7 @@ export class RandomHelper {
     return `${prefix}${nanoid(10)}@${domain}`;
   }
 
-  countryCode(country: 'ua' | 'us' | 'uk' | 'de' | 'pl' | 'fr' | 'it' | 'es' | 'cz' | 'at' = 'ua'): string {
+  countryCode(country: ccTLD = 'ua'): string {
     const codes = {
       ua: '+380',
       us: '+1',
@@ -104,8 +105,13 @@ export class RandomHelper {
     return codes[country];
   }
   phone(
-    country: 'ua' | 'us' | 'uk' | 'de' | 'pl' | 'fr' | 'it' | 'es' | 'cz' | 'at' = 'ua',
-    withCountryCode: boolean = true,
+    options: {
+      country: ccTLD;
+      withCountryCode: boolean;
+    } = {
+      country: 'ua',
+      withCountryCode: true,
+    },
   ) {
     const config = {
       ua: {
@@ -302,14 +308,14 @@ export class RandomHelper {
       },
     };
 
-    const { operators, subscriberLength } = config[country];
-    const code = this.countryCode(country);
+    const { operators, subscriberLength } = config[options.country];
+    const code = this.countryCode(options.country);
     const operator = faker.helpers.arrayElement(operators);
     const subscriber = Array.from({ length: subscriberLength }, () => faker.number.int({ min: 0, max: 9 })).join('');
 
     const fullNumber = `${operator}${subscriber}`;
 
-    return withCountryCode ? `${code}${fullNumber}` : fullNumber;
+    return options.withCountryCode ? `${code}${fullNumber}` : fullNumber;
   }
 
   phoneData() {
@@ -326,12 +332,12 @@ export class RandomHelper {
       'at',
     ];
 
-    const randomCountry = faker.helpers.arrayElement(countries);
+    const randomCountry = this.pick(countries);
 
     return {
       country: randomCountry,
       code: this.countryCode(randomCountry),
-      number: this.phone(randomCountry, false),
+      number: this.phone({ country: randomCountry, withCountryCode: false }),
     };
   }
 

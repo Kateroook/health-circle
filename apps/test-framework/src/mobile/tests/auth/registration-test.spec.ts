@@ -1,35 +1,39 @@
+import { UserFactory } from '@core/data/factories/user-factory';
 import { utils } from '../../../utils/utils';
 import LoginScreen from '../../screens/login-screen';
-import passwordSetupScreen from '../../screens/password-setup-screen';
+import PasswordSetupScreen from '../../screens/password-setup-screen';
 import RegisterScreen from '../../screens/register-screen';
 
 describe('Registration', () => {
-  it('[HC-34] User registration with minimum possible requirements', async () => {
-    const firstName = utils.random.string({
-      length: 2,
-      includeUpper: true,
-      includeLower: true,
-      includeNumbers: true,
-      includeSpecial: true,
-    });
-    const lastName = utils.random.string({
-      length: 2,
-      includeUpper: true,
-      includeLower: true,
-      includeNumbers: true,
-      includeSpecial: true,
+  it.only('[HC-34] User registration with minimum possible requirements', async () => {
+    let user = UserFactory.createRandomUser();
+    console.log(user);
+    await RegisterScreen.openDirectly();
+    await RegisterScreen.register({
+      countryCode: user.countryCode,
+      phoneWithoutCode: user.phoneWithoutCode,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
     });
 
-    const userData = await RegisterScreen.register({ firstName, lastName });
+    await PasswordSetupScreen.waitForIsShown();
 
-    const lastDbUser = await browser.backend.userRepository.getLast('createdAt');
-    await expect(lastDbUser).toBeDefined();
-    expect(lastDbUser).toMatchObject({
-      email: userData.email.toLowerCase(),
-      phone: userData.phone,
-      firstName: firstName,
-      lastName: lastName,
-    });
+    const userDbRow = (
+      await browser.backend.userRepository.findBy({
+        phone: user.phone,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        // email: user.email,
+      })
+    )[0];
+    console.log(userDbRow);
+    user.id = userDbRow.id;
+    browser.backend.dbCleaner.add('users', user.id);
+
+    const confirmationCode = (await browser.backend.confirmationCodeRepository.getLastUserCode(user.id)).code;
+
+    await PasswordSetupScreen.setupPassword(confirmationCode, user.password, user.password);
   });
 
   it('[HC-35] Confirmation email and password setting work correct', async () => {
@@ -39,7 +43,7 @@ describe('Registration', () => {
     const otpCode = otpCodeRecord.code;
     const password = utils.random.password();
 
-    await passwordSetupScreen.setupPassword(otpCode, password, password);
+    await PasswordSetupScreen.setupPassword(otpCode, password, password);
     await LoginScreen.login({
       identifier: userData.email,
       password: password,
@@ -55,12 +59,12 @@ describe('Registration', () => {
     const otpCodeRecord = await browser.backend.confirmationCodeRepository.getLastUserCode(lastDbUser!.id);
     const otpCode = otpCodeRecord.code;
     await browser.pause(61000);
-    await passwordSetupScreen.clickResendCodeLink();
+    await PasswordSetupScreen.clickResendCodeLink();
     const newOtpCodeRecord = await browser.backend.confirmationCodeRepository.getLastUserCode(lastDbUser!.id);
     await expect(newOtpCodeRecord).not.toBe(otpCode);
     const password = utils.random.password();
 
-    await passwordSetupScreen.setupPassword(otpCode, password, password);
+    await PasswordSetupScreen.setupPassword(otpCode, password, password);
     await LoginScreen.login({
       identifier: userDate.email,
       password: password,

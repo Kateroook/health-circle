@@ -11,7 +11,7 @@ describe('Authorization', () => {
     await OnboardingScreen.clickregisterButton();
     const middleName = utils.random.middleName();
     const phone = '689106573';
-    const userData = await RegisterScreen.register({ phone, middleName });
+    const userData = await RegisterScreen.register({ phoneWithoutCode: phone, middleName });
 
     const lastDbUser = await (global as any).backend.userRepository.waitForUserByEmail(userData.email);
     await expect(lastDbUser).toBeDefined();

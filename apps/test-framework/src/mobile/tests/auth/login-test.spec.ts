@@ -1,5 +1,4 @@
 import DashboardScreen from 'src/mobile/screens/dashboard-screen';
-import { timeout } from 'src/utils/wait-helper';
 import { utils } from '../../../utils/utils';
 import LoginScreen from '../../screens/login-screen';
 import PasswordSetupScreen from '../../screens/password-setup-screen';
@@ -49,7 +48,6 @@ describe('Login', () => {
 
   it.only('[HC-214] Successful login with valid email and password', async () => {
     const user = await browser.backend.spawnUser();
-    await utils.wait.sleep(timeout.long);
     await LoginScreen.openDirectly();
     await LoginScreen.login({
       identifier: user.email,
