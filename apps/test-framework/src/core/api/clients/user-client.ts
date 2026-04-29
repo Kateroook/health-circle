@@ -1,4 +1,3 @@
-import { test } from '../../../api/fixtures/api-fixture';
 import {
   CreateUserRequest,
   CreateUserResponse,
@@ -11,6 +10,7 @@ import {
   UpdateUserStatusResponse,
   UploadUserAvatarResponse,
 } from '../../types/api';
+import { runStep } from '../helpers/step-helper';
 import { ApiResult, BaseClient } from './base-client';
 
 /**
@@ -84,21 +84,24 @@ export class UserClient extends BaseClient {
    * Створити нового користувача
    */
   public async createUser(data: CreateUserRequest): Promise<ApiResult<CreateUserResponse>> {
-    return test.step(`Create user. FirstName: "${data.firstName}", LastName: "${data.lastName}", Phone: "${data.phone}", Email: "${data.email}"`, async () => {
-      const result = await this.post<CreateUserResponse>('/api/users', {
-        data: {
-          firstName: data.firstName,
-          middleName: data.middleName,
-          lastName: data.lastName,
-          email: data.email,
-          phone: data.phone,
-        },
-      });
-      if (result.data && result.data.id) {
-        this.dbCleaner?.add('users', result.data.id);
-      }
-      return result;
-    });
+    return runStep(
+      `Create user. FirstName: "${data.firstName}", LastName: "${data.lastName}", Phone: "${data.phone}", Email: "${data.email}"`,
+      async () => {
+        const result = await this.post<CreateUserResponse>('/api/users', {
+          data: {
+            firstName: data.firstName,
+            middleName: data.middleName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: data.phone,
+          },
+        });
+        if (result.data && result.data.id) {
+          this.dbCleaner?.add('users', result.data.id);
+        }
+        return result;
+      },
+    );
   }
 
   /**

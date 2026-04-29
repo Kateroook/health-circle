@@ -1,4 +1,4 @@
-import OnboardingScreen from '../screens/onboarding-screen';
+import OnboardingScreen from '../../screens/onboarding-screen';
 
 describe('Login', () => {
   it('[HC-167] Successfull onboarding', async () => {

@@ -1,7 +1,7 @@
-import { utils } from '../../utils/utils';
-import LoginScreen from '../screens/login-screen';
-import passwordSetupScreen from '../screens/password-setup-screen';
-import RegisterScreen from '../screens/register-screen';
+import { utils } from '../../../utils/utils';
+import LoginScreen from '../../screens/login-screen';
+import passwordSetupScreen from '../../screens/password-setup-screen';
+import RegisterScreen from '../../screens/register-screen';
 
 describe('Registration', () => {
   it('[HC-34] User registration with minimum possible requirements', async () => {
@@ -40,7 +40,10 @@ describe('Registration', () => {
     const password = utils.random.password();
 
     await passwordSetupScreen.setupPassword(otpCode, password, password);
-    await LoginScreen.login(userData.email, password);
+    await LoginScreen.login({
+      identifier: userData.email,
+      password: password,
+    });
     //додати ще перевівірку, що показується перше вікно після логіну
   });
 
@@ -58,7 +61,10 @@ describe('Registration', () => {
     const password = utils.random.password();
 
     await passwordSetupScreen.setupPassword(otpCode, password, password);
-    await LoginScreen.login(userDate.email, password);
-    //додати ще перевівірку, що показується перше вікно після логіну
+    await LoginScreen.login({
+      identifier: userDate.email,
+      password: password,
+    });
+    //додати ще перевірку, що показується перше вікно після логіну
   });
 });

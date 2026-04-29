@@ -1,9 +1,9 @@
-import { utils } from '../../utils/utils';
-import AvatarPickerScreen from '../screens/avatar-picker-screen';
-import OnboardingScreen from '../screens/onboarding-screen';
-import PasswordSetupScreen from '../screens/password-setup-screen';
-import PushPermissionScreen from '../screens/push-permission-screen';
-import RegisterScreen from '../screens/register-screen';
+import { utils } from '../../../utils/utils';
+import AvatarPickerScreen from '../../screens/avatar-picker-screen';
+import OnboardingScreen from '../../screens/onboarding-screen';
+import PasswordSetupScreen from '../../screens/password-setup-screen';
+import PushPermissionScreen from '../../screens/push-permission-screen';
+import RegisterScreen from '../../screens/register-screen';
 
 describe('Authorization', () => {
   it('[HC-74] Successful account creation', async () => {

@@ -6,7 +6,7 @@ class LoginScreen extends BaseScreen {
     super(`~${ScreenIds.login}`, 'Login');
   }
 
-  get contactInput() {
+  get identifierInput() {
     return $('~auth:identifier:input');
   }
 
@@ -26,10 +26,10 @@ class LoginScreen extends BaseScreen {
     return $('~auth:register:link');
   }
 
-  async fillContact(contact?: string) {
-    await this.wait(this.contactInput);
+  async fillIdentifier(contact?: string) {
+    await this.wait(this.identifierInput);
     if (contact) {
-      await this.contactInput.setValue(contact);
+      await this.identifierInput.setValue(contact);
     }
   }
 
@@ -40,9 +40,9 @@ class LoginScreen extends BaseScreen {
     }
   }
 
-  async login(contact?: string, password?: string) {
-    await this.fillContact(contact);
-    await this.fillPassword(password);
+  async login(options: { identifier?: string; password?: string }) {
+    await this.fillIdentifier(options.identifier);
+    await this.fillPassword(options.password);
     await this.tap(this.loginButton);
   }
 
