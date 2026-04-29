@@ -334,6 +334,7 @@ function OnboardingSlidePage({
             onPress={() => onScrollToPage(index - 1)}
             style={[styles.navTapZone, index === 0 && styles.navTapZoneDisabled]}
             testID="onboarding:prevSlide:button"
+            accessibilityLabel="onboarding:nextSlide:button"
           />
 
           <Pressable
@@ -341,6 +342,7 @@ function OnboardingSlidePage({
             onPress={() => onScrollToPage(index + 1)}
             style={styles.navTapZone}
             testID="onboarding:nextSlide:button"
+            accessibilityLabel="onboarding:nextSlide:button"
           />
         </View>
 
