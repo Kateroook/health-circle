@@ -74,7 +74,9 @@ test.describe(
           tag: '@sanity',
         },
         async ({ api, userRepository }) => {
-          const randomForeignPhone = utils.random.phone(utils.random.pick(['us', 'uk', 'de', 'pl']));
+          const randomForeignPhone = utils.random.phone({
+            country: utils.random.pick(['us', 'uk', 'de', 'pl']),
+          });
           const user = UserFactory.createRandomUser({ phone: randomForeignPhone });
           const newUser = await api.users.createUser(user);
           expect(newUser.response).toHaveStatus(201);
@@ -335,7 +337,9 @@ test.describe(
     });
 
     test.describe('Negative: phone validation', () => {
-      const randomPhone = utils.random.phone(utils.random.pick(['ua', 'us', 'uk', 'de', 'pl']));
+      const randomPhone = utils.random.phone({
+        country: utils.random.pick(['ua', 'us', 'uk', 'de', 'pl']),
+      });
       const smallPhone = randomPhone.substring(0, randomPhone.length - 3);
       const phoneWithSpecialChars =
         randomPhone.substring(0, randomPhone.length - 3) +

@@ -63,7 +63,7 @@ class RegisterScreen extends BaseScreen {
   async fillContactInfo(countryCode: string = 'Україна', phone?: string, email?: string) {
     await this.fillPhone(phone, countryCode);
     await this.fillEmail(email);
-    await this.tap(this.nextButton);
+    await this.clickNextButton();
   }
 
   async fillLastName(lastName?: string) {
@@ -93,19 +93,19 @@ class RegisterScreen extends BaseScreen {
     if (middleName) {
       await this.fillMiddleName(middleName);
     }
-    await this.tap(this.nextButton);
+    await this.clickNextButton();
   }
 
   async register(data?: {
     countryCode?: string;
-    phone?: string;
+    phoneWithoutCode?: string;
     email?: string;
     firstName?: string;
     lastName?: string;
     middleName?: string;
   }) {
     const countryCode = data?.countryCode ?? utils.random.countryCode();
-    const phone = data?.phone ?? utils.random.phone();
+    const phone = data?.phoneWithoutCode ?? utils.random.phone();
     const email = data?.email ?? utils.random.email();
     const firstName = data?.firstName ?? utils.random.firstName();
     const lastName = data?.lastName ?? utils.random.lastName();
@@ -115,7 +115,6 @@ class RegisterScreen extends BaseScreen {
     await this.fillContactInfo(countryCode, phone, email);
 
     await this.fillNameInfo(lastName, firstName, middleName);
-    return { countryCode, phone, email, firstName, lastName, middleName };
   }
 
   async clickNextButton() {

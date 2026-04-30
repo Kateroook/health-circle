@@ -51,6 +51,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChangeText, ...
   const leadingArtwork = (
     <TouchableOpacity
       testID="auth:phone:prefix"
+      accessibilityLabel="auth:phone:prefix"
       style={styles.prefixContainer}
       onPress={() => setModalVisible(true)}
       activeOpacity={0.7}
@@ -89,6 +90,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChangeText, ...
               onPress={() => setModalVisible(false)}
               style={styles.closeBtn}
               testID="auth:phone:closeModal"
+              accessibilityLabel="auth:phone:closeModal"
             >
               <Feather name="x" size={24} color={theme.colors.content.primary} />
             </TouchableOpacity>
@@ -106,6 +108,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChangeText, ...
                 style={styles.itemRow}
                 onPress={() => handlePrefixSelect(item.code)}
                 testID={`auth:phone:country_${item.code}`}
+                accessibilityLabel={`auth:phone:country_${item.code}`}
               >
                 <Typography variant="body1" tone="primary" style={styles.itemFlag}>
                   {item.flag}

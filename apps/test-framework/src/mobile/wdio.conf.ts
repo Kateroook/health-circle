@@ -1,4 +1,4 @@
-import { browser } from '@wdio/globals';
+// import { browser } from '@wdio/globals';
 import path from 'path';
 import { BackendProvider } from '../core/backend-provider';
 
@@ -9,6 +9,7 @@ export const config: WebdriverIO.Config = {
   hostname: '127.0.0.1',
   port: 4723,
   path: '/',
+  maxInstances: 1,
 
   services: [
     [
@@ -39,6 +40,7 @@ export const config: WebdriverIO.Config = {
       'appium:newCommandTimeout': 300,
       'appium:udid': process.env.APPIUM__DEVICE_NAME!,
       'appium:ignoreHiddenApiPolicyError': true,
+      'wdio:maxInstances': 1,
     },
   ],
 
@@ -54,13 +56,13 @@ export const config: WebdriverIO.Config = {
     // Add backendProvider globally into browser object,
     // so it'll be accessible in any test
     const provider = await BackendProvider.init();
-    browser.backend = provider;
+    (global as any).browser.backend = provider;
   },
 
   afterTest: async function () {
     if ((browser as any).backend) {
-      await browser.backend.cleanup();
-      await browser.backend.dispose();
+      await (global as any).browser.backend.cleanup();
+      await (global as any).browser.backend.dispose();
     }
   },
 };

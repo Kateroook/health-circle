@@ -2,7 +2,6 @@ import { Button } from "@/src/components/Button";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
 import { ScreenIds } from "@/src/utils/testIDs";
-import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
@@ -331,19 +330,19 @@ function OnboardingSlidePage({
         <View style={styles.tapActions}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Попередній слайд"
             disabled={index === 0}
             onPress={() => onScrollToPage(index - 1)}
             style={[styles.navTapZone, index === 0 && styles.navTapZoneDisabled]}
             testID="onboarding:prevSlide:button"
+            accessibilityLabel="onboarding:nextSlide:button"
           />
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Наступний слайд"
             onPress={() => onScrollToPage(index + 1)}
             style={styles.navTapZone}
             testID="onboarding:nextSlide:button"
+            accessibilityLabel="onboarding:nextSlide:button"
           />
         </View>
 

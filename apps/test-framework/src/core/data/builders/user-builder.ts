@@ -4,11 +4,14 @@ import { UserEntity } from '../../types/entites/user-interface';
 export class UserBuilder {
   private user: UserEntity;
   constructor(overrides?: Partial<UserEntity>) {
+    const phoneData = utils.random.phoneData();
     this.user = {
       firstName: utils.random.firstName(),
       lastName: utils.random.lastName(),
       email: utils.random.email(),
-      phone: utils.random.phone(),
+      phoneWithoutCode: phoneData.number,
+      countryCode: phoneData.code,
+      phone: phoneData.code + phoneData.number,
       password: utils.random.password(12),
       ...overrides,
     };

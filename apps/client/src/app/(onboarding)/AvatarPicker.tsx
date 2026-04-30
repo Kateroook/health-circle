@@ -123,7 +123,7 @@ export default function AvatarPickerScreen() {
         size="small"
         onPress={finish}
         style={styles.skipButton}
-        testId="onboarding:skip:button"
+        testId="auth:skipAvatar:button"
       />
 
       {/* Title */}
@@ -137,7 +137,11 @@ export default function AvatarPickerScreen() {
       </View>
 
       {/* Avatar preview */}
-      <Pressable style={styles.avatarPickerWrapper} onPress={handlePickImage}>
+      <Pressable
+        style={styles.avatarPickerWrapper}
+        onPress={handlePickImage}
+        testID="auth:avatar:upload_wrapper"
+      >
         {previewSource ? (
           <View style={styles.avatarPreviewContainer}>
             <Image source={previewSource} style={styles.avatarPreview} />
@@ -168,6 +172,9 @@ export default function AvatarPickerScreen() {
             <Pressable
               onPress={() => handleSelectDefault(item)}
               style={[styles.gridItem, isSelected && styles.gridItemSelected]}
+              testID={`auth:avatar:${item.id}:button`}
+              accessibilityLabel={`auth:avatar:${item.id}:button`}
+              accessibilityRole="button"
             >
               <Image source={item.source} style={styles.gridAvatar} />
             </Pressable>
@@ -186,7 +193,7 @@ export default function AvatarPickerScreen() {
           disabled={loading}
           onPress={handleNext}
           style={{ width: "100%" }}
-          testId="onboarding:next:button"
+          testId="auth:next:button"
         />
       </View>
     </SafeAreaView>

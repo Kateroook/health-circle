@@ -21,4 +21,21 @@ export class UserRepository extends BaseRepository<UserDbEntity, 'users'> {
 
     return (result as unknown as UserDbEntity) || null;
   }
+
+  async waitForUserByEmail(email: string, timeout = 5000): Promise<UserDbEntity> {
+    const start = Date.now();
+
+    while (Date.now() - start < timeout) {
+      const user = await (
+        this.db.selectFrom(this.tableName).selectAll().where('email', '=', email.toLowerCase()) as any
+      ).executeTakeFirst();
+
+      if (user) {
+        return user as unknown as UserDbEntity;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    throw new Error(`Користувача з поштою ${email} не знайдено в БД протягом ${timeout}мс`);
+  }
 }

@@ -7,4 +7,6 @@ export interface UserEntity {
   email: string;
   phone: string;
   password: string;
+  phoneWithoutCode?: string;
+  countryCode?: string;
 }

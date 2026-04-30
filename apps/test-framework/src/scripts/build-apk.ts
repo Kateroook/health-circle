@@ -4,7 +4,7 @@ import { rmSync } from 'fs';
 import { platform } from 'os';
 import { join } from 'path';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 const API_ENVIRONMENTS = {
   stage: process.env.STAGING_API_BASE_URL,
   prod: process.env.PROD_API_BASE_URL,
@@ -29,12 +29,21 @@ try {
   execSync(`npx expo prebuild --platform android --clean`, {
     cwd: clientDir,
     stdio: 'inherit',
-    env: { ...process.env, EXPO_PUBLIC_API_URL: apiUrl },
+    env: { ...process.env, EXPO_PUBLIC_API_URL: apiUrl + '/api', EXPO_NO_CACHE: '1' },
   });
 
   console.log('🔨 [Build] Compiling APK...');
   const gradleCmd = isWindows ? 'gradlew.bat assembleRelease' : './gradlew assembleRelease';
-  execSync(gradleCmd, { cwd: androidDir, stdio: 'inherit' });
+  execSync(gradleCmd, {
+    cwd: androidDir,
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      EXPO_PUBLIC_API_URL: apiUrl + '/api',
+      RCT_NO_VENDORED_CACHES: '1',
+      EXPO_NO_CACHE: '1',
+    },
+  });
 
   console.log('[Build] APK successfully built!\n');
 } catch (error: any) {

@@ -1,7 +1,6 @@
-import { expect } from '../fixtures/api-fixture';
-import { test } from '../fixtures/api-fixture';
 import { UserFactory } from '../../core/data/factories/user-factory';
 import { utils } from '../../utils/utils';
+import { expect, test } from '../fixtures/api-fixture';
 
 test.describe(
   'New user example tests',
@@ -13,7 +12,7 @@ test.describe(
       let user = UserFactory.createUserForTest({
         testId: 'PhoneTest',
         overrides: {
-          phone: utils.random.phone('us'),
+          phone: utils.random.phone({ country: 'us' }),
         },
       });
       const postUser = await api.users.createUser({
@@ -32,7 +31,7 @@ test.describe(
 
     test.skip('post user with no middlename and ukrainian phone number', async ({ api }) => {
       let user = UserFactory.createRandomUser({
-        phone: utils.random.phone('ua'),
+        phone: utils.random.phone({ country: 'ua' }),
       }); //no middlename as default
       const postUser = await api.users.createUser({
         email: user.email,
@@ -53,7 +52,7 @@ test.describe(
       let newUser = UserFactory.createUserForTest({
         testId: 'middleNameTest',
         overrides: {
-          phone: utils.random.phone('ua'),
+          phone: utils.random.phone({ country: 'ua' }),
         },
       });
       console.log(newUser);
