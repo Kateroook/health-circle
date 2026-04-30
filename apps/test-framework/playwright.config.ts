@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
 const baseUrl = process.env.API_BASE_URL!;
 
 export default defineConfig({

@@ -104,33 +104,17 @@ export class RandomHelper {
     };
     return codes[country];
   }
-  phone(
-    options: {
-      country: ccTLD;
-      withCountryCode: boolean;
-    } = {
-      country: 'ua',
+  phone(options?: { country?: ccTLD; withCountryCode?: boolean }) {
+    // 1. Безпечне злиття дефолтних налаштувань та переданих опцій
+    const finalOptions = {
+      country: 'ua' as ccTLD,
       withCountryCode: true,
-    },
-  ) {
+      ...options,
+    };
+
     const config = {
       ua: {
-        operators: [
-          '67',
-          '68',
-          '96',
-          '97',
-          '98', // Kyivstar
-          '50',
-          '66',
-          '95',
-          '99', // Vodafone
-          '63',
-          '73',
-          '93', // lifecell
-          '91', // Укртелеком
-          '92', // Tele2
-        ],
+        operators: ['67', '68', '96', '97', '98', '50', '66', '95', '99', '63', '73', '93', '91', '92'],
         subscriberLength: 7,
       },
       us: {
@@ -139,73 +123,46 @@ export class RandomHelper {
           '202',
           '212',
           '213',
-          '312', // AT&T
+          '312',
           '310',
           '415',
           '424',
           '469',
-          '512', // T-Mobile
+          '512',
           '614',
           '646',
           '702',
           '713',
-          '818', // Verizon
+          '818',
         ],
         subscriberLength: 7,
       },
-      uk: {
-        operators: [
-          '7400',
-          '7500',
-          '7700',
-          '7800', // EE
-          '7300',
-          '7400', // O2
-          '7900',
-          '7800', // Vodafone UK
-          '7700',
-          '7600', // Three
-        ],
-        subscriberLength: 6,
-      },
-      de: {
-        operators: [
-          '151',
-          '152',
-          '157', // Telekom
-          '160',
-          '170',
-          '171', // Vodafone DE
-          '159',
-          '176',
-          '177', // O2 DE
-        ],
-        subscriberLength: 7,
-      },
+      uk: { operators: ['731', '742', '753', '771', '772', '784', '795'], subscriberLength: 7 },
+      de: { operators: ['170', '171', '172', '173', '174'], subscriberLength: 7 },
       pl: {
         operators: [
           '500',
           '501',
           '502',
-          '503', // Orange PL
+          '503',
           '510',
           '511',
           '512',
-          '513', // Play
+          '513',
           '600',
           '601',
           '602',
-          '603', // T-Mobile PL
+          '603',
           '720',
           '721',
           '722',
-          '723', // Plus
+          '723',
         ],
         subscriberLength: 6,
       },
       fr: {
-        operators: ['6', '7'],
-        subscriberLength: 8,
+        operators: ['61', '62', '63', '64', '65', '66', '67', '68', '74', '75', '76', '77', '78', '79'],
+        subscriberLength: 7,
       },
       it: {
         operators: [
@@ -213,7 +170,7 @@ export class RandomHelper {
           '324',
           '327',
           '328',
-          '329', // WindTre
+          '329',
           '330',
           '331',
           '333',
@@ -222,7 +179,7 @@ export class RandomHelper {
           '336',
           '337',
           '338',
-          '339', // TIM
+          '339',
           '340',
           '342',
           '344',
@@ -230,22 +187,21 @@ export class RandomHelper {
           '346',
           '347',
           '348',
-          '349', // Vodafone
+          '349',
           '360',
           '366',
-          '368', // ТІМ (Old)
           '380',
           '388',
-          '389', // WindTre
+          '389',
           '350',
           '351',
-          '370', // MVNOs (Iliad, PosteMobile)
+          '370',
         ],
         subscriberLength: 7,
       },
       es: {
-        operators: ['6', '7'],
-        subscriberLength: 8,
+        operators: ['60', '61', '62', '63', '64', '65', '66', '67', '68', '69', '71', '72', '73', '74'],
+        subscriberLength: 7,
       },
       cz: {
         operators: [
@@ -292,30 +248,26 @@ export class RandomHelper {
         ],
         subscriberLength: 6,
       },
-      at: {
-        operators: [
-          '650', // Tele.Ring
-          '660', // Drei
-          '664', // A1
-          '676', // T-Mobile
-          '677', // HoT
-          '680', // Bob
-          '681', // Yesss!
-          '688', // Ventocom
-          '699', // Orange/Drei
-        ],
-        subscriberLength: 7,
-      },
+      at: { operators: ['650', '660', '664', '676', '677', '680', '681', '688', '699'], subscriberLength: 7 },
     };
 
-    const { operators, subscriberLength } = config[options.country];
-    const code = this.countryCode(options.country);
+    const { operators, subscriberLength } = config[finalOptions.country];
+    const code = this.countryCode(finalOptions.country);
     const operator = faker.helpers.arrayElement(operators);
-    const subscriber = Array.from({ length: subscriberLength }, () => faker.number.int({ min: 0, max: 9 })).join('');
+
+    let subscriber = '';
+
+    if (finalOptions.country === 'us') {
+      const firstDigit = this.number({ min: 2, max: 9 });
+      const restDigits = Array.from({ length: subscriberLength - 1 }, () => this.number({ min: 0, max: 9 })).join('');
+      subscriber = `${firstDigit}${restDigits}`;
+    } else {
+      subscriber = Array.from({ length: subscriberLength }, () => this.number({ min: 0, max: 9 })).join('');
+    }
 
     const fullNumber = `${operator}${subscriber}`;
 
-    return options.withCountryCode ? `${code}${fullNumber}` : fullNumber;
+    return finalOptions.withCountryCode ? `${code}${fullNumber}` : fullNumber;
   }
 
   phoneData() {

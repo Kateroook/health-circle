@@ -4,7 +4,7 @@ import { rmSync } from 'fs';
 import { platform } from 'os';
 import { join } from 'path';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 const API_ENVIRONMENTS = {
   stage: process.env.STAGING_API_BASE_URL,
   prod: process.env.PROD_API_BASE_URL,
