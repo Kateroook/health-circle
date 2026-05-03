@@ -22,6 +22,14 @@ export class SecurityService {
     return compare(await this.encrypt(data), hash);
   }
 
+  async hashToken(data: string): Promise<string> {
+    return hash(data, 10);
+  }
+
+  async validateToken(data: string, hash: string): Promise<boolean> {
+    return compare(data, hash);
+  }
+
   getConfirmCode(codeLength = 6): string {
     let code = '';
     for (let i = 0; i < codeLength - 1; i++) {
