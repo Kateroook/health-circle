@@ -215,7 +215,7 @@ export class GroupService {
   }
 
   async updateGroup(userId: string, dto: UpdateGroupDto) {
-    const group = await this.repository.findOne({ where: { id: dto.id }, relations: ['members'] });
+    const group = await this.repository.findOne({ where: { id: dto.id } });
     if (!group) throw new NotFoundException('Коло не знайдено');
     if (group.ownerId !== userId) throw new ForbiddenException('Тільки власник може оновлювати коло');
 
