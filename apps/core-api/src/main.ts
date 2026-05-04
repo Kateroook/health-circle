@@ -1,8 +1,6 @@
 import { setDefaultResultOrder } from 'node:dns';
 
 import { ValidationPipe } from '@nestjs/common';
-
-setDefaultResultOrder('ipv4first');
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -13,6 +11,8 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { types } from 'pg';
+
+setDefaultResultOrder('ipv4first');
 
 import { AppModule } from './app.module';
 import { AuthStrategies } from './common/enums/auth-strategies';

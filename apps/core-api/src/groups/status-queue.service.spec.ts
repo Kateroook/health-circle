@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { SchedulerRegistry } from '@nestjs/schedule';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UserStatus } from 'src/common/enums/user-status';
@@ -63,6 +64,13 @@ describe('StatusQueueService', () => {
             schedule: jest.fn(),
             send: jest.fn(),
             work: jest.fn(),
+          },
+        },
+        {
+          provide: SchedulerRegistry,
+          useValue: {
+            addCronJob: jest.fn(),
+            deleteCronJob: jest.fn(),
           },
         },
       ],
