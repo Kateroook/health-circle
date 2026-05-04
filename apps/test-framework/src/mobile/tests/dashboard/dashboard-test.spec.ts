@@ -27,10 +27,9 @@ describe('Main page', () => {
     console.log(userDbRow2.status);
   });
 
-  let groups: any[] = [];
-  let owner: any;
-
   it('[HC-62] Displaying all members of all circles or one circle', async () => {
+    let groups: any[] = [];
+    let owner: any;
     owner = await browser.backend.spawnUser();
 
     await browser.backend.api.auth.login({
@@ -82,5 +81,45 @@ describe('Main page', () => {
     console.log(`Total amount of members in all circles: ${totalMembersCount}`);
   });
 
-  it('[HC-61] The status ring and the status icon correspond to the current status of the user', async () => {});
+  it.only('[HC-61] The status ring and the status icon correspond to the current status of the user', async () => {
+    let userA, userB, userAApi, group;
+
+    userA = await browser.backend.spawnUser();
+    userB = await browser.backend.spawnUser();
+    userAApi = await browser.backend.spawnApi();
+
+    await userAApi.auth.login({ identifier: userA.email, password: userA.password });
+    const groupResponse = await userAApi.groups.createGroup({ name: utils.random.string() });
+    group = groupResponse.data;
+
+    await userAApi.groups.joinGroup({ code: group.inviteCode });
+    const userBApi = await browser.backend.spawnApi();
+    await userBApi.auth.login({ identifier: userB.email, password: userB.password });
+    await userBApi.groups.joinGroup({ code: group.inviteCode });
+
+    await LoginScreen.openDirectly();
+    await LoginScreen.login({ identifier: userB.email, password: userB.password });
+    await DashboardScreen.waitForIsShown();
+
+    const statuses = [
+      { name: 'SAFE', label: 'У безпеці' },
+      { name: 'DANGER', label: 'Потрібна допомога!' },
+      { name: 'UNKNOWN', label: 'Невідомо' },
+      { name: 'WAS_SAFE', label: 'Був у безпеці' },
+    ] as const;
+
+    for (const status of statuses) {
+      console.log(`Перевірка статусу: ${status.name}`);
+
+      await userAApi.users.updateUserStatus({ status: status.name as any });
+
+      await browser.pause(3000);
+
+      const memberCard = await DashboardScreen.getMemberCard(userA.id!);
+      await memberCard.waitForDisplayed();
+
+      const statusText = await memberCard.$(`android=new UiSelector().text("${status.label}")`);
+      await statusText.waitForDisplayed();
+    }
+  });
 });
