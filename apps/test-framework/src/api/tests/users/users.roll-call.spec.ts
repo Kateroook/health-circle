@@ -171,7 +171,7 @@ test.describe(
 
         await api.users.initiatePersonalRollCall(member.id!);
 
-        await utils.wait.sleep(timeout.rollCallTimeout);
+        await utils.wait.sleep(timeout.rollCallTimeout + timeout.medium);
 
         await expect(async () => {
           const getMemberAfterRC = await memberApi.users.getUser(member.id!);
