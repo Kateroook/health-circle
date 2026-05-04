@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   },
   // States
   disabled: {
-    backgroundColor: theme.colors.background.stateDisable,
+    backgroundColor: theme.colors.background.tertiary,
   },
   disabled_tertiary: {
     backgroundColor: "transparent",

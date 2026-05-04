@@ -35,10 +35,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [validatedSteps, setValidatedSteps] = useState<Set<number>>(new Set());
 
-  // Після реєстрації показуємо екран геолокації
   const [showLocationScreen, setShowLocationScreen] = useState(false);
-
-  // Локальна змінна — чи дозволив користувач геолокацію
   const [locationGranted, setLocationGranted] = useState<boolean | null>(null);
 
   const handleChange = (key: string, value: string) => {
@@ -61,7 +58,7 @@ export default function Register() {
       if (!cleanPhone) {
         newErrors.phone = "Поле номера телефону є обовʼязковим";
       } else if (!phoneRegex.test(cleanPhone)) {
-        newErrors.phone = "Некоректний формат (наприклад: +380...)";
+        newErrors.phone = "Некоректний формат";
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -105,6 +102,27 @@ export default function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const isStepValid = (): boolean => {
+    if (step === 1) {
+      const cleanPhone = form.phone.replace(/\s/g, "");
+      const phoneRegex = /^\+[1-9]\d{6,14}$/;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return phoneRegex.test(cleanPhone) && emailRegex.test(form.email);
+    }
+
+    if (step === 2) {
+      const trimmedLastName = form.lastName.trim();
+      const trimmedFirstName = form.firstName.trim();
+      const lastNameValid = trimmedLastName.length >= 2 && trimmedLastName.length <= 50;
+      const firstNameValid = trimmedFirstName.length >= 2 && trimmedFirstName.length <= 50;
+      const middleNameValid =
+        !form.middleName.trim() || (form.middleName.length >= 2 && form.middleName.length <= 50);
+      return lastNameValid && firstNameValid && middleNameValid;
+    }
+
+    return false;
+  };
+
   const handleNext = async () => {
     setValidatedSteps((prev) => new Set([...prev, step]));
     const isValid = validateCurrentStep();
@@ -137,9 +155,7 @@ export default function Register() {
           }),
         ),
       });
-      // Переходимо на PasswordSetup, а після нього покажемо екран геолокації
       router.replace({ pathname: "/PasswordSetup", params: { email: form.email } });
-      // Показуємо екран геолокації після PasswordSetup
       setShowLocationScreen(true);
     } catch (e: any) {
       const errorMsg = formatErrorMessage(e);
@@ -159,7 +175,6 @@ export default function Register() {
     }
   }
 
-  // Завершення реєстрації після екрана геолокації
   const handleLocationAllow = () => {
     setLocationGranted(true);
     setShowLocationScreen(false);
@@ -331,12 +346,12 @@ export default function Register() {
 
             <View style={styles.buttonsContainer}>
               <Button
-                label={loading ? "Зачекайте..." : step < 2 ? "Далі" : "Зареєструватися"}
+                label={loading ? "Зачекайте..." : "Далі"}
                 hierarchy="primary"
                 shape="rectangle"
                 size="medium"
                 loading={loading}
-                disabled={loading}
+                disabled={loading || !isStepValid()}
                 onPress={handleNext}
                 style={{ width: "100%" }}
                 testId="auth:next:button"
