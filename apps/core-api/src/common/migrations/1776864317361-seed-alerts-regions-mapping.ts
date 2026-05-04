@@ -6,15 +6,23 @@ export class SeedAlertsRegionsMapping1776864317361 implements MigrationInterface
   name = 'SeedAlertsRegionsMapping1776864317361';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    const csvPath = path.resolve(__dirname, '../../../assets/alerts_regions_mapping.csv');
+    // Robust path resolution: try both relative to __dirname and relative to process.cwd()
+    let csvPath = path.resolve(__dirname, '../../../assets/alerts_regions_mapping.csv');
 
     if (!fs.existsSync(csvPath)) {
-      console.warn(`CSV mapping file not found at ${csvPath}. Skipping seeding.`);
-      return;
+      // Fallback for different execution contexts (e.g. running from root vs apps/core-api)
+      csvPath = path.resolve(process.cwd(), 'assets/alerts_regions_mapping.csv');
+    }
+
+    if (!fs.existsSync(csvPath)) {
+      throw new Error(`CRITICAL: CSV mapping file NOT found at: ${csvPath}. Migration aborted.`);
     }
 
     const content = fs.readFileSync(csvPath, 'utf8');
     const lines = content.split('\n');
+    let count = 0;
+
+    console.log(`Starting seeding from ${csvPath}...`);
 
     for (const line of lines) {
       const trimmed = line.trim();
@@ -22,7 +30,10 @@ export class SeedAlertsRegionsMapping1776864317361 implements MigrationInterface
 
       const [uid, name, type, pcode] = trimmed.split(',');
 
-      if (!uid || !name || !type) continue;
+      if (!uid || !name || !type) {
+        console.warn(`Skipping invalid line: ${line}`);
+        continue;
+      }
 
       await queryRunner.query(
         `
@@ -33,9 +44,12 @@ export class SeedAlertsRegionsMapping1776864317361 implements MigrationInterface
             "type" = EXCLUDED."type",
             "hdx_pcode" = EXCLUDED."hdx_pcode";
       `,
-        [parseInt(uid, 10), name, type, pcode || null],
+        [parseInt(uid, 10), name, type, pcode ? pcode.trim() : null],
       );
+      count++;
     }
+
+    console.log(`Successfully seeded/updated ${count} alert regions.`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
