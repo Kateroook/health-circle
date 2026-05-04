@@ -7,6 +7,7 @@ import { Sync1774372858185 } from './1774372858185-sync';
 import { AddSmsCode1776864317358 } from './1776864317358-add-sms-code';
 import { SetupPostgisGeocoding1776864317359 } from './1776864317359-setup-postgis-geocoding';
 import { SeedAlertsRegionsMapping1776864317361 } from './1776864317361-seed-alerts-regions-mapping';
+import { SeedHromadasGeojson1776864317362 } from './1776864317362-seed-hromadas-geojson';
 import { SeedRegionsFix17748970886980 } from './17748970886980-seed-regions-fix';
 
 export const migrations = [
@@ -20,4 +21,5 @@ export const migrations = [
   AddSmsCode1776864317358,
   SetupPostgisGeocoding1776864317359,
   SeedAlertsRegionsMapping1776864317361,
+  SeedHromadasGeojson1776864317362,
 ];
