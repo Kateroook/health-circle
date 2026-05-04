@@ -148,7 +148,7 @@ export class AuthService {
       await this.userRepository.save(user);
 
       await this.userActivitiesService.logActivity(UserActivityTypes.userFailedLogin, metadata, { userId: user.id });
-      throw new UnauthorizedException('Невірні облікові дані');
+      throw new UnauthorizedException('Неправильний логін або пароль');
     }
 
     return new UserProfileDto({ ...user, smsTargetNumber: this.getSmsTargetNumber() });
