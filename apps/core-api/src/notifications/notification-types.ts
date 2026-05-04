@@ -33,7 +33,7 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   },
   [NotificationType.PERSONAL_ROLL_CALL]: {
     title: 'Особиста перекличка! 📢',
-    body: (data) => `Учасник кола "${data.groupName}" просить особисто підтвердити ваш статус.`,
+    body: (data) => `${data.requesterName} просить підтвердити ваш статус безпеки.`,
     permissionKey: 'statusUpdateReminders',
     fcmType: 'PERSONAL_ROLL_CALL',
   },
