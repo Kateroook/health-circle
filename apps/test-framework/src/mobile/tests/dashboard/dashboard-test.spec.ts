@@ -81,7 +81,7 @@ describe('Main page', () => {
     console.log(`Total amount of members in all circles: ${totalMembersCount}`);
   });
 
-  it.only('[HC-61] The status ring and the status icon correspond to the current status of the user', async () => {
+  it('[HC-61] The status ring and the status icon correspond to the current status of the user', async () => {
     let userA, userB, userAApi, group;
 
     userA = await browser.backend.spawnUser();
@@ -102,23 +102,24 @@ describe('Main page', () => {
     await DashboardScreen.waitForIsShown();
 
     const statuses = [
-      { name: 'SAFE', label: 'У безпеці' },
+      { name: 'SAFE', label: 'В безпеці' },
       { name: 'DANGER', label: 'Потрібна допомога!' },
       { name: 'UNKNOWN', label: 'Невідомо' },
       { name: 'WAS_SAFE', label: 'Був у безпеці' },
     ] as const;
 
     for (const status of statuses) {
-      console.log(`Перевірка статусу: ${status.name}`);
-
       await userAApi.users.updateUserStatus({ status: status.name as any });
 
       await browser.pause(3000);
 
-      const memberCard = await DashboardScreen.getMemberCard(userA.id!);
-      await memberCard.waitForDisplayed();
+      const badge = await DashboardScreen.getMemberStatusBadge(userA.id!, status.name);
 
-      const statusText = await memberCard.$(`android=new UiSelector().text("${status.label}")`);
+      await badge.waitForDisplayed();
+
+      const statusText = await DashboardScreen.getMemberCard(userA.id!).$(
+        `android=new UiSelector().text("${status.label}")`,
+      );
       await statusText.waitForDisplayed();
     }
   });
