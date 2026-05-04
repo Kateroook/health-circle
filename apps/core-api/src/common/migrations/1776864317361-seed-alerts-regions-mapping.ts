@@ -6,16 +6,22 @@ export class SeedAlertsRegionsMapping1776864317361 implements MigrationInterface
   name = 'SeedAlertsRegionsMapping1776864317361';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Robust path resolution: try both relative to __dirname and relative to process.cwd()
-    let csvPath = path.resolve(__dirname, '../../../assets/alerts_regions_mapping.csv');
+    const possiblePaths = [
+      path.resolve(process.cwd(), 'assets/alerts_regions_mapping.csv'), // Docker / Standalone
+      path.resolve(process.cwd(), 'apps/core-api/assets/alerts_regions_mapping.csv'), // Monorepo root
+      path.resolve(__dirname, '../../../assets/alerts_regions_mapping.csv'), // Relative to source
+    ];
 
-    if (!fs.existsSync(csvPath)) {
-      // Fallback for different execution contexts (e.g. running from root vs apps/core-api)
-      csvPath = path.resolve(process.cwd(), 'assets/alerts_regions_mapping.csv');
+    let csvPath: string | undefined;
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        csvPath = p;
+        break;
+      }
     }
 
-    if (!fs.existsSync(csvPath)) {
-      throw new Error(`CRITICAL: CSV mapping file NOT found at: ${csvPath}. Migration aborted.`);
+    if (!csvPath) {
+      throw new Error(`CRITICAL: CSV mapping file NOT found. Searched in: ${possiblePaths.join(', ')}. Migration aborted.`);
     }
 
     const content = fs.readFileSync(csvPath, 'utf8');

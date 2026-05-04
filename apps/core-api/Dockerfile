@@ -14,6 +14,7 @@ COPY tsconfig*.json nest-cli.json ./
 
 # Copy source files
 COPY src ./src
+COPY assets ./assets
 COPY config.ts ./
 
 # Build the application
@@ -43,6 +44,7 @@ RUN npm ci --omit=dev --ignore-scripts && \
 
 # Copy built application from builder
 COPY --chown=appuser:appgroup --from=builder /usr/src/app/dist ./dist
+COPY --chown=appuser:appgroup --from=builder /usr/src/app/assets ./assets
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh ./
