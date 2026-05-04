@@ -5,6 +5,7 @@ import { MemberProfileView } from "../MemberProfileView";
 import { ConfirmRollCallModal } from "../circle/actions/ConfirmRollCallModal";
 import { RenameModal } from "../circle/actions/RenameModal";
 import ConfirmationModal from "../ConfirmationModal";
+import { Alert } from "react-native";
 
 interface MemberProfileModalProps {
   member: Member | null;
@@ -37,6 +38,13 @@ export const MemberProfileModal = ({
 
   return (
     <>
+      {
+        console.log("MemberProfileModal props:", {
+          isOwner,
+          hasOnRemove: !!onRemove,
+          memberId: member?.id,
+        }) as any
+      }
       <BottomSheetContainer isVisible={visible} onClose={onClose}>
         <MemberProfileView
           member={member}
@@ -45,7 +53,20 @@ export const MemberProfileModal = ({
           onMessage={() => {}}
           isOwner={isOwner}
           onRemove={onRemove}
-          onRequestRemove={onRemove ? () => setIsRemoveVisible(true) : undefined}
+          onRequestRemove={
+            onRemove
+              ? () => {
+                  Alert.alert(
+                    "Видалити учасника??",
+                    `${member.fullName || member.firstName} буде видалено з кола`,
+                    [
+                      { text: "Назад", style: "cancel" },
+                      { text: "Видалити", style: "destructive", onPress: () => onRemove?.() },
+                    ],
+                  );
+                }
+              : undefined
+          }
           onBlock={onBlock}
           onRename={onRename}
           onRequestRename={onRename ? () => setIsRenameVisible(true) : undefined}
@@ -89,8 +110,12 @@ export const MemberProfileModal = ({
 
       <ConfirmationModal
         isVisible={isRemoveVisible}
-        onCancel={() => setIsRemoveVisible(false)}
+        onCancel={() => {
+          console.log("cancel pressed");
+          setIsRemoveVisible(false);
+        }}
         onConfirm={() => {
+          console.log("confirm pressed, onRemove:", !!onRemove);
           setIsRemoveVisible(false);
           onRemove?.();
         }}

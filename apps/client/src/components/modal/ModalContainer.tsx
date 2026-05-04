@@ -85,11 +85,12 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
 
 const styles = StyleSheet.create({
   modal: {
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
     margin: 0,
-    zIndex: 99999,
-    elevation: 20,
+    paddingTop: "80%",
+    zIndex: 999999, // ← додати
+    elevation: 30, // ← додати
   },
   fullScreenModal: {
     margin: 0,

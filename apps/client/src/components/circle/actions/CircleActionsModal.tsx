@@ -12,8 +12,10 @@ import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import ConfirmationModal from "../../ConfirmationModal";
 import { BottomSheetContainer } from "../../modal/BottomSheetContainer";
+import { BlockedUsersModal } from "./BlockedUsersModal";
 import { ConfirmRollCallModal } from "./ConfirmRollCallModal";
 import { RenameModal } from "./RenameModal";
+
 interface Props {
   visible: boolean;
   currentName: string;
@@ -28,6 +30,7 @@ interface Props {
   onLeave: () => void;
   onRollCall: () => void;
   onRegenerateInvite: () => Promise<void>;
+  onRefreshGroup?: () => void;
 }
 
 export default function CircleActionsModal({
@@ -44,6 +47,7 @@ export default function CircleActionsModal({
   onLeave,
   onRollCall,
   onRegenerateInvite,
+  onRefreshGroup,
 }: Props) {
   const { showToast } = useToast();
   const { logEvent } = useAnalytics();
@@ -54,6 +58,7 @@ export default function CircleActionsModal({
   const [isDeleteVisible, setIsDeleteVisible] = useState(false);
   const [isLeaveVisible, setIsLeaveVisible] = useState(false);
   const [isRollCallVisible, setIsRollCallVisible] = useState(false);
+  const [isBlockedUsersVisible, setIsBlockedUsersVisible] = useState(false);
   const user = useAuthStore().user;
   const isOwner = user?.id === ownerId;
 
@@ -118,7 +123,7 @@ export default function CircleActionsModal({
               style={{ alignSelf: "flex-start" }}
             />
             <Typography variant="h3" weight="bold" style={styles.sectionTitle}>
-              Редагуй склад кола
+              Редагуй склад кола
             </Typography>
             <Typography variant="body2" tone="secondary" style={styles.sectionSubtitle}>
               Видали учасників, яких більше не потрібно відстежувати
@@ -205,7 +210,7 @@ export default function CircleActionsModal({
               {isOwner ? (
                 <>
                   <Button
-                    label="Перейменувати"
+                    label="Перейменувати"
                     hierarchy="secondary"
                     shape="rectangle"
                     size="medium"
@@ -218,6 +223,14 @@ export default function CircleActionsModal({
                     shape="rectangle"
                     size="medium"
                     onPress={() => setIsEditingMembers(true)}
+                    style={{ width: "100%" }}
+                  />
+                  <Button
+                    label="Заблоковані користувачі"
+                    hierarchy="secondary"
+                    shape="rectangle"
+                    size="medium"
+                    onPress={() => setIsBlockedUsersVisible(true)}
                     style={{ width: "100%" }}
                   />
                   <Button
@@ -256,7 +269,7 @@ export default function CircleActionsModal({
           setTimeout(() => onDelete(), 300);
         }}
         title="Видалити це Коло?"
-        message="Після видалення ви не зможете стежити за станом його учасників"
+        message="Після видалення ви не зможете стежити за станом його учасників"
         confirmText="Видалити"
         cancelText="Назад"
       />
@@ -299,6 +312,13 @@ export default function CircleActionsModal({
           setIsRollCallVisible(false);
           onRollCall();
         }}
+      />
+
+      <BlockedUsersModal
+        visible={isBlockedUsersVisible}
+        circleId={circleId}
+        onClose={() => setIsBlockedUsersVisible(false)}
+        onUnblocked={onRefreshGroup}
       />
     </>
   );
