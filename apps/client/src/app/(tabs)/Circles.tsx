@@ -151,9 +151,7 @@ export default function CirclesScreen() {
           const parsed = JSON.parse(cached);
           const withStatus = parsed.map((c: any) => ({
             ...c,
-            members: c.members
-              .filter((m: any) => m.id !== c.owner?.id) // ← фільтруємо owner
-              .map((m: any) => ({ ...m, status: m.status || "UNKNOWN" })),
+            members: c.members.map((m: any) => ({ ...m, status: m.status || "UNKNOWN" })),
           }));
           setCircles(withStatus);
         }
@@ -163,12 +161,10 @@ export default function CirclesScreen() {
       const data = await apiFetch("/groups", { method: "GET" });
       const circlesWithStatus = data.map((circle: any) => ({
         ...circle,
-        members: circle.members
-          .filter((m: any) => m.id !== circle.owner?.id) // ← фільтруємо owner
-          .map((m: any) => ({
-            ...m,
-            status: m.status || "UNKNOWN",
-          })),
+        members: circle.members.map((m: any) => ({
+          ...m,
+          status: m.status || "UNKNOWN",
+        })),
       }));
       setCircles(circlesWithStatus);
       SecureStore.setItemAsync("cached_groups", JSON.stringify(data)).catch(() => {});
@@ -218,14 +214,12 @@ export default function CirclesScreen() {
   }
 
   function openCircleDetail(circle: Circle) {
-    console.log("openCircleDetail owner:", circle.owner);
     setActiveCircle(circle);
     setShowCircleDetail(true);
     setRollCallSent(false);
   }
 
   const isOwner = activeCircle && user?.id === activeCircle.owner?.id;
-  console.log("isOwner:", !!isOwner, "user:", user?.id, "owner:", activeCircle?.owner.id);
 
   const handleRollCall = () => {
     setIsRollCallModalVisible(true);
@@ -556,12 +550,6 @@ export default function CirclesScreen() {
             canRollCall={canRollCall}
             isOwner={!!isOwner}
             onRemove={async () => {
-              console.log(
-                "onRemove called, activeCircle:",
-                activeCircle?.id,
-                "selectedMember:",
-                selectedMember?.id,
-              );
               if (!activeCircle || !selectedMember) return;
               const memberId = selectedMember.id;
               try {

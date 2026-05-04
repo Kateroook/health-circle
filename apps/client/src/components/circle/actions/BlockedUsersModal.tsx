@@ -13,18 +13,16 @@ interface Props {
   visible: boolean;
   circleId: string;
   onClose: () => void;
-  onUnblocked?: () => void; // викликається після успішного розблокування — щоб батько оновив групу
+  onUnblocked?: () => void;
 }
 
 interface BlockedUser {
   id: string;
   firstName: string;
   lastName: string;
-  blocked: boolean; // true = залишити заблокованим, false = розблокувати
+  blocked: boolean;
 }
 
-// Swagger: GET /groups/{id}/blocked-users повертає GroupMemberEntity[]
-// де кожен елемент має вкладений user: UserEntity
 function parseBlockedUsers(data: any[]): BlockedUser[] {
   return data.map((item) => {
     const user = item?.user ?? item;

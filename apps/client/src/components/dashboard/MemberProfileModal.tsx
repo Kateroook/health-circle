@@ -38,13 +38,6 @@ export const MemberProfileModal = ({
 
   return (
     <>
-      {
-        console.log("MemberProfileModal props:", {
-          isOwner,
-          hasOnRemove: !!onRemove,
-          memberId: member?.id,
-        }) as any
-      }
       <BottomSheetContainer isVisible={visible} onClose={onClose}>
         <MemberProfileView
           member={member}
@@ -53,20 +46,7 @@ export const MemberProfileModal = ({
           onMessage={() => {}}
           isOwner={isOwner}
           onRemove={onRemove}
-          onRequestRemove={
-            onRemove
-              ? () => {
-                  Alert.alert(
-                    "Видалити учасника??",
-                    `${member.fullName || member.firstName} буде видалено з кола`,
-                    [
-                      { text: "Назад", style: "cancel" },
-                      { text: "Видалити", style: "destructive", onPress: () => onRemove?.() },
-                    ],
-                  );
-                }
-              : undefined
-          }
+          onRequestRemove={onRemove ? () => setIsRemoveVisible(true) : undefined}
           onBlock={onBlock}
           onRename={onRename}
           onRequestRename={onRename ? () => setIsRenameVisible(true) : undefined}
@@ -111,11 +91,9 @@ export const MemberProfileModal = ({
       <ConfirmationModal
         isVisible={isRemoveVisible}
         onCancel={() => {
-          console.log("cancel pressed");
           setIsRemoveVisible(false);
         }}
         onConfirm={() => {
-          console.log("confirm pressed, onRemove:", !!onRemove);
           setIsRemoveVisible(false);
           onRemove?.();
         }}

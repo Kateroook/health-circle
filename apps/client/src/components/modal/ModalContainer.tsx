@@ -1,5 +1,12 @@
 import React, { useEffect, useId, useRef, type ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  View,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from "react-native";
 import Modal from "react-native-modal";
 
 import { theme } from "@/src/theme/theme";
@@ -65,18 +72,24 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
         style={[styles.modal, fullScreen && styles.fullScreenModal]}
         hideModalContentWhileAnimating
         accessibilityViewIsModal
+        // Вимикаємо внутрішній механізм бібліотеки, щоб KeyboardAvoidingView працював передбачувано
+        avoidKeyboard={false}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={[styles.keyboardWrapper, fullScreen && { flex: 1 }]}
+          // На iOS "padding" ідеально піднімає центрований контент.
+          // На Android "height" зазвичай працює стабільніше всередині модалок.
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardWrapper}
         >
-          <View
-            testID={testId}
-            accessibilityLabel={testId}
-            style={[styles.container, fullScreen && styles.fullScreenContainer]}
-          >
-            {children}
-          </View>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View
+              testID={testId}
+              accessibilityLabel={testId}
+              style={[styles.container, fullScreen && styles.fullScreenContainer]}
+            >
+              {children}
+            </View>
+          </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
     </Portal>
@@ -85,25 +98,25 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
 
 const styles = StyleSheet.create({
   modal: {
-    justifyContent: "flex-start",
-    alignItems: "center",
     margin: 0,
-    paddingTop: "80%",
-    zIndex: 999999, // ← додати
-    elevation: 30, // ← додати
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 99999,
+    elevation: 20,
   },
   fullScreenModal: {
-    margin: 0,
     width: "100%",
     height: "100%",
   },
   keyboardWrapper: {
+    flex: 1,
     width: "100%",
+    justifyContent: "center",
     alignItems: "center",
   },
   container: {
     width: "85%",
-    maxWidth: theme.spacing[104] * 4, // ≈ 416
+    maxWidth: theme.spacing[104] * 4,
     padding: theme.spacing[16],
     borderRadius: theme.radius.xl,
     backgroundColor: theme.colors.background.secondary,
