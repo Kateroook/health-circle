@@ -7,13 +7,13 @@ import { RegionPicker } from "@/src/components/fields/RegionPicker";
 import { TextField } from "@/src/components/fields/TextField";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ScreenIds } from "@/src/utils/testIDs";
 import { apiFetch, apiUploadFile, getAvatarUrl } from "../../../api/api";
 import { useToast } from "../../../hooks/useToast";
 import { useAuthStore } from "../../../store/authStore";
@@ -29,6 +29,7 @@ export default function EditProfileScreen() {
   const [middleName, setMiddleName] = useState(() => user?.middleName || "");
   const [lastName, setLastName] = useState(() => user?.lastName || "");
   const [phone, setPhone] = useState(() => user?.phone || "");
+  const [email, setEmail] = useState(() => user?.email || "");
   const [region, setRegion] = useState(() => user?.region || "");
   const [district, setDistrict] = useState(() => user?.district || "");
   const [alertRegionUid, setAlertRegionUid] = useState<number | null>(
@@ -53,16 +54,26 @@ export default function EditProfileScreen() {
     const errors: string[] = [];
     const f = firstName.trim(),
       l = lastName.trim(),
-      m = middleName.trim();
+      m = middleName.trim(),
+      e = email.trim();
+
     if (!f || f.length < 2) errors.push("Імʼя має містити не менше 2 символів");
     else if (f.length > 50) errors.push("Імʼя має містити не більше 50 символів");
+
     if (!l || l.length < 2) errors.push("Прізвище має містити не менше 2 символів");
     else if (l.length > 50) errors.push("Прізвище має містити не більше 50 символів");
+
     if (m) {
       if (m.length < 2) errors.push("По батькові має містити не менше 2 символів");
       else if (m.length > 50) errors.push("По батькові має містити не більше 50 символів");
     }
+
     if (!phone.trim()) errors.push("Номер телефону є обовʼязковим");
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!e) errors.push("Електронна пошта є обовʼязковою");
+    else if (!emailRegex.test(e)) errors.push("Введіть коректну електронну пошту");
+
     return errors;
   };
 
@@ -86,9 +97,9 @@ export default function EditProfileScreen() {
             middleName: middleName.trim(),
             lastName: lastName.trim(),
             phone: phone.trim(),
+            email: email.trim(),
             region: region.trim(),
             district: district.trim(),
-            email: user?.email,
             ...(alertRegionUid != null ? { alertRegionUid } : {}),
           }),
         ),
@@ -138,20 +149,20 @@ export default function EditProfileScreen() {
 
   const fields = [
     {
-      id: "lastName",
-      label: "Прізвище",
-      value: lastName,
-      setter: setLastName,
-      placeholder: "Введіть прізвище",
-      maxLength: 50,
-      required: true,
-    },
-    {
       id: "firstName",
       label: "Імʼя",
       value: firstName,
       setter: setFirstName,
       placeholder: "Введіть імʼя",
+      maxLength: 50,
+      required: true,
+    },
+    {
+      id: "lastName",
+      label: "Прізвище",
+      value: lastName,
+      setter: setLastName,
+      placeholder: "Введіть прізвище",
       maxLength: 50,
       required: true,
     },
@@ -163,6 +174,16 @@ export default function EditProfileScreen() {
       placeholder: "Введіть по батькові",
       maxLength: 50,
       required: false,
+    },
+    {
+      id: "email",
+      label: "Електронна пошта",
+      value: email,
+      setter: setEmail,
+      placeholder: "example@email.com",
+      keyboardType: "email-address",
+      maxLength: 100,
+      required: true,
     },
     {
       id: "phone",

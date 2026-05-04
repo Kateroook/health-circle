@@ -256,7 +256,7 @@ export default function CircleActionsModal({
           setTimeout(() => onDelete(), 300);
         }}
         title="Видалити це Коло?"
-        message="Після видалення ви не зможете стежити за станом його учасників"
+        message="Після видалення Кола ти не зможеш стежити за станом його учасників"
         confirmText="Видалити"
         cancelText="Назад"
       />
