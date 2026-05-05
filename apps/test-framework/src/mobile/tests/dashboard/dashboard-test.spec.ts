@@ -21,21 +21,14 @@ describe('Main page', () => {
     await DashboardScreen.safeStatusDialog.waitForIsShown();
     await DashboardScreen.safeStatusDialog.clickConfirmSafeStatusButton();
 
-    const statusTextSafe = await DashboardScreen.statusButton.$(
-      `android=new UiSelector().text("${STATUSES[0].label}")`,
-    );
-    await statusTextSafe.waitForDisplayed({ timeout: 5000 });
-    await expect(statusTextSafe).toBeDisplayed();
+    const statusLabel = await DashboardScreen.mainStatusButtonText;
+    expect(await statusLabel.getText()).toBe(STATUSES[0].label);
 
     await DashboardScreen.longClickStatusButton();
     await DashboardScreen.dangerStatusDialog.waitForIsShown();
     await DashboardScreen.dangerStatusDialog.clickConfirmDangerStatusButton();
 
-    const statusTextDanger = await DashboardScreen.statusButton.$(
-      `android=new UiSelector().text("${STATUSES[1].label}")`,
-    );
-    await statusTextDanger.waitForDisplayed({ timeout: 5000 });
-    await expect(statusTextDanger).toBeDisplayed();
+    expect(await statusLabel.getText()).toBe(STATUSES[1].label);
   });
 
   it('[HC-62] Displaying all members of all circles or one circle', async () => {
@@ -100,13 +93,17 @@ describe('Main page', () => {
       await userAApi.users.updateUserStatus({ status: status.name as any });
       await browser.pause(3000);
 
+      const memberCard = await DashboardScreen.getMemberCard(userA.id!);
+      await memberCard.scrollIntoView();
+
       const badge = await DashboardScreen.getMemberStatusBadge(userA.id!, status.name);
       await badge.waitForDisplayed({ timeout: 5000 });
       await expect(badge).toBeDisplayed();
 
-      const memberCard = await DashboardScreen.getMemberCard(userA.id!);
-      const statusText = await memberCard.$(`android=new UiSelector().text("${status.label}")`);
-      await expect(statusText).toBeDisplayed();
+      const statusText = await DashboardScreen.getMemberStatusLabel(userA.id!);
+      await statusText.waitForDisplayed({ timeout: 10000 });
+      const currentText = await statusText.getText();
+      expect(currentText).toBe(status.label);
     }
   });
 });

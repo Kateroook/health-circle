@@ -32,6 +32,10 @@ class DashboardScreen extends BaseScreen {
     return $('~dashboard:mainStatus:button:text');
   }
 
+  getMemberStatusLabel(userId: string) {
+    return $(`~dashboard:member_${userId}:button:subLabel`);
+  }
+
   async getGreetingText() {
     return await this.greetingLabel.getText();
   }
