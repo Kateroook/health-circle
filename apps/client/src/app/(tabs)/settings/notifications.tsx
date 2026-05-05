@@ -54,11 +54,6 @@ const NOTIFICATION_SECTIONS: NotificationSection[] = [
         label: "Нагадувати оновити статус під час тривоги",
         defaultValue: true,
       },
-      {
-        key: "moodReminders",
-        label: "Нагадувати позначити настрій",
-        defaultValue: true,
-      },
     ],
   },
   {
