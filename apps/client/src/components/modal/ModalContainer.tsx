@@ -1,12 +1,5 @@
 import React, { useEffect, useId, useRef, type ReactNode } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  View,
-  TouchableWithoutFeedback,
-  Keyboard,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import Modal from "react-native-modal";
 
 import { theme } from "@/src/theme/theme";
@@ -61,6 +54,7 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
         onBackButtonPress={onClose}
         useNativeDriver
         useNativeDriverForBackdrop
+        avoidKeyboard
         animationIn={fullScreen ? "slideInUp" : "zoomIn"}
         animationOut={fullScreen ? "slideOutDown" : "zoomOut"}
         animationInTiming={220}
@@ -72,24 +66,19 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
         style={[styles.modal, fullScreen && styles.fullScreenModal]}
         hideModalContentWhileAnimating
         accessibilityViewIsModal
-        // Вимикаємо внутрішній механізм бібліотеки, щоб KeyboardAvoidingView працював передбачувано
-        avoidKeyboard={false}
       >
         <KeyboardAvoidingView
-          // На iOS "padding" ідеально піднімає центрований контент.
-          // На Android "height" зазвичай працює стабільніше всередині модалок.
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardWrapper}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 24 : 0}
+          style={[styles.keyboardWrapper, fullScreen && { flex: 1 }]}
         >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View
-              testID={testId}
-              accessibilityLabel={testId}
-              style={[styles.container, fullScreen && styles.fullScreenContainer]}
-            >
-              {children}
-            </View>
-          </TouchableWithoutFeedback>
+          <View
+            testID={testId}
+            accessibilityLabel={testId}
+            style={[styles.container, fullScreen && styles.fullScreenContainer]}
+          >
+            {children}
+          </View>
         </KeyboardAvoidingView>
       </Modal>
     </Portal>
@@ -98,25 +87,24 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
 
 const styles = StyleSheet.create({
   modal: {
-    margin: 0,
     justifyContent: "center",
     alignItems: "center",
+    margin: 0,
     zIndex: 99999,
     elevation: 20,
   },
   fullScreenModal: {
+    margin: 0,
     width: "100%",
     height: "100%",
   },
   keyboardWrapper: {
-    flex: 1,
     width: "100%",
-    justifyContent: "center",
     alignItems: "center",
   },
   container: {
     width: "85%",
-    maxWidth: theme.spacing[104] * 4,
+    maxWidth: theme.spacing[104] * 4, // ≈ 416
     padding: theme.spacing[16],
     borderRadius: theme.radius.xl,
     backgroundColor: theme.colors.background.secondary,
