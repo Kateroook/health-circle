@@ -25,6 +25,14 @@ export const config: WebdriverIO.Config = {
     ],
   ],
 
+  logLevel: 'info',
+
+  // Перевизначаємо рівень логування для конкретних модулів
+  logLevels: {
+    webdriver: 'error', // Приховуємо всі INFO запити протоколу (ті самі RESULT/POST)
+    '@wdio/appium-service': 'error', // Опціонально: прибирає лог-спам від самого Appium сервера
+  },
+
   //Platform settings
   capabilities: [
     {

@@ -38,6 +38,9 @@ export interface UserProfileDto {
   email: string | null;
   phone: string | null;
   avatarUpdatedAt?: Date;
+  alertRegionUid?: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 // ============ Request Types ============

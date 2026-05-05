@@ -1,5 +1,6 @@
 import { ApiClientFactory } from '@core/api/api-client-factory';
 import { GroupFactory } from '@core/data/factories/group-factory';
+import { AlertRegions } from '@core/data/regions';
 import { GroupEntity } from '@core/types/entites/group-interface';
 import { UserEntity } from '@core/types/entites/user-interface';
 import { NotificationHelper } from 'src/mobile/helpers/notification-helper';
@@ -32,6 +33,11 @@ describe('Background Notifications', () => {
     await api2.auth.login({
       identifier: user2.email,
       password: user2.password,
+    });
+
+    await api2.users.modifyUser({
+      id: user2.id!,
+      alertRegionUid: AlertRegions.KYIV_CITY.uid,
     });
 
     const groupResult = await api1.groups.createGroup({
@@ -102,6 +108,27 @@ describe('Background Notifications', () => {
     expect(notification).toBeDefined();
     expect(notification?.actualTitle).toContain('Перекличка!');
     expect(notification?.actualBody).toContain(group.name);
+  });
+
+  it('[HC-98] Verify critical push notification is received during an air raid alert in a subscribed region', async () => {
+    await api1.alertsMock.resetAll();
+    await browser.pause(10_000 + 5_000);
+
+    await api1.alertsMock.startAlert(AlertRegions.KYIV_CITY);
+
+    await browser.pause(5_000);
+
+    await NotificationHelper.open();
+    const notification = await NotificationHelper.openAndTap(NotificationType.AIR_ALERT, {
+      regionName: AlertRegions.KYIV_CITY.title,
+      alertType: 'air_raid',
+    });
+
+    await dashboardScreen.waitForIsShown();
+
+    expect(notification).toBeDefined();
+    expect(notification?.actualTitle).toContain('Повітряна тривога!');
+    expect(notification?.actualBody).toContain(AlertRegions.KYIV_CITY.title);
   });
 
   afterEach(async () => {
