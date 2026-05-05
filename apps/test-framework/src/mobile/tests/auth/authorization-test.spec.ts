@@ -42,6 +42,7 @@ describe('Authorization', () => {
 
     await DashboardScreen.waitForIsShown();
 
-    await expect(DashboardScreen.mainStatusButtonText).toHaveText('Невідомо');
+    const statusText = await DashboardScreen.mainStatusButtonText.getText();
+    await expect(statusText).toBe('Невідомо');
   });
 });
