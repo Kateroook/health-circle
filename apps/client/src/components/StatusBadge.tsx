@@ -111,7 +111,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = "rou
       <Typography
         variant="subtitle1"
         style={{ color: config.icon }}
-        testID={testId ? `${testId}:label` : `statusBadge:${status}:label`}
+        testId={testId ? `${testId}:label` : `statusBadge:${status}:label`}
+        accessible={true}
         importantForAccessibility="yes"
       >
         {config.label}

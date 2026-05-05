@@ -11,8 +11,8 @@ describe('Login', () => {
     });
 
     await DashboardScreen.waitForIsShown();
-    const welcomeText = await $(`android=new UiSelector().textContains("${user.firstName}")`);
-    await expect(welcomeText).toBeDisplayed();
+    const text = await DashboardScreen.getGreetingText();
+    expect(text).toContain(user.firstName);
   });
   // //TODO: aren't smoke tests; need to refactor later
   // it('[HC-54] Login with password reset', async () => {

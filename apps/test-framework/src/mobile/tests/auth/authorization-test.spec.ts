@@ -42,7 +42,6 @@ describe('Authorization', () => {
 
     await DashboardScreen.waitForIsShown();
 
-    const statusText = await DashboardScreen.statusButton.$('android=new UiSelector().text("Невідомо")');
-    await expect(statusText).toBeDisplayed();
+    await expect(DashboardScreen.mainStatusButtonText).toHaveText('Невідомо');
   });
 });

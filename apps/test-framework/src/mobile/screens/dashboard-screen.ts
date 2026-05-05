@@ -20,6 +20,22 @@ class DashboardScreen extends BaseScreen {
     return $('~dashboard:filter_all:button');
   }
 
+  get buttonStatusLabel() {
+    return $('~dashboard:mainStatus:button:text');
+  }
+
+  get greetingLabel() {
+    return $('~dashboard:header:greeting');
+  }
+
+  get mainStatusButtonText() {
+    return $('~dashboard:mainStatus:button:text');
+  }
+
+  async getGreetingText() {
+    return await this.greetingLabel.getText();
+  }
+
   getGroupFilterButton(groupId: string) {
     return $(`~dashboard:filter_${groupId}:button`);
   }
