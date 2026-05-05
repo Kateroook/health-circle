@@ -39,6 +39,12 @@ export class NotificationHelper {
     return { title, body };
   }
 
+  static escapeXPathString(str: string) {
+    if (!str.includes("'")) return `'${str}'`;
+    if (!str.includes('"')) return `"${str}"`;
+    return `concat('${str.split("'").join(`', "'", '`)}')`;
+  }
+
   /**
    * Find notification in the panel and wait for it to appear.
    * Return locators, so you can do expect() in the test.
@@ -46,14 +52,16 @@ export class NotificationHelper {
   static async waitForNotification(type: NotificationType, payloadData: any = {}, timeout = 15000) {
     const { title: templateTitle, body: templateBody } = this.getExpectedContent(type, payloadData);
 
-    // Find exact match for title
-    const titleLocator = await $(`//*[@text="${templateTitle}"]`);
+    // Find match for title (using contains to handle App Name prefixing)
+    const escapedTitle = this.escapeXPathString(templateTitle);
+    const titleLocator = await $(`//*[contains(@text, ${escapedTitle})]`);
 
     // Android often truncates long texts (body) with three dots (...),
     // and newlines might be rendered differently.
     // So for body we use contains and check only the first 25 characters of the first line.
     const safeBodyPart = templateBody.split('\n')[0].substring(0, 25);
-    const bodyLocator = await $(`//*[contains(@text, "${safeBodyPart}")]`);
+    const escapedBodyPart = this.escapeXPathString(safeBodyPart);
+    const bodyLocator = await $(`//*[contains(@text, ${escapedBodyPart})]`);
     const [actualTitle, actualBody] = await Promise.all([titleLocator.getText(), bodyLocator.getText()]);
 
     await titleLocator.waitForDisplayed({ timeout, interval: 1000 });
@@ -81,7 +89,8 @@ export class NotificationHelper {
     await this.waitForNotification(type, payloadData);
 
     // Find button inside the panel
-    const buttonLocator = await $(`//*[@text="${buttonText}"]`);
+    const escapedButtonText = this.escapeXPathString(buttonText);
+    const buttonLocator = await $(`//*[@text=${escapedButtonText}]`);
     await buttonLocator.waitForDisplayed({ timeout: 5000 });
     await buttonLocator.click();
   }

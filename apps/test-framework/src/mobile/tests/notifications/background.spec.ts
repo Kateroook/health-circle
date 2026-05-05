@@ -112,7 +112,7 @@ describe('Background Notifications', () => {
 
   it('[HC-98] Verify critical push notification is received during an air raid alert in a subscribed region', async () => {
     await api1.alertsMock.resetAll();
-    await browser.pause(10_000 + 5_000);
+    await browser.pause(10_000 * 2);
 
     await api1.alertsMock.startAlert(AlertRegions.KYIV_CITY);
 
