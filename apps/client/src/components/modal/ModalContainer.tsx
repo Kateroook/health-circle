@@ -54,6 +54,7 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
         onBackButtonPress={onClose}
         useNativeDriver
         useNativeDriverForBackdrop
+        avoidKeyboard
         animationIn={fullScreen ? "slideInUp" : "zoomIn"}
         animationOut={fullScreen ? "slideOutDown" : "zoomOut"}
         animationInTiming={220}
@@ -68,6 +69,7 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 24 : 0}
           style={[styles.keyboardWrapper, fullScreen && { flex: 1 }]}
         >
           <View

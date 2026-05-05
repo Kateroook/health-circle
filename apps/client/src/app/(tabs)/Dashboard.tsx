@@ -32,7 +32,6 @@ import * as SMS from "expo-sms";
 import * as SecureStore from "expo-secure-store";
 import { useNetworkStatus } from "../../hooks/useNetworkStatus";
 
-// --- DashboardScreen ---
 export default function DashboardScreen() {
   const { openModal, closeModal } = useModal();
   const { isOnline } = useNetworkStatus();
@@ -56,12 +55,10 @@ export default function DashboardScreen() {
     loading: locationLoading,
   } = useLocationStore();
 
-  /** Only the first load toggles `loading` / skeleton; refetches stay silent (avoids flicker from focus + Firestore sync). */
   const hasLoadedGroupsOnceRef = useRef(false);
 
   const fetchGroups = useCallback(async () => {
     if (!hasLoadedGroupsOnceRef.current) {
-      // Load from cache first so offline startup shows something
       try {
         const cached = await SecureStore.getItemAsync("cached_groups");
         if (cached) setGroups(JSON.parse(cached));
@@ -74,7 +71,6 @@ export default function DashboardScreen() {
           SecureStore.setItemAsync("cached_groups", JSON.stringify(data)).catch(() => {});
         });
       } catch {
-        // Offline — cached data already set above
       } finally {
         hasLoadedGroupsOnceRef.current = true;
       }
@@ -111,7 +107,6 @@ export default function DashboardScreen() {
   );
 
   const handleStatusUpdate = async (newStatus: UserStatus) => {
-    // Check connectivity
     const state = await NetInfo.fetch();
     const isOnline = state.isConnected && state.isInternetReachable !== false;
 
@@ -125,7 +120,6 @@ export default function DashboardScreen() {
         return;
       }
 
-      // If offline and it's DANGER (or user confirmed for other status), offer SMS
       const isAvailable = await SMS.isAvailableAsync();
       if (!isAvailable) {
         showToast({
@@ -136,12 +130,9 @@ export default function DashboardScreen() {
         return;
       }
 
-      // Format SMS: HC-XXXXXXXXXX [STATUS]
-      // Status mapping: SAFE (default), DANGER, WAS_SAFE
       let statusToken = "";
       if (newStatus === "DANGER") statusToken = " DANGER";
       else if (newStatus === "WAS_SAFE") statusToken = " WAS_SAFE";
-      // SAFE is the default if no token provided in our parser, or we can add " SAFE"
       else if (newStatus === "SAFE") statusToken = " SAFE";
 
       const messageBody = `${user.smsCode}${statusToken}`;
@@ -209,7 +200,7 @@ export default function DashboardScreen() {
     try {
       await initiatePersonalRollCall(selectedMember.id);
       logEvent("initiate_personal_roll_call", { type: "individual" });
-      syncDashboardData(); // Refresh data to show updated rollcall status
+      syncDashboardData();
       showToast({ type: "success", title: "Запит на перекличку надіслано" });
     } catch {
       showToast({

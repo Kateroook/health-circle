@@ -114,6 +114,7 @@ export default function CirclesScreen() {
   const [showCircleDetail, setShowCircleDetail] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const hasLoadedCirclesOnceRef = useRef(false);
+  const isMutatingRef = useRef(false);
 
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
@@ -122,17 +123,25 @@ export default function CirclesScreen() {
   const [renameValue, setRenameValue] = useState("");
 
   const [isRollCallModalVisible, setIsRollCallModalVisible] = useState(false);
+  const [rollCallSent, setRollCallSent] = useState(false);
   const canRollCall = !!selectedMember && !!activeCircle;
+
+  const removedMemberIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     setActiveCircle((current) => {
       if (!current) return current;
       const updated = circles.find((c) => c.id === current.id);
-      return updated ?? current;
+      if (!updated) return current;
+      return {
+        ...updated,
+        members: updated.members.filter((m) => !removedMemberIdsRef.current.has(m.id)),
+      };
     });
   }, [circles]);
 
   const fetchCircles = useCallback(async () => {
+    if (isMutatingRef.current) return;
     if (!hasLoadedCirclesOnceRef.current) {
       setIsLoading(true);
       // Load from cache immediately
@@ -207,9 +216,10 @@ export default function CirclesScreen() {
   function openCircleDetail(circle: Circle) {
     setActiveCircle(circle);
     setShowCircleDetail(true);
+    setRollCallSent(false);
   }
 
-  const isOwner = activeCircle && user?.id === activeCircle.owner.id;
+  const isOwner = activeCircle && user?.id === activeCircle.owner?.id;
 
   const handleRollCall = () => {
     setIsRollCallModalVisible(true);
@@ -280,6 +290,8 @@ export default function CirclesScreen() {
     try {
       await initiateRollCall(activeCircle.id);
       showToast({ type: "success", title: "Перекличку розпочато", compact: true });
+      setRollCallSent(true);
+      setTimeout(() => setRollCallSent(false), 10000);
       fetchCircles();
     } catch (error) {
       logger.error("Failed to initiate roll call:", error);
@@ -384,17 +396,30 @@ export default function CirclesScreen() {
                     <Typography variant="subtitle1">
                       {activeCircle.members.length} учасників
                     </Typography>
-                    <Button
-                      label="Перекличка"
-                      hierarchy="accent"
-                      shape="pill"
-                      size="small"
-                      trailingIcon={
-                        <Feather name="rss" size={16} color={theme.colors.content.onColor} />
-                      }
-                      onPress={handleRollCall}
-                      testId="circleDetail:rollCall:button"
-                    />
+                    {rollCallSent ? (
+                      <View style={styles.rollCallSentRow}>
+                        <Typography variant="body2" tone="secondary">
+                          Перекличку надіслано
+                        </Typography>
+                        <Ionicons
+                          name="checkmark"
+                          size={16}
+                          color={theme.colors.content.secondary}
+                        />
+                      </View>
+                    ) : (
+                      <Button
+                        label="Перекличка"
+                        hierarchy="accent"
+                        shape="pill"
+                        size="small"
+                        trailingIcon={
+                          <Feather name="rss" size={16} color={theme.colors.content.onColor} />
+                        }
+                        onPress={handleRollCall}
+                        testId="circleDetail:rollCall:button"
+                      />
+                    )}
                   </View>
                   <Typography variant="body2">
                     {unknownCount} не відповіли,{"\n"}
@@ -519,35 +544,46 @@ export default function CirclesScreen() {
             visible={isMemberModalVisible}
             onClose={() => {
               setIsMemberModalVisible(false);
-              setSelectedMember(null);
+              setSelectedMember(null); // ← тільки тут
             }}
             onRollCall={() => selectedMember && handlePersonalRollCall(selectedMember)}
             canRollCall={canRollCall}
             isOwner={!!isOwner}
             onRemove={async () => {
               if (!activeCircle || !selectedMember) return;
+              const memberId = selectedMember.id;
               try {
+                isMutatingRef.current = true;
                 const updatedMembers = activeCircle.members
-                  .filter((m) => m.id !== selectedMember.id)
+                  .filter((m) => m.id !== memberId)
                   .map((m) => ({ id: m.id }));
                 await apiFetch("/groups", {
                   method: "PUT",
                   body: JSON.stringify({ id: activeCircle.id, members: updatedMembers }),
                 });
+                setCircles((prev) =>
+                  prev.map((c) =>
+                    c.id === activeCircle.id
+                      ? { ...c, members: c.members.filter((m) => m.id !== memberId) }
+                      : c,
+                  ),
+                );
+                setActiveCircle((prev) =>
+                  prev ? { ...prev, members: prev.members.filter((m) => m.id !== memberId) } : prev,
+                );
                 setIsMemberModalVisible(false);
-                setSelectedMember(null);
-                fetchCircles();
-                showToast({
-                  type: "success",
-                  title: "Учасника видалено з кола",
-                  compact: true,
-                });
+                // НЕ викликаємо setSelectedMember(null) тут
+                showToast({ type: "success", title: "Учасника видалено з кола", compact: true });
               } catch {
                 showToast({
                   type: "error",
                   title: "Помилка",
                   subtitle: "Не вдалося видалити учасника",
                 });
+              } finally {
+                setTimeout(() => {
+                  isMutatingRef.current = false;
+                }, 2000);
               }
             }}
             onBlock={handleBlockUser}
@@ -816,6 +852,11 @@ const styles = StyleSheet.create({
   },
   rcMessageTextContainer: {
     marginLeft: theme.spacing[8],
+  },
+  rollCallSentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[4],
   },
   rcTimeText: {
     color: theme.colors.content.secondary,

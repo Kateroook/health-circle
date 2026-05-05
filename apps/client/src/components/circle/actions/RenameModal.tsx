@@ -4,6 +4,7 @@ import { ModalActions, ModalContent, ModalHeader } from "@/src/components/modal"
 import { ModalContainer } from "@/src/components/modal/ModalContainer";
 import { theme } from "@/src/theme/theme";
 import React, { useEffect, useState } from "react";
+import { View, KeyboardAvoidingView, Platform } from "react-native";
 
 interface RenameModalProps {
   isVisible: boolean;
@@ -48,7 +49,7 @@ export const RenameModal: React.FC<RenameModalProps> = ({
           placeholder={placeholder}
           value={value}
           onChangeText={setValue}
-          autoFocus
+          autoFocus // Тепер KeyboardAvoidingView підхопить появу клавіатури автоматично
           required
           caption={caption}
           testId={testId ? `${testId}:input` : undefined}
@@ -74,16 +75,18 @@ export const RenameModal: React.FC<RenameModalProps> = ({
         />
       </ModalActions>
       {extraAction && (
-        <Button
-          label={extraAction.label}
-          hierarchy="tertiary"
-          shape="rectangle"
-          size="medium"
-          onPress={extraAction.onPress}
-          style={{ width: "100%" }}
-          textStyle={{ color: theme.colors.negative }}
-          testId={testId ? `${testId}:extraAction:button` : undefined}
-        />
+        <View style={{ marginTop: theme.spacing[8] }}>
+          <Button
+            label={extraAction.label}
+            hierarchy="tertiary"
+            shape="rectangle"
+            size="medium"
+            onPress={extraAction.onPress}
+            style={{ width: "100%" }}
+            textStyle={{ color: theme.colors.negative }}
+            testId={testId ? `${testId}:extraAction:button` : undefined}
+          />
+        </View>
       )}
     </ModalContainer>
   );
