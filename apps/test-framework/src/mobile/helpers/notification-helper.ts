@@ -19,6 +19,15 @@ export class NotificationHelper {
     await driver.openNotifications();
   }
 
+  static async close() {
+    try {
+      await driver.execute('mobile: shell', { command: 'cmd statusbar collapse' });
+      await browser.pause(500);
+    } catch (e) {
+      console.warn("Couldn't close notification panel via ADB:", e);
+    }
+  }
+
   /**
    * Generate expected notification text based on backend templates.
    */
@@ -35,20 +44,21 @@ export class NotificationHelper {
    * Return locators, so you can do expect() in the test.
    */
   static async waitForNotification(type: NotificationType, payloadData: any = {}, timeout = 15000) {
-    const { title, body } = this.getExpectedContent(type, payloadData);
+    const { title: templateTitle, body: templateBody } = this.getExpectedContent(type, payloadData);
 
     // Find exact match for title
-    const titleLocator = await $(`//*[@text="${title}"]`);
+    const titleLocator = await $(`//*[@text="${templateTitle}"]`);
 
     // Android often truncates long texts (body) with three dots (...),
     // and newlines might be rendered differently.
     // So for body we use contains and check only the first 25 characters of the first line.
-    const safeBodyPart = body.split('\n')[0].substring(0, 25);
+    const safeBodyPart = templateBody.split('\n')[0].substring(0, 25);
     const bodyLocator = await $(`//*[contains(@text, "${safeBodyPart}")]`);
+    const [actualTitle, actualBody] = await Promise.all([titleLocator.getText(), bodyLocator.getText()]);
 
     await titleLocator.waitForDisplayed({ timeout, interval: 1000 });
 
-    return { titleLocator, bodyLocator, title, body };
+    return { titleLocator, bodyLocator, templateTitle, templateBody, actualTitle, actualBody };
   }
 
   /**

@@ -120,6 +120,28 @@ describe('StatusUpdateQueueWorker', () => {
       );
     });
 
+    it('should not pass mapsLink and categoryIdentifier if latitude or longitude is null', async () => {
+      usersService.getUserForStatusNotifications.mockResolvedValue({ ...sender, latitude: null, longitude: null } as any);
+      await (worker as any).handleSideEffects({ ...payload, status: UserStatus.DANGER });
+
+      expect(notificationsService.sendMulticastByType).toHaveBeenCalledWith(
+        ['token-member-1', 'token-member-2'],
+        expect.anything(),
+        expect.objectContaining({
+          status: UserStatus.DANGER,
+        }),
+        expect.not.objectContaining({
+          categoryIdentifier: 'DANGER_STATUS',
+        }),
+      );
+
+      const calls = notificationsService.sendMulticastByType.mock.calls;
+      const dataObj = calls[calls.length - 1][2];
+      expect(dataObj.mapsLink).toBeUndefined();
+
+      expect(smsService.sendBulkSms).toHaveBeenCalledWith(['+3801', '+3802'], 'Ivan Ivanov у небезпеці! (Health Circle)');
+    });
+
     it('should exclude sender from SMS notification recipients', async () => {
       await (worker as any).handleSideEffects({ ...payload, status: UserStatus.DANGER });
 

@@ -59,7 +59,7 @@ export class StatusUpdateQueueWorker implements OnModuleInit {
     if (tokens.length > 0) {
       let statusName = 'невідомий';
       if (status === UserStatus.SAFE) statusName = 'у безпеці';
-      else if (status === UserStatus.DANGER) statusName = 'у небезпеці';
+      else if (status === UserStatus.DANGER) statusName = 'треба допомога';
       else if (status === UserStatus.WAS_SAFE) statusName = 'був у безпеці';
 
       const mapsLink =
@@ -80,7 +80,7 @@ export class StatusUpdateQueueWorker implements OnModuleInit {
           status,
           ...(sender.latitude ? { latitude: String(sender.latitude) } : {}),
           ...(sender.longitude ? { longitude: String(sender.longitude) } : {}),
-          ...(status === UserStatus.DANGER ? { categoryIdentifier: 'DANGER_STATUS' } : {}),
+          ...(status === UserStatus.DANGER && sender.latitude && sender.longitude ? { categoryIdentifier: 'DANGER_STATUS' } : {}),
         },
       );
     }
