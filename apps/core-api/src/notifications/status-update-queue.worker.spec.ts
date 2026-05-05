@@ -109,7 +109,8 @@ describe('StatusUpdateQueueWorker', () => {
         ['token-member-1', 'token-member-2'],
         expect.anything(),
         expect.objectContaining({
-          mapsLink: 'https://maps.google.com/?q=50.4501,30.5234',
+          latitude: '50.4501',
+          longitude: '30.5234',
           status: UserStatus.DANGER,
         }),
         expect.objectContaining({
@@ -137,7 +138,8 @@ describe('StatusUpdateQueueWorker', () => {
 
       const calls = notificationsService.sendMulticastByType.mock.calls;
       const dataObj = calls[calls.length - 1][2];
-      expect(dataObj.mapsLink).toBeUndefined();
+      expect(dataObj.latitude).toBeUndefined();
+      expect(dataObj.longitude).toBeUndefined();
 
       expect(smsService.sendBulkSms).toHaveBeenCalledWith(['+3801', '+3802'], 'Ivan Ivanov у небезпеці! (Health Circle)');
     });
