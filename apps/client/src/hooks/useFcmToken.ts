@@ -112,13 +112,17 @@ export function useFcmToken() {
     const unsubscribeOnMessage = messaging().onMessage(async (remoteMessage) => {
       logger.info("A new FCM message arrived!", JSON.stringify(remoteMessage));
 
-      if (remoteMessage.notification) {
+      // Extract title and body from notification or data (fallback for data-only messages)
+      const title = remoteMessage.notification?.title || remoteMessage.data?.title;
+      const body = remoteMessage.notification?.body || remoteMessage.data?.body;
+
+      if (title && body) {
         const isDanger = remoteMessage.data?.status === "DANGER";
         // Display a notification manually for foreground
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: remoteMessage.notification.title,
-            body: remoteMessage.notification.body,
+            title,
+            body,
             data: remoteMessage.data || {},
             categoryIdentifier: isDanger ? "DANGER_STATUS" : undefined,
           },

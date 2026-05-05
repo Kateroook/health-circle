@@ -135,10 +135,9 @@ describe('NotificationsService', () => {
 
       expect(firebaseMessaging.sendEachForMulticast).toHaveBeenCalledWith({
         tokens,
-        notification: { title, body },
         android: expect.any(Object),
         apns: expect.any(Object),
-        data,
+        data: { key: 'value', title, body },
       });
     });
 
@@ -152,16 +151,15 @@ describe('NotificationsService', () => {
 
       expect(firebaseMessaging.sendEachForMulticast).toHaveBeenCalledWith({
         tokens,
-        notification: { title, body },
         android: expect.objectContaining({
-          notification: expect.objectContaining({ clickAction: 'DANGER_STATUS' }),
+          priority: 'high',
         }),
         apns: expect.objectContaining({
           payload: expect.objectContaining({
             aps: expect.objectContaining({ category: 'DANGER_STATUS' }),
           }),
         }),
-        data: { key: 'value' }, // Ensure categoryIdentifier was removed
+        data: { key: 'value', title, body },
       });
     });
 
