@@ -83,4 +83,8 @@ export class NotificationHelper {
     await buttonLocator.waitForDisplayed({ timeout: 5000 });
     await buttonLocator.click();
   }
+
+  static async closeApp() {
+    await driver.pressKeyCode(3);
+  }
 }

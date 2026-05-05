@@ -43,28 +43,28 @@ export class NotificationsService {
       delete data.categoryIdentifier;
     }
 
+    const customData = {
+      ...data,
+      title,
+      body,
+    };
+
     try {
       const response = await this.firebaseMessaging.sendEachForMulticast({
         tokens,
-        notification: { title, body },
         android: {
           priority: 'high',
-          notification: {
-            channelId: 'default',
-            priority: 'high',
-            sound: 'default',
-            ...(categoryIdentifier ? { clickAction: categoryIdentifier } : {}),
-          },
         },
         apns: {
           payload: {
             aps: {
+              alert: { title, body },
               sound: 'default',
               ...(categoryIdentifier ? { category: categoryIdentifier } : {}),
             },
           },
         },
-        data,
+        data: customData,
       });
 
       this.logger.log(`Notifications sent: ${response.successCount} success, ${response.failureCount} failed`);
