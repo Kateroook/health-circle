@@ -16,6 +16,8 @@ describe('Background Notifications', () => {
   let group: GroupEntity;
 
   beforeEach(async () => {
+    await NotificationHelper.clearAll();
+    await NotificationHelper.close();
     user1 = await browser.backend.spawnUser();
     user2 = await browser.backend.spawnUser();
     group = GroupFactory.createGroupWithSpecificOwner(user1);
@@ -85,6 +87,21 @@ describe('Background Notifications', () => {
     expect(notification?.actualBody).toContain(user1.firstName);
     expect(notification?.actualBody).toContain(user1.lastName);
     expect(notification?.actualBody).toContain('у безпеці');
+  });
+
+  it('[HC-97] Verify push notification delivery to all members during a Circle Roll Call', async () => {
+    await api1.groups.initiateGroupRollCall(group.id!);
+
+    await NotificationHelper.open();
+    const notification = await NotificationHelper.openAndTap(NotificationType.ROLL_CALL, {
+      groupName: group.name,
+    });
+
+    await dashboardScreen.waitForIsShown();
+
+    expect(notification).toBeDefined();
+    expect(notification?.actualTitle).toContain('Перекличка!');
+    expect(notification?.actualBody).toContain(group.name);
   });
 
   afterEach(async () => {
