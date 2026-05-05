@@ -81,11 +81,12 @@ const StatusIcon = ({
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = "round", testId }) => {
   const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.UNKNOWN;
+  const finalTestId = testId ?? `statusBadge:${status}`;
 
   const roundBadge = (
     <View
-      testID={variant === "round" ? testId : undefined}
-      accessibilityLabel={variant === "round" ? testId : undefined}
+      testID={variant === "round" ? finalTestId : undefined}
+      accessibilityLabel={variant === "round" ? finalTestId : undefined}
       style={[styles.roundOuter, { backgroundColor: config.bg }]}
     >
       {config.showCircle ? (
@@ -107,7 +108,12 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant = "rou
       style={[styles.pill, { backgroundColor: config.bg }]}
     >
       {roundBadge}
-      <Typography variant="subtitle1" style={{ color: config.icon }}>
+      <Typography
+        variant="subtitle1"
+        style={{ color: config.icon }}
+        testID={testId ? `${testId}:label` : `statusBadge:${status}:label`}
+        importantForAccessibility="yes"
+      >
         {config.label}
       </Typography>
     </View>

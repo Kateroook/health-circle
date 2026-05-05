@@ -1,7 +1,7 @@
-import React from "react";
-import { Pressable, StyleSheet, View } from "react-native";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import React from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 
 interface DashboardHeaderProps {
   firstName?: string;
@@ -24,7 +24,15 @@ export const DashboardHeader = ({
 }: DashboardHeaderProps) => {
   return (
     <View style={styles.container}>
-      <Typography variant="h2" tone="primary" style={styles.greeting} numberOfLines={1}>
+      <Typography
+        variant="h2"
+        tone="primary"
+        style={styles.greeting}
+        numberOfLines={1}
+        testId="dashboard:header:greeting"
+        accessible={true}
+        importantForAccessibility="yes"
+      >
         Привіт, {firstName || "Користувач"}!
       </Typography>
 

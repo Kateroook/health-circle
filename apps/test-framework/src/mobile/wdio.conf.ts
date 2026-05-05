@@ -25,6 +25,14 @@ export const config: WebdriverIO.Config = {
     ],
   ],
 
+  logLevel: 'info',
+
+  // Перевизначаємо рівень логування для конкретних модулів
+  logLevels: {
+    webdriver: 'error', // Приховуємо всі INFO запити протоколу (ті самі RESULT/POST)
+    '@wdio/appium-service': 'error', // Опціонально: прибирає лог-спам від самого Appium сервера
+  },
+
   //Platform settings
   capabilities: [
     {
@@ -52,7 +60,7 @@ export const config: WebdriverIO.Config = {
   },
 
   //BackendProvider integration
-  beforeTest: async function () {
+  before: async function () {
     // Add backendProvider globally into browser object,
     // so it'll be accessible in any test
     const provider = await BackendProvider.init();
@@ -61,8 +69,13 @@ export const config: WebdriverIO.Config = {
 
   afterTest: async function () {
     if ((browser as any).backend) {
+      await (global as any).browser.backend.api.clearContext();
       await (global as any).browser.backend.cleanup();
-      await (global as any).browser.backend.dispose();
+      // await (global as any).browser.backend.dispose();
     }
+  },
+
+  after: async function () {
+    await (global as any).browser.backend.dispose();
   },
 };

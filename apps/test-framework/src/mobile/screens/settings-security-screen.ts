@@ -1,9 +1,12 @@
-import { ScreenIds } from '../../../../client/src/utils/testIDs';
+import { ComponentsIds, ScreenIds } from '../../../../client/src/utils/testIDs';
+import { AccountDeletionDialog } from '../components/popUp-components/account-deletion-popUp';
 import BaseScreen from './base-screen';
 
 class SettingsSecurityScreen extends BaseScreen {
+  public deleteAccountDialog: AccountDeletionDialog;
   constructor() {
-    super(`~${ScreenIds.settingsSecurity}`, 'Settings Security');
+    super(`~${ScreenIds.settingsSecurity}`, 'settings/security');
+    this.deleteAccountDialog = new AccountDeletionDialog(ComponentsIds.deleteAccountPopUp);
   }
 
   get changePasswordButton() {
@@ -16,6 +19,10 @@ class SettingsSecurityScreen extends BaseScreen {
 
   async goToChangePassword() {
     await this.changePasswordButton.click();
+  }
+
+  async clickDeleteAccountButton() {
+    await this.tap(this.deleteAccountButton);
   }
 }
 

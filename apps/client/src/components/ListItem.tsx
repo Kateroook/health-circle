@@ -176,7 +176,13 @@ export const ListItem: React.FC<ListItemProps> = ({
       case "stateBadge":
         return (
           <View style={styles.tailBadgeFrame}>
-            {status ? <StatusBadge status={status} variant="round" /> : null}
+            {status ? (
+              <StatusBadge
+                status={status}
+                variant="round"
+                testId={testId ? `${testId}:badge:${status}` : `statusBadge:${status}`}
+              />
+            ) : null}
           </View>
         );
       case "check":

@@ -1,9 +1,12 @@
-import { ScreenIds } from '../../../../client/src/utils/testIDs';
+import { ComponentsIds, ScreenIds } from '../../../../client/src/utils/testIDs';
+import { AccountLogoutDialog } from '../components/popUp-components/account-logout-popUp';
 import BaseScreen from './base-screen';
 
 class SettingsScreen extends BaseScreen {
+  public logoutAccountDialog: AccountLogoutDialog;
   constructor() {
-    super(`~${ScreenIds.settings}`, 'Settings');
+    super(`~${ScreenIds.settings}`, 'settings');
+    this.logoutAccountDialog = new AccountLogoutDialog(ComponentsIds.logoutAccountPopUp);
   }
 
   get notificationsButton() {
@@ -40,6 +43,10 @@ class SettingsScreen extends BaseScreen {
 
   async goToEditProfile() {
     await this.editProfileButton.click();
+  }
+
+  async clickLogoutButton() {
+    await this.tap(this.logoutButton);
   }
 }
 

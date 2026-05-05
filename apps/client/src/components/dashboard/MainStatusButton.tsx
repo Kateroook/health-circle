@@ -203,7 +203,13 @@ export const MainStatusButton: React.FC<MainStatusButtonProps> = ({
               <VideoLayer source={VIDEO_SOURCE[previousStatus]} opacity={previousOpacity} />
             )}
             <VideoLayer source={VIDEO_SOURCE[displayedStatus]} opacity={currentOpacity} />
-            <Typography variant="h2" tone="onColor" style={styles.label}>
+            <Typography
+              variant="h2"
+              tone="onColor"
+              style={styles.label}
+              testId={testId ? `${testId}:text` : `mainStatus:text`}
+              importantForAccessibility="yes"
+            >
               {STATUS_LABEL[displayedStatus]}
             </Typography>
           </Animated.View>
