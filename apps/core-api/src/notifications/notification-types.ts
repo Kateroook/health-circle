@@ -24,7 +24,7 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     body: (data) => {
       let text = `Статус ${data.firstName} ${data.lastName} змінено на "${data.statusName}".`;
       if (data.status === 'DANGER' && data.latitude && data.longitude) {
-        text += `\nРозташування: https://maps.google.com/?q=${data.latitude},${data.longitude}`;
+        text += `\nРозташування: ${data.latitude},${data.longitude}`;
       }
       return text;
     },

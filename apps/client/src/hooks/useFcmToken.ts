@@ -141,10 +141,12 @@ export function useFcmToken() {
           if (actionId === "OPEN_MAPS") {
             Linking.openURL(url).catch((err) => logger.error("Failed to open maps", err));
           } else if (actionId === "COPY_COORDS") {
-            Clipboard.setStringAsync(url).catch((err) =>
+            Clipboard.setStringAsync(`${data.latitude},${data.longitude}`).catch((err) =>
               logger.error("Failed to copy clipboard", err),
             );
           }
+        } else {
+          logger.error("No latitude or longitude in notification data: ", JSON.stringify(data));
         }
       },
     );
