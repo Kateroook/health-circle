@@ -80,7 +80,7 @@ export default function SettingsIndexScreen() {
           </Typography>
         </View>
       )}
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.headerContainer}>
           <Avatar
             userId={user?.id ?? ""}
@@ -170,7 +170,9 @@ export default function SettingsIndexScreen() {
             testId="settings:updateLocation:button"
           />
         </View>
+      </ScrollView>
 
+      <View style={styles.footer}>
         <Button
           label="Вихід"
           hierarchy="tertiary"
@@ -181,14 +183,14 @@ export default function SettingsIndexScreen() {
               name="door-open"
               size={24}
               color={theme.colors.content.primary}
-              style={{ marginRight: 12 }}
+              style={{ marginRight: 5 }}
             />
           }
           onPress={() => setIsLogoutVisible(true)}
           style={[styles.logoutButton, { justifyContent: "flex-start" }]}
           testId="settings:logout:button"
         />
-      </ScrollView>
+      </View>
 
       <ConfirmationModal
         isVisible={isLogoutVisible}
@@ -215,7 +217,8 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing[8],
     paddingHorizontal: theme.spacing[16],
   },
-  scrollContent: { paddingHorizontal: theme.spacing[16], paddingBottom: 120 },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: theme.spacing[16] },
   headerContainer: {
     alignItems: "center",
     paddingTop: theme.spacing[20],
@@ -235,5 +238,10 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginBottom: theme.spacing[8],
   },
-  logoutButton: { marginTop: theme.spacing[8], backgroundColor: theme.colors.background.secondary },
+  footer: {
+    paddingHorizontal: theme.spacing[16],
+    paddingTop: theme.spacing[16],
+    paddingBottom: 20 + 56 + theme.spacing[16],
+  },
+  logoutButton: { backgroundColor: theme.colors.background.secondary },
 });

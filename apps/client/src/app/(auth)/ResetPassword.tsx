@@ -126,7 +126,7 @@ export default function ResetPassword() {
 
           <View style={styles.header}>
             <Typography variant="h2" tone="primary">
-              Скидання паролю
+              Зміни свій пароль
             </Typography>
             <Typography variant="body2" tone="secondary" style={{ textAlign: "center" }}>
               Введіть код із вашої електронної пошти та новий пароль
@@ -191,7 +191,7 @@ export default function ResetPassword() {
 
             <View style={styles.buttonsContainer}>
               <Button
-                label={loading ? "Збереження..." : "Скинути пароль"}
+                label={loading ? "Збереження..." : "Змінити пароль"}
                 hierarchy="primary"
                 shape="rectangle"
                 size="medium"

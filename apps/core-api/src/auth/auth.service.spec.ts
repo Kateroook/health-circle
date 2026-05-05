@@ -107,6 +107,8 @@ describe('AuthService', () => {
           useValue: {
             validate: jest.fn(),
             hash: jest.fn(),
+            hashToken: jest.fn(),
+            validateToken: jest.fn(),
           },
         },
         {
@@ -274,7 +276,7 @@ describe('AuthService', () => {
         expiresAt: new Date(Date.now() + 60_000),
       } as UserSessionEntity;
       userSessionRepository.findOne.mockResolvedValue(session);
-      securityService.validate.mockResolvedValue(true);
+      securityService.validateToken.mockResolvedValue(true);
 
       const result = await service.verifySession('raw-token', { sub: 'u', jti: 'j', fgp: fingerprint }, mockMetadata);
       expect(result.sessionId).toBe('sess-1');
@@ -291,7 +293,7 @@ describe('AuthService', () => {
         revokedAt: new Date(),
         expiresAt: new Date(Date.now() + 60_000),
       } as UserSessionEntity);
-      securityService.validate.mockResolvedValue(true);
+      securityService.validateToken.mockResolvedValue(true);
 
       await expect(service.verifySession('raw-token', { sub: 'u', jti: 'j', fgp: fingerprint }, mockMetadata)).rejects.toThrow(
         UnauthorizedException,
@@ -309,7 +311,7 @@ describe('AuthService', () => {
         revokedAt: null,
         expiresAt: new Date(Date.now() - 1_000),
       } as UserSessionEntity);
-      securityService.validate.mockResolvedValue(true);
+      securityService.validateToken.mockResolvedValue(true);
 
       await expect(service.verifySession('raw-token', { sub: 'u', jti: 'j', fgp: fingerprint }, mockMetadata)).rejects.toThrow(
         UnauthorizedException,
@@ -325,7 +327,7 @@ describe('AuthService', () => {
         expiresAt: new Date(Date.now() + 60_000),
       };
       userSessionRepository.findOne.mockResolvedValue(session as unknown as UserSessionEntity);
-      securityService.validate.mockResolvedValue(false);
+      securityService.validateToken.mockResolvedValue(false);
 
       await expect(service.verifySession('t', { sub: 'u', jti: 'j', fgp: 'fgp-1' }, mockMetadata)).rejects.toThrow(
         UnauthorizedException,
@@ -342,7 +344,7 @@ describe('AuthService', () => {
         expiresAt: new Date(Date.now() + 60_000),
       };
       userSessionRepository.findOne.mockResolvedValue(session as unknown as UserSessionEntity);
-      securityService.validate.mockResolvedValue(true);
+      securityService.validateToken.mockResolvedValue(true);
 
       const metadataWithNewUA = { ...mockMetadata, userAgent: 'NewUA' };
 
@@ -363,7 +365,7 @@ describe('AuthService', () => {
         expiresAt: new Date(Date.now() + 60_000),
       } as UserSessionEntity;
       userSessionRepository.findOne.mockResolvedValue(session);
-      securityService.validate.mockResolvedValue(true);
+      securityService.validateToken.mockResolvedValue(true);
 
       // Even if current hash (UA only) is different, it should pass if fgp matches legacy
       const result = await service.verifySession('raw-token', { sub: 'u', jti: 'j', fgp: legacyFingerprint }, mockMetadata);
@@ -379,7 +381,7 @@ describe('AuthService', () => {
         expiresAt: new Date(Date.now() + 60_000),
       };
       userSessionRepository.findOne.mockResolvedValue(session as unknown as UserSessionEntity);
-      securityService.validate.mockResolvedValue(true);
+      securityService.validateToken.mockResolvedValue(true);
 
       // fgp-2 vs fgp-1
       await expect(service.verifySession('t', { sub: 'u', jti: 'j', fgp: 'fgp-2' }, mockMetadata)).rejects.toThrow(
@@ -393,7 +395,7 @@ describe('AuthService', () => {
       const userProfile = new UserProfileDto({ ...mockUserEntity });
       userSessionRepository.find.mockResolvedValue([{ id: 'old-sess' } as UserSessionEntity]);
       userSessionRepository.save.mockResolvedValue({} as UserSessionEntity);
-      securityService.hash.mockResolvedValue('new-hash');
+      securityService.hashToken.mockResolvedValue('new-hash');
 
       const result = await service.login(userProfile, mockMetadata, mockResponse);
 
@@ -425,14 +427,14 @@ describe('AuthService', () => {
   describe('refresh', () => {
     it('should rotate tokens and update session', async () => {
       const userProfile = new UserProfileDto({ ...mockUserEntity, sessionId: 'sess-1' });
-      securityService.hash.mockResolvedValue('new-refresh-hash');
+      securityService.hashToken.mockResolvedValue('new-refresh-hash');
 
       const result = await service.refresh(userProfile, mockMetadata, mockResponse);
 
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
-      expect(userSessionRepository.save).toHaveBeenCalledWith(
+      expect(userSessionRepository.update).toHaveBeenCalledWith(
+        'sess-1',
         expect.objectContaining({
-          id: 'sess-1',
           tokenHash: 'new-refresh-hash',
         }),
       );
@@ -446,8 +448,7 @@ describe('AuthService', () => {
 
       await service.logout(userProfile, mockMetadata);
 
-      expect(userSessionRepository.save).toHaveBeenCalledWith({
-        id: 'sess-1',
+      expect(userSessionRepository.update).toHaveBeenCalledWith('sess-1', {
         revokedAt: expect.any(Date) as unknown,
       });
       expect(userActivitiesService.logActivity).toHaveBeenCalled();
