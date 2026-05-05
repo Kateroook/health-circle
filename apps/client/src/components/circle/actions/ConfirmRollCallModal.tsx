@@ -21,7 +21,7 @@ export const ConfirmRollCallModal: React.FC<RollCallModalProps> = ({
   isVisible,
   onCancel,
   onConfirm,
-  title = `Запитати "Як ти?"`,
+  title = `Запитати "Як усі?"`,
   description = "Ми надішлемо нагадування усім учасникам Кола, щоб вони відмітили свій стан під час тривоги",
   cancelText = "Скасувати",
   confirmText = "Запитати",
@@ -43,7 +43,7 @@ export const ConfirmRollCallModal: React.FC<RollCallModalProps> = ({
             weight="bold"
             style={{ color: theme.colors.content.primary, marginBottom: 0 }}
           >
-            Як ти?
+            Як ти? - Друзі
           </Typography>
           <Typography
             variant="body2"

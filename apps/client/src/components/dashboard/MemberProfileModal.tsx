@@ -5,6 +5,7 @@ import { MemberProfileView } from "../MemberProfileView";
 import { ConfirmRollCallModal } from "../circle/actions/ConfirmRollCallModal";
 import { RenameModal } from "../circle/actions/RenameModal";
 import ConfirmationModal from "../ConfirmationModal";
+import { Alert } from "react-native";
 
 interface MemberProfileModalProps {
   member: Member | null;
@@ -89,7 +90,9 @@ export const MemberProfileModal = ({
 
       <ConfirmationModal
         isVisible={isRemoveVisible}
-        onCancel={() => setIsRemoveVisible(false)}
+        onCancel={() => {
+          setIsRemoveVisible(false);
+        }}
         onConfirm={() => {
           setIsRemoveVisible(false);
           onRemove?.();

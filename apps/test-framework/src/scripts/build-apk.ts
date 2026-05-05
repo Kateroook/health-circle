@@ -8,10 +8,11 @@ dotenv.config({ quiet: true });
 const API_ENVIRONMENTS = {
   stage: process.env.STAGING_API_BASE_URL,
   prod: process.env.PROD_API_BASE_URL,
+  local: 'http://localhost:3001',
 };
 
 const args = process.argv.slice(2);
-const envName = args.includes('--prod') ? 'prod' : 'stage';
+const envName = args.includes('--prod') ? 'prod' : args.includes('--local') ? 'local' : 'stage';
 const apiUrl = API_ENVIRONMENTS[envName];
 
 const isWindows = platform() === 'win32';

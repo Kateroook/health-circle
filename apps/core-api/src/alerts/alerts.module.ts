@@ -9,11 +9,18 @@ import { AlertRegionResolverService } from './alert-region-resolver.service';
 import { AlertsController } from './alerts.controller';
 import { AlertsService } from './alerts.service';
 import { AlertsRegionEntity } from './entities/alerts-region.entity';
+import { HdxHromadaEntity } from './entities/hdx-hromada.entity';
+import { GeocodingTestController } from './geocoding-test.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AlertsRegionEntity, UserEntity]), NotificationsModule, QueueModule, GeocodingModule],
+  imports: [
+    TypeOrmModule.forFeature([AlertsRegionEntity, UserEntity, HdxHromadaEntity]),
+    NotificationsModule,
+    QueueModule,
+    GeocodingModule,
+  ],
   providers: [AlertsService, AlertRegionResolverService],
-  controllers: [AlertsController],
+  controllers: [AlertsController, GeocodingTestController],
   exports: [AlertsService, AlertRegionResolverService],
 })
 export class AlertsModule {}

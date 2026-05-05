@@ -130,7 +130,7 @@ export default function CircleDetailsModal({
       try {
         await initiatePersonalRollCall(selectedMember.id);
         logEvent("initiate_personal_roll_call", { type: "individual" });
-        onMemberUpdated(); // Notify parent to refresh member data
+        onMemberUpdated();
         onRollCall();
       } catch (error) {
         console.error("Failed to initiate personal roll call:", error);

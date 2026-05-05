@@ -37,26 +37,34 @@ export class NotificationsService {
   async sendMulticast(tokens: string[], title: string, body: string, data?: Record<string, string>) {
     if (!tokens.length) return;
 
+    let categoryIdentifier: string | undefined;
+    if (data?.categoryIdentifier) {
+      categoryIdentifier = data.categoryIdentifier;
+      delete data.categoryIdentifier;
+    }
+
+    const customData = {
+      ...data,
+      title,
+      body,
+    };
+
     try {
       const response = await this.firebaseMessaging.sendEachForMulticast({
         tokens,
-        notification: { title, body },
         android: {
           priority: 'high',
-          notification: {
-            channelId: 'default',
-            priority: 'high',
-            sound: 'default',
-          },
         },
         apns: {
           payload: {
             aps: {
+              alert: { title, body },
               sound: 'default',
+              ...(categoryIdentifier ? { category: categoryIdentifier } : {}),
             },
           },
         },
-        data,
+        data: customData,
       });
 
       this.logger.log(`Notifications sent: ${response.successCount} success, ${response.failureCount} failed`);

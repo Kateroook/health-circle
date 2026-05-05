@@ -6,9 +6,11 @@
   "scripts": {
     "start:emulator": "npx tsx ./src/scripts/start-emulator.ts",
     "build:apk:stage": "npx tsx ./src/scripts/build-apk.ts --stage",
+    "build:apk:local": "npx tsx ./src/scripts/build-apk.ts --local",
     "build:apk:prod": "npx tsx ./src/scripts/build-apk.ts --prod",
     "test:mobile:run": "npm run start:emulator && npx wdio run ./src/mobile/wdio.conf.ts",
     "test:mobile:e2e:stage": "npm run build:apk:stage && npm run test:mobile:run",
+    "test:mobile:e2e:local": "npm run build:apk:local && npm run test:mobile:run",
     "test:mobile:e2e:prod": "npm run build:apk:prod && npm run test:mobile:run",
     "test:api": "npx playwright test --grep \"@smoke\" --grep-invert \"@bug\""
   },

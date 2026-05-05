@@ -1,10 +1,12 @@
 import { saveFcmTokenToBackend } from "@/src/api/api";
-import { logger } from "@/src/utils/logger";
 import { useAuthStore } from "@/src/store/authStore";
 import { useSettingsStore } from "@/src/store/settingsStore";
+import { logger } from "@/src/utils/logger";
 import messaging from "@react-native-firebase/messaging";
+import * as Clipboard from "expo-clipboard";
+import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
-import { useEffect, useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 // Configure how notifications are handled when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -16,6 +18,19 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
   }),
 });
+
+Notifications.setNotificationCategoryAsync("DANGER_STATUS", [
+  {
+    identifier: "OPEN_MAPS",
+    buttonTitle: "Карта",
+    options: { opensAppToForeground: true },
+  },
+  {
+    identifier: "COPY_COORDS",
+    buttonTitle: "Копіювати",
+    options: { opensAppToForeground: false },
+  },
+]).catch((err) => logger.error("Failed to set categories", err));
 
 export function useFcmToken() {
   const { user, accessToken } = useAuthStore();
@@ -97,21 +112,47 @@ export function useFcmToken() {
     const unsubscribeOnMessage = messaging().onMessage(async (remoteMessage) => {
       logger.info("A new FCM message arrived!", JSON.stringify(remoteMessage));
 
-      if (remoteMessage.notification) {
+      // Extract title and body from notification or data (fallback for data-only messages)
+      const title = remoteMessage.notification?.title || remoteMessage.data?.title;
+      const body = remoteMessage.notification?.body || remoteMessage.data?.body;
+
+      if (title && body) {
+        const isDanger = remoteMessage.data?.status === "DANGER";
         // Display a notification manually for foreground
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: remoteMessage.notification.title,
-            body: remoteMessage.notification.body,
+            title,
+            body,
+            data: remoteMessage.data || {},
+            categoryIdentifier: isDanger ? "DANGER_STATUS" : undefined,
           },
           trigger: null, // show immediately
         });
       }
     });
 
+    const unsubscribeResponse = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const actionId = response.actionIdentifier;
+        const data = response.notification.request.content.data;
+
+        if (data?.latitude && data?.longitude) {
+          const url = `https://maps.google.com/?q=${data.latitude},${data.longitude}`;
+          if (actionId === "OPEN_MAPS") {
+            Linking.openURL(url).catch((err) => logger.error("Failed to open maps", err));
+          } else if (actionId === "COPY_COORDS") {
+            Clipboard.setStringAsync(url).catch((err) =>
+              logger.error("Failed to copy clipboard", err),
+            );
+          }
+        }
+      },
+    );
+
     return () => {
       unsubscribeTokenRefresh();
       unsubscribeOnMessage();
+      unsubscribeResponse.remove();
     };
   }, [
     user?.id,

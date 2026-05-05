@@ -46,8 +46,8 @@ test.describe(
       },
     );
 
-    test.fixme(
-      '[GRP-015-BUG] Successful member list update by owner',
+    test(
+      '[GRP-015] Successful member list update by owner',
       {
         tag: '@sanity',
       },

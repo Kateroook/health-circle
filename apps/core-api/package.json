@@ -23,7 +23,8 @@
     "typeorm:migration:up": "npm run typeorm -- migration:run -d data-source.ts",
     "typeorm:migration:down": "npm run typeorm -- migration:revert -d data-source.ts",
     "compodoc": "npx compodoc -p tsconfig.json -s",
-    "compodoc:build": "npx compodoc -p tsconfig.json"
+    "compodoc:build": "npx compodoc -p tsconfig.json",
+    "seed:dictionaries": "ts-node -r tsconfig-paths/register ./src/scripts/seed-dictionaries.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.17",
@@ -87,6 +88,7 @@
     "@types/supertest": "^7.2.0",
     "@typescript-eslint/eslint-plugin": "^8.57.2",
     "@typescript-eslint/parser": "^8.57.2",
+    "csv-parser": "^3.2.0",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",

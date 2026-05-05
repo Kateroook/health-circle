@@ -1,17 +1,17 @@
 // src/core/helpers/backend-provider.ts
-import { APIRequestContext, request, expect as playwrightExpect } from '@playwright/test';
+import { APIRequestContext, request } from '@playwright/test';
 import { Kysely } from 'kysely';
-import { Database } from './db/schema';
-import { DbManager } from './db/db-manager';
 import { ApiClientFactory } from './api/api-client-factory';
-import { UserRepository } from './db/repositories/user-repository';
-import { ConfirmationCodeRepository } from './db/repositories/confirmation-code-repository';
-import { DbCleaner } from './db/db-cleaner';
-import { UserFactory } from './data/factories/user-factory';
-import { UserEntity } from './types/entites/user-interface';
 import { expect as statusExpect } from './api/helpers/response-checker';
-import { GroupRepository } from './db/repositories/group-repository';
+import { UserFactory } from './data/factories/user-factory';
+import { DbCleaner } from './db/db-cleaner';
+import { DbManager } from './db/db-manager';
+import { ConfirmationCodeRepository } from './db/repositories/confirmation-code-repository';
 import { ContactRepository } from './db/repositories/contact-repository';
+import { GroupRepository } from './db/repositories/group-repository';
+import { UserRepository } from './db/repositories/user-repository';
+import { Database } from './db/schema';
+import { UserEntity } from './types/entites/user-interface';
 
 export class BackendProvider {
   public db: Kysely<Database>;

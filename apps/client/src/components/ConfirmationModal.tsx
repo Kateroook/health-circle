@@ -87,7 +87,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
 const styles = StyleSheet.create({
   destructiveBtn: {
-    backgroundColor: theme.colors.negative,
+    backgroundColor: theme.colors.primaryB,
   },
   fullWidth: {
     width: "100%",
