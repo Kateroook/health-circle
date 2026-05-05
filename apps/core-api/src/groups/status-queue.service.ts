@@ -1,11 +1,12 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SchedulerRegistry } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
+import { CronJob } from 'cron';
 import { UserStatus } from 'src/common/enums/user-status';
-import { QueueService } from 'src/common/queue/queue.service';
 import { UserEntity } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
-import { In, LessThan, Repository } from 'typeorm';
+import { In, LessThanOrEqual, Repository } from 'typeorm';
 
 import { GroupEntity } from './entities/group.entity';
 
@@ -19,20 +20,29 @@ export class StatusQueueService implements OnModuleInit {
     @InjectRepository(GroupEntity)
     private readonly groupRepository: Repository<GroupEntity>,
     private readonly configService: ConfigService,
-    private readonly queueService: QueueService,
     private readonly usersService: UsersService,
+    private readonly schedulerRegistry: SchedulerRegistry,
   ) {}
 
   async onModuleInit() {
-    const refreshRate = this.configService.get<string>('CRON_STATUS_REFRESH_RATE', '*/5 * * * *');
-    await this.queueService.schedule('handle-status-transitions', refreshRate);
-    await this.queueService.work('handle-status-transitions', () => this.handleStatusTransitions());
+    const refreshRate = this.configService.get<string>('CRON_STATUS_REFRESH_RATE', '*/10 * * * * *');
+    this.logger.log(`StatusQueueService initialized. Dynamic cron set to: ${refreshRate}`);
+
+    // Ensure we run at least once on startup
+    void this.handleStatusTransitions();
+
+    // Schedule dynamic cron job
+    const job = new CronJob(refreshRate, () => {
+      void this.handleStatusTransitions();
+    });
+
+    this.schedulerRegistry.addCronJob('handle-status-transitions', job);
+    job.start();
   }
 
   async handleStatusTransitions() {
-    this.logger.debug('Running status transitions check via queue...');
-    await this.handleRollCallTimeouts();
-    await this.handleStatusExpiry();
+    this.logger.debug('Running background status transitions check');
+    await Promise.allSettled([this.handleRollCallTimeouts(), this.handleStatusExpiry()]);
   }
 
   private async handleRollCallTimeouts() {
@@ -41,7 +51,7 @@ export class StatusQueueService implements OnModuleInit {
 
     const groupsWithRecentRollCall = await this.groupRepository.find({
       where: {
-        lastRollCallAt: LessThan(timeoutThreshold),
+        lastRollCallAt: LessThanOrEqual(timeoutThreshold),
       },
       relations: ['members'],
     });
@@ -70,7 +80,7 @@ export class StatusQueueService implements OnModuleInit {
               (user) =>
                 (user.status === UserStatus.SAFE || user.status === UserStatus.WAS_SAFE) &&
                 group.lastRollCallAt &&
-                user.lastStatusUpdate < group.lastRollCallAt,
+                user.lastStatusUpdate <= group.lastRollCallAt,
             );
 
             if (usersToUpdate.length > 0) {
@@ -92,12 +102,12 @@ export class StatusQueueService implements OnModuleInit {
     const personalTimedOutUsers = await this.userRepository.find({
       where: {
         status: In([UserStatus.SAFE, UserStatus.WAS_SAFE]),
-        lastPersonalRollCallAt: LessThan(timeoutThreshold),
+        lastPersonalRollCallAt: LessThanOrEqual(timeoutThreshold),
       },
     });
 
     const personalUsersToNotify = personalTimedOutUsers.filter(
-      (u) => u.lastPersonalRollCallAt && u.lastStatusUpdate < u.lastPersonalRollCallAt,
+      (u) => u.lastPersonalRollCallAt && u.lastStatusUpdate <= u.lastPersonalRollCallAt,
     );
 
     if (personalUsersToNotify.length > 0) {
@@ -113,7 +123,7 @@ export class StatusQueueService implements OnModuleInit {
     const expiredUsers = await this.userRepository.find({
       where: {
         status: UserStatus.SAFE,
-        lastStatusUpdate: LessThan(expiryThreshold),
+        lastStatusUpdate: LessThanOrEqual(expiryThreshold),
       },
     });
 

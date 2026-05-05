@@ -10,4 +10,7 @@ export class AlertsRegionEntity {
 
   @Column({ type: 'varchar', length: 50 })
   type: string; // oblast, raion, hromada, city, unknown
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  hdx_pcode: string | null;
 }

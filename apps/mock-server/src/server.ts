@@ -55,7 +55,7 @@ app.post('/__admin/reset', (req: Request, res: Response) => {
   res.status(200).json({ success: true });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
   console.log(`Alerts Mock Server is running on port ${PORT}`);
   console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);

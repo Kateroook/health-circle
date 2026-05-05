@@ -287,7 +287,7 @@ test.describe(
         {
           testName: '[USR-024] User creation with a 51-symbol local part in the email field',
           email: utils.random.email({
-            prefix: utils.random.shortId(41),
+            prefix: utils.random.shortId(51),
           }),
           tag: ['@sanity', '@bug'],
         },
@@ -337,10 +337,8 @@ test.describe(
     });
 
     test.describe('Negative: phone validation', () => {
-      const randomPhone = utils.random.phone({
-        country: utils.random.pick(['ua', 'us', 'uk', 'de', 'pl']),
-      });
-      const smallPhone = randomPhone.substring(0, randomPhone.length - 3);
+      const randomPhone = utils.random.phone(utils.random.pick(['ua', 'us', 'uk', 'de', 'pl']));
+      const smallPhone = randomPhone.substring(0, 4);
       const phoneWithSpecialChars =
         randomPhone.substring(0, randomPhone.length - 3) +
         utils.random.string({

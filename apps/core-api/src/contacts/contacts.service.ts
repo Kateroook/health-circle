@@ -1,5 +1,6 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { UsersService } from 'src/users/users.service';
 import { Repository } from 'typeorm';
 
 import { CreateContactDto } from './dto/create-contact.dto';
@@ -11,6 +12,7 @@ export class ContactsService {
   constructor(
     @InjectRepository(ContactEntity)
     private readonly repository: Repository<ContactEntity>,
+    private readonly usersService: UsersService,
   ) {}
 
   async findAllForUser(ownerId: string): Promise<ContactEntity[]> {
@@ -20,6 +22,12 @@ export class ContactsService {
   }
 
   async create(ownerId: string, dto: CreateContactDto): Promise<ContactEntity> {
+    // Check if target user exists
+    const targetUser = await this.usersService.exists(dto.target.id);
+    if (!targetUser) {
+      throw new BadRequestException('Користувача не знайдено');
+    }
+
     const existing = await this.repository.findOne({
       where: { ownerId, targetId: dto.target.id },
     });
@@ -60,28 +68,16 @@ export class ContactsService {
     }
   }
 
-  async setAlias(ownerId: string, targetId: string, alias?: string): Promise<ContactEntity | void> {
-    if (!alias || !alias.trim()) {
-      // If alias is empty, remove the contact
-      await this.repository.delete({ ownerId, targetId });
-      return;
-    }
-
+  async setAlias(ownerId: string, targetId: string, alias: string): Promise<ContactEntity> {
     const existing = await this.repository.findOne({
       where: { ownerId, targetId },
     });
 
-    if (existing) {
-      existing.alias = alias;
-      return this.repository.save(existing);
+    if (!existing) {
+      throw new NotFoundException('Контакт не знайдено');
     }
 
-    const contact = this.repository.create({
-      ownerId,
-      targetId,
-      alias,
-    });
-
-    return this.repository.save(contact);
+    existing.alias = alias;
+    return this.repository.save(existing);
   }
 }

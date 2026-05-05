@@ -1,10 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as fs from 'fs';
-import * as path from 'path';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
+import { UserStatus } from '../common/enums/user-status';
 import { QueueService } from '../common/queue/queue.service';
 import { FirestoreSyncService } from '../notifications/firestore-sync.service';
 import { NotificationType } from '../notifications/notification-types';
@@ -33,9 +32,8 @@ export class AlertsService implements OnModuleInit {
   private activeAlertUids: Set<number> = new Set();
   private activeAlertsByUid: Map<number, Alert> = new Map();
   private hasInitialSyncCompleted = false;
+  private uidToPcode: Map<number, string> = new Map();
   private readonly apiUrl: string;
-  private regionHierarchy: Map<number, number[]> = new Map(); // parentUid -> childrenUids[]
-  private parentMap: Map<number, number> = new Map(); // childUid -> parentUid
 
   constructor(
     private readonly configService: ConfigService,
@@ -52,62 +50,19 @@ export class AlertsService implements OnModuleInit {
 
   async onModuleInit() {
     this.logger.log('Initializing AlertsService with pg-boss...');
-    await this.loadRegionHierarchy();
+    await this.loadRegionPcodes();
     await this.queueService.schedule('sync-alerts', '* * * * *');
     await this.queueService.work('sync-alerts', () => this.syncAlerts());
     // Do an initial fetch to populate in-memory state (avoid push-spam on restart).
     await this.syncAlerts(true);
   }
 
-  private async loadRegionHierarchy() {
-    try {
-      // The CSV is ordered: Oblast -> Raions -> Hromadas.
-      // We can infer parents by looking at the last seen Oblast/Raion.
-      const csvPath = path.resolve(__dirname, '../../assets/alerts_regions.csv');
-      if (!fs.existsSync(csvPath)) {
-        this.logger.warn('CSV not found for hierarchy building');
-        return;
-      }
-      const content = fs.readFileSync(csvPath, 'utf8');
-      const lines = content.split('\n');
-
-      let currentOblastUid: number | null = null;
-      let currentRaionUid: number | null = null;
-
-      for (let i = 4; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        const [uidStr, , type] = line.split(',');
-        const uid = parseInt(uidStr);
-        if (isNaN(uid)) continue;
-
-        if (type === 'Область' || type === 'Місто з спеціальним статусом') {
-          currentOblastUid = uid;
-          currentRaionUid = null;
-        } else if (type === 'Район') {
-          currentRaionUid = uid;
-          if (currentOblastUid) {
-            this.addChild(currentOblastUid, uid);
-          }
-        } else if (type === 'Громада') {
-          if (currentRaionUid) {
-            this.addChild(currentRaionUid, uid);
-          } else if (currentOblastUid) {
-            this.addChild(currentOblastUid, uid);
-          }
-        }
-      }
-      this.logger.log('Region hierarchy built');
-    } catch (err) {
-      this.logger.error(`Failed to load hierarchy: ${err.message}`);
+  private async loadRegionPcodes() {
+    const regions = await this.regionRepository.find({ select: ['uid', 'hdx_pcode'] });
+    for (const r of regions) {
+      if (r.hdx_pcode) this.uidToPcode.set(r.uid, r.hdx_pcode);
     }
-  }
-
-  private addChild(parent: number, child: number) {
-    const children = this.regionHierarchy.get(parent) || [];
-    children.push(child);
-    this.regionHierarchy.set(parent, children);
-    this.parentMap.set(child, parent);
+    this.logger.log(`Loaded ${this.uidToPcode.size} region P-codes for prefix matching.`);
   }
 
   async syncAlerts(isInitialSync = false) {
@@ -205,39 +160,36 @@ export class AlertsService implements OnModuleInit {
       );
     }
 
-    // Let clients update dashboards in real time
+    // Automatically degrade safety status for SAFE users in the affected region
+    const usersToDegrade = users.filter((u) => u.status === UserStatus.SAFE);
+    if (usersToDegrade.length > 0) {
+      this.logger.log(`Degrading status for ${usersToDegrade.length} users in region ${alert.location_title} due to air alert`);
+      await Promise.all(
+        usersToDegrade.map((u) =>
+          this.userRepository.update({ id: u.id }, { status: UserStatus.WAS_SAFE, lastStatusUpdate: new Date() }),
+        ),
+      );
+    }
+
+    // Let clients update dashboards in real time (after DB updates)
     await this.firestoreSyncService.sendSyncSignal(users.map((u) => u.id));
   }
 
-  private async getAllAffectedRegionUids(rootUid: number): Promise<number[]> {
-    const result: number[] = [rootUid];
-    const queue = [rootUid];
-
-    while (queue.length > 0) {
-      const parent = queue.shift()!;
-      const children = this.regionHierarchy.get(parent) || [];
-      for (const child of children) {
-        if (!result.includes(child)) {
-          result.push(child);
-          queue.push(child);
-        }
-      }
-    }
-    return result;
-  }
-
   private async findUsersInHierarchy(alertUid: number): Promise<UserEntity[]> {
-    // 1. If alert is for parent (Oblast) -> we must notify users in all children (Raion, Hromada)
-    const descendants = await this.getAllAffectedRegionUids(alertUid);
+    const region = await this.regionRepository.findOne({ where: { uid: alertUid } });
+    if (!region || !region.hdx_pcode) {
+      this.logger.warn(`Region ${alertUid} not found or has no hdx_pcode. Cannot find affected users.`);
+      return [];
+    }
 
-    // 2. If alert is for child (Hromada) -> we must notify users in all parents (Raion, Oblast)
-    const ancestors = this.getAncestors(alertUid);
-
-    const allUids = Array.from(new Set([...descendants, ...ancestors]));
-    return this.userRepository.find({
-      where: { alertRegionUid: In(allUids) },
-      select: ['id', 'fcmToken', 'firstName', 'lastName'],
-    });
+    // Prefix-based matching: userPcode.startsWith(alertPcode)
+    // In SQL: ar.hdx_pcode LIKE 'alertPcode%'
+    return this.userRepository
+      .createQueryBuilder('user')
+      .innerJoinAndSelect('user.alertRegion', 'ar')
+      .where('ar.hdx_pcode LIKE :prefix', { prefix: `${region.hdx_pcode}%` })
+      .select(['user.id', 'user.fcmToken', 'user.firstName', 'user.lastName', 'user.status'])
+      .getMany();
   }
 
   private mapAlertType(type: string): string {
@@ -264,7 +216,15 @@ export class AlertsService implements OnModuleInit {
   async getMyAlertStatus(userId: string) {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      select: ['id', 'alertRegionUid'],
+      relations: ['alertRegion'],
+      select: {
+        id: true,
+        alertRegionUid: true,
+        alertRegion: {
+          uid: true,
+          hdx_pcode: true,
+        },
+      },
     });
 
     if (!user) {
@@ -272,12 +232,22 @@ export class AlertsService implements OnModuleInit {
     }
 
     const uid = user.alertRegionUid;
-    if (!uid) {
-      return { active: false, userAlertRegionUid: null, alert: null };
+    const userPcode = user.alertRegion?.hdx_pcode;
+    if (!uid || !userPcode) {
+      return { active: false, userAlertRegionUid: uid, alert: null };
     }
 
-    const alert = this.activeAlertsByUid.get(uid);
-    if (!alert) {
+    // Find if any active alert's P-code is a prefix of the user's P-code
+    let activeAlert: Alert | undefined;
+    for (const [alertUid, alert] of this.activeAlertsByUid.entries()) {
+      const alertPcode = this.uidToPcode.get(alertUid);
+      if (alertPcode && userPcode.startsWith(alertPcode)) {
+        activeAlert = alert;
+        break;
+      }
+    }
+
+    if (!activeAlert) {
       return { active: false, userAlertRegionUid: uid, alert: null };
     }
 
@@ -285,13 +255,13 @@ export class AlertsService implements OnModuleInit {
       active: true,
       userAlertRegionUid: uid,
       alert: {
-        id: alert.id,
-        locationUid: alert.location_uid,
-        regionName: alert.location_title,
-        alertType: this.mapAlertType(alert.alert_type),
-        alertTypeRaw: alert.alert_type,
-        startedAt: alert.started_at,
-        updatedAt: alert.updated_at,
+        id: activeAlert.id,
+        locationUid: activeAlert.location_uid,
+        regionName: activeAlert.location_title,
+        alertType: this.mapAlertType(activeAlert.alert_type),
+        alertTypeRaw: activeAlert.alert_type,
+        startedAt: activeAlert.started_at,
+        updatedAt: activeAlert.updated_at,
       },
     };
   }
@@ -304,32 +274,24 @@ export class AlertsService implements OnModuleInit {
     });
   }
 
-  private getAncestors(uid: number): number[] {
-    const ancestors: number[] = [];
-    let curr = this.parentMap.get(uid);
-    while (curr !== undefined) {
-      ancestors.push(curr);
-      curr = this.parentMap.get(curr);
-    }
-    return ancestors;
-  }
-
   private async signalUsersInRegions(regionUids: number[]) {
     if (regionUids.length === 0) return;
 
-    const allAffectedUids = new Set<number>();
-    for (const uid of regionUids) {
-      const descendants = await this.getAllAffectedRegionUids(uid);
-      const ancestors = this.getAncestors(uid);
-      descendants.forEach((d) => allAffectedUids.add(d));
-      ancestors.forEach((a) => allAffectedUids.add(a));
-    }
+    const prefixes = regionUids.map((uid) => this.uidToPcode.get(uid)).filter(Boolean) as string[];
+    if (prefixes.length === 0) return;
 
-    // Single query for all users in all affected regions
-    const users = await this.userRepository.find({
-      where: { alertRegionUid: In(Array.from(allAffectedUids)) },
-      select: ['id'],
+    // Single query for all users whose region P-code starts with any of the prefixes
+    const query = this.userRepository.createQueryBuilder('user').innerJoin('user.alertRegion', 'ar').select(['user.id']);
+
+    prefixes.forEach((prefix, index) => {
+      if (index === 0) {
+        query.where('ar.hdx_pcode LIKE :prefix' + index, { ['prefix' + index]: `${prefix}%` });
+      } else {
+        query.orWhere('ar.hdx_pcode LIKE :prefix' + index, { ['prefix' + index]: `${prefix}%` });
+      }
     });
+
+    const users = await query.getMany();
 
     const userIds = users.map((u) => u.id);
     if (userIds.length > 0) {

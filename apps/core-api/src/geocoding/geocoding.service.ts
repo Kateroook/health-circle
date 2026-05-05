@@ -1,44 +1,53 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+
+import { HdxHromadaEntity } from '../alerts/entities/hdx-hromada.entity';
 
 export interface GeocodingResult {
   region: string | null; // e.g. "Київська область"
   district: string | null; // e.g. "Бориспільський район"
   city: string | null; // e.g. "Бориспіль"
+  pcode: string | null; // e.g. "UA6804047"
 }
 
 @Injectable()
 export class GeocodingService {
   private readonly logger = new Logger(GeocodingService.name);
-  private readonly photonUrl = 'https://photon.komoot.io/reverse';
+
+  constructor(
+    @InjectRepository(HdxHromadaEntity)
+    private readonly hdxRepository: Repository<HdxHromadaEntity>,
+  ) {}
 
   async reverseGeocode(lat: number, lon: number): Promise<GeocodingResult | null> {
     try {
-      const url = `${this.photonUrl}?lat=${lat}&lon=${lon}&lang=uk`;
-      const response = await fetch(url);
+      // Local reverse geocoding using PostGIS
+      const result = await this.hdxRepository.query(
+        `
+        SELECT 
+          adm1_ua as region,
+          adm2_ua as district,
+          adm3_ua as city,
+          pcode as pcode
+        FROM hdx_hromadas
+        WHERE ST_Contains(geom, ST_SetSRID(ST_MakePoint($1, $2), 4326))
+        LIMIT 1;
+        `,
+        [lon, lat],
+      );
 
-      if (!response.ok) {
-        throw new Error(`Photon API returned ${response.status}`);
+      if (result && result.length > 0) {
+        const row = result[0];
+        return {
+          region: row.region || null,
+          district: row.district || null,
+          city: row.city || null,
+          pcode: row.pcode || null,
+        };
       }
 
-      const data = await response.json();
-      const features = data.features || [];
-
-      if (features.length === 0) {
-        return null;
-      }
-
-      const props = features[0].properties;
-
-      // Photon returns:
-      // state: usually Oblast name
-      // county: usually Raion name
-      // city/town/village: City name
-
-      return {
-        region: props.state || null,
-        district: props.county || props.district || null,
-        city: props.city || props.town || props.village || null,
-      };
+      return null;
     } catch (err) {
       this.logger.error(`Failed to reverse geocode (${lat}, ${lon}): ${err.message}`);
       return null;
