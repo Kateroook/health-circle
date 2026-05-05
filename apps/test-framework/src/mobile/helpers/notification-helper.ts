@@ -40,9 +40,10 @@ export class NotificationHelper {
     // Find exact match for title
     const titleLocator = await $(`//*[@text="${title}"]`);
 
-    // Android often truncates long texts (body) with three dots (...).
-    // So for body we use contains and check only the first 25 characters.
-    const safeBodyPart = body.substring(0, 25);
+    // Android often truncates long texts (body) with three dots (...),
+    // and newlines might be rendered differently.
+    // So for body we use contains and check only the first 25 characters of the first line.
+    const safeBodyPart = body.split('\n')[0].substring(0, 25);
     const bodyLocator = await $(`//*[contains(@text, "${safeBodyPart}")]`);
 
     await titleLocator.waitForDisplayed({ timeout, interval: 1000 });

@@ -197,10 +197,10 @@ export class UsersService {
 
   async getUserForStatusNotifications(
     userId: string,
-  ): Promise<Pick<UserEntity, 'id' | 'firstName' | 'lastName' | 'fcmToken'> | null> {
+  ): Promise<Pick<UserEntity, 'id' | 'firstName' | 'lastName' | 'fcmToken' | 'latitude' | 'longitude'> | null> {
     return this.repository.findOne({
       where: { id: userId },
-      select: ['id', 'firstName', 'lastName', 'fcmToken'],
+      select: ['id', 'firstName', 'lastName', 'fcmToken', 'latitude', 'longitude'],
     });
   }
 

@@ -62,6 +62,9 @@ export class StatusUpdateQueueWorker implements OnModuleInit {
       else if (status === UserStatus.DANGER) statusName = 'у небезпеці';
       else if (status === UserStatus.WAS_SAFE) statusName = 'був у безпеці';
 
+      const mapsLink =
+        sender.latitude && sender.longitude ? `https://maps.google.com/?q=${sender.latitude},${sender.longitude}` : undefined;
+
       await this.notificationsService.sendMulticastByType(
         tokens,
         notificationType,
@@ -69,10 +72,15 @@ export class StatusUpdateQueueWorker implements OnModuleInit {
           firstName: sender.firstName,
           lastName: sender.lastName,
           statusName,
+          status,
+          mapsLink,
         },
         {
           userId: senderUserId,
           status,
+          ...(sender.latitude ? { latitude: String(sender.latitude) } : {}),
+          ...(sender.longitude ? { longitude: String(sender.longitude) } : {}),
+          ...(status === UserStatus.DANGER ? { categoryIdentifier: 'DANGER_STATUS' } : {}),
         },
       );
     }
@@ -85,7 +93,10 @@ export class StatusUpdateQueueWorker implements OnModuleInit {
     if (status === UserStatus.DANGER) {
       const phones = await this.usersService.getPhoneNumbersForUsers(recipients, 'smsSafetyStatus');
       if (phones.length > 0) {
-        const message = `${sender.firstName} ${sender.lastName} у небезпеці! (Health Circle)`;
+        let message = `${sender.firstName} ${sender.lastName} у небезпеці! (Health Circle)`;
+        if (sender.latitude && sender.longitude) {
+          message += `\n📍 Розташування: https://maps.google.com/?q=${sender.latitude},${sender.longitude}`;
+        }
         await this.smsService.sendBulkSms(phones, message);
       }
     }

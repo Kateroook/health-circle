@@ -37,6 +37,12 @@ export class NotificationsService {
   async sendMulticast(tokens: string[], title: string, body: string, data?: Record<string, string>) {
     if (!tokens.length) return;
 
+    let categoryIdentifier: string | undefined;
+    if (data?.categoryIdentifier) {
+      categoryIdentifier = data.categoryIdentifier;
+      delete data.categoryIdentifier;
+    }
+
     try {
       const response = await this.firebaseMessaging.sendEachForMulticast({
         tokens,
@@ -47,12 +53,14 @@ export class NotificationsService {
             channelId: 'default',
             priority: 'high',
             sound: 'default',
+            ...(categoryIdentifier ? { clickAction: categoryIdentifier } : {}),
           },
         },
         apns: {
           payload: {
             aps: {
               sound: 'default',
+              ...(categoryIdentifier ? { category: categoryIdentifier } : {}),
             },
           },
         },

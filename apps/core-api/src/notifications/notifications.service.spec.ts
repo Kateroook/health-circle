@@ -142,6 +142,29 @@ describe('NotificationsService', () => {
       });
     });
 
+    it('should extract categoryIdentifier from data and apply to android and apns', async () => {
+      const tokens = ['token1'];
+      const title = 'Alert';
+      const body = 'Danger';
+      const data = { key: 'value', categoryIdentifier: 'DANGER_STATUS' };
+
+      await service.sendMulticast(tokens, title, body, data);
+
+      expect(firebaseMessaging.sendEachForMulticast).toHaveBeenCalledWith({
+        tokens,
+        notification: { title, body },
+        android: expect.objectContaining({
+          notification: expect.objectContaining({ clickAction: 'DANGER_STATUS' }),
+        }),
+        apns: expect.objectContaining({
+          payload: expect.objectContaining({
+            aps: expect.objectContaining({ category: 'DANGER_STATUS' }),
+          }),
+        }),
+        data: { key: 'value' }, // Ensure categoryIdentifier was removed
+      });
+    });
+
     it('should not call firebase if tokens are empty', async () => {
       await service.sendMulticast([], 't', 'b');
       expect(firebaseMessaging.sendEachForMulticast).not.toHaveBeenCalled();
