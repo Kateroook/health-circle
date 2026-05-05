@@ -66,8 +66,10 @@ export class NotificationHelper {
    */
   static async openAndTap(type: NotificationType, payloadData: any = {}) {
     await this.open();
-    const { titleLocator } = await this.waitForNotification(type, payloadData);
+    const { titleLocator, bodyLocator, actualBody, actualTitle } = await this.waitForNotification(type, payloadData);
     await titleLocator.click();
+
+    return { titleLocator, bodyLocator, actualBody, actualTitle };
   }
 
   /**
