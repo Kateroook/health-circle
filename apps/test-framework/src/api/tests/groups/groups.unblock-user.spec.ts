@@ -46,6 +46,9 @@ test.describe(
       async ({ api }) => {
         const unblockResult = await api.groups.unblockUser(userGroup.id!, blockedUser.id!);
         expect(unblockResult.response).toHaveStatus(200);
+
+        const rejoin = await secondApi.groups.joinGroup({ code: userGroup.inviteCode! });
+        expect(rejoin.response).toHaveStatus2xx();
       },
     );
 

@@ -197,10 +197,10 @@ export class UsersService {
 
   async getUserForStatusNotifications(
     userId: string,
-  ): Promise<Pick<UserEntity, 'id' | 'firstName' | 'lastName' | 'fcmToken'> | null> {
+  ): Promise<Pick<UserEntity, 'id' | 'firstName' | 'lastName' | 'fcmToken' | 'latitude' | 'longitude'> | null> {
     return this.repository.findOne({
       where: { id: userId },
-      select: ['id', 'firstName', 'lastName', 'fcmToken'],
+      select: ['id', 'firstName', 'lastName', 'fcmToken', 'latitude', 'longitude'],
     });
   }
 
@@ -474,6 +474,15 @@ export class UsersService {
     const targetUser = await this.findOneInternal(targetUserId);
     if (!targetUser) throw new NotFoundException('Користувача не знайдено');
 
+    const requesterUser = await this.findOneInternal(requesterId);
+    if (!requesterUser) throw new NotFoundException('Ініціатора не знайдено');
+
+    const contact = await this.contactRepository.findOne({
+      where: { ownerId: targetUserId, targetId: requesterId },
+    });
+
+    const requesterName = contact?.alias || `${requesterUser.firstName} ${requesterUser.lastName}`.trim();
+
     const requesterMemberships = await this.memberRepository.find({
       where: { userId: requesterId },
     });
@@ -503,7 +512,7 @@ export class UsersService {
     );
 
     if (tokens.length > 0) {
-      await this.notificationsService.sendMulticastByType(tokens, NotificationType.PERSONAL_ROLL_CALL, {}, {});
+      await this.notificationsService.sendMulticastByType(tokens, NotificationType.PERSONAL_ROLL_CALL, { requesterName }, {});
     }
 
     return { message: 'Вимогу оновлення статусу надіслано' };

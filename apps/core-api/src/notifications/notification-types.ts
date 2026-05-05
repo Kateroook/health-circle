@@ -21,7 +21,13 @@ export interface NotificationTemplate {
 export const NotificationTemplates: Record<NotificationType, NotificationTemplate> = {
   [NotificationType.STATUS_UPDATE]: {
     title: 'Оновлення статусу',
-    body: (data) => `Статус ${data.firstName} ${data.lastName} змінено на "${data.statusName}".`,
+    body: (data) => {
+      let text = `Статус ${data.firstName} ${data.lastName} змінено на "${data.statusName}".`;
+      if (data.status === 'DANGER' && data.mapsLink) {
+        text += `\n📍 Розташування: ${data.mapsLink}`;
+      }
+      return text;
+    },
     permissionKey: 'statusUpdates',
     fcmType: 'USER_STATUS_UPDATE',
   },
@@ -33,7 +39,7 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   },
   [NotificationType.PERSONAL_ROLL_CALL]: {
     title: 'Особиста перекличка! 📢',
-    body: (data) => `Учасник кола "${data.groupName}" просить особисто підтвердити ваш статус.`,
+    body: (data) => `${data.requesterName} просить підтвердити ваш статус безпеки.`,
     permissionKey: 'statusUpdateReminders',
     fcmType: 'PERSONAL_ROLL_CALL',
   },
