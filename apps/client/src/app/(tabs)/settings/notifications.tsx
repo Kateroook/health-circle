@@ -2,17 +2,81 @@ import { Button } from "@/src/components/Button";
 import { ListItem } from "@/src/components/ListItem";
 import { Typography } from "@/src/components/typography";
 import { theme } from "@/src/theme/theme";
+import { ScreenIds } from "@/src/utils/testIDs";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { ScreenIds } from "@/src/utils/testIDs";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNotifSettings } from "../../../hooks/settings/useNotifSettings";
 import { useFcmToken } from "../../../hooks/useFcmToken";
 import { useToast } from "../../../hooks/useToast";
-import { useNotifSettings } from "../../../hooks/settings/useNotifSettings";
+
+type NotificationSectionItem = {
+  key: string;
+  label: string;
+  supportCaption?: string;
+  defaultValue: boolean;
+};
+
+type NotificationSection = {
+  title: string;
+  items: NotificationSectionItem[];
+};
+
+const NOTIFICATION_SECTIONS: NotificationSection[] = [
+  {
+    title: "ПОВІТРЯНА ТРИВОГА",
+    items: [
+      {
+        key: "airAlerts",
+        label: "Отримувати сповіщення, коли у вашому регіоні повітряна тривога",
+        defaultValue: true,
+      },
+      {
+        key: "statusUpdates",
+        label: "Отримувати сповіщення про статус членів Кола",
+        supportCaption: "Повідомляти, коли хтось має статус “В безпеці” або “Потрібна допомога”",
+        defaultValue: true,
+      },
+      {
+        key: "unknownStatusAlerts",
+        label: "Отримувати сповіщення, коли у когось стан залишається “Невідомо” під час тривоги",
+        defaultValue: true,
+      },
+    ],
+  },
+  {
+    title: "НАГАДУВАННЯ",
+    items: [
+      {
+        key: "statusUpdateReminders",
+        label: "Нагадувати оновити статус під час тривоги",
+        defaultValue: true,
+      },
+    ],
+  },
+  {
+    title: "SMS",
+    items: [
+      {
+        key: "smsFallover",
+        label: "Отримувати SMS лише тоді, коли немає інтернету, але є важливе сповіщення.",
+        defaultValue: false,
+      },
+      {
+        key: "smsSafetyStatus",
+        label: "SMS для статусу безпеки",
+        supportCaption:
+          "Повідомляти, коли хтось із близьких позначився як “В безпеці” або “Потрібна допомога”",
+        defaultValue: false,
+      },
+    ],
+  },
+] as const;
 
 export default function NotificationsScreen() {
+  const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   const { requestPermission } = useFcmToken();
   const { notifSettings, isPushEnabled, setPushEnabled, updateNotifSetting } = useNotifSettings();
@@ -46,17 +110,17 @@ export default function NotificationsScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.listSection}>
+        <View style={styles.settingsSection}>
           <ListItem
             layout="switch"
             artworkSize="none"
             label="Push-сповіщення"
-            subLabel="Дозвіл на надсилання сповіщень"
+            supportCaption="Дозвіл на надсилання сповіщень"
             switchValue={notifSettings?.enabled ?? isPushEnabled}
-            showDivider={true}
+            showDivider={false}
             onSwitchChange={async (val) => {
               if (val) {
                 const granted = await requestPermission();
@@ -73,54 +137,30 @@ export default function NotificationsScreen() {
               updateNotifSetting("enabled", val);
             }}
           />
-          {[
-            {
-              label: "Повітряна тривога",
-              value: notifSettings?.airAlerts ?? true,
-              key: "airAlerts",
-            },
-            {
-              label: "Оновлення статусів у Колі",
-              value: notifSettings?.statusUpdates ?? true,
-              key: "statusUpdates",
-            },
-            {
-              label: "Статус «Невідомо» під час тривоги",
-              value: notifSettings?.unknownStatusAlerts ?? true,
-              key: "unknownStatusAlerts",
-            },
-            {
-              label: "Нагадування про статус",
-              value: notifSettings?.statusUpdateReminders ?? true,
-              key: "statusUpdateReminders",
-            },
-            {
-              label: "Нагадування про настрій",
-              value: notifSettings?.moodReminders ?? true,
-              key: "moodReminders",
-            },
-            {
-              label: "SMS-сповіщення без інтернету",
-              value: notifSettings?.smsFallover ?? false,
-              key: "smsFallover",
-            },
-            {
-              label: "SMS про безпеку",
-              value: notifSettings?.smsSafetyStatus ?? false,
-              key: "smsSafetyStatus",
-            },
-          ].map((item, index, arr) => (
-            <ListItem
-              key={item.key}
-              layout="switch"
-              artworkSize="none"
-              label={item.label}
-              switchValue={item.value}
-              onSwitchChange={(val) => updateNotifSetting(item.key, val)}
-              showDivider={index < arr.length - 1}
-            />
-          ))}
         </View>
+
+        {NOTIFICATION_SECTIONS.map((section) => (
+          <View key={section.title} style={styles.sectionBlock}>
+            <Typography variant="subtitle2" tone="secondary" style={styles.sectionLabel}>
+              {section.title}
+            </Typography>
+
+            <View style={styles.settingsSection}>
+              {section.items.map((item, index) => (
+                <ListItem
+                  key={item.key}
+                  layout="switch"
+                  artworkSize="none"
+                  label={item.label}
+                  supportCaption={item.supportCaption}
+                  switchValue={notifSettings?.[item.key] ?? item.defaultValue}
+                  onSwitchChange={(val) => updateNotifSetting(item.key, val)}
+                  showDivider={index < section.items.length - 1}
+                />
+              ))}
+            </View>
+          </View>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -138,10 +178,21 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border.opaque,
   },
   headerTitle: { flex: 1, textAlign: "center" },
-  scrollContent: { padding: theme.spacing[16], paddingBottom: theme.spacing[40] },
-  listSection: {
+  scrollContent: {
+    paddingHorizontal: theme.spacing[16],
+    paddingTop: theme.spacing[16],
+  },
+  settingsSection: {
     backgroundColor: theme.colors.background.secondary,
     borderRadius: theme.radius.xl,
     overflow: "hidden",
+  },
+  sectionBlock: {
+    marginTop: theme.spacing[20],
+  },
+  sectionLabel: {
+    marginBottom: theme.spacing[8],
+    marginLeft: theme.spacing[4],
+    letterSpacing: 0.5,
   },
 });
