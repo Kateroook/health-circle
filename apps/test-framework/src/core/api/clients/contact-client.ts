@@ -1,14 +1,15 @@
-import { BaseClient, ApiResult } from './base-client';
 import {
-  GetAllContactsResponse,
+  ContactApiEntity,
   CreateContactRequest,
   CreateContactResponse,
-  UpdateContactRequest,
-  UpdateContactResponse,
+  GetAllContactsResponse,
   SetContactAliasRequest,
   SetContactAliasResponse,
-  ContactApiEntity,
+  UpdateContactRequest,
+  UpdateContactResponse,
 } from '../../types/api';
+import { runStep } from '../helpers/step-helper';
+import { ApiResult, BaseClient } from './base-client';
 
 /**
  * ContactClient - клієнт для роботи з Contacts API
@@ -20,7 +21,9 @@ export class ContactClient extends BaseClient {
    * Отримати всі контакти
    */
   public async getAllContacts(): Promise<ApiResult<GetAllContactsResponse>> {
-    return await this.get<GetAllContactsResponse>('/api/contacts');
+    return await runStep(`Get all user contacts`, async () => {
+      return await this.get<GetAllContactsResponse>('/api/contacts');
+    });
   }
 
   /**
@@ -28,17 +31,19 @@ export class ContactClient extends BaseClient {
    * Створити новий контакт
    */
   public async createContact(data: CreateContactRequest): Promise<ApiResult<CreateContactResponse>> {
-    const result = await this.post<CreateContactResponse>('/api/contacts', {
-      data,
+    return await runStep(`Create contact`, async () => {
+      const result = await this.post<CreateContactResponse>('/api/contacts', {
+        data,
+      });
+
+      // Автоматично зберігаємо ID створеного контакту
+      if (result.data && result.data.id) {
+        this.updateContext({ contactId: result.data.id });
+        this.dbCleaner?.add('contacts', result.data.id);
+      }
+
+      return result;
     });
-
-    // Автоматично зберігаємо ID створеного контакту
-    if (result.data && result.data.id) {
-      this.updateContext({ contactId: result.data.id });
-      this.dbCleaner?.add('contacts', result.data.id);
-    }
-
-    return result;
   }
 
   /**
@@ -49,7 +54,9 @@ export class ContactClient extends BaseClient {
     targetId: string,
     body: UpdateContactRequest['body'],
   ): Promise<ApiResult<UpdateContactResponse>> {
-    return await this.patch<UpdateContactResponse>(`/api/contacts/${targetId}`, { data: body });
+    return await runStep(`Update contact, target user: ${targetId}`, async () => {
+      return await this.patch<UpdateContactResponse>(`/api/contacts/${targetId}`, { data: body });
+    });
   }
 
   /**
@@ -57,7 +64,9 @@ export class ContactClient extends BaseClient {
    * Видалити контакт
    */
   public async deleteContact(targetId: string): Promise<ApiResult<void>> {
-    return await this.delete<void>(`/api/contacts/${targetId}`);
+    return await runStep(`Delete contact, target user: ${targetId}`, async () => {
+      return await this.delete<void>(`/api/contacts/${targetId}`);
+    });
   }
 
   /**
@@ -68,23 +77,29 @@ export class ContactClient extends BaseClient {
     targetId: string,
     body: SetContactAliasRequest['body'],
   ): Promise<ApiResult<SetContactAliasResponse>> {
-    return await this.put<SetContactAliasResponse>(`/api/contacts/${targetId}`, { data: body });
+    return await runStep(`Set contact alias for target user: ${targetId}`, async () => {
+      return await this.put<SetContactAliasResponse>(`/api/contacts/${targetId}`, { data: body });
+    });
   }
 
   /**
    * Хелпер: знайти контакт за targetId
    */
   public async findContactByTargetId(targetId: string): Promise<ContactApiEntity | null> {
-    const result = await this.getAllContacts();
-    if (!result.data) return null;
-    return result.data.find((c) => c.targetId === targetId) || null;
+    return await runStep(`Find contact by target user: ${targetId}`, async () => {
+      const result = await this.getAllContacts();
+      if (!result.data) return null;
+      return result.data.find((c) => c.targetId === targetId) || null;
+    });
   }
 
   /**
    * Хелпер: перевірити, чи існує контакт
    */
   public async contactExists(targetId: string): Promise<boolean> {
-    const contact = await this.findContactByTargetId(targetId);
-    return contact !== null;
+    return await runStep(`Check if contact exists, target user: ${targetId}`, async () => {
+      const contact = await this.findContactByTargetId(targetId);
+      return contact !== null;
+    });
   }
 }

@@ -73,7 +73,8 @@ export class StatusUpdateQueueWorker implements OnModuleInit {
           lastName: sender.lastName,
           statusName,
           status,
-          mapsLink,
+          ...(sender.latitude ? { latitude: String(sender.latitude) } : {}),
+          ...(sender.longitude ? { longitude: String(sender.longitude) } : {}),
         },
         {
           userId: senderUserId,

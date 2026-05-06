@@ -22,9 +22,9 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   [NotificationType.STATUS_UPDATE]: {
     title: 'Оновлення статусу',
     body: (data) => {
-      let text = `Статус ${data.firstName} ${data.lastName} змінено на "${data.statusName}".`;
-      if (data.status === 'DANGER' && data.mapsLink) {
-        text += `\nРозташування: ${data.mapsLink}`;
+      let text = `Статус ${data.firstName} ${data.lastName} змінено на "${data.statusName}"`;
+      if (data.status === 'DANGER' && data.latitude && data.longitude) {
+        text += `\nРозташування: ${data.latitude},${data.longitude}`;
       }
       return text;
     },
@@ -33,19 +33,19 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   },
   [NotificationType.ROLL_CALL]: {
     title: 'Перекличка!',
-    body: (data) => `Учасник кола "${data.groupName}" просить підтвердити ваш статус безпеки.`,
+    body: (data) => `Учасник кола "${data.groupName}" просить підтвердити ваш статус безпеки`,
     permissionKey: 'statusUpdateReminders',
     fcmType: 'ROLL_CALL',
   },
   [NotificationType.PERSONAL_ROLL_CALL]: {
     title: 'Особиста перекличка!',
-    body: (data) => `${data.requesterName} просить підтвердити ваш статус безпеки.`,
+    body: (data) => `${data.requesterName} просить підтвердити ваш статус безпеки`,
     permissionKey: 'statusUpdateReminders',
     fcmType: 'PERSONAL_ROLL_CALL',
   },
   [NotificationType.UNKNOWN_STATUS]: {
-    title: '❓ Статус невідомий',
-    body: (data) => `${data.firstName} ${data.lastName} не оновив статус вчасно.`,
+    title: 'Статус невідомий',
+    body: (data) => `${data.firstName} ${data.lastName} не оновив статус вчасно`,
     permissionKey: 'unknownStatusAlerts',
     fcmType: 'USER_STATUS_UPDATE',
   },
@@ -57,7 +57,7 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   },
   [NotificationType.MOOD_REMINDER]: {
     title: 'Як ви почуваєтесь? 😊',
-    body: 'Не забудьте відмітити свій настрій у додатку.',
+    body: 'Не забудьте відмітити свій настрій у додатку',
     permissionKey: 'moodReminders',
     fcmType: 'MOOD_REMINDER',
   },

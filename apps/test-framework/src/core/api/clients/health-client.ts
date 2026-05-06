@@ -1,4 +1,5 @@
-import { BaseClient, ApiResult } from './base-client';
+import { runStep } from '../helpers/step-helper';
+import { ApiResult, BaseClient } from './base-client';
 
 export interface DatabaseInfo {
   status: string;
@@ -16,6 +17,8 @@ export interface HealthResponse {
 
 export class HealthClient extends BaseClient {
   public async getHealth(): Promise<ApiResult<HealthResponse>> {
-    return await this.get<HealthResponse>('/api/health');
+    return await runStep('Get health', async () => {
+      return this.get<HealthResponse>('/api/health');
+    });
   }
 }
