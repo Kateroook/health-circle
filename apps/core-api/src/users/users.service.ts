@@ -86,6 +86,14 @@ export class UsersService {
       settings.enabled = enabled;
     }
 
+    // Remove undefined properties to avoid overwriting existing settings with undefined
+    // which then gets stringified away and reset to default
+    Object.keys(prefs).forEach((key) => {
+      if (prefs[key] === undefined) {
+        delete prefs[key];
+      }
+    });
+
     settings.prefs = { ...settings.prefs, ...prefs };
     const saved = await this.notificationSettingsRepository.save(settings as any);
     return { ...saved, ...saved.prefs };
