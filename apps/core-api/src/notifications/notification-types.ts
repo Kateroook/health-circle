@@ -22,7 +22,7 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   [NotificationType.STATUS_UPDATE]: {
     title: 'Оновлення статусу',
     body: (data) => {
-      let text = `Статус ${data.firstName} ${data.lastName} змінено на "${data.statusName}".`;
+      let text = `Статус ${data.firstName} ${data.lastName} змінено на "${data.statusName}"`;
       if (data.status === 'DANGER' && data.latitude && data.longitude) {
         text += `\nРозташування: ${data.latitude},${data.longitude}`;
       }
@@ -44,7 +44,7 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     fcmType: 'PERSONAL_ROLL_CALL',
   },
   [NotificationType.UNKNOWN_STATUS]: {
-    title: '❓ Статус невідомий',
+    title: 'Статус невідомий',
     body: (data) => `${data.firstName} ${data.lastName} не оновив статус вчасно`,
     permissionKey: 'unknownStatusAlerts',
     fcmType: 'USER_STATUS_UPDATE',

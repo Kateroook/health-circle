@@ -44,7 +44,7 @@ describe('NotificationsService', () => {
       expect(sendSpy).toHaveBeenCalledWith(
         tokens,
         'Оновлення статусу',
-        'Статус Ivan Ivanov змінено на "у безпеці".',
+        'Статус Ivan Ivanov змінено на "у безпеці"',
         expect.objectContaining({
           type: 'USER_STATUS_UPDATE',
           notificationType: NotificationType.STATUS_UPDATE,
@@ -61,8 +61,8 @@ describe('NotificationsService', () => {
 
       expect(sendSpy).toHaveBeenCalledWith(
         tokens,
-        'Перекличка! 📢',
-        'Учасник кола "Family" просить підтвердити ваш статус безпеки.',
+        'Перекличка!',
+        'Учасник кола "Family" просить підтвердити ваш статус безпеки',
         expect.objectContaining({
           type: 'ROLL_CALL',
           notificationType: NotificationType.ROLL_CALL,
@@ -79,7 +79,7 @@ describe('NotificationsService', () => {
 
       expect(sendSpy).toHaveBeenCalledWith(
         tokens,
-        '🚨 Повітряна тривога!',
+        'Повітряна тривога!',
         'Повітряна тривога: у вашому регіоні (Lviv) оголошено тривогу!',
         expect.objectContaining({
           type: 'AIR_ALERT',
@@ -97,7 +97,7 @@ describe('NotificationsService', () => {
       expect(sendSpy).toHaveBeenCalledWith(
         tokens,
         'Як ви почуваєтесь? 😊',
-        'Не забудьте відмітити свій настрій у додатку.',
+        'Не забудьте відмітити свій настрій у додатку',
         expect.objectContaining({
           type: 'MOOD_REMINDER',
           notificationType: NotificationType.MOOD_REMINDER,
@@ -114,8 +114,8 @@ describe('NotificationsService', () => {
 
       expect(sendSpy).toHaveBeenCalledWith(
         tokens,
-        '❓ Статус невідомий',
-        'Ivan Ivanov не оновив статус вчасно.',
+        'Статус невідомий',
+        'Ivan Ivanov не оновив статус вчасно',
         expect.objectContaining({
           type: 'USER_STATUS_UPDATE',
           notificationType: NotificationType.UNKNOWN_STATUS,
