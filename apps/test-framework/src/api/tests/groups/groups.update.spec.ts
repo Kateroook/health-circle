@@ -46,8 +46,8 @@ test.describe(
       },
     );
 
-    test.fixme(
-      '[GRP-015-BUG] Successful member list update by owner',
+    test(
+      '[GRP-015] Successful member list update by owner',
       {
         tag: '@sanity',
       },
@@ -160,6 +160,32 @@ test.describe(
 
         expect(updateResult.response).toHaveStatus(401);
         expect(updateResult.data).toBeNull();
+      },
+    );
+
+    test(
+      '[GRP-050-UPD] Successful member deletion by owner',
+      {
+        tag: '@smoke',
+      },
+      async ({ api, spawnUser, spawnApi }) => {
+        const secondUser = await spawnUser();
+        const secondAPI = await spawnApi();
+        await secondAPI.auth.login({
+          identifier: secondUser.email,
+          password: secondUser.password,
+        });
+
+        const addUser = await secondAPI.groups.joinGroup({ code: userGroup.inviteCode! });
+        expect(addUser.response).toHaveStatus2xx();
+
+        const updateResult = await api.groups.updateGroup({
+          id: userGroup.id!,
+          members: [{ id: groupOwner.id! }],
+        });
+
+        expect(updateResult.response).toHaveStatus(200);
+        expect(updateResult.data.members.length).toBe(1);
       },
     );
   },

@@ -25,8 +25,8 @@ export interface Member {
   fullName?: string;
   avatarUpdatedAt?: string;
   status: UserStatus;
-  active?: boolean; // Used in selection lists
-  isAlias?: boolean; // Used when a custom name is set for a member
+  active?: boolean;
+  isAlias?: boolean;
   latitude?: number;
   longitude?: number;
   region?: string;

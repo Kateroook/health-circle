@@ -267,7 +267,8 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
         await expect(async () => {
           const statusRes = await api.alerts.getMyAlertStatus();
           expect(statusRes.data.active).toBe(true);
-          expect(statusRes.data.userAlertRegionUid).toBe(regions[0].uid);
+          // Verify that the alert affecting the user is the one we started for the Oblast
+          expect(statusRes.data.alert?.locationUid).toBe(regions[0].uid);
         }).toPass({ intervals: [timeout.cronTimeout, timeout.medium, timeout.long] });
       },
     );

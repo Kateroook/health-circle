@@ -76,6 +76,9 @@ export interface ModifyUserDto {
   middleName?: string;
   lastName?: string;
   fullName?: string;
+  alertRegionUid?: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface UpdateUserStatusDto {

@@ -217,8 +217,7 @@ export const MainStatusButton: React.FC<MainStatusButtonProps> = ({
       </Pressable>
 
       <Typography variant="caption" tone="secondary" style={styles.helperText}>
-        Натисніть — якщо в безпеці{"\n"}
-        Затисніть — якщо потрібна допомога
+        Утримай, якщо потрібна допомога
       </Typography>
     </View>
   );

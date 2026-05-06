@@ -230,7 +230,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                         />
                       </View>
                       <Button
-                        label="Надіслати запрошення"
+                        label="Запросити"
                         hierarchy="accent"
                         shape="rectangle"
                         size="medium"

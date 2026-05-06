@@ -12,7 +12,6 @@ import { ConfirmationsService } from 'src/confirmations/confirmations.service';
 import { ConfirmationTypes } from 'src/confirmations/enums/confirmation-type';
 import { ContactEntity } from 'src/contacts/entities/contact.entity';
 import { ExternalFilesService } from 'src/external-files/external-files.service';
-import { GeocodingService } from 'src/geocoding/geocoding.service';
 import { GroupEntity } from 'src/groups/entities/group.entity';
 import { GroupBlockListEntity } from 'src/groups/entities/group-block-list.entity';
 import { FirestoreSyncService } from 'src/notifications/firestore-sync.service';
@@ -54,7 +53,7 @@ export class UsersService {
     @InjectRepository(UserNotificationSettingsEntity)
     protected readonly notificationSettingsRepository: Repository<UserNotificationSettingsEntity>,
     private readonly alertRegionResolver: AlertRegionResolverService,
-    private readonly geocodingService: GeocodingService,
+
     private readonly firestoreSyncService: FirestoreSyncService,
     private readonly notificationsService: NotificationsService,
     private readonly configService: ConfigService,
@@ -86,6 +85,14 @@ export class UsersService {
     if (enabled !== undefined) {
       settings.enabled = enabled;
     }
+
+    // Remove undefined properties to avoid overwriting existing settings with undefined
+    // which then gets stringified away and reset to default
+    Object.keys(prefs).forEach((key) => {
+      if (prefs[key] === undefined) {
+        delete prefs[key];
+      }
+    });
 
     settings.prefs = { ...settings.prefs, ...prefs };
     const saved = await this.notificationSettingsRepository.save(settings as any);
@@ -197,10 +204,10 @@ export class UsersService {
 
   async getUserForStatusNotifications(
     userId: string,
-  ): Promise<Pick<UserEntity, 'id' | 'firstName' | 'lastName' | 'fcmToken'> | null> {
+  ): Promise<Pick<UserEntity, 'id' | 'firstName' | 'lastName' | 'fcmToken' | 'latitude' | 'longitude'> | null> {
     return this.repository.findOne({
       where: { id: userId },
-      select: ['id', 'firstName', 'lastName', 'fcmToken'],
+      select: ['id', 'firstName', 'lastName', 'fcmToken', 'latitude', 'longitude'],
     });
   }
 
@@ -341,21 +348,10 @@ export class UsersService {
     // Auto-resolve alertRegionUid from coordinates OR region/district text
     if (!item.alertRegionUid) {
       if (item.latitude && item.longitude) {
-        // Step 1: Reverse geocode to get reliable Ukrainian names
-        const geo = await this.geocodingService.reverseGeocode(item.latitude, item.longitude);
-        if (geo) {
-          // Auto-fill region/district strings if they are missing
-          if (!item.region) item.region = geo.region || undefined;
-          if (!item.district) item.district = geo.district || geo.city || undefined;
-
-          // Step 2: Resolve the UID using these reliable names
-          const resolvedUid = await this.alertRegionResolver.resolve(
-            geo.region || undefined,
-            geo.district || geo.city || undefined,
-          );
-          if (resolvedUid) {
-            item.alertRegionUid = resolvedUid;
-          }
+        // Resolve the UID using local PostGIS lookup
+        const resolvedUid = await this.alertRegionResolver.resolveByCoordinates(item.latitude, item.longitude);
+        if (resolvedUid) {
+          item.alertRegionUid = resolvedUid;
         }
       } else if (item.region || item.district) {
         // Fallback to string-based resolution if no coordinates
@@ -474,6 +470,15 @@ export class UsersService {
     const targetUser = await this.findOneInternal(targetUserId);
     if (!targetUser) throw new NotFoundException('Користувача не знайдено');
 
+    const requesterUser = await this.findOneInternal(requesterId);
+    if (!requesterUser) throw new NotFoundException('Ініціатора не знайдено');
+
+    const contact = await this.contactRepository.findOne({
+      where: { ownerId: targetUserId, targetId: requesterId },
+    });
+
+    const requesterName = contact?.alias || `${requesterUser.firstName} ${requesterUser.lastName}`.trim();
+
     const requesterMemberships = await this.memberRepository.find({
       where: { userId: requesterId },
     });
@@ -503,7 +508,7 @@ export class UsersService {
     );
 
     if (tokens.length > 0) {
-      await this.notificationsService.sendMulticastByType(tokens, NotificationType.PERSONAL_ROLL_CALL, {}, {});
+      await this.notificationsService.sendMulticastByType(tokens, NotificationType.PERSONAL_ROLL_CALL, { requesterName }, {});
     }
 
     return { message: 'Вимогу оновлення статусу надіслано' };

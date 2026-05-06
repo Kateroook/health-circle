@@ -10,6 +10,7 @@ import {
   UpdateGroupRequest,
   UpdateGroupResponse,
 } from '../../types/api';
+import { runStep } from '../helpers/step-helper';
 import { ApiResult, BaseClient } from './base-client';
 
 /**
@@ -22,7 +23,9 @@ export class GroupClient extends BaseClient {
    * Отримати всі групи поточного користувача
    */
   public async getAllGroups(): Promise<ApiResult<GetAllGroupsResponse>> {
-    return await this.get<GetAllGroupsResponse>('/api/groups');
+    return await runStep(`Get all user groups`, async () => {
+      return this.get<GetAllGroupsResponse>('/api/groups');
+    });
   }
 
   /**
@@ -30,7 +33,9 @@ export class GroupClient extends BaseClient {
    * Отримати групу за ID
    */
   public async getGroup(id: string): Promise<ApiResult<GetGroupResponse>> {
-    return await this.get<GetGroupResponse>(`/api/groups/${id}`);
+    return await runStep(`Get group by id: ${id}`, async () => {
+      return this.get<GetGroupResponse>(`/api/groups/${id}`);
+    });
   }
 
   /**
@@ -38,17 +43,19 @@ export class GroupClient extends BaseClient {
    * Створити нову групу
    */
   public async createGroup(data: CreateGroupRequest): Promise<ApiResult<CreateGroupResponse>> {
-    const result = await this.post<CreateGroupResponse>('/api/groups', {
-      data: { name: data.name },
+    return await runStep(`Create group with name: "${data.name}"`, async () => {
+      const result = await this.post<CreateGroupResponse>('/api/groups', {
+        data: { name: data.name },
+      });
+
+      // Автоматично зберігаємо ID створеної групи
+      if (result.data && result.data.id) {
+        this.updateContext({ groupId: result.data.id });
+        this.dbCleaner?.add('group', result.data.id);
+      }
+
+      return result;
     });
-
-    // Автоматично зберігаємо ID створеної групи
-    if (result.data && result.data.id) {
-      this.updateContext({ groupId: result.data.id });
-      this.dbCleaner?.add('group', result.data.id);
-    }
-
-    return result;
   }
 
   /**
@@ -56,7 +63,9 @@ export class GroupClient extends BaseClient {
    * Оновити групу
    */
   public async updateGroup(data: UpdateGroupRequest): Promise<ApiResult<UpdateGroupResponse>> {
-    return await this.put<UpdateGroupResponse>('/api/groups', { data });
+    return await runStep(`Update group with name: "${data.name}"`, async () => {
+      return this.put<UpdateGroupResponse>('/api/groups', { data });
+    });
   }
 
   /**
@@ -64,7 +73,9 @@ export class GroupClient extends BaseClient {
    * Видалити групу
    */
   public async deleteGroup(id: string): Promise<ApiResult<void>> {
-    return await this.delete<void>(`/api/groups/${id}`);
+    return await runStep(`Delete group by id: ${id}`, async () => {
+      return this.delete<void>(`/api/groups/${id}`);
+    });
   }
 
   /**
@@ -72,7 +83,9 @@ export class GroupClient extends BaseClient {
    * Вийти з групи
    */
   public async leaveGroup(id: string): Promise<ApiResult<void>> {
-    return await this.post<void>(`/api/groups/${id}/leave`);
+    return await runStep(`Leave group with id: ${id}`, async () => {
+      return this.post<void>(`/api/groups/${id}/leave`);
+    });
   }
 
   /**
@@ -80,7 +93,9 @@ export class GroupClient extends BaseClient {
    * Згенерувати новий код запрошення
    */
   public async regenerateInviteCode(id: string): Promise<ApiResult<RegenerateInviteResponse>> {
-    return await this.post<RegenerateInviteResponse>(`/api/groups/${id}/invite`);
+    return await runStep(`Regenerate invite code for group with id: ${id}`, async () => {
+      return this.post<RegenerateInviteResponse>(`/api/groups/${id}/invite`);
+    });
   }
 
   /**
@@ -88,7 +103,9 @@ export class GroupClient extends BaseClient {
    * Приєднатися до групи за кодом запрошення
    */
   public async joinGroup(data: JoinGroupRequest): Promise<ApiResult<void>> {
-    return await this.post<void>('/api/groups/join', { data });
+    return await runStep(`Join group with invite code: "${data.code!}"`, async () => {
+      return this.post<void>('/api/groups/join', { data });
+    });
   }
 
   /**
@@ -96,7 +113,9 @@ export class GroupClient extends BaseClient {
    * Отримати список заблокованих користувачів
    */
   public async getBlockedUsers(id: string): Promise<ApiResult<GetBlockedUsersResponse>> {
-    return await this.get<GetBlockedUsersResponse>(`/api/groups/${id}/blocked-users`);
+    return await runStep(`Get blocked users for group with id: ${id}`, async () => {
+      return this.get<GetBlockedUsersResponse>(`/api/groups/${id}/blocked-users`);
+    });
   }
 
   /**
@@ -104,7 +123,9 @@ export class GroupClient extends BaseClient {
    * Заблокувати користувача в групі
    */
   public async blockUser(groupId: string, userId: string): Promise<ApiResult<void>> {
-    return await this.post<void>(`/api/groups/${groupId}/block/${userId}`);
+    return await runStep(`Block user with id: ${userId} in group with id: ${groupId}`, async () => {
+      return this.post<void>(`/api/groups/${groupId}/block/${userId}`);
+    });
   }
 
   /**
@@ -112,7 +133,9 @@ export class GroupClient extends BaseClient {
    * Розблокувати користувача в групі
    */
   public async unblockUser(groupId: string, userId: string): Promise<ApiResult<void>> {
-    return await this.delete<void>(`/api/groups/${groupId}/block/${userId}`);
+    return await runStep(`Unblock user with id: ${userId} in group with id: ${groupId}`, async () => {
+      return this.delete<void>(`/api/groups/${groupId}/block/${userId}`);
+    });
   }
 
   /**
@@ -120,6 +143,8 @@ export class GroupClient extends BaseClient {
    * Почати перекличку для групи
    */
   public async initiateGroupRollCall(groupId: string): Promise<ApiResult<RollCallResponse>> {
-    return await this.post<RollCallResponse>(`/api/groups/${groupId}/roll-call`);
+    return await runStep(`Initiate roll call for group with id: ${groupId}`, async () => {
+      return this.post<RollCallResponse>(`/api/groups/${groupId}/roll-call`);
+    });
   }
 }

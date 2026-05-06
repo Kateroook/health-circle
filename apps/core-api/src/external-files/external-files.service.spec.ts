@@ -17,6 +17,10 @@ jest.mock('fs', () => {
     ...originalFs,
     existsSync: jest.fn(),
     mkdirSync: jest.fn(),
+    createReadStream: jest.fn().mockReturnValue({
+      on: jest.fn().mockReturnThis(),
+      pipe: jest.fn().mockReturnThis(),
+    }),
     promises: {
       ...originalFs.promises,
       readFile: jest.fn(),
@@ -130,7 +134,7 @@ describe('ExternalFilesService', () => {
       repository.findOne.mockResolvedValue(mockEntity);
       const result = await service.getFile('file-123');
       expect(repository.findOne).toHaveBeenCalledWith({ where: { id: 'file-123' } });
-      expect(fs.promises.readFile).toHaveBeenCalledWith(path.join(MOCK_BASE_PATH, mockEntity.externalId));
+      expect(fs.createReadStream).toHaveBeenCalledWith(path.join(MOCK_BASE_PATH, mockEntity.externalId));
       expect(result).toBeInstanceOf(StreamableFile);
     });
 
@@ -150,7 +154,7 @@ describe('ExternalFilesService', () => {
 
     it('should return stream if externalId provided', async () => {
       const result = await service.getStreamableFile({ externalId: 'ext.png', fileName: 'a.png' });
-      expect(fs.promises.readFile).toHaveBeenCalled();
+      expect(fs.createReadStream).toHaveBeenCalled();
       expect(result).toBeInstanceOf(StreamableFile);
     });
 

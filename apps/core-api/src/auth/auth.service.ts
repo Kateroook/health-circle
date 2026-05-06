@@ -148,7 +148,7 @@ export class AuthService {
       await this.userRepository.save(user);
 
       await this.userActivitiesService.logActivity(UserActivityTypes.userFailedLogin, metadata, { userId: user.id });
-      throw new UnauthorizedException('Невірні облікові дані');
+      throw new UnauthorizedException('Неправильний логін або пароль');
     }
 
     return new UserProfileDto({ ...user, smsTargetNumber: this.getSmsTargetNumber() });
@@ -198,7 +198,7 @@ export class AuthService {
     if (!session.expiresAt || session.expiresAt <= new Date()) throw new UnauthorizedException('Сеанс протерміновано');
 
     // Check if session matches current refresh token (tokenHash)
-    if (!(await this.securityService.validate(token, session.tokenHash))) {
+    if (!(await this.securityService.validateToken(token, session.tokenHash))) {
       throw new UnauthorizedException('Сеанс недійсний або завершений');
     }
 
@@ -236,7 +236,7 @@ export class AuthService {
       deviceInfo: metadata.deviceInfo,
       ipAddress: metadata.ipAddress,
       expiresAt: refreshToken.expiresAt,
-      tokenHash: await this.securityService.hash(refreshToken.token),
+      tokenHash: await this.securityService.hashToken(refreshToken.token),
       jti: accessToken.jti,
       lastUsedAt: new Date(),
       fingerprint,
@@ -265,13 +265,18 @@ export class AuthService {
     const refreshToken = await this.getRefreshToken(user.id, accessToken.jti!, fingerprint);
 
     // Update current user session
-    await this.userSessionRepository.save({
-      id: user.sessionId,
+    const tokenHash = await this.securityService.hashToken(refreshToken.token);
+
+    if (!user.sessionId) {
+      throw new UnauthorizedException('Сеанс недійсний або завершений');
+    }
+
+    await this.userSessionRepository.update(user.sessionId, {
       userAgent: metadata.userAgent,
       deviceInfo: metadata.deviceInfo,
       ipAddress: metadata.ipAddress,
       expiresAt: refreshToken.expiresAt,
-      tokenHash: await this.securityService.hash(refreshToken.token),
+      tokenHash,
       jti: accessToken.jti,
       lastUsedAt: new Date(),
       fingerprint,
@@ -288,8 +293,11 @@ export class AuthService {
   }
 
   async logout(user: UserProfileDto, metadata: RequestMetadata) {
-    await this.userSessionRepository.save({
-      id: user.sessionId,
+    if (!user.sessionId) {
+      throw new UnauthorizedException('Сеанс недійсний або завершений');
+    }
+
+    await this.userSessionRepository.update(user.sessionId, {
       revokedAt: new Date(),
     });
     await this.userActivitiesService.logActivity(UserActivityTypes.userLogout, metadata, { userId: user.id });
