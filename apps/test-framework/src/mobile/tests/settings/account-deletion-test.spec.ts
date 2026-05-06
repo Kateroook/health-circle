@@ -25,6 +25,6 @@ describe('Account deletion', () => {
       firstName: user.firstName,
       lastName: user.lastName,
     });
-    await expect(userDbRows[0]).toBeUndefined();
+    expect(userDbRows[0]).toBeUndefined();
   });
 });

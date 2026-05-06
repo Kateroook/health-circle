@@ -10,11 +10,11 @@ export class DangerStatusDialog extends BaseScreen {
   }
 
   get confirmDangerStatusButton() {
-    return $(`~mainStatus:dangerConfirm:confirm:button`);
+    return $(`~mainStatus:dangerConfirm:modal:confirm:button`);
   }
 
   get cancelDangerStatusButton() {
-    return $(`~mainStatus:dangerConfirm:cancel:button`);
+    return $(`~mainStatus:dangerConfirm:modal:cancel:button`);
   }
 
   async clickConfirmDangerStatusButton() {

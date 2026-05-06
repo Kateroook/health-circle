@@ -26,7 +26,7 @@ export const GroupFilters = ({ groups, selectedGroupId, onSelectGroup }: GroupFi
         size="small"
         onPress={() => onSelectGroup("ALL")}
         style={styles.filterButton}
-        testId="dashboard:filter_all:button"
+        testId="dashboard:filterAll:button"
       />
 
       {groups.map((group) => (

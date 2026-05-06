@@ -1,12 +1,12 @@
 import { ComponentsIds, ScreenIds } from '../../../../client/src/utils/testIDs';
-import { AccountLogoutDialog } from '../components/popUp-components/account-logout-popUp';
+import { ConfirmationModal } from '../components/confirmationModal';
 import BaseScreen from './base-screen';
 
 class SettingsScreen extends BaseScreen {
-  public logoutAccountDialog: AccountLogoutDialog;
+  public logoutAccountDialog: ConfirmationModal;
   constructor() {
     super(`~${ScreenIds.settings}`, 'settings');
-    this.logoutAccountDialog = new AccountLogoutDialog(ComponentsIds.logoutAccountPopUp);
+    this.logoutAccountDialog = new ConfirmationModal(ComponentsIds.logoutAccountModal);
   }
 
   get notificationsButton() {

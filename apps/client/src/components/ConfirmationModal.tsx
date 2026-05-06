@@ -43,7 +43,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       shape="rectangle"
       onPress={onCancel}
       disabled={isLoading}
-      testId={testId ? `${testId}:cancel:button` : undefined}
+      testId={testId ? `${testId}:cancel:button` : `confirmationModal:cancel:button`}
       style={styles.fullWidth} // Ensure it fills the wrapper
     />
   );
@@ -57,7 +57,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       onPress={onConfirm}
       disabled={isLoading}
       style={[styles.fullWidth, confirmStyle === "destructive" && styles.destructiveBtn]}
-      testId={testId ? `${testId}:confirm:button` : undefined}
+      testId={testId ? `${testId}:confirm:button` : `confirmationModal:confirm:button`}
     />
   );
 
@@ -66,9 +66,12 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       <ModalHeader
         title={title}
         description={message}
-        testId={testId ? `${testId}:header` : undefined}
+        testId={testId ? `${testId}:header` : `confirmationModal:header`}
       />
-      <ModalActions testId={testId ? `${testId}:actions` : undefined} direction={direction}>
+      <ModalActions
+        testId={testId ? `${testId}:actions` : `confirmationModal:actions`}
+        direction={direction}
+      >
         {/* In Column: Confirm is top. In Row: Cancel is left (order depends on your UX) */}
         {direction === "column" ? confirmButton : cancelButton}
         {direction === "column" ? cancelButton : confirmButton}

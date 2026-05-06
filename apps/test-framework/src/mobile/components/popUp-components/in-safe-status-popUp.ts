@@ -10,11 +10,11 @@ export class SafeStatusDialog extends BaseScreen {
   }
 
   get confirmSafeStatusButton() {
-    return $(`~mainStatus:safeConfirm:confirm:button`);
+    return $(`~mainStatus:safetyConfirm:modal:confirm:button`);
   }
 
   get cancelSafeStatusButton() {
-    return $(`~mainStatus:safeConfirm:cancel:button`);
+    return $(`~mainStatus:safetyConfirm:modal:cancel:button`);
   }
 
   async clickConfirmSafeStatusButton() {

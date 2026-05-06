@@ -8,8 +8,8 @@ class DashboardScreen extends BaseScreen {
   public dangerStatusDialog: DangerStatusDialog;
   constructor() {
     super(`~${ScreenIds.dashboard}`, 'Dashboard');
-    this.safeStatusDialog = new SafeStatusDialog(ComponentsIds.inSafeStatusPopUp);
-    this.dangerStatusDialog = new DangerStatusDialog(ComponentsIds.inDangerStatusPopUp);
+    this.safeStatusDialog = new SafeStatusDialog(ComponentsIds.inSafetyStatusModal);
+    this.dangerStatusDialog = new DangerStatusDialog(ComponentsIds.inDangerStatusModal);
   }
 
   get statusButton() {
@@ -17,7 +17,7 @@ class DashboardScreen extends BaseScreen {
   }
 
   get allButton() {
-    return $('~dashboard:filter_all:button');
+    return $('~dashboard:filterAll:button');
   }
 
   get buttonStatusLabel() {
