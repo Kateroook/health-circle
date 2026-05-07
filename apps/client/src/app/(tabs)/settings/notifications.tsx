@@ -121,6 +121,7 @@ export default function NotificationsScreen() {
             supportCaption="Дозвіл на надсилання сповіщень"
             switchValue={notifSettings?.enabled ?? isPushEnabled}
             showDivider={false}
+            testId="notifications:enabled"
             onSwitchChange={async (val) => {
               if (val) {
                 const granted = await requestPermission();
@@ -154,6 +155,7 @@ export default function NotificationsScreen() {
                   label={item.label}
                   supportCaption={item.supportCaption}
                   switchValue={notifSettings?.[item.key] ?? item.defaultValue}
+                  testId={`notifications:${item.key}`}
                   onSwitchChange={(val) => updateNotifSetting(item.key, val)}
                   showDivider={index < section.items.length - 1}
                 />

@@ -194,7 +194,11 @@ export const ListItem: React.FC<ListItemProps> = ({
       case "switch":
         return (
           <View style={styles.tailSwitchFrame}>
-            <CustomToggle value={switchValue} onValueChange={onSwitchChange ?? (() => {})} />
+            <CustomToggle
+              value={switchValue}
+              onValueChange={onSwitchChange ?? (() => {})}
+              testId={testId ? `${testId}:switch` : undefined}
+            />
           </View>
         );
       case "simple":
@@ -402,12 +406,18 @@ export default ListItem;
 const CustomToggle = ({
   value,
   onValueChange,
+  testId,
 }: {
   value: boolean;
   onValueChange: (newValue: boolean) => void;
+  testId?: string;
 }) => {
   return (
     <TouchableOpacity
+      testID={testId}
+      accessibilityLabel={testId}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
       activeOpacity={0.8}
       onPress={() => onValueChange(!value)}
       style={{
