@@ -21,4 +21,8 @@ export const ComponentsIds = {
   newCircleModal: "component:newCircle:modal",
   userModal: "component:user:modal",
   userList: "component:user:list",
+  deleteAccountModal: "settings:deleteAccount:modal",
+  logoutAccountModal: "settings:logout:modal",
+  inSafetyStatusModal: "mainStatus:safetyConfirm:modal",
+  inDangerStatusModal: "mainStatus:dangerConfirm:modal",
 };

@@ -176,7 +176,13 @@ export const ListItem: React.FC<ListItemProps> = ({
       case "stateBadge":
         return (
           <View style={styles.tailBadgeFrame}>
-            {status ? <StatusBadge status={status} variant="round" /> : null}
+            {status ? (
+              <StatusBadge
+                status={status}
+                variant="round"
+                testId={testId ? `${testId}:badge:${status}` : `statusBadge:${status}`}
+              />
+            ) : null}
           </View>
         );
       case "check":
@@ -202,11 +208,23 @@ export const ListItem: React.FC<ListItemProps> = ({
 
   const renderTextContent = () => (
     <View style={[styles.textContent, contentPadding]}>
-      <Typography variant="subtitle1" tone="primary" style={styles.label}>
+      <Typography
+        variant="subtitle1"
+        tone="primary"
+        style={styles.label}
+        testId={testId ? `${testId}:label` : undefined}
+      >
         {label}
       </Typography>
       {subLabel !== undefined && (
-        <Typography variant="subtitle1" tone="secondary" style={styles.subLabel}>
+        <Typography
+          variant="subtitle1"
+          tone="secondary"
+          style={styles.subLabel}
+          testId={testId ? `${testId}:subLabel` : undefined}
+          accessible={true}
+          importantForAccessibility="yes"
+        >
           {subLabel}
         </Typography>
       )}

@@ -56,6 +56,7 @@ export const ModalActions: React.FC<ModalActionsProps> = ({
   return (
     <View
       testID={testId}
+      accessibilityLabel={testId}
       style={[
         sticky ? styles.stickyContainer : styles.flexContainer,
         sticky && { bottom: bottomInset },

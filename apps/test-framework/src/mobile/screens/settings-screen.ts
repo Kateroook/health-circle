@@ -1,9 +1,12 @@
-import { ScreenIds } from '../../../../client/src/utils/testIDs';
+import { ComponentsIds, ScreenIds } from '../../../../client/src/utils/testIDs';
+import { ConfirmationModal } from '../components/confirmationModal';
 import BaseScreen from './base-screen';
 
 class SettingsScreen extends BaseScreen {
+  public logoutModal: ConfirmationModal;
   constructor() {
-    super(`~${ScreenIds.settings}`, 'Settings');
+    super(`~${ScreenIds.settings}`, 'settings');
+    this.logoutModal = new ConfirmationModal(ComponentsIds.logoutAccountModal);
   }
 
   get notificationsButton() {
@@ -26,10 +29,6 @@ class SettingsScreen extends BaseScreen {
     return $('~settings:logout:button');
   }
 
-  get logoutModal() {
-    return $('~settings:logout:modal');
-  }
-
   async goToNotifications() {
     await this.notificationsButton.click();
   }
@@ -40,6 +39,10 @@ class SettingsScreen extends BaseScreen {
 
   async goToEditProfile() {
     await this.editProfileButton.click();
+  }
+
+  async clickLogoutButton() {
+    await this.tap(this.logoutButton);
   }
 }
 

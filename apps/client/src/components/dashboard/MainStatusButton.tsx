@@ -138,7 +138,7 @@ export const MainStatusButton: React.FC<MainStatusButtonProps> = ({
     openModal(
       <ConfirmationModal
         isVisible={true}
-        useContainer={false}
+        useContainer={true}
         onCancel={closeModal}
         onConfirm={() => {
           closeModal();
@@ -162,7 +162,7 @@ export const MainStatusButton: React.FC<MainStatusButtonProps> = ({
       message: "Ми повідомимо твоїм колам, що ти в порядку",
       confirmText: "Я в безпеці",
       onConfirm: () => onUpdateStatus("SAFE"),
-      testId: "mainStatus:safeConfirm",
+      testId: "mainStatus:safetyConfirm:modal",
     });
   };
 
@@ -174,7 +174,7 @@ export const MainStatusButton: React.FC<MainStatusButtonProps> = ({
       confirmText: "ТАК, ПОТРІБНА ДОПОМОГА",
       confirmStyle: "destructive",
       onConfirm: () => onUpdateStatus("DANGER"),
-      testId: "mainStatus:dangerConfirm",
+      testId: "mainStatus:dangerConfirm:modal",
     });
   };
 
@@ -203,7 +203,13 @@ export const MainStatusButton: React.FC<MainStatusButtonProps> = ({
               <VideoLayer source={VIDEO_SOURCE[previousStatus]} opacity={previousOpacity} />
             )}
             <VideoLayer source={VIDEO_SOURCE[displayedStatus]} opacity={currentOpacity} />
-            <Typography variant="h2" tone="onColor" style={styles.label}>
+            <Typography
+              variant="h2"
+              tone="onColor"
+              style={styles.label}
+              testId={testId ? `${testId}:text` : `mainStatus:text`}
+              importantForAccessibility="yes"
+            >
               {STATUS_LABEL[displayedStatus]}
             </Typography>
           </Animated.View>

@@ -42,6 +42,7 @@ describe('Authorization', () => {
 
     await DashboardScreen.waitForIsShown();
 
-    //TODO: assert current button state is "Невідомо" (optional)
+    const statusText = await DashboardScreen.mainStatusButtonText.getText();
+    await expect(statusText).toBe('Невідомо');
   });
 });

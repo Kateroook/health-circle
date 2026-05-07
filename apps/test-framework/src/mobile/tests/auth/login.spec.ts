@@ -11,6 +11,8 @@ describe('Login', () => {
     });
 
     await DashboardScreen.waitForIsShown();
+    const text = await DashboardScreen.getGreetingText();
+    expect(text).toContain(user.firstName);
   });
   // //TODO: aren't smoke tests; need to refactor later
   // it('[HC-54] Login with password reset', async () => {

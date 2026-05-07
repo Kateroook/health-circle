@@ -18,6 +18,8 @@ export const GroupFilters = ({ groups, selectedGroupId, onSelectGroup }: GroupFi
       showsHorizontalScrollIndicator={false}
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
+      testID="dashboard:filters:container"
+      accessibilityLabel="dashboard:filters:container"
     >
       <Button
         label="Усі"

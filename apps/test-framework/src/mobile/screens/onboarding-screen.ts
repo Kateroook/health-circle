@@ -61,7 +61,7 @@ class OnboardingScreen extends BaseScreen {
     await this.tap(this.registerButton);
   }
 
-  async clickloginButton() {
+  async clickLoginButton() {
     await this.tap(this.loginButton);
   }
 }

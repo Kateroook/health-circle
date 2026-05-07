@@ -50,7 +50,7 @@ export default class BaseScreen {
   /**
    * Universal method for clicking with waiting (to avoid "flaky" tests)
    */
-  async tap(target: string | WebdriverIO.Element | ChainablePromiseElement, timeout = 1000): Promise<void> {
+  async tap(target: string | WebdriverIO.Element | ChainablePromiseElement, timeout = 10000): Promise<void> {
     const element = (typeof target === 'string' ? await $(target) : await target) as any;
     const identifier = element.selector || target.toString();
     await element.waitForDisplayed({

@@ -1,9 +1,12 @@
-import { ScreenIds } from '../../../../client/src/utils/testIDs';
+import { ComponentsIds, ScreenIds } from '../../../../client/src/utils/testIDs';
+import { ConfirmationModal } from '../components/confirmationModal';
 import BaseScreen from './base-screen';
 
 class SettingsSecurityScreen extends BaseScreen {
+  public deleteAccountModal: ConfirmationModal;
   constructor() {
-    super(`~${ScreenIds.settingsSecurity}`, 'Settings Security');
+    super(`~${ScreenIds.settingsSecurity}`, 'settings/security');
+    this.deleteAccountModal = new ConfirmationModal(ComponentsIds.deleteAccountModal);
   }
 
   get changePasswordButton() {
@@ -16,6 +19,10 @@ class SettingsSecurityScreen extends BaseScreen {
 
   async goToChangePassword() {
     await this.changePasswordButton.click();
+  }
+
+  async clickDeleteAccountButton() {
+    await this.tap(this.deleteAccountButton);
   }
 }
 
