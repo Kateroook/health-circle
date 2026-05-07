@@ -1,5 +1,4 @@
 name: Playwright Tests
-
 on:
   pull_request:
     branches: [dev]
@@ -20,13 +19,20 @@ jobs:
     defaults:
       run:
         working-directory: apps/test-framework
-
     steps:
       - uses: actions/checkout@v4
 
-      # --- PR: deploy PR branch to Railway staging ---
-      - name: Deploy to Railway staging
+      # Визначаємо, чи змінився API — тільки тоді треба деплоїти
+      - uses: dorny/paths-filter@v3
+        id: changes
         if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            api:
+              - 'apps/core-api/**'
+
+      - name: Deploy to Railway staging
+        if: github.event_name == 'pull_request' && steps.changes.outputs.api == 'true'
         working-directory: .
         run: |
           npm install -g @railway/cli
@@ -53,9 +59,8 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
-      # --- PR: wait for staging to serve this exact commit ---
       - name: Wait for staging to deploy
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.changes.outputs.api == 'true'
         run: |
           echo "Waiting for commit $GITHUB_SHA on staging..."
           for i in $(seq 1 36); do
@@ -67,7 +72,6 @@ jobs:
           echo "Timed out" && exit 1
         env:
           STAGING_API_BASE_URL: ${{ vars.STAGING_API_BASE_URL }}
-
 
       - name: Run Playwright tests
         run: npx playwright test --grep "@smoke" --grep-invert "@bug"
