@@ -1,12 +1,6 @@
 name: Playwright Tests
 
 on:
-  push:
-    branches: [dev]
-    paths:
-      - 'apps/core-api/**'
-      - 'apps/test-framework/**'
-      - '.github/workflows/playwright.yml'
   pull_request:
     branches: [dev]
     paths:
@@ -36,9 +30,10 @@ jobs:
         working-directory: .
         run: |
           npm install -g @railway/cli
-          railway variables set COMMIT_SHA=$GITHUB_SHA \
+          railway variables --set COMMIT_SHA=$GITHUB_SHA \
             --service ${{ secrets.RAILWAY_SERVICE_ID }} \
-            --environment staging
+            --environment staging \
+            --skip-deploys
           railway up \
             --service ${{ secrets.RAILWAY_SERVICE_ID }} \
             --environment staging \
@@ -72,21 +67,6 @@ jobs:
           echo "Timed out" && exit 1
         env:
           STAGING_API_BASE_URL: ${{ vars.STAGING_API_BASE_URL }}
-
-      # --- Push to dev: wait for production to serve this exact commit ---
-      - name: Wait for production to deploy
-        if: github.event_name == 'push'
-        run: |
-          echo "Waiting for commit $GITHUB_SHA on production..."
-          for i in $(seq 1 36); do
-            DEPLOYED=$(curl -sf "$API_BASE_URL/api/health" | jq -r '.version // empty' 2>/dev/null || echo "")
-            echo "Attempt $i/36 — deployed: ${DEPLOYED:-none} | expected: $GITHUB_SHA"
-            if [ "$DEPLOYED" = "$GITHUB_SHA" ]; then echo "Production is live!"; exit 0; fi
-            sleep 10
-          done
-          echo "Timed out" && exit 1
-        env:
-          API_BASE_URL: ${{ vars.API_BASE_URL }}
 
 
       - name: Run Playwright tests
