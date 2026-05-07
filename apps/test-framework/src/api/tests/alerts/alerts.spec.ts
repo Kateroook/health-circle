@@ -253,7 +253,7 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
 
     test(
       '[ALT-E2E-004] Coordinates -> Alert matches user physical coordinates',
-      { tag: ['@smoke', '@bug'] },
+      { tag: ['@smoke'] },
       async ({ api }) => {
         await api.users.modifyUser({
           id: user.id!,
@@ -278,19 +278,19 @@ test.describe.serial('Module 10: Alerts API (Sequential)', async () => {
         testName: '[ALT-E2E-005] Air alert automatically degrades user safety status',
         status: 'SAFE',
         expectedStatus: 'WAS_SAFE',
-        tag: ['@smoke', '@bug'],
+        tag: ['@smoke'],
       },
       {
         testName: '[ALT-E2E-006] Air alert does not override existing DANGER status',
         status: 'DANGER',
         expectedStatus: 'DANGER',
-        tag: ['@sanity', '@bug'],
+        tag: ['@sanity'],
       },
       {
         testName: '[ALT-E2E-007] Air alert does not override existing UNKNOWN status',
         status: 'UNKNOWN',
         expectedStatus: 'UNKNOWN',
-        tag: ['@sanity', '@bug'],
+        tag: ['@sanity'],
       },
     ].forEach((options) =>
       test(
