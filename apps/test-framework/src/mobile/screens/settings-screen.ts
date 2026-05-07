@@ -3,10 +3,10 @@ import { ConfirmationModal } from '../components/confirmationModal';
 import BaseScreen from './base-screen';
 
 class SettingsScreen extends BaseScreen {
-  public logoutAccountDialog: ConfirmationModal;
+  public logoutModal: ConfirmationModal;
   constructor() {
     super(`~${ScreenIds.settings}`, 'settings');
-    this.logoutAccountDialog = new ConfirmationModal(ComponentsIds.logoutAccountModal);
+    this.logoutModal = new ConfirmationModal(ComponentsIds.logoutAccountModal);
   }
 
   get notificationsButton() {
@@ -27,10 +27,6 @@ class SettingsScreen extends BaseScreen {
 
   get logoutButton() {
     return $('~settings:logout:button');
-  }
-
-  get logoutModal() {
-    return $('~settings:logout:modal');
   }
 
   async goToNotifications() {

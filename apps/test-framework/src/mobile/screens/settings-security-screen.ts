@@ -1,12 +1,12 @@
 import { ComponentsIds, ScreenIds } from '../../../../client/src/utils/testIDs';
-import { AccountDeletionDialog } from '../components/popUp-components/account-deletion-popUp';
+import { ConfirmationModal } from '../components/confirmationModal';
 import BaseScreen from './base-screen';
 
 class SettingsSecurityScreen extends BaseScreen {
-  public deleteAccountDialog: AccountDeletionDialog;
+  public deleteAccountModal: ConfirmationModal;
   constructor() {
     super(`~${ScreenIds.settingsSecurity}`, 'settings/security');
-    this.deleteAccountDialog = new AccountDeletionDialog(ComponentsIds.deleteAccountPopUp);
+    this.deleteAccountModal = new ConfirmationModal(ComponentsIds.deleteAccountModal);
   }
 
   get changePasswordButton() {

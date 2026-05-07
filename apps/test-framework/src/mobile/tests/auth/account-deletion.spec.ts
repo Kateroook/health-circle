@@ -5,8 +5,8 @@ import OnboardingScreen from '../../screens/onboarding-screen';
 
 describe('Account deletion', () => {
   it('[HC-71] Successfull account deletion', async () => {
-    await OnboardingScreen.completeOnboarding();
-    await OnboardingScreen.clickloginButton();
+    await OnboardingScreen.clickSkipOnboardingButton();
+    await OnboardingScreen.clickLoginButton();
     const user = await browser.backend.spawnUser();
     await LoginScreen.login({
       identifier: user.email,
@@ -16,8 +16,7 @@ describe('Account deletion', () => {
     await SettingsSecurityScreen.openDirectly();
     await SettingsSecurityScreen.waitForIsShown();
     await SettingsSecurityScreen.clickDeleteAccountButton();
-    await SettingsSecurityScreen.deleteAccountDialog.waitForIsShown();
-    await SettingsSecurityScreen.deleteAccountDialog.clickConfirmAccountDeletionButton();
+    await SettingsSecurityScreen.deleteAccountModal.confirm();
     await LoginScreen.waitForIsShown();
 
     const userDbRows = await browser.backend.userRepository.findBy({

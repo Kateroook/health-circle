@@ -27,6 +27,16 @@ export class ConfirmationModal extends BaseScreen {
     await this.tap(this.cancelButton);
   }
 
+  async confirm() {
+    await this.waitForIsShown();
+    await this.clickConfirmButton();
+  }
+
+  async cancel() {
+    await this.waitForIsShown();
+    await this.clickCancelButton();
+  }
+
   async getHeaderText() {
     return await this.header.getText();
   }

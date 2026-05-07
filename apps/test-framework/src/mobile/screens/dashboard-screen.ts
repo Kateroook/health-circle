@@ -1,15 +1,14 @@
 import { ComponentsIds, ScreenIds } from '../../../../client/src/utils/testIDs';
-import { DangerStatusDialog } from '../components/popUp-components/in-danger-status-popUp';
-import { SafeStatusDialog } from '../components/popUp-components/in-safe-status-popUp';
+import { ConfirmationModal } from '../components/confirmationModal';
 import BaseScreen from './base-screen';
 
 class DashboardScreen extends BaseScreen {
-  public safeStatusDialog: SafeStatusDialog;
-  public dangerStatusDialog: DangerStatusDialog;
+  public confirmSafetyModal: ConfirmationModal;
+  public confirmDangerModal: ConfirmationModal;
   constructor() {
     super(`~${ScreenIds.dashboard}`, 'Dashboard');
-    this.safeStatusDialog = new SafeStatusDialog(ComponentsIds.inSafetyStatusModal);
-    this.dangerStatusDialog = new DangerStatusDialog(ComponentsIds.inDangerStatusModal);
+    this.confirmSafetyModal = new ConfirmationModal(ComponentsIds.inSafetyStatusModal);
+    this.confirmDangerModal = new ConfirmationModal(ComponentsIds.inDangerStatusModal);
   }
 
   get statusButton() {
@@ -62,6 +61,13 @@ class DashboardScreen extends BaseScreen {
 
   async clickAllButton() {
     await this.tap(this.allButton);
+  }
+
+  async selectGroup(groupId: string) {
+    const groupFilter = await this.getGroupFilterButton(groupId);
+    await groupFilter.waitForDisplayed({ timeout: 5000 });
+    await groupFilter.click();
+    // await browser.pause(1000);
   }
 }
 

@@ -6,7 +6,7 @@ import OnboardingScreen from '../../screens/onboarding-screen';
 describe('Account logout', () => {
   it('[HC-70] Successfull user logout', async () => {
     await OnboardingScreen.clickSkipOnboardingButton();
-    await OnboardingScreen.clickloginButton();
+    await OnboardingScreen.clickLoginButton();
     const user = await browser.backend.spawnUser();
     await LoginScreen.openDirectly();
     await LoginScreen.login({
@@ -16,8 +16,7 @@ describe('Account logout', () => {
     await DashboardScreen.waitForIsShown();
     await SettingsScreen.openDirectly();
     await SettingsScreen.clickLogoutButton();
-    await SettingsScreen.logoutAccountDialog.waitForIsShown();
-    await SettingsScreen.logoutAccountDialog.clickConfirmButton();
+    await SettingsScreen.logoutModal.confirm();
     await LoginScreen.waitForIsShown();
     await expect(LoginScreen.root).toBeDisplayed();
   });
