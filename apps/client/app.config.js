@@ -2,7 +2,7 @@ export default {
   expo: {
     name: "Health Circle",
     slug: "health-circle",
-    version: "1.0.0",
+    version: "1.0.1",
     orientation: "portrait",
     platforms: ["ios", "android"],
     icon: "./src/assets/images/icon.png",
@@ -10,7 +10,7 @@ export default {
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     ios: {
-      supportsTablet: true,
+      supportsTablet: false,
       bundleIdentifier: "com.healthcircle.app",
       googleServicesFile: process.env.GOOGLE_SERVICES_IOS || "./GoogleService-Info.plist",
       infoPlist: {
