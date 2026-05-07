@@ -73,12 +73,12 @@ jobs:
         run: npx playwright test --grep "@smoke" --grep-invert "@bug"
         env:
           CI: true
-          API_BASE_URL: ${{ github.event_name == 'pull_request' && vars.STAGING_API_BASE_URL || vars.API_BASE_URL }}
-          HEALTHCIRCLE_POSTGRES_HOST: ${{ github.event_name == 'pull_request' && secrets.STAGING_POSTGRES_HOST || secrets.POSTGRES_HOST }}
-          HEALTHCIRCLE_POSTGRES_PORT: ${{ github.event_name == 'pull_request' && secrets.STAGING_POSTGRES_PORT || secrets.POSTGRES_PORT }}
-          HEALTHCIRCLE_POSTGRES_USER: ${{ github.event_name == 'pull_request' && secrets.STAGING_POSTGRES_USER || secrets.POSTGRES_USER }}
-          HEALTHCIRCLE_POSTGRES_PASS: ${{ github.event_name == 'pull_request' && secrets.STAGING_POSTGRES_PASS || secrets.POSTGRES_PASS }}
-          HEALTHCIRCLE_POSTGRES_DB_NAME: ${{ github.event_name == 'pull_request' && secrets.STAGING_POSTGRES_DB_NAME || secrets.POSTGRES_DB_NAME }}
+          API_BASE_URL: ${{ vars.STAGING_API_BASE_URL }}
+          HEALTHCIRCLE_POSTGRES_HOST: ${{ secrets.STAGING_POSTGRES_HOST }}
+          HEALTHCIRCLE_POSTGRES_PORT: ${{ secrets.STAGING_POSTGRES_PORT }}
+          HEALTHCIRCLE_POSTGRES_USER: ${{ secrets.STAGING_POSTGRES_USER }}
+          HEALTHCIRCLE_POSTGRES_PASS: ${{ secrets.STAGING_POSTGRES_PASS }}
+          HEALTHCIRCLE_POSTGRES_DB_NAME: ${{ secrets.STAGING_POSTGRES_DB_NAME }}
           HEALTHCIRCLE_POSTGRES_SSL: ${{ secrets.POSTGRES_SSL }}
           TEST_EMAIL_USER: ${{ secrets.TEST_EMAIL_USER }}
           TEST_EMAIL_PASSWORD: ${{ secrets.TEST_EMAIL_PASSWORD }}
