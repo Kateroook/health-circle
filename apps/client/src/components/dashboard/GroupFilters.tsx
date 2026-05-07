@@ -18,6 +18,8 @@ export const GroupFilters = ({ groups, selectedGroupId, onSelectGroup }: GroupFi
       showsHorizontalScrollIndicator={false}
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
+      testID="dashboard:filters:container"
+      accessibilityLabel="dashboard:filters:container"
     >
       <Button
         label="Усі"
@@ -26,7 +28,7 @@ export const GroupFilters = ({ groups, selectedGroupId, onSelectGroup }: GroupFi
         size="small"
         onPress={() => onSelectGroup("ALL")}
         style={styles.filterButton}
-        testId="dashboard:filterAll:button"
+        testId="dashboard:filter_all:button"
       />
 
       {groups.map((group) => (

@@ -15,8 +15,12 @@ class DashboardScreen extends BaseScreen {
     return $('~dashboard:mainStatus:button');
   }
 
+  get filtersContainer() {
+    return $('~dashboard:filters:container');
+  }
+
   get allButton() {
-    return $('~dashboard:filterAll:button');
+    return $('~dashboard:filter_all:button');
   }
 
   get buttonStatusLabel() {
@@ -63,11 +67,15 @@ class DashboardScreen extends BaseScreen {
     await this.tap(this.allButton);
   }
 
-  async selectGroup(groupId: string) {
+  async selectGroup(groupId: string, direction: 'left' | 'right' = 'left') {
     const groupFilter = await this.getGroupFilterButton(groupId);
+    await groupFilter.scrollIntoView({
+      direction: direction,
+      maxScrolls: 10,
+      scrollableElement: this.filtersContainer,
+    });
     await groupFilter.waitForDisplayed({ timeout: 5000 });
     await groupFilter.click();
-    // await browser.pause(1000);
   }
 }
 

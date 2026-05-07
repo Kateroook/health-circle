@@ -33,7 +33,9 @@ describe('Main page', () => {
 
     for (let g = 0; g < 2; g++) {
       const group = GroupFactory.createGroupWithSpecificOwner(user);
-      const groupResponse = await browser.backend.api.groups.createGroup({ name: group.name });
+      const groupResponse = await browser.backend.api.groups.createGroup({
+        name: group.name,
+      });
       group.id = groupResponse.data.id;
       group.inviteCode = groupResponse.data.inviteCode;
 
