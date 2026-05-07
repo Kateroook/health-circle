@@ -5,6 +5,8 @@ on:
     paths:
       - 'apps/core-api/**'
       - 'apps/test-framework/**'
+      - '!apps/test-framework/src/mobile/**'
+      - '!apps/test-framework/src/scripts/**'
       - '.github/workflows/playwright.yml'
   workflow_dispatch:
 
