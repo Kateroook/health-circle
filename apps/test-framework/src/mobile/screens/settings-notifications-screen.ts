@@ -1,8 +1,8 @@
 import { ScreenIds } from '../../../../client/src/utils/testIDs';
+import { SwitchSection } from '../components/switch-section';
 import BaseScreen from './base-screen';
-import { Switch } from '../components/switch';
 
-const LABEL_TO_SWITCH_KEY: Record<string, string> = {
+const LABEL_TO_SWITCH_KEY = {
   'Push-сповіщення': 'enabled',
   'Отримувати сповіщення, коли у вашому регіоні повітряна тривога': 'airAlerts',
   'Отримувати сповіщення про статус членів Кола': 'statusUpdates',
@@ -10,33 +10,22 @@ const LABEL_TO_SWITCH_KEY: Record<string, string> = {
   'Нагадувати оновити статус під час тривоги': 'statusUpdateReminders',
   'Отримувати SMS лише тоді, коли немає інтернету, але є важливе сповіщення.': 'smsFallover',
   'SMS для статусу безпеки': 'smsSafetyStatus',
-};
+} as const;
 
 class SettingsNotificationsScreen extends BaseScreen {
+  public switches: SwitchSection<typeof LABEL_TO_SWITCH_KEY>;
+
   constructor() {
     super(`~${ScreenIds.settingsNotifications}`, 'Settings Notifications');
+    this.switches = new SwitchSection(LABEL_TO_SWITCH_KEY, (key: string) => `notifications:${key}:switch`);
   }
 
-  getSwitchByKey(key: string): Switch {
-    return new Switch(`notifications:${key}:switch`);
+  get backButton() {
+    return $('~notifications:back:button');
   }
 
-  getSwitchByLabel(label: string): Switch {
-    const key = LABEL_TO_SWITCH_KEY[label];
-    if (!key) {
-      throw new Error(`Switch with label "${label}" not found.`);
-    }
-    return this.getSwitchByKey(key);
-  }
-
-  async setToggleValueByLabel(label: string, value: boolean) {
-    const toggle = this.getSwitchByLabel(label);
-    await toggle.setValue(value);
-  }
-
-  async getToggleValueByLabel(label: string): Promise<boolean> {
-    const toggle = this.getSwitchByLabel(label);
-    return await toggle.getValue();
+  async goBack() {
+    await this.backButton.click();
   }
 }
 

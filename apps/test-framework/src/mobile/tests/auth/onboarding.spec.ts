@@ -1,9 +1,8 @@
+import appHelper from 'src/mobile/helpers/app-helper';
 import OnboardingScreen from '../../screens/onboarding-screen';
 
 beforeEach(async () => {
-  const bundleId = 'com.healthcircle.app';
-  await driver.terminateApp(bundleId);
-  await driver.activateApp(bundleId);
+  await appHelper.restartApp();
 });
 describe('Onboarding', () => {
   it('[HC-167] Successfull onboarding', async () => {

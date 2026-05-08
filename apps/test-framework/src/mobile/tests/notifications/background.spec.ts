@@ -3,7 +3,8 @@ import { GroupFactory } from '@core/data/factories/group-factory';
 import { AlertRegion, AlertRegions } from '@core/data/regions';
 import { GroupEntity } from '@core/types/entites/group-interface';
 import { UserEntity } from '@core/types/entites/user-interface';
-import { NotificationHelper } from 'src/mobile/helpers/notification-helper';
+import appHelper from 'src/mobile/helpers/app-helper';
+import NotificationHelper from 'src/mobile/helpers/notification-helper';
 import dashboardScreen from 'src/mobile/screens/dashboard-screen';
 import loginScreen from 'src/mobile/screens/login-screen';
 import { utils } from 'src/utils/utils';
@@ -49,7 +50,7 @@ describe('Background Group Notifications', () => {
       password: user2.password,
     });
     await dashboardScreen.waitForIsShown();
-    await NotificationHelper.closeApp();
+    await appHelper.closeApp();
   });
 
   it('[HC-95] Verify push notification is received when a circle member changes status to "Потрібна допомога"', async () => {
@@ -144,7 +145,7 @@ describe('Background Air Alert Notifications', () => {
       password: user.password,
     });
     await dashboardScreen.waitForIsShown();
-    await NotificationHelper.closeApp();
+    await appHelper.closeApp();
 
     await api.auth.login({
       identifier: alertManager.email,
