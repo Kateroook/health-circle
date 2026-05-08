@@ -38,10 +38,9 @@ jobs:
         working-directory: .
         run: |
           npm install -g @railway/cli
-          railway variables --set COMMIT_SHA=$GITHUB_SHA \
+          railway variables set COMMIT_SHA=$GITHUB_SHA \
             --service ${{ secrets.RAILWAY_SERVICE_ID }} \
-            --environment staging \
-            --skip-deploys
+            --environment staging 
           railway up \
             --service ${{ secrets.RAILWAY_SERVICE_ID }} \
             --environment staging \
