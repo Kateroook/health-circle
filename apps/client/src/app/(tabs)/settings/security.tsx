@@ -78,7 +78,7 @@ export default function SecurityScreen() {
               setPushEnabled(val);
               updateNotifSetting("enabled", val);
             }}
-            testId="security:pushNotifications:switch"
+            testId="security:pushNotifications"
           />
           <ListItem
             layout="switch"
@@ -88,7 +88,7 @@ export default function SecurityScreen() {
             switchValue={notifSettings?.smsFallover ?? false}
             showDivider={true}
             onSwitchChange={(val) => updateNotifSetting("smsFallover", val)}
-            testId="security:smsNotifications:switch"
+            testId="security:smsNotifications"
           />
           <ListItem
             layout="switch"
@@ -98,7 +98,7 @@ export default function SecurityScreen() {
             switchValue={locationEnabled}
             showDivider={true}
             onSwitchChange={setLocationEnabled}
-            testId="security:location:switch"
+            testId="security:location"
           />
           <ListItem
             layout="switch"
@@ -107,7 +107,7 @@ export default function SecurityScreen() {
             switchValue={contactsEnabled}
             showDivider={false}
             onSwitchChange={setContactsEnabled}
-            testId="security:contacts:switch"
+            testId="security:contacts"
           />
         </View>
 

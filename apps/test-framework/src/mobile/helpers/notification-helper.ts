@@ -4,7 +4,7 @@ export class NotificationHelper {
   /**
    * Clean ADB. Call in beforeEach() tests.
    */
-  static async clearAll() {
+  async clearAll() {
     try {
       await driver.execute('mobile: shell', { command: 'service call notification 1' });
     } catch (e) {
@@ -15,11 +15,11 @@ export class NotificationHelper {
   /**
    * Open notifications panel (Android).
    */
-  static async open() {
+  async open() {
     await driver.openNotifications();
   }
 
-  static async close() {
+  async close() {
     try {
       await driver.execute('mobile: shell', { command: 'cmd statusbar collapse' });
       await browser.pause(500);
@@ -31,7 +31,7 @@ export class NotificationHelper {
   /**
    * Generate expected notification text based on backend templates.
    */
-  static getExpectedContent(type: NotificationType, payloadData: any = {}) {
+  getExpectedContent(type: NotificationType, payloadData: any = {}) {
     const template = NotificationTemplates[type];
     const title = template.title;
     const body = typeof template.body === 'function' ? template.body(payloadData) : template.body;
@@ -39,7 +39,7 @@ export class NotificationHelper {
     return { title, body };
   }
 
-  static escapeXPathString(str: string) {
+  escapeXPathString(str: string) {
     if (!str.includes("'")) return `'${str}'`;
     if (!str.includes('"')) return `"${str}"`;
     return `concat('${str.split("'").join(`', "'", '`)}')`;
@@ -49,7 +49,7 @@ export class NotificationHelper {
    * Find notification in the panel and wait for it to appear.
    * Return locators, so you can do expect() in the test.
    */
-  static async waitForNotification(type: NotificationType, payloadData: any = {}, timeout = 20000) {
+  async waitForNotification(type: NotificationType, payloadData: any = {}, timeout = 20000) {
     const { title: templateTitle, body: templateBody } = this.getExpectedContent(type, payloadData);
 
     // Find match for title (using contains to handle App Name prefixing)
@@ -72,7 +72,7 @@ export class NotificationHelper {
   /**
    * Full flow: opens the panel, finds the required notification, and clicks on it.
    */
-  static async openAndTap(type: NotificationType, payloadData: any = {}) {
+  async openAndTap(type: NotificationType, payloadData: any = {}) {
     await this.open();
     const { titleLocator, bodyLocator, actualBody, actualTitle } = await this.waitForNotification(type, payloadData);
     await titleLocator.click();
@@ -83,7 +83,7 @@ export class NotificationHelper {
   /**
    * For future features (e.g., Roll Call): clicks a specific button inside the notification.
    */
-  static async openAndTapButton(type: NotificationType, buttonText: string, payloadData: any = {}) {
+  async openAndTapButton(type: NotificationType, buttonText: string, payloadData: any = {}) {
     await this.open();
     // First, make sure that our specific notification appeared
     await this.waitForNotification(type, payloadData);
@@ -94,8 +94,6 @@ export class NotificationHelper {
     await buttonLocator.waitForDisplayed({ timeout: 5000 });
     await buttonLocator.click();
   }
-
-  static async closeApp() {
-    await driver.pressKeyCode(3);
-  }
 }
+
+export default new NotificationHelper();
