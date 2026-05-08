@@ -40,7 +40,7 @@ jobs:
           npm install -g @railway/cli
           railway variables set COMMIT_SHA=$GITHUB_SHA \
             --service ${{ secrets.RAILWAY_SERVICE_ID }} \
-            --environment staging 
+            --environment staging
           railway up \
             --service ${{ secrets.RAILWAY_SERVICE_ID }} \
             --environment staging \
