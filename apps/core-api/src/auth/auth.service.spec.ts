@@ -662,4 +662,41 @@ describe('AuthService', () => {
       );
     });
   });
+  describe('checkEmail', () => {
+    it('should return true if email exists', async () => {
+      userRepository.findOne.mockResolvedValue(mockUserEntity);
+      const result = await service.checkEmail('test@example.com');
+      expect(userRepository.findOne).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
+      expect(result).toBe(true);
+    });
+
+    it('should return false if email does not exist', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+      const result = await service.checkEmail('notfound@example.com');
+      expect(userRepository.findOne).toHaveBeenCalledWith({ where: { email: 'notfound@example.com' } });
+      expect(result).toBe(false);
+    });
+
+    it('should lowercase the email before checking', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+      await service.checkEmail('TEST@EXAMPLE.COM');
+      expect(userRepository.findOne).toHaveBeenCalledWith({ where: { email: 'test@example.com' } });
+    });
+  });
+
+  describe('checkPhone', () => {
+    it('should return true if phone exists', async () => {
+      userRepository.findOne.mockResolvedValue(mockUserEntity);
+      const result = await service.checkPhone('+380991234567');
+      expect(userRepository.findOne).toHaveBeenCalledWith({ where: { phone: '+380991234567' } });
+      expect(result).toBe(true);
+    });
+
+    it('should return false if phone does not exist', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+      const result = await service.checkPhone('+380991234567');
+      expect(userRepository.findOne).toHaveBeenCalledWith({ where: { phone: '+380991234567' } });
+      expect(result).toBe(false);
+    });
+  });
 });

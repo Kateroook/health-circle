@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -30,6 +31,8 @@ describe('AuthController', () => {
     forgotPassword: jest.fn(),
     resendRegistrationCode: jest.fn(),
     resetPassword: jest.fn(),
+    checkEmail: jest.fn(),
+    checkPhone: jest.fn(),
   };
 
   const mockConfigService = {
@@ -229,6 +232,35 @@ describe('AuthController', () => {
       );
       expect(authService.resetPassword).toHaveBeenCalledWith(mockRequest.user, body);
       expect(result).toEqual({ success: true, message: 'Пароль успішно скинуто' });
+    });
+  });
+  describe('checkEmail', () => {
+    it('should return success if email is available', async () => {
+      mockAuthService.checkEmail.mockResolvedValue(false);
+      const result = await controller.checkEmail({ email: 'test@test.com' });
+      expect(authService.checkEmail).toHaveBeenCalledWith('test@test.com');
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should throw BadRequestException if email already exists', async () => {
+      mockAuthService.checkEmail.mockResolvedValue(true);
+      await expect(controller.checkEmail({ email: 'test@test.com' })).rejects.toThrow(BadRequestException);
+      expect(authService.checkEmail).toHaveBeenCalledWith('test@test.com');
+    });
+  });
+
+  describe('checkPhone', () => {
+    it('should return success if phone is available', async () => {
+      mockAuthService.checkPhone.mockResolvedValue(false);
+      const result = await controller.checkPhone({ phone: '+380991234567' });
+      expect(authService.checkPhone).toHaveBeenCalledWith('+380991234567');
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should throw BadRequestException if phone already exists', async () => {
+      mockAuthService.checkPhone.mockResolvedValue(true);
+      await expect(controller.checkPhone({ phone: '+380991234567' })).rejects.toThrow(BadRequestException);
+      expect(authService.checkPhone).toHaveBeenCalledWith('+380991234567');
     });
   });
 });
