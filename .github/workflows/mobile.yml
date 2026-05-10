@@ -107,9 +107,16 @@ jobs:
         working-directory: apps/client
         run: npm ci
 
+      - name: Restore google-services.json
+        run: |
+          # Decode the file directly to an absolute path in the workspace
+          echo "${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}" | base64 --decode > ${{ github.workspace }}/apps/client/google-services.json
+
       - name: Build APK (staging)
         env:
           STAGING_API_BASE_URL: ${{ secrets.STAGING_API_BASE_URL }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GOOGLE_SERVICES_JSON: ${{ github.workspace }}/apps/client/google-services.json
         run: npm run build:apk:stage
 
       # Емулятор стартує тут; wdio запускається всередині вже з живим девайсом
