@@ -10,6 +10,7 @@ export default {
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     ios: {
+      buildNumber: "2",
       supportsTablet: false,
       bundleIdentifier: "com.healthcircle.app",
       googleServicesFile: process.env.GOOGLE_SERVICES_IOS || "./GoogleService-Info.plist",
