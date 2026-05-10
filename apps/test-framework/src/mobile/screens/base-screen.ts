@@ -1,4 +1,5 @@
 import { $ } from '@wdio/globals';
+import { timeout as setTimeout } from '../../utils/wait-helper';
 
 export default class BaseScreen {
   protected selector: string;
@@ -21,7 +22,7 @@ export default class BaseScreen {
   /**
    * Waits for the main element of the screen to appear.
    */
-  async waitForIsShown(timeout = 10000): Promise<void> {
+  async waitForIsShown(timeout = setTimeout.extraLong): Promise<void> {
     const element = await $(this.selector);
     await element.waitForDisplayed({
       timeout,
@@ -29,7 +30,7 @@ export default class BaseScreen {
     });
   }
 
-  async wait(target: WebdriverIO.Element | ChainablePromiseElement, timeout = 1000): Promise<void> {
+  async wait(target: WebdriverIO.Element | ChainablePromiseElement, timeout = setTimeout.extraLong): Promise<void> {
     const el = await target;
 
     await (el as any).waitForDisplayed({
@@ -50,7 +51,10 @@ export default class BaseScreen {
   /**
    * Universal method for clicking with waiting (to avoid "flaky" tests)
    */
-  async tap(target: string | WebdriverIO.Element | ChainablePromiseElement, timeout = 10000): Promise<void> {
+  async tap(
+    target: string | WebdriverIO.Element | ChainablePromiseElement,
+    timeout = setTimeout.extraLong,
+  ): Promise<void> {
     const element = (typeof target === 'string' ? await $(target) : await target) as any;
     const identifier = element.selector || target.toString();
     await element.waitForDisplayed({

@@ -1,3 +1,4 @@
+import { timeout } from 'src/utils/wait-helper';
 import { ComponentsIds, ScreenIds } from '../../../../client/src/utils/testIDs';
 import { ConfirmationModal } from '../components/confirmationModal';
 import BaseScreen from './base-screen';
@@ -74,7 +75,7 @@ class DashboardScreen extends BaseScreen {
       maxScrolls: 10,
       scrollableElement: this.filtersContainer,
     });
-    await groupFilter.waitForDisplayed({ timeout: 5000 });
+    await groupFilter.waitForDisplayed({ timeout: timeout.long });
     await groupFilter.click();
   }
 }

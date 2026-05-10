@@ -1,3 +1,4 @@
+import { timeout } from 'src/utils/wait-helper';
 import { ScreenIds } from '../../../../client/src/utils/testIDs';
 import { utils } from '../../utils/utils';
 import BaseScreen from './base-screen';
@@ -29,7 +30,7 @@ class AvatarPickerScreen extends BaseScreen {
     const randomId = utils.random.pick(AVATAR_IDS);
 
     const avatar = await this.getAvatarById(randomId);
-    await avatar.waitForDisplayed({ timeout: 5000 });
+    await avatar.waitForDisplayed({ timeout: timeout.long });
     await avatar.click();
 
     return randomId;
