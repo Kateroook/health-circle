@@ -57,9 +57,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # - name: Install Playwright Browsers
-      #   run: npx playwright install --with-deps chromium
-
       - name: Wait for staging to deploy
         if: github.event_name == 'pull_request' && steps.changes.outputs.api == 'true'
         run: |
