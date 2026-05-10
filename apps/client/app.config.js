@@ -2,7 +2,7 @@ export default {
   expo: {
     name: "Health Circle",
     slug: "health-circle",
-    version: "1.0.1",
+    version: "1.0.2",
     orientation: "portrait",
     platforms: ["ios", "android"],
     icon: "./src/assets/images/icon.png",
