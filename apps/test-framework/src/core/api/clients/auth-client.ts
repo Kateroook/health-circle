@@ -171,6 +171,30 @@ export class AuthClient extends BaseClient {
   }
 
   /**
+   * GET /api/auth/check-email
+   * Перевірити чи email вільний
+   */
+  public async checkEmail(email: string): Promise<ApiResult<void>> {
+    return runStep(`Check email "${email}"`, async () => {
+      return await this.get<void>('/api/auth/check-email', {
+        params: { email },
+      });
+    });
+  }
+
+  /**
+   * GET /api/auth/check-phone
+   * Перевірити чи телефон вільний
+   */
+  public async checkPhone(phone: string): Promise<ApiResult<void>> {
+    return runStep(`Check phone "${phone}"`, async () => {
+      return await this.get<void>('/api/auth/check-phone', {
+        params: { phone },
+      });
+    });
+  }
+
+  /**
    * Хелпер: швидкий логін з автоматичним збереженням userId
    */
   public async quickLogin(identifier: string, password: string): Promise<ApiResult<LoginResponse>> {

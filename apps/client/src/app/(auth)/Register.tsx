@@ -128,8 +128,44 @@ export default function Register() {
     const isValid = validateCurrentStep();
     if (isValid) {
       if (step === 1) {
-        logEvent("registration_step_2");
-        setStep(2);
+        setLoading(true);
+        try {
+          const cleanPhone = form.phone.replace(/\s/g, "");
+          const [phoneRes, emailRes] = await Promise.allSettled([
+            apiFetch(`/auth/check-phone?phone=${encodeURIComponent(cleanPhone)}`),
+            apiFetch(`/auth/check-email?email=${encodeURIComponent(form.email)}`),
+          ]);
+
+          let hasError = false;
+          const newErrors: Record<string, string> = {};
+
+          if (phoneRes.status === "rejected") {
+            newErrors.phone =
+              formatErrorMessage(phoneRes.reason) || "Номер телефону вже використовується";
+            hasError = true;
+          }
+          if (emailRes.status === "rejected") {
+            newErrors.email = formatErrorMessage(emailRes.reason) || "Email вже використовується";
+            hasError = true;
+          }
+
+          if (hasError) {
+            setErrors((prev) => ({ ...prev, ...newErrors }));
+            setLoading(false);
+            return;
+          }
+
+          logEvent("registration_step_2");
+          setStep(2);
+        } catch (e) {
+          showToast({
+            type: "error",
+            title: "Помилка перевірки",
+            subtitle: "Не вдалося перевірити дані. Спробуйте пізніше.",
+          });
+        } finally {
+          setLoading(false);
+        }
       } else {
         await handleRegister();
       }

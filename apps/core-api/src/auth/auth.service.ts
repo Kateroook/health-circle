@@ -392,6 +392,16 @@ export class AuthService {
     return true;
   }
 
+  async checkEmail(email: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({ where: { email: email.toLowerCase() } });
+    return !!user;
+  }
+
+  async checkPhone(phone: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({ where: { phone } });
+    return !!user;
+  }
+
   async resetPassword(user: UserProfileDto, data: UserSetupPasswordDto): Promise<void> {
     const { newPassword, confirmNewPassword } = data;
     if (newPassword !== confirmNewPassword) {

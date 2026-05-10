@@ -13,6 +13,8 @@ import { UserJwtRefreshGuard } from '../common/guards/user-jwt-refresh.guard';
 import { UserLocalGuard } from '../common/guards/user-local.guard';
 import type { AuthRequest } from '../common/types/auth-request';
 import { AuthService } from './auth.service';
+import { CheckEmailDto } from './dto/check-email.dto';
+import { CheckPhoneDto } from './dto/check-phone.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { ResendRegistrationCodeDto } from './dto/resend-registration-code.dto';
@@ -121,6 +123,28 @@ export class AuthController {
       success: true,
       message: 'Якщо реєстрація ще не завершена, ми надішлемо код підтвердження повторно',
     };
+  }
+
+  @Get('check-email')
+  @ApiOperation({ summary: 'Check if email is available' })
+  @ApiOkResponse({ description: 'Returns success true if email is available' })
+  async checkEmail(@Query() query: CheckEmailDto) {
+    const exists = await this.authService.checkEmail(query.email);
+    if (exists) {
+      throw new BadRequestException('Користувач з таким email вже існує');
+    }
+    return { success: true };
+  }
+
+  @Get('check-phone')
+  @ApiOperation({ summary: 'Check if phone is available' })
+  @ApiOkResponse({ description: 'Returns success true if phone is available' })
+  async checkPhone(@Query() query: CheckPhoneDto) {
+    const exists = await this.authService.checkPhone(query.phone);
+    if (exists) {
+      throw new BadRequestException('Користувач з таким номером телефону вже існує');
+    }
+    return { success: true };
   }
 
   @Post('reset-password')
