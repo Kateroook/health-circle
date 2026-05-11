@@ -68,6 +68,17 @@ export const config: WebdriverIO.Config = {
     // so it'll be accessible in any test
     const provider = await BackendProvider.init();
     (global as any).browser.backend = provider;
+
+    try {
+      await driver.execute('mobile: shell', {
+        command: 'settings put global hide_error_dialogs 1',
+      });
+      await driver.execute('mobile: shell', {
+        command: 'settings put global hide_error_dialogs_hide_crash_dialogs 1',
+      });
+    } catch (e) {
+      console.warn('Failed to disable Android error dialogs:', e);
+    }
   },
 
   afterTest: async function () {
