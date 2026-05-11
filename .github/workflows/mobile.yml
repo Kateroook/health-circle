@@ -67,6 +67,11 @@ jobs:
 
   # ─── Основний джоб: мобільні тести ─────────────────────────────────────────
   mobile-test:
+    environment: staging
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     needs: check
     if: needs.check.outputs.should_run == 'true'
     timeout-minutes: 90
@@ -156,7 +161,7 @@ jobs:
 
       - name: Publish test results
         uses: dorny/test-reporter@v1
-        if: ${{ !cancelled() }}
+        if: always()
         with:
           name: '${{ github.workflow }} Results'
           path: 'apps/test-framework/test-results/wdio-results-*.xml'

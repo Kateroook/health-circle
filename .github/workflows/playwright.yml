@@ -16,6 +16,11 @@ concurrency:
 
 jobs:
   test:
+    environment: staging
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     timeout-minutes: 60
     runs-on: ubuntu-latest
     defaults:
@@ -88,7 +93,7 @@ jobs:
 
       - name: Publish test results
         uses: dorny/test-reporter@v1
-        if: ${{ !cancelled() }}
+        if: always()
         with:
           name: '${{ github.workflow }} Results'
           path: 'apps/test-framework/test-results/*.xml'
