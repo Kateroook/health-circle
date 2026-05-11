@@ -1,4 +1,5 @@
 import DashboardScreen from 'src/mobile/screens/dashboard-screen';
+import settingsScreen from 'src/mobile/screens/settings-screen';
 import SettingsSecurityScreen from 'src/mobile/screens/settings-security-screen';
 import LoginScreen from '../../screens/login-screen';
 import OnboardingScreen from '../../screens/onboarding-screen';
@@ -13,7 +14,8 @@ describe('Account deletion', () => {
       password: user.password,
     });
     await DashboardScreen.waitForIsShown();
-    await SettingsSecurityScreen.openDirectly();
+    await settingsScreen.openDirectly();
+    await settingsScreen.goToSecurity();
     await SettingsSecurityScreen.waitForIsShown();
     await SettingsSecurityScreen.clickDeleteAccountButton();
     await SettingsSecurityScreen.deleteAccountModal.confirm();

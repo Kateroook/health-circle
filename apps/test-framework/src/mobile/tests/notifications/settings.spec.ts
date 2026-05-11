@@ -16,6 +16,7 @@ describe('Settings Notifications', () => {
     await dashboardScreen.waitForIsShown();
     await settingsScreen.openDirectly();
     await settingsScreen.goToNotifications();
+    await settingsNotificationsScreen.waitForIsShown();
 
     let [smsFalloverSwitch, smsSafetyStatusSwitch] = [
       await settingsNotificationsScreen.switches.getByLabel(
