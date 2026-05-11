@@ -54,6 +54,11 @@ export const config: WebdriverIO.Config = {
       'appium:isHeadless': false,
     },
   ],
+  connectionRetryTimeout: 240_000,
+  connectionRetryCount: 3,
+  specFileRetries: 2,
+  specFileRetriesDelay: 5,
+  specFileRetriesDeferred: true,
 
   //Test runners and reporters
   framework: 'mocha',
