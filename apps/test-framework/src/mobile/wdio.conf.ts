@@ -51,7 +51,7 @@ export const config: WebdriverIO.Config = {
       'appium:ignoreHiddenApiPolicyError': true,
       'wdio:maxInstances': 1,
       'appium:disableWindowAnimation': true,
-      'appium:isHeadless': false,
+      'appium:isHeadless': process.env.CI ? true : false,
     },
   ],
   connectionRetryTimeout: 240_000,
@@ -62,7 +62,16 @@ export const config: WebdriverIO.Config = {
 
   //Test runners and reporters
   framework: 'mocha',
-  reporters: ['spec'],
+  reporters: [
+    'spec',
+    [
+      'junit',
+      {
+        outputDir: './test-results',
+        outputFileFormat: (options) => `wdio-results-${options.cid}.xml`,
+      },
+    ],
+  ],
   mochaOpts: {
     timeout: process.env.CI ? 180000 : 60000,
   },

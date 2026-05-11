@@ -151,7 +151,7 @@ export class UserClient extends BaseClient {
    * Оновити статус користувача
    */
   public async updateUserStatus(data: UpdateUserStatusRequest): Promise<ApiResult<UpdateUserStatusResponse>> {
-    return await runStep(`Update authenticated user status`, async () => {
+    return await runStep(`Update authenticated user status: ${data.status}`, async () => {
       return this.put<UpdateUserStatusResponse>('/api/users/status', {
         data,
       });
