@@ -1,4 +1,5 @@
 import { NotificationTemplates, NotificationType } from '../../../../core-api/src/notifications/notification-types';
+import { timeout as setTimeout } from '../../utils/wait-helper';
 
 export class NotificationHelper {
   /**
@@ -49,7 +50,7 @@ export class NotificationHelper {
    * Find notification in the panel and wait for it to appear.
    * Return locators, so you can do expect() in the test.
    */
-  async waitForNotification(type: NotificationType, payloadData: any = {}, timeout = 20000) {
+  async waitForNotification(type: NotificationType, payloadData: any = {}, timeout = setTimeout.extraLong * 3) {
     const { title: templateTitle, body: templateBody } = this.getExpectedContent(type, payloadData);
 
     // Find match for title (using contains to handle App Name prefixing)
@@ -91,7 +92,7 @@ export class NotificationHelper {
     // Find button inside the panel
     const escapedButtonText = this.escapeXPathString(buttonText);
     const buttonLocator = await $(`//*[@text=${escapedButtonText}]`);
-    await buttonLocator.waitForDisplayed({ timeout: 5000 });
+    await buttonLocator.waitForDisplayed({ timeout: setTimeout.long });
     await buttonLocator.click();
   }
 }

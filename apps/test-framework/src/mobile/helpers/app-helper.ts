@@ -1,3 +1,5 @@
+import { waitHelper } from 'src/utils/wait-helper';
+
 export class AppHelper {
   async restartApp() {
     const bundleId = 'com.healthcircle.app';
@@ -15,25 +17,30 @@ export class AppHelper {
    * @param safeZoneRatio Percentage of the screen top that is considered "safe" (default is 90%)
    */
   async swipeUpToReveal(el: WebdriverIO.Element, safeZoneRatio = 0.9) {
-    await el.waitForExist();
-
-    const location = await el.getLocation();
     const { width, height } = await driver.getWindowRect();
 
-    // If the element's Y-coordinate is below the safe zone
-    if (location.y > height * safeZoneRatio) {
+    // Скролимо вниз поки елемент не з'явиться в DOM
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const exists = await el.isExisting();
+      if (exists) {
+        const location = await el.getLocation();
+        if (location.y <= height * safeZoneRatio) return; // вже у зоні
+      }
+
       await driver
         .action('pointer', { parameters: { pointerType: 'touch' } })
-        .move({ x: width / 2, y: height * 0.8 }) // Start swipe from the bottom
+        .move({ x: width / 2, y: height * 0.8 })
         .down()
         .pause(100)
-        .move({ x: width / 2, y: height * 0.4, duration: 500 }) // Swipe up to the center
+        .move({ x: width / 2, y: height * 0.4, duration: 500 })
         .up()
         .perform();
 
-      // Wait for the system to complete the inertial scroll animation
       await browser.pause(500);
     }
+
+    // Якщо після всіх спроб не знайшли — вже чекаємо явно
+    await el.waitForExist({ timeout: waitHelper.resolveTimeout(5_000) });
   }
 }
 

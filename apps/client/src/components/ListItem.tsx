@@ -234,11 +234,22 @@ export const ListItem: React.FC<ListItemProps> = ({
       )}
       {supportCaption !== undefined &&
         (typeof supportCaption === "string" || typeof supportCaption === "number" ? (
-          <Typography variant="body2" tone="secondary" style={styles.supportCaption}>
+          <Typography
+            variant="body2"
+            tone="secondary"
+            style={styles.supportCaption}
+            testId={testId ? `${testId}:supportCaption` : undefined}
+          >
             {supportCaption}
           </Typography>
         ) : (
-          <View style={styles.supportCaption}>{supportCaption}</View>
+          <View
+            style={styles.supportCaption}
+            testID={testId ? `${testId}:supportCaption` : undefined}
+            accessibilityLabel={testId ? `${testId}:supportCaption` : undefined}
+          >
+            {supportCaption}
+          </View>
         ))}
     </View>
   );

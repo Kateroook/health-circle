@@ -115,6 +115,8 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                 <TouchableOpacity
                   style={[styles.segmentBtn, activeTab === "join" && styles.segmentActive]}
                   onPress={() => setActiveTab("join")}
+                  testID="circle:join:tab"
+                  accessibilityLabel="circle:join:tab"
                 >
                   <Typography
                     variant="subtitle1"
@@ -130,6 +132,8 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                     setActiveTab("create");
                     setCreateStep(1);
                   }}
+                  testID="circle:create:tab"
+                  accessibilityLabel="circle:create:tab"
                 >
                   <Typography
                     variant="subtitle1"
@@ -152,6 +156,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                     onChangeText={setJoinCode}
                     required
                     variant="code"
+                    testId="circle:joinCode:input"
                   />
                 </View>
               )}
@@ -173,6 +178,8 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                         onChangeText={setCircleName}
                         maxLength={100}
                         textAlign="center"
+                        testID="circle:name:input"
+                        accessibilityLabel="circle:name:input"
                       />
                     </>
                   )}
@@ -187,6 +194,8 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                         source={require("../../assets/images/interactiveScreens/circle_creating.png")}
                         style={styles.statusImage}
                         resizeMode="contain"
+                        testID="circle:create:loader"
+                        accessibilityLabel="circle:create:loader"
                       />
                     </View>
                   )}
@@ -203,6 +212,8 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                           source={require("../../assets/images/interactiveScreens/circle_created.png")}
                           style={styles.statusImage}
                           resizeMode="contain"
+                          testID="circle:success:image"
+                          accessibilityLabel="circle:success:image"
                         />
                       </View>
 
@@ -212,11 +223,13 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                           label="Код кола"
                           value={generatedCode}
                           variant="code"
+                          testId="circle:generatedCode:input"
                           labelTrailing={
                             <Button
                               shape="round"
                               hierarchy="tertiary"
                               size="xsmall"
+                              testId="circle:copyCode:button"
                               leadingIcon={
                                 <AntDesign
                                   name="copy"
@@ -234,6 +247,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                         hierarchy="accent"
                         shape="rectangle"
                         size="medium"
+                        testId="circle:shareInvite:button"
                         trailingIcon={
                           <Feather name="send" size={20} color={theme.colors.content.onColor} />
                         }
@@ -264,6 +278,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                   disabled={joinCode.length !== 6 || isJoining}
                   onPress={handleJoinCircle}
                   style={{ width: "100%" }}
+                  testId="circle:join:button"
                 />
               )}
 
@@ -277,6 +292,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                   disabled={circleName.trim().length < 3}
                   onPress={handleCreateCircle}
                   style={{ width: "100%" }}
+                  testId="circle:create:button"
                 />
               )}
 
@@ -289,6 +305,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ visible, onClose, onUpd
                   size="medium"
                   onPress={onClose}
                   style={{ width: "100%" }}
+                  testId="circle:submit:button"
                 />
               )}
             </ModalContent>

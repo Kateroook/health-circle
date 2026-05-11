@@ -1,7 +1,6 @@
 import { Feather } from "@expo/vector-icons";
-import React, { ReactNode, useCallback, useMemo, useState } from "react";
+import React, { ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import {
-  Pressable,
   StyleSheet,
   TextInput,
   TextInputProps,
@@ -135,9 +134,7 @@ export const TextFieldRoot: React.FC<{
   interactionState: TextFieldInteractionState;
   validationState: TextFieldValidationState;
   children: ReactNode;
-  onPressIn?: () => void;
-  onPressOut?: () => void;
-}> = ({ disabled, interactionState, validationState, children, onPressIn, onPressOut }) => {
+}> = ({ disabled, interactionState, validationState, children }) => {
   const { backgroundColor, borderColor, borderWidth, overlayStyle } = getContainerVisuals(
     interactionState,
     validationState,
@@ -145,10 +142,7 @@ export const TextFieldRoot: React.FC<{
   );
 
   return (
-    <Pressable
-      disabled={disabled}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
+    <View
       style={[
         styles.root,
         {
@@ -160,7 +154,7 @@ export const TextFieldRoot: React.FC<{
       ]}
     >
       {children}
-    </Pressable>
+    </View>
   );
 };
 
@@ -456,6 +450,7 @@ const BaseTextField: React.FC<BaseTextFieldProps> = (props) => {
     ...restInputProps
   } = props;
 
+  const inputRef = useRef<TextInput>(null);
   const [innerValue, setInnerValue] = useState<string>(defaultValue ?? "");
   const [isFocused, setIsFocused] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
@@ -534,12 +529,11 @@ const BaseTextField: React.FC<BaseTextFieldProps> = (props) => {
         disabled={disabled}
         interactionState={interactionState}
         validationState={validationState}
-        onPressIn={() => setIsPressed(true)}
-        onPressOut={() => setIsPressed(false)}
       >
         <TextFieldLeading>{leadingArtwork}</TextFieldLeading>
 
         <TextFieldInput
+          ref={inputRef}
           testId={testId}
           {...restInputProps}
           value={textValue}

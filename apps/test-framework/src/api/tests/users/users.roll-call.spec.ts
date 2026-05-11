@@ -176,7 +176,7 @@ test.describe(
         await expect(async () => {
           const getMemberAfterRC = await memberApi.users.getUser(member.id!);
           expect(getMemberAfterRC.data.status).toBe('UNKNOWN');
-        }).toPass({ timeout: timeout.cronTimeout * 5, intervals: [timeout.medium, timeout.long] }); //TODO: adjust intervals after api fix
+        }).toPass({ timeout: timeout.cronTimeout * 5, intervals: [timeout.short, timeout.medium] }); //TODO: adjust intervals after api fix
       },
     );
 

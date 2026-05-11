@@ -49,7 +49,7 @@ async function run() {
     const firstAvd = avdsOutput.split('\n')[0].trim();
     console.log(`[...] Starting: ${firstAvd}`);
 
-    const emuProcess = spawn('emulator', ['-avd', firstAvd], {
+    const emuProcess = spawn('emulator', ['-avd', firstAvd, '-no-snapshot-load', '-dns-server', '8.8.8.8'], {
       detached: true,
       stdio: 'ignore',
     });

@@ -1,3 +1,4 @@
+import { timeout } from 'src/utils/wait-helper';
 import { ScreenIds } from '../../../../client/src/utils/testIDs';
 import BaseScreen from './base-screen';
 
@@ -44,29 +45,45 @@ class PasswordSetupScreen extends BaseScreen {
   async fillPassword(password?: string) {
     await this.wait(this.passwordInput);
     if (password) {
-      await this.passwordInput.setValue(password);
+      await this.passwordInput.click();
+      await browser.pause(500);
+      await browser.keys(password.split(''));
     }
   }
 
   async fillConfirmPassword(confirmPassword?: string) {
     await this.wait(this.confirmPasswordInput);
     if (confirmPassword) {
-      await this.confirmPasswordInput.setValue(confirmPassword);
+      await this.confirmPasswordInput.click();
+      await browser.pause(500);
+      await browser.keys(confirmPassword.split(''));
     }
   }
 
   async fillAndConfirmPassword(password?: string, confirmPassword?: string) {
     await this.fillPassword(password);
     await this.fillConfirmPassword(confirmPassword);
+
+    if (await browser.isKeyboardShown()) {
+      await browser.hideKeyboard();
+    }
+
     await this.tap(this.confirmButton);
   }
 
   async setupPassword(confirmCode?: string, password?: string, confirmPassword?: string) {
+    console.log('CONFIRM CODE:', confirmCode);
+    // Disable idle timeout because the 60s countdown timer on this screen prevents UiAutomator2 from ever becoming idle, causing click/setValue to hang.
+    await browser.updateSettings({ waitForIdleTimeout: 0 });
+
     await this.fillConfirmCode(confirmCode);
     if (await browser.isKeyboardShown()) {
       await browser.hideKeyboard();
     }
     await this.fillAndConfirmPassword(password, confirmPassword);
+
+    // Restore default idle timeout
+    await browser.updateSettings({ waitForIdleTimeout: timeout.extraLong });
   }
 
   async clickConfirmButton() {

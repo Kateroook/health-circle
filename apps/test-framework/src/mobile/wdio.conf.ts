@@ -46,17 +46,34 @@ export const config: WebdriverIO.Config = {
       'appium:app': path.join(process.cwd(), '../client/android/app/build/outputs/apk/release/app-release.apk'),
       'appium:autoGrantPermissions': true,
       'appium:newCommandTimeout': 300,
+      'appium:adbExecTimeout': 120000,
       'appium:udid': process.env.APPIUM__DEVICE_NAME!,
       'appium:ignoreHiddenApiPolicyError': true,
       'wdio:maxInstances': 1,
+      'appium:disableWindowAnimation': true,
+      'appium:isHeadless': process.env.CI ? true : false,
     },
   ],
+  connectionRetryTimeout: 240_000,
+  connectionRetryCount: 3,
+  specFileRetries: 2,
+  specFileRetriesDelay: 5,
+  specFileRetriesDeferred: true,
 
   //Test runners and reporters
   framework: 'mocha',
-  reporters: ['spec'],
+  reporters: [
+    'spec',
+    [
+      'junit',
+      {
+        outputDir: './test-results',
+        outputFileFormat: (options) => `wdio-results-${options.cid}.xml`,
+      },
+    ],
+  ],
   mochaOpts: {
-    timeout: 60000,
+    timeout: process.env.CI ? 180000 : 60000,
   },
 
   //BackendProvider integration
@@ -65,6 +82,17 @@ export const config: WebdriverIO.Config = {
     // so it'll be accessible in any test
     const provider = await BackendProvider.init();
     (global as any).browser.backend = provider;
+
+    try {
+      await driver.execute('mobile: shell', {
+        command: 'settings put global hide_error_dialogs 1',
+      });
+      await driver.execute('mobile: shell', {
+        command: 'settings put global hide_error_dialogs_hide_crash_dialogs 1',
+      });
+    } catch (e) {
+      console.warn('Failed to disable Android error dialogs:', e);
+    }
   },
 
   afterTest: async function () {

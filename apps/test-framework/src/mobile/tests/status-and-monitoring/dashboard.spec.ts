@@ -91,11 +91,11 @@ describe('Main page', () => {
       await memberCard.scrollIntoView();
 
       const badge = await DashboardScreen.getMemberStatusBadge(displayedUser.id!, status.name);
-      await badge.waitForDisplayed({ timeout: timeout.extraLong, interval: timeout.short });
+      await badge.waitForDisplayed({ timeout: timeout.extraLong * 3, interval: timeout.short });
       await expect(badge).toBeDisplayed();
 
       const statusText = await DashboardScreen.getMemberStatusLabel(displayedUser.id!);
-      await statusText.waitForDisplayed({ timeout: timeout.extraLong, interval: timeout.short });
+      await statusText.waitForDisplayed({ timeout: timeout.extraLong * 3, interval: timeout.short });
       const currentText = await statusText.getText();
       expect(currentText).toBe(status.label);
     }

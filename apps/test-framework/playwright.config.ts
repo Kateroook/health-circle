@@ -12,7 +12,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
   workers: process.env.CI ? 4 : 8,
-  reporter: 'html',
+  reporter: [['html'], ['junit', { outputFile: 'test-results/playwright-results.xml' }]],
 
   use: {
     actionTimeout: 30000,

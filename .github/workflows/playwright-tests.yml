@@ -16,6 +16,11 @@ concurrency:
 
 jobs:
   test:
+    environment: staging
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     timeout-minutes: 60
     runs-on: ubuntu-latest
     defaults:
@@ -85,6 +90,15 @@ jobs:
           TEST_EMAIL_USER: ${{ secrets.TEST_EMAIL_USER }}
           TEST_EMAIL_PASSWORD: ${{ secrets.TEST_EMAIL_PASSWORD }}
           MOCK_ADMIN_URL: ${{ secrets.MOCK_ADMIN_URL }}
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: '${{ github.workflow }} Results'
+          path: 'apps/test-framework/test-results/*.xml'
+          reporter: java-junit
+          fail-on-error: false
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
