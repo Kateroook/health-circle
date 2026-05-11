@@ -1,3 +1,5 @@
+import { timeout } from 'src/utils/wait-helper';
+
 export class AppHelper {
   async restartApp() {
     const bundleId = 'com.healthcircle.app';
@@ -15,7 +17,7 @@ export class AppHelper {
    * @param safeZoneRatio Percentage of the screen top that is considered "safe" (default is 90%)
    */
   async swipeUpToReveal(el: WebdriverIO.Element, safeZoneRatio = 0.9) {
-    await el.waitForExist();
+    await el.waitForExist({ timeout: timeout.long });
 
     const location = await el.getLocation();
     const { width, height } = await driver.getWindowRect();

@@ -1,5 +1,5 @@
 export class WaitHelper {
-  private readonly CI_MULTIPLIER = Number(process.env.CI_TIMEOUT_MULTIPLIER) || 6;
+  private readonly CI_MULTIPLIER = Number(process.env.CI_TIMEOUT_MULTIPLIER) || 4;
 
   async sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));

@@ -34,6 +34,7 @@ export default class BaseScreen {
     const el = await target;
 
     await (el as any).waitForDisplayed({
+      timeout,
       timeoutMsg: `Element with locator "${(el as any).selector}" did not load within ${timeout}ms.`,
     });
   }
@@ -58,6 +59,7 @@ export default class BaseScreen {
     const element = (typeof target === 'string' ? await $(target) : await target) as any;
     const identifier = element.selector || target.toString();
     await element.waitForDisplayed({
+      timeout,
       timeoutMsg: `Element with locator "${identifier}" did not load within ${timeout}ms.`,
     });
 
