@@ -22,8 +22,8 @@ class userList extends BaseScreen {
     return $(`~${testId}:supportCaption`);
   }
 
-  userStatusBadge(testId: string) {
-    return $(`~${testId}:statusBadge`);
+  userStatusBadge(testId: string, status: string) {
+    return $(`~${testId}:badge:${status}`);
   }
 
   async clickUser(testId: string) {

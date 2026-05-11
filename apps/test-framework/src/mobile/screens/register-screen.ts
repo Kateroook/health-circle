@@ -14,7 +14,7 @@ class RegisterScreen extends BaseScreen {
     return $('~auth:phone:input');
   }
   get emailInput() {
-    return $('~auth:middleName:input');
+    return $('~auth:email:input');
   }
   get nextButton() {
     return $('~auth:next:button');

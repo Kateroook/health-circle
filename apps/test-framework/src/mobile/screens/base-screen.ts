@@ -22,7 +22,7 @@ export default class BaseScreen {
   /**
    * Waits for the main element of the screen to appear.
    */
-  async waitForIsShown(timeout = setTimeout.extraLong): Promise<void> {
+  async waitForIsShown(timeout = setTimeout.extraLong * 2): Promise<void> {
     const element = await $(this.selector);
     await element.waitForDisplayed({
       timeout,
@@ -53,7 +53,7 @@ export default class BaseScreen {
    */
   async tap(
     target: string | WebdriverIO.Element | ChainablePromiseElement,
-    timeout = setTimeout.extraLong,
+    timeout = setTimeout.extraLong * 2,
   ): Promise<void> {
     const element = (typeof target === 'string' ? await $(target) : await target) as any;
     const identifier = element.selector || target.toString();

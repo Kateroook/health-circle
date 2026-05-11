@@ -1,5 +1,5 @@
 import { GroupFactory } from '@core/data/factories/group-factory';
-import { NotificationHelper } from 'src/mobile/helpers/notification-helper';
+import NotificationHelper from 'src/mobile/helpers/notification-helper';
 import dashboardScreen from 'src/mobile/screens/dashboard-screen';
 import loginScreen from 'src/mobile/screens/login-screen';
 import { utils } from 'src/utils/utils';

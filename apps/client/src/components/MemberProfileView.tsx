@@ -95,6 +95,8 @@ export const MemberProfileView = ({
             size={16}
             color={theme.colors.state.safe}
             style={{ marginLeft: 8 }}
+            testID="profile:copyLocation:success:icon"
+            accessibilityLabel="profile:copyLocation:success:icon"
           />
         ) : (
           <AntDesign
@@ -102,6 +104,8 @@ export const MemberProfileView = ({
             size={16}
             color={theme.colors.content.primary}
             style={{ marginLeft: 8 }}
+            testID="profile:copyLocation:copy:icon"
+            accessibilityLabel="profile:copyLocation:copy:icon"
           />
         )}
       </TouchableOpacity>

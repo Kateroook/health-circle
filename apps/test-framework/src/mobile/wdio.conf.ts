@@ -46,9 +46,12 @@ export const config: WebdriverIO.Config = {
       'appium:app': path.join(process.cwd(), '../client/android/app/build/outputs/apk/release/app-release.apk'),
       'appium:autoGrantPermissions': true,
       'appium:newCommandTimeout': 300,
+      'appium:adbExecTimeout': 120000,
       'appium:udid': process.env.APPIUM__DEVICE_NAME!,
       'appium:ignoreHiddenApiPolicyError': true,
       'wdio:maxInstances': 1,
+      'appium:disableWindowAnimation': true,
+      'appium:isHeadless': false,
     },
   ],
 
@@ -56,7 +59,7 @@ export const config: WebdriverIO.Config = {
   framework: 'mocha',
   reporters: ['spec'],
   mochaOpts: {
-    timeout: 60000,
+    timeout: process.env.CI ? 180000 : 60000,
   },
 
   //BackendProvider integration

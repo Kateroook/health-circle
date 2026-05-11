@@ -255,9 +255,18 @@ export default function Register() {
           onChangeText={onChangeText}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          maxLength={maxLength}
           required={required}
           errorMessage={error}
-          testId={`auth:${label === "Прізвище" ? "lastName" : label === "Ім'я" ? "firstName" : "middleName"}:input`}
+          testId={`auth:${
+            label === "Прізвище"
+              ? "lastName"
+              : label === "Ім'я"
+                ? "firstName"
+                : label === "Електронна пошта"
+                  ? "email"
+                  : "middleName"
+          }:input`}
         />
       )}
     </>

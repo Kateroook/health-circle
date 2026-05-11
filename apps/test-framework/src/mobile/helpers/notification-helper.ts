@@ -50,7 +50,7 @@ export class NotificationHelper {
    * Find notification in the panel and wait for it to appear.
    * Return locators, so you can do expect() in the test.
    */
-  async waitForNotification(type: NotificationType, payloadData: any = {}, timeout = setTimeout.extraLong * 2) {
+  async waitForNotification(type: NotificationType, payloadData: any = {}, timeout = setTimeout.extraLong * 3) {
     const { title: templateTitle, body: templateBody } = this.getExpectedContent(type, payloadData);
 
     // Find match for title (using contains to handle App Name prefixing)

@@ -149,6 +149,7 @@ jobs:
           HEALTHCIRCLE_POSTGRES_SSL: ${{ secrets.POSTGRES_SSL }}
           TEST_EMAIL_USER: ${{ secrets.TEST_EMAIL_USER }}
           TEST_EMAIL_PASSWORD: ${{ secrets.TEST_EMAIL_PASSWORD }}
+          MOCK_ADMIN_URL: ${{ secrets.MOCK_ADMIN_URL }}
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
