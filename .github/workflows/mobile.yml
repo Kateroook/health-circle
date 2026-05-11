@@ -40,18 +40,22 @@ jobs:
             }
 
             const prNumber = run.pull_requests[0]?.number;
-            if (!prNumber) {
-              core.setOutput('should_run', 'false');
-              core.setOutput('head_sha', '');
-              return;
-            }
 
-            // Перевіряємо, чи змінились релевантні файли
-            const { data: files } = await github.rest.pulls.listFiles({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-            });
+            let files = [];
+            if (prNumber) {
+              files = await github.paginate(github.rest.pulls.listFiles, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              });
+            } else {
+              const { data: commit } = await github.rest.repos.getCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: run.head_sha,
+              });
+              files = commit.files || [];
+            }
             const relevant = files.some(f =>
               f.filename.startsWith('apps/core-api/') ||
               f.filename.startsWith('apps/test-framework/src/mobile/') ||
@@ -89,7 +93,9 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # KVM-акселерація для Android емулятора
+      - name: Setup Gradle Cache
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
@@ -97,7 +103,6 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      # Appium та UiAutomator2-драйвер (@wdio/appium-service запускає його як сервіс)
       - name: Install Appium
         run: |
           npm install -g appium
@@ -119,13 +124,11 @@ jobs:
           GOOGLE_SERVICES_JSON: ${{ github.workspace }}/apps/client/google-services.json
         run: npm run build:apk:stage
 
-      # Емулятор стартує тут; wdio запускається всередині вже з живим девайсом
-      # start-emulator.ts НЕ викликаємо — emulator-runner сам стартує AVD
       - name: Run mobile tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 33
-          arch: x86_64
+          api-level: 29
+          arch: x86
           target: google_apis
           avd-name: mobile-ci-avd
           emulator-options: >-
@@ -137,7 +140,7 @@ jobs:
         env:
           CI: true
           # Appium capabilities — мають збігатись з api-level і avd-name вище
-          APPIUM__PLATFORM_VERSION: '13'        # API 33 = Android 13
+          APPIUM__PLATFORM_VERSION: '10'        # API 29 = Android 10
           APPIUM__DEVICE_NAME: 'emulator-5554'  # стандартний UDID першого емулятора
           # Backend / DB
           API_BASE_URL: ${{ vars.STAGING_API_BASE_URL }}
@@ -152,8 +155,8 @@ jobs:
           MOCK_ADMIN_URL: ${{ secrets.MOCK_ADMIN_URL }}
 
       - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
+        if: always()
         with:
           name: mobile-test-report
-          path: apps/test-framework/test-results/  # скоригуй під реальний wdio outputDir
+          path: apps/test-framework/test-results/
           retention-days: 30
